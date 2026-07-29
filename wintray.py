@@ -616,7 +616,8 @@ class _WindowsTrayController:
             _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
 
         MONITOR_DEFAULTTONEAREST = 2
-        user32: Any = ctypes.windll.user32
+        library_name = "windll"
+        user32: Any = getattr(ctypes, library_name).user32
         handle = user32.MonitorFromPoint(Point(point[0], point[1]), MONITOR_DEFAULTTONEAREST)
         info = MonitorInfo()
         info.cbSize = ctypes.sizeof(MonitorInfo)
