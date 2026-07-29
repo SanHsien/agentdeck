@@ -799,11 +799,9 @@ def _build_csv_data(data: Mapping[str, Any], lang: str, *, mask_projects: bool =
 
 def _render_sponsor_section(lang: str) -> str:
     return f"""<p class="sponsor">
-    <a href="https://ko-fi.com/lollapalooza" target="_blank" rel="noopener" aria-label="Buy me a coffee on Ko-fi"><img src="https://img.shields.io/badge/Ko--fi-FF5E5B?logo=ko-fi&amp;logoColor=white" alt="Ko-fi"></a>
     <span class="tagline">{html.escape(_t(lang, "sponsor"))}</span>
-    <a href="https://ko-fi.com/lollapalooza" target="_blank" rel="noopener" aria-label="Buy me a coffee on Ko-fi"><img src="https://img.shields.io/badge/Ko--fi-FF5E5B?logo=ko-fi&amp;logoColor=white" alt="Ko-fi"></a>
   </p>
-  <p class="sponsor-link"><a href="https://github.com/aqua5230/usage" target="_blank" rel="noopener">github.com/aqua5230/usage</a></p>"""
+  <p class="sponsor-link"><a href="https://github.com/SanHsien/usage" target="_blank" rel="noopener">github.com/SanHsien/usage</a></p>"""
 
 
 def _render_styles() -> str:
