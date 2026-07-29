@@ -4,6 +4,22 @@
 
 專案本身的架構說明在 [`CLAUDE.md`](CLAUDE.md)。這份文件補 fork 專屬的規則與 Windows 開發環境差異。
 
+## 本 fork 的目的：把 macOS 的功能搬到 Windows，不是接受落差
+
+**這是維護者的核心意圖，優先於「維持現狀」的直覺。**
+
+上游是 macOS 優先的專案，很多功能在 Windows 上是缺的、殘的、或退化的。本 fork 的目標**不是**記錄這些落差然後接受它，而是**逐一移植到 Windows 版本**。
+
+因此，遇到「這個功能只有 macOS 有」或「Windows 上做不到」時：
+
+- **不要**寫成「平台差異，符合預期」就結案。
+- **要**判斷 Windows 上實際能不能做到，能做就排進待辦、動手移植。
+- 真的做不到（缺少 Windows API、依賴 macOS 專屬二進位）才記為受阻，**並寫明卡在什麼具體技術限制**，不是含糊的「平台不同」。
+
+已知落差清單與移植狀態見 [`REPO_REVIEW.md`](REPO_REVIEW.md) 的「Windows 平台落差移植待辦」。發現新落差就補進那份清單。
+
+參考素材：[`reference/upstream-macos/`](reference/upstream-macos/) 放著已從本 repo 移除的上游 macOS 實作，**唯讀、不參與建置與檢查**，用途是移植功能時對照原本的行為。
+
 ## 這是 fork，但獨立維護
 
 - 上游：[`aqua5230/usage`](https://github.com/aqua5230/usage)（AGPL-3.0-only）。

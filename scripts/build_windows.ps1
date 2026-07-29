@@ -26,6 +26,10 @@ try {
         --add-data "$(Join-Path $RepoRoot 'i18n.json');." `
         --add-data "$(Join-Path $RepoRoot 'pyproject.toml');." `
         --add-data "$(Join-Path $RepoRoot 'assets');assets" `
+        `# packaged_resource_path asks for "windows/..." and "critters/..." without
+        `# an assets/ prefix, so those subtrees are declared under those names too.
+        --add-data "$(Join-Path $RepoRoot 'assets/windows');windows" `
+        --add-data "$(Join-Path $RepoRoot 'assets/critters');critters" `
         --add-data "$(Join-Path $RepoRoot 'usage_statusline.py');." `
         --add-data "$(Join-Path $RepoRoot 'usage_statusline_forwarder.py');." `
         --add-data "$(Join-Path $RepoRoot 'usage_session_resume.py');." `

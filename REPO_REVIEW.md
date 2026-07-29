@@ -67,6 +67,28 @@
 - **`.gitignore` 覆蓋充分**：`.venv/`、`vendor/`（私有 instate-cli 二進位）、`SESSION.md`、各式本機快取均已排除。
 - **fork remote 配置正確**：`origin` → `SanHsien/usage`，`upstream` → `aqua5230/usage`。
 
+## Windows 平台落差移植待辦
+
+**維護者意圖：這些不是「可接受的平台差異」，是待移植的工作。** 規則見 [`AGENTS.md`](AGENTS.md) 開頭。對照上游實作請看 [`reference/upstream-macos/`](reference/upstream-macos/)。
+
+以下 17 個 UI 字串在上游 macOS 版有、Windows 版沒有（2026-07-29 以 `_t()` 呼叫比對得出）。**這些落差在 macOS 移除前就已存在於上游，不是移除造成的**——`git show 81b89e1:wintray.py` 可驗證每一個都是 `base=0`。
+
+| 落差 | i18n key | 可行性評估 |
+|---|---|---|
+| Hook 安裝失敗／需重啟的提示 | `hook_install_failed`、`hook_install_failed_default`、`hook_installed_restart` | **可做**。Windows 目前安裝 statusLine hook 失敗時沒有任何回饋，使用者只會看到面板一直 `--`。應該接上系統通知或托盤氣泡。**優先度最高**——這是靜默失敗。 |
+| 報告產生失敗提示 | `analysis_failed` | **可做**。同上，目前失敗無聲。 |
+| Session resume／statusline 操作失敗提示 | `resume_action_failed`、`statusline_action_failed` | **可做**。同上。 |
+| 更新檢查結果提示 | `update_check_failed`、`update_no_new_version` | **可做**。Windows 只在「有新版」時用 Yes/No 對話框，檢查失敗或已是最新時沒有回饋。 |
+| 更新對話框三選項 | `update_btn_download`、`update_btn_later`、`update_btn_skip` | **可做但需自製對話框**。Windows 用系統 Yes/No，少了「跳過這一版」。要三選項得用 pywebview 或 Win32 TaskDialog。 |
+| 選單項 tooltip | `project_butler_tooltip`、`terse_mode_tooltip`、`window_keeper_tooltip` | **受阻於 pystray**：pystray 的 `MenuItem` 沒有 tooltip 參數。替代方案是把說明併進選單文字，或改用自製托盤選單。 |
+| 螢幕保持喚醒的睡眠通知 | `window_keeper_sleep_title`、`window_keeper_sleep_body` | **可做**。`window_keeper` 功能在 Windows 已有（`toggle_window_keeper`），但系統即將睡眠時的通知沒接。 |
+| AI 人才市場面板 | `panel_talent_market` | **受阻**：依賴 `vendor/instate-cli` 二進位，由上游一個私有專案建置且已 gitignore，**跨平台都缺**，不是 Windows 的問題。要做得先自己實作 persona 安裝邏輯。 |
+
+其餘已知落差：
+
+- **面板開啟位置**：Windows 開在工作區右下角，macOS 貼齊選單列圖示。pystray 不提供圖示座標，要用 Win32 `Shell_NotifyIconGetRect` 取得托盤圖示位置才能貼齊。**可做**。
+- **`i18n.packaged_resource_path` 的 `RESOURCEPATH` 分支**：py2app 專用，現在是死碼（環境變數不存在就跳過，無害）。清掉時要一併改寫 `tests/test_i18n_packaged_path.py`。**純清理，非落差**。
+
 ## 待辦
 
 - [x] 修掉 P3（含迴歸測試）—— `8ac5d52`（2026-07-29）。
