@@ -14,7 +14,13 @@ Keep Claude Code, Codex, and Antigravity quota in view while you work. `usage` p
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)](#install)
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 
-> This is a fork of [`aqua5230/usage`](https://github.com/aqua5230/usage), maintained independently with no upstream contributions planned. The UI ships in Traditional Chinese and English only. Upstream's Discussions and star count belong to that project and are no longer mirrored here; **installers still come from upstream's Releases** (this fork publishes none). The landing page is served from this repo's `docs/`.
+> **This fork focuses on Windows.**
+>
+> It is a fork of [`aqua5230/usage`](https://github.com/aqua5230/usage), maintained independently with no upstream contributions planned. Development and verification happen on native Windows 11: Windows-specific problems — system tray, DPI scaling, path handling — get fixed first, with evidence from real runs.
+>
+> The macOS code is left intact and won't be deliberately broken, but **this fork cannot verify macOS** (the menu bar and `.app` packaging need a Mac to test on). For macOS, use upstream.
+>
+> Other differences: the UI ships in Traditional Chinese and English only; upstream's Discussions and star count belong to that project and are no longer mirrored here. The landing page is served from this repo's `docs/`.
 
 <p align="center">
   <img src="docs/showcase.en.png" alt="usage — Claude Code, Codex, and Antigravity quota pinned to the macOS menu bar" width="820">

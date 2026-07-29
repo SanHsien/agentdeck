@@ -859,3 +859,80 @@ def test_menu_actions_pass_real_pystray_signature_validation() -> None:
     menu = wintray._menu(controller)  # type: ignore[arg-type]
 
     assert menu is not None
+
+
+@pytest.mark.parametrize(
+    ("rect", "scale", "expected"),
+    [
+        ((0, 0, 3840, 2052), 2.25, (0, 0, 1707, 912)),  # 4K at 225%
+        ((0, 0, 2560, 1372), 1.5, (0, 0, 1707, 915)),  # 1440p at 150%
+        ((0, 0, 1920, 1032), 1.0, (0, 0, 1920, 1032)),  # unscaled: untouched
+        ((0, 0, 1920, 1032), 0.0, (0, 0, 1920, 1032)),  # bad scale: untouched
+        ((1920, 0, 4480, 1400), 2.0, (960, 0, 2240, 700)),  # non-zero origin
+    ],
+)
+def test_to_logical_rect_converts_physical_win32_rects(
+    rect: tuple[int, int, int, int],
+    scale: float,
+    expected: tuple[int, int, int, int],
+) -> None:
+    assert wintray._to_logical_rect(rect, scale) == expected
+
+
+def test_place_window_keeps_panel_on_screen_at_225_percent_scaling(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Regression: pywebview calls SetProcessDPIAware(), so Win32 work areas come
+    # back in physical pixels while pywebview's move()/resize() take logical
+    # ones and multiply by the monitor scale themselves. Feeding the physical
+    # rect straight through scaled the coordinate twice: on a 3840x2160 display
+    # at 225% the panel was sent to x=3408 logical -> 7668 physical, which is off
+    # the right edge of a 3840px screen, so the window never appeared at all.
+    scale = 2.25
+    physical_work_area = (0, 0, 3840, 2052)
+    logical_work_area = wintray._to_logical_rect(physical_work_area, scale)
+
+    moves: list[tuple[int, int]] = []
+    resizes: list[tuple[int, int]] = []
+    window = SimpleNamespace(
+        x=0,
+        y=0,
+        resize=lambda w, h: resizes.append((w, h)),
+        move=lambda x, y: moves.append((x, y)),
+        show=lambda: None,
+        hide=lambda: None,
+        load_html=lambda html: None,
+        evaluate_js=lambda code: None,
+    )
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+    controller.window = window
+    monkeypatch.setattr(controller, "_working_area", lambda: logical_work_area)
+    monkeypatch.setattr(controller, "_work_area_for_point", lambda point: logical_work_area)
+
+    controller._place_window(force_default=True)
+
+    assert moves, "the panel was never placed"
+    logical_x, logical_y = moves[-1]
+    physical_x, physical_y = round(logical_x * scale), round(logical_y * scale)
+    assert 0 <= physical_x <= physical_work_area[2] - 1, physical_x
+    assert 0 <= physical_y <= physical_work_area[3] - 1, physical_y
+
+    # The panel must also stay a panel: a physical height fed to resize() would
+    # be multiplied by 2.25 and tower far past the top of the screen.
+    assert resizes
+    _, logical_height = resizes[-1]
+    assert logical_height * scale <= physical_work_area[3]
+
+
+def test_monitor_dpi_scale_is_neutral_off_windows(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("wintray.os.name", "posix")
+
+    assert wintray._monitor_dpi_scale(None) == 1.0
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="DPI scale lookup is Windows-only")
+def test_monitor_dpi_scale_reports_a_usable_ratio_on_windows() -> None:
+    scale = wintray._monitor_dpi_scale(None)
+
+    assert isinstance(scale, float)
+    assert 0.5 <= scale <= 8.0, scale

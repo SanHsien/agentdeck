@@ -288,6 +288,66 @@ document.addEventListener('DOMContentLoaded', function() {
 """.strip()
 
 
+def _monitor_dpi_scale(monitor_handle: Any = None) -> float:
+    """Logical-to-physical pixel ratio for a monitor (``None`` = primary).
+
+    pywebview calls ``SetProcessDPIAware()``, which makes this process system
+    DPI aware — so every rect Win32 hands back (``SPI_GETWORKAREA``,
+    ``GetMonitorInfoW``) is in *physical* pixels. pywebview's own API is the
+    opposite: ``move()``/``resize()`` multiply by ``GetDpiForWindow()/96`` and
+    ``get_position()`` divides by it, so they speak *logical* pixels.
+
+    Feeding a physical rect straight into ``move()`` therefore multiplies the
+    coordinate a second time. At 225% on a 3840x2160 display the panel was sent
+    to x≈7668 — far off the right edge of a 3840px screen, so the window opened
+    completely outside the visible desktop and looked like it never opened at
+    all. Everything derived from a work area is converted here instead.
+
+    Returns 1.0 when the DPI cannot be determined, which keeps the old
+    behaviour on the 100% displays where physical and logical already agree.
+    """
+    if os.name != "nt":
+        return 1.0
+    import ctypes
+
+    class Point(ctypes.Structure):
+        _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+
+    library_name = "windll"
+    try:
+        user32: Any = getattr(ctypes, library_name).user32
+        handle = monitor_handle
+        if handle is None:
+            MONITOR_DEFAULTTOPRIMARY = 1
+            handle = user32.MonitorFromPoint(Point(0, 0), MONITOR_DEFAULTTOPRIMARY)
+        if not handle:
+            return 1.0
+        # MDT_EFFECTIVE_DPI == 0: the scale the user actually picked, which is
+        # what pywebview's GetDpiForWindow reports for a window on this monitor.
+        dpi_x = ctypes.c_uint()
+        dpi_y = ctypes.c_uint()
+        shcore: Any = getattr(ctypes, library_name).shcore
+        if shcore.GetDpiForMonitor(handle, 0, ctypes.byref(dpi_x), ctypes.byref(dpi_y)) != 0:
+            return 1.0
+        if dpi_x.value <= 0:
+            return 1.0
+        return dpi_x.value / 96.0
+    except (AttributeError, OSError, ValueError):
+        # shcore.GetDpiForMonitor is Windows 8.1+; on anything older, or if the
+        # call is unavailable, fall back to "no scaling" rather than guessing.
+        return 1.0
+
+
+def _to_logical_rect(
+    rect: tuple[int, int, int, int], scale: float
+) -> tuple[int, int, int, int]:
+    """Convert a physical-pixel Win32 rect into pywebview's logical pixels."""
+    if scale <= 0 or scale == 1.0:
+        return rect
+    left, top, right, bottom = rect
+    return (round(left / scale), round(top / scale), round(right / scale), round(bottom / scale))
+
+
 def _winreg() -> Any:
     import winreg
 
@@ -562,7 +622,7 @@ class _WindowsTrayController:
             self.inject_state(force=True)
 
     def _working_area(self) -> tuple[int, int, int, int] | None:
-        """Return the primary monitor work area (without taskbar)."""
+        """Return the primary monitor work area (without taskbar), in logical pixels."""
         if os.name != "nt":
             return None
         import ctypes
@@ -579,7 +639,10 @@ class _WindowsTrayController:
         library_name = "windll"
         user32: Any = getattr(ctypes, library_name).user32
         if user32.SystemParametersInfoW(0x0030, 0, ctypes.byref(rect), 0):
-            return (rect.left, rect.top, rect.right, rect.bottom)
+            return _to_logical_rect(
+                (rect.left, rect.top, rect.right, rect.bottom),
+                _monitor_dpi_scale(None),
+            )
         return None
 
     def _work_area_for_point(
@@ -591,6 +654,10 @@ class _WindowsTrayController:
         monitor, so clamping a dragged window against it snaps the window
         back onto the primary monitor every time the panel is switched,
         even when the user deliberately dragged it onto a secondary display.
+
+        ``point`` is in logical pixels (that is what pywebview reports), while
+        MonitorFromPoint wants physical ones, so it is scaled on the way in and
+        the resulting rect is scaled back on the way out.
         """
         if point is None or os.name != "nt":
             return self._working_area()
@@ -618,12 +685,20 @@ class _WindowsTrayController:
         MONITOR_DEFAULTTONEAREST = 2
         library_name = "windll"
         user32: Any = getattr(ctypes, library_name).user32
-        handle = user32.MonitorFromPoint(Point(point[0], point[1]), MONITOR_DEFAULTTONEAREST)
+        # The primary monitor's scale is only a first guess for locating the
+        # point; once the monitor is known its own scale is what converts the
+        # rect back, which is what makes mixed-DPI setups land correctly.
+        guess = _monitor_dpi_scale(None)
+        physical = (round(point[0] * guess), round(point[1] * guess))
+        handle = user32.MonitorFromPoint(Point(*physical), MONITOR_DEFAULTTONEAREST)
         info = MonitorInfo()
         info.cbSize = ctypes.sizeof(MonitorInfo)
         if handle and user32.GetMonitorInfoW(handle, ctypes.byref(info)):
             work = info.rcWork
-            return (work.left, work.top, work.right, work.bottom)
+            return _to_logical_rect(
+                (work.left, work.top, work.right, work.bottom),
+                _monitor_dpi_scale(handle),
+            )
         return self._working_area()
 
     def _saved_window_position(self) -> tuple[int, int] | None:

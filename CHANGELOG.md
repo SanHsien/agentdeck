@@ -6,7 +6,10 @@ All notable changes to usage are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
-## [Unreleased]
+## [0.30.0] - 2026-07-29
+
+### Fixed
+- **The Windows panel opens where you can see it on scaled displays**: pywebview calls `SetProcessDPIAware()`, so every rect Win32 returns — `SPI_GETWORKAREA`, `GetMonitorInfoW` — is in *physical* pixels, while pywebview's own `move()` / `resize()` / `x` / `y` are in *logical* pixels and apply the monitor scale themselves. The tray panel fed the physical work area straight into `move()`, so the coordinate got scaled twice. On a 3840x2160 display at 225% the panel was sent to x=3408 logical, which becomes 7668 physical — far off the right edge of a 3840px screen. The window did open; it just opened where nobody could see it, which also made the tray icon look like it was ignoring clicks (each click was really toggling an invisible window) and made a remembered position come back wrong. Work areas are now converted to logical pixels at the single point where they are read, using the effective DPI of the monitor the panel is headed for.
 
 ### Changed
 - **The UI ships in Traditional Chinese and English only**: this fork drops the Simplified Chinese, Japanese, and Korean sections from `i18n.json` and from the four stdlib-only hook scripts that each carry their own copy of the language table. Locale resolution folds *every* Chinese locale — Simplified included — into Traditional Chinese, and everything else falls back to English, so no system ends up without a translation. Maintaining five hand-synced translations for a personal fork was cost without readers; two languages that stay correct beat five that drift. The landing page (`docs/index.html`), which carries its own translation table, was trimmed to match.

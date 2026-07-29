@@ -14,7 +14,13 @@
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)](#安裝)
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 
-> 這是 [`aqua5230/usage`](https://github.com/aqua5230/usage) 的 fork，獨立維護、不回貢上游。介面語言改為繁體中文與英文兩種。上游的 Discussions 與 star 數屬於原專案、本文件不再轉貼；**安裝檔仍取自上游的 Release**（本 fork 未自行發佈）。介紹頁由本 repo 的 `docs/` 提供。
+> **這個 fork 專注在 Windows。**
+>
+> 這是 [`aqua5230/usage`](https://github.com/aqua5230/usage) 的 fork，獨立維護、不回貢上游。開發與驗收都在 Windows 11 原生環境進行：Windows 專屬的問題（系統匣、DPI 縮放、路徑處理）會優先修，並附實測證據。
+>
+> macOS 的程式碼原封保留、不會刻意破壞，但**本 fork 無法驗收 macOS**（選單列與 `.app` 打包需要在 macOS 上實測）。要 macOS 版請用上游。
+>
+> 其他差異：介面語言改為繁體中文與英文兩種；上游的 Discussions 與 star 數屬於原專案、本文件不再轉貼。介紹頁由本 repo 的 `docs/` 提供。
 
 <p align="center">
   <img src="docs/showcase.en.png" alt="usage — 把 Claude Code、Codex 與 Antigravity 的額度釘在 macOS 選單列" width="820">
