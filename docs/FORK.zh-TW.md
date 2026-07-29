@@ -44,6 +44,18 @@ git remote add upstream https://github.com/aqua5230/usage.git
 
 分叉背後的取捨記在 [`DECISIONS.md`](DECISIONS.md)（D-01 獨立維護、D-02 README 語言結構、D-03 不在 Windows 重 lock、D-04 測試環境失敗的處理層級）。
 
+## Tag 政策
+
+本 repo **只保留最新一個 tag**（目前 `v0.29.8`），上游那 160 多個歷史 tag 已全部刪除——需要舊版本時從上游查即可，沒必要在這裡重複一份。
+
+`remote.upstream.tagOpt` 已設為 `--no-tags`，因為 `git fetch upstream` 預設會把上游所有可達的 tag 一起抓回本機，清完又長回來。新機器 clone 後要補上：
+
+```powershell
+git config remote.upstream.tagOpt --no-tags
+```
+
+發版時 tag 用 `vX.Y.Z`，且**必須指向 `pyproject.toml` 版號相符的 commit**（規則見 [`../CLAUDE.md`](../CLAUDE.md) 的 Versioning 段與 [`DECISIONS.md`](DECISIONS.md) D-05）。
+
 ## 撿上游更新
 
 不是例行工作，想要某個上游修復時再做：
@@ -52,6 +64,8 @@ git remote add upstream https://github.com/aqua5230/usage.git
 git fetch upstream
 git log --oneline HEAD..upstream/main     # 先看上游有什麼
 ```
+
+**判斷某個分支或 commit 該不該吃，要比對「當前檔案內容」，不是看 commit 圖。** `git log main..branch` 顯示領先幾個 commit，只說明那些 commit 不在歷史中，不代表改動沒進去——上游可能 squash 合併或重新實作過。本 fork 就曾把兩個實際上已過時的分支誤判為「未合併的修復」（見 [`DECISIONS.md`](DECISIONS.md) D-06）。
 
 決定要全部吃進來：
 
