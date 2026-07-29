@@ -120,26 +120,6 @@ STATUSLINE_TRANSLATIONS = {
         "update_available_suffix": "可更新",
         "warn_clear": "越長 AI 越容易漏記中段 · 切任務 /clear,續做 /compact 留重點",
     },
-    "zh-CN": {
-        "five_hour": "5小时",
-        "seven_day": "7天",
-        "context": "对话窗",
-        "total": "累计",
-        "in_short": "问:",
-        "out_short": "答:",
-        "this_turn": "本轮",
-        "cached": "缓存:",
-        "cost": "花费:",
-        "session_dur": "会话时长:",
-        "remaining_prefix": "剩",
-        "effort_xhigh": "深思熟虑",
-        "effort_high": "深思",
-        "effort_normal": "标准",
-        "effort_low": "速答",
-        "fast_mode": "⚡快速",
-        "update_available_suffix": "可更新",
-        "warn_clear": "越长 AI 越容易漏记中段 · 切任务 /clear,续做 /compact 留重点",
-    },
     "en": {
         "five_hour": "5h",
         "seven_day": "7d",
@@ -159,46 +139,6 @@ STATUSLINE_TRANSLATIONS = {
         "fast_mode": "⚡Fast",
         "update_available_suffix": "available",
         "warn_clear": "longer chats lose the middle · /clear to switch, /compact to keep focus",
-    },
-    "ja": {
-        "five_hour": "5時間",
-        "seven_day": "7日",
-        "context": "コンテキスト",
-        "total": "累計",
-        "in_short": "入:",
-        "out_short": "出:",
-        "this_turn": "今回",
-        "cached": "キャッシュ:",
-        "cost": "費用:",
-        "session_dur": "セッション時間:",
-        "remaining_prefix": "残り",
-        "effort_xhigh": "熟考",
-        "effort_high": "熟考",
-        "effort_normal": "標準",
-        "effort_low": "即答",
-        "fast_mode": "⚡高速",
-        "update_available_suffix": "更新あり",
-        "warn_clear": "長いほど中盤を忘れがち · 切替は /clear、継続は /compact で要点保持",
-    },
-    "ko": {
-        "five_hour": "5시간",
-        "seven_day": "7일",
-        "context": "컨텍스트",
-        "total": "누적",
-        "in_short": "입:",
-        "out_short": "출:",
-        "this_turn": "이번 턴",
-        "cached": "캐시:",
-        "cost": "비용:",
-        "session_dur": "세션 시간:",
-        "remaining_prefix": "남음",
-        "effort_xhigh": "심사숙고",
-        "effort_high": "깊은 사고",
-        "effort_normal": "표준",
-        "effort_low": "빠른 답변",
-        "fast_mode": "⚡빠름",
-        "update_available_suffix": "업데이트",
-        "warn_clear": "길수록 중간 내용을 놓침 · 전환은 /clear, 계속은 /compact로 핵심 유지",
     },
 }
 C = {
@@ -241,17 +181,11 @@ def _statusline_detect_lang(env: Optional[Dict[str, str]] = None) -> str:
     if not raw and env is None:
         raw = _windows_system_lang()
     code = raw.split(".")[0].replace("_", "-")
-    table = {
-        "zh-TW": "zh-TW",
-        "zh-HK": "zh-TW",
-        "zh-CN": "zh-CN",
-        "zh": "zh-CN",
-        "ja-JP": "ja",
-        "ja": "ja",
-        "ko-KR": "ko",
-        "ko": "ko",
-    }
-    return table.get(code, "en")
+    # The hook ships Traditional Chinese and English only: every Chinese variant
+    # maps to zh-TW, everything else falls back to English.
+    if code == "zh" or code.startswith("zh-"):
+        return "zh-TW"
+    return "en"
 
 
 def _detect_lang() -> str:
@@ -683,7 +617,7 @@ def _render_core(data: Dict[str, Any], now: datetime) -> str:
         if resets_at is not None:
             remain = int(resets_at) - int(now.timestamp())
             if remain > 0:
-                if lang in ("zh-TW", "zh-CN"):
+                if lang == "zh-TW":
                     reset_str = f" ({_t('remaining_prefix')}{fmt_duration(remain)})"
                 else:
                     reset_str = f" ({fmt_duration(remain)} {_t('remaining_prefix')})"

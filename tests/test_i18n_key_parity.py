@@ -7,11 +7,15 @@
 """Key-parity test for ``i18n.json``.
 
 The project rule is that every user-visible string lives in ``i18n.json``
-under all five language sections (``zh-TW``, ``zh-CN``, ``en``, ``ja``,
-``ko``). ``_t`` degrades gracefully for a missing key (English fallback,
-then the raw key), so a forgotten translation never crashes — it just
-silently ships English. This test makes that omission fail loudly in CI
-instead.
+under both shipped language sections (``zh-TW`` and ``en``). ``_t`` degrades
+gracefully for a missing key (English fallback, then the raw key), so a
+forgotten translation never crashes — it just silently ships English. This
+test makes that omission fail loudly in CI instead.
+
+The exact set is asserted, not just a subset, so re-adding a language means
+deliberately updating this contract rather than quietly shipping a section
+that no locale ever resolves to (``usage_lang._normalize_lang`` only ever
+returns ``zh-TW`` or ``en``).
 """
 
 from __future__ import annotations
@@ -19,7 +23,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-EXPECTED_LANGS = {"zh-TW", "zh-CN", "en", "ja", "ko"}
+EXPECTED_LANGS = {"zh-TW", "en"}
 I18N_PATH = Path(__file__).resolve().parent.parent / "i18n.json"
 
 

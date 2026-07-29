@@ -57,7 +57,7 @@ def test_enable_registers_hook_and_writes_sidecar(terse_paths: TerseHookPaths) -
     assert isinstance(command, str)
     assert terse_paths.terse_target.as_posix() in command
     bundle = json.loads(terse_paths.sidecar.read_text(encoding="utf-8"))
-    assert {"zh-TW", "en", "ja", "ko", "zh-CN"} <= set(bundle)
+    assert {"zh-TW", "en"} == set(bundle)
     assert "Terse mode is on for this entire conversation" in bundle["en"]["instruction"]
 
 

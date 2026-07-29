@@ -94,7 +94,7 @@ def test_statusline_detect_lang_prefers_usage_lang_over_windows_system_lang(
 ) -> None:
     monkeypatch.setattr(usage_statusline, "_windows_system_lang", lambda: "zh_TW")
 
-    assert usage_statusline._statusline_detect_lang({"USAGE_LANG": "ja"}) == "ja"
+    assert usage_statusline._statusline_detect_lang({"USAGE_LANG": "en"}) == "en"
 
 
 def test_statusline_windows_system_lang_is_empty_off_windows(

@@ -50,7 +50,7 @@ def test_enable_registers_hook_and_writes_sidecar(
     assert resume_target.as_posix() in command
     # Sidecar carries the i18n-sourced prompt template for every shipped language.
     bundle = json.loads(sidecar.read_text(encoding="utf-8"))
-    assert {"zh-TW", "en", "ja", "ko", "zh-CN"} <= set(bundle)
+    assert {"zh-TW", "en"} == set(bundle)
     assert "{project}" in bundle["en"]["prompt"]
     assert "lead" in bundle["en"]  # lead-in so Claude's first reply acknowledges the load
     assert bundle["en"]["empty"]  # greeting shown when there's no fresh progress to report

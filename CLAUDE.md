@@ -93,7 +93,9 @@ Everything user-facing and on-disk uses the `usage` prefix: bundle id `com.lolla
 
 ### i18n rule
 
-All user-visible strings in panels and UI **must** be looked up from `i18n.json` via the `_t()` helper (or the JS `t()` function in HTML panels). Never hardcode any language's text directly in Python, HTML, or TUI code. When adding a new panel or new UI strings, add the key to all five language sections in `i18n.json` (`zh-TW`, `zh-CN`, `en`, `ja`, `ko`) before shipping.
+All user-visible strings in panels and UI **must** be looked up from `i18n.json` via the `_t()` helper (or the JS `t()` function in HTML panels). Never hardcode any language's text directly in Python, HTML, or TUI code. When adding a new panel or new UI strings, add the key to **both** language sections in `i18n.json` (`zh-TW`, `en`) before shipping; `tests/test_i18n_key_parity.py` fails the build otherwise.
+
+**This fork ships two UI languages, not upstream's five.** `usage_lang._normalize_lang()` resolves every Chinese locale (Simplified included) to `zh-TW` and everything else to `en`, so a `zh-CN` / `ja` / `ko` section in `i18n.json` would be dead weight no locale can reach. The same two-language contract is duplicated in the stdlib-only hook scripts, which cannot import `usage_lang` — `usage_statusline.py`, `usage_session_resume.py`, `usage_terse_mode.py`, `usage_terse_reminder.py` each carry their own copy, and `session_hooks.py` lists the shipped set in `RESUME_LANGS` / `TERSE_LANGS`. Change one, change all of them.
 
 ### Release / changelog
 

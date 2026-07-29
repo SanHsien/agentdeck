@@ -1,4 +1,8 @@
 #requires -Version 7.0
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# Part of "usage". Free software licensed under the GNU Affero General Public
+# License v3.0 only; see the LICENSE file for full terms and the warranty disclaimer.
 <#
 .SYNOPSIS
     跑本專案的 CI gate：ruff check、mypy .、雙語文件對稱性、pytest。

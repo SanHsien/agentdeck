@@ -8,14 +8,13 @@
 
 讓 Claude Code、Codex 與 Antigravity 的額度在工作時持續可見。`usage` 把 session 限額、每週限額與成本脈絡放進 macOS 選單列或 Windows 系統匣，讓你在工作被打斷前就先掌握用量。
 
-繁體中文 · [English](README.en.md) &nbsp;|&nbsp; [Discussions](https://github.com/aqua5230/usage/discussions) &nbsp;|&nbsp; [官方介紹頁](https://aqua5230.github.io/usage/)
+繁體中文 · [English](README.en.md)
 
-[![CI](https://github.com/aqua5230/usage/actions/workflows/check.yml/badge.svg)](https://github.com/aqua5230/usage/actions/workflows/check.yml)
-[![Latest Release](https://img.shields.io/github/v/release/aqua5230/usage)](https://github.com/aqua5230/usage/releases/latest)
 [![Python](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/)
-[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)](https://github.com/aqua5230/usage/releases/latest)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)](#安裝)
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
-[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/13538/badge)](https://www.bestpractices.dev/projects/13538)
+
+> 這是 [`aqua5230/usage`](https://github.com/aqua5230/usage) 的 fork，獨立維護、不回貢上游。介面語言改為繁體中文與英文兩種。原專案的 Discussions、介紹頁與 star 數屬於上游，本文件不再轉貼；安裝檔仍取自上游的 Release。
 
 <p align="center">
   <img src="docs/showcase.en.png" alt="usage — 把 Claude Code、Codex 與 Antigravity 的額度釘在 macOS 選單列" width="820">
@@ -62,9 +61,9 @@ brew install --cask aqua5230/usage/usage
 - **拖曳排序：** 按住任何一張額度卡上下拖曳就能交換順序，排法在所有主題間共用、重開也會記住。
 - **AI 人才市場：** 將整個 AI 團隊帶進 Claude Code。瀏覽並一鍵將精選 subagent persona 安裝到 `~/.claude/agents/`，全程透過內建 CLI 在本機完成。
 - **AI 圓桌討論：** 開一個獨立視窗，讓 Claude Code、Codex、Antigravity 進行多輪討論——自選參與者、模型與辯論風格，開始前就看得到大約會花多少 token。可以在輪間插話引導方向，共識計票看得出誰不同意，並讓討論在全體同意時提早收尾。位子可以戴上 AI 人才市場的專家角色，也能附上唯讀資料夾讓參與者參考真實檔案。
-- **AI 更新日報：** 開啟每天自動更新的公開[網頁](https://aqua5230.github.io/ai-updates/)，涵蓋 Claude Code、Codex、Antigravity 三套工具、保留完整歷史。已審核的更新顯示五語白話版，未審核的顯示官方原文。
+- **AI 更新日報：** 開啟每天自動更新的公開[網頁](https://aqua5230.github.io/ai-updates/)，涵蓋 Claude Code、Codex、Antigravity 三套工具、保留完整歷史。已審核的更新顯示白話版（該頁自行提供多語，與本程式的介面語言無關），未審核的顯示官方原文。
 - **神獸夥伴：** 百分比旁常駐一隻小型白色動畫神獸（Claude 是鳳凰，Codex 是飛龍，Antigravity 是獅子），各自跟著自家工具的 token 燃燒率動態加速。
-- **自動多語言 (i18n)：** 介面支援繁中、簡中、英、日、韓，自動跟隨系統語言設定。
+- **自動多語言 (i18n)：** 介面支援繁體中文與英文，自動跟隨系統語言設定。所有中文語系（含簡體）都會套用繁體中文，其餘語系回退英文。
 
 ## 隱私與資料來源
 
@@ -175,11 +174,7 @@ Windows 的差異：面板開在工作區右下角，而非貼齊系統匣圖示
 
 ## 授權
 
-採用 AGPL-3.0-only（見 [LICENSE](LICENSE)）。若 fork 或發佈衍生版本，請標注原作者與專案連結：
+採用 **AGPL-3.0-only**（見 [LICENSE](LICENSE)）。原始著作權屬上游作者 lollapalooza，原專案：
 https://github.com/aqua5230/usage
 
-## Star 成長
-
-<a href="https://star-history.com/#aqua5230/usage&Date">
-  <img src="https://api.star-history.com/svg?repos=aqua5230/usage&type=Date" alt="usage Star History Chart" width="600">
-</a>
+本 fork 的所有修改同樣以 AGPL-3.0-only 釋出，並保留上游的著作權聲明與授權條款。若你再 fork 或散布衍生版本，必須一併提供對應的完整原始碼、沿用 AGPL-3.0 並標注來源；透過網路提供服務時同樣負有提供原始碼的義務。完整聲明見 [`NOTICE.md`](NOTICE.md)。

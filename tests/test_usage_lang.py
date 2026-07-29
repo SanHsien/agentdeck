@@ -38,34 +38,35 @@ def test_detect_lang_reads_zh_hk_locale_as_traditional() -> None:
     assert detect_lang({"LANG": "zh_HK.UTF-8"}) == "zh-TW"
 
 
-def test_detect_lang_reads_tt_lang_ja() -> None:
-    assert detect_lang({"TT_LANG": "ja"}) == "ja"
+@pytest.mark.parametrize("code", ["zh_CN.UTF-8", "zh-Hans", "zh-Hans-CN", "zh_SG", "zh"])
+def test_detect_lang_maps_every_chinese_variant_to_traditional(code: str) -> None:
+    # The UI ships Traditional Chinese and English only. A Simplified Chinese
+    # reader is better served by zh-TW than by falling through to English.
+    assert detect_lang({"LANG": code}) == "zh-TW"
 
 
-def test_detect_lang_reads_usage_lang_ko() -> None:
-    assert detect_lang({"USAGE_LANG": "ko"}) == "ko"
+@pytest.mark.parametrize("code", ["ja", "ko", "de_DE.UTF-8", "fr-FR"])
+def test_detect_lang_unshipped_language_falls_back_to_en(code: str) -> None:
+    assert detect_lang({"LANG": code}) == "en"
 
 
 def test_detect_lang_prefers_usage_lang_over_tt_lang() -> None:
-    assert detect_lang({"USAGE_LANG": "ko", "TT_LANG": "ja"}) == "ko"
+    assert detect_lang({"USAGE_LANG": "zh-TW", "TT_LANG": "en"}) == "zh-TW"
+    assert detect_lang({"USAGE_LANG": "en", "TT_LANG": "zh-TW"}) == "en"
 
 
 def test_detect_lang_prefers_usage_lang_over_tt_lang_and_lang() -> None:
-    env = {"USAGE_LANG": "ja", "TT_LANG": "ko", "LANG": "zh_TW.UTF-8"}
-    assert detect_lang(env) == "ja"
-
-
-def test_detect_lang_unknown_code_falls_back_to_en() -> None:
-    assert detect_lang({"LANG": "de_DE.UTF-8"}) == "en"
+    env = {"USAGE_LANG": "en", "TT_LANG": "zh-TW", "LANG": "zh_TW.UTF-8"}
+    assert detect_lang(env) == "en"
 
 
 @pytest.mark.parametrize(
     ("lang_id", "expected"),
     [
         (1028, "zh-TW"),  # zh_TW
-        (2052, "zh-CN"),  # zh_CN
-        (1041, "ja"),  # ja_JP
-        (1042, "ko"),  # ko_KR
+        (2052, "zh-TW"),  # zh_CN — Simplified folds into Traditional
+        (1041, "en"),  # ja_JP — not shipped, falls back
+        (1042, "en"),  # ko_KR — not shipped, falls back
         (1033, "en"),  # en_US
     ],
 )
@@ -107,8 +108,8 @@ def test_detect_lang_uses_windows_ui_language_without_env(
 def test_detect_lang_env_var_beats_windows_ui_language(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("USAGE_LANG", "ja")
+    monkeypatch.setenv("USAGE_LANG", "en")
     monkeypatch.setattr(sys, "platform", "win32")
-    _fake_windll(monkeypatch, 1028)
+    _fake_windll(monkeypatch, 1028)  # system says zh-TW
 
-    assert detect_lang() == "ja"
+    assert detect_lang() == "en"

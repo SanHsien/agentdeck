@@ -55,7 +55,7 @@ RESUME_HOOK_TARGET = Path(os.path.expanduser("~/.claude/usage-session-resume.py"
 RESUME_PROMPT_SIDECAR = Path(os.path.expanduser("~/.claude/usage-resume-prompt.json"))
 RESUME_HOOK_VERSION = "1.6"
 RESUME_MATCHER = "startup|clear"
-RESUME_LANGS = ("zh-TW", "zh-CN", "en", "ja", "ko")
+RESUME_LANGS = ("zh-TW", "en")
 _RESUME_MARKER = "usage-session-resume"
 _RESUME_MARKERS = (_RESUME_MARKER, "usage_session_resume")
 _RESUME_DIAGNOSIS_CAUSE_KEYS = (
@@ -69,7 +69,7 @@ TERSE_HOOK_TARGET = Path(os.path.expanduser("~/.claude/usage-terse-mode.py"))
 TERSE_PROMPT_SIDECAR = Path(os.path.expanduser("~/.claude/usage-terse-prompt.json"))
 TERSE_HOOK_VERSION = "1.0"
 TERSE_MATCHER = "startup|clear"
-TERSE_LANGS = ("zh-TW", "zh-CN", "en", "ja", "ko")
+TERSE_LANGS = ("zh-TW", "en")
 _TERSE_MARKER = "usage-terse-mode"
 _TERSE_MARKERS = (_TERSE_MARKER, "usage_terse_mode")
 # Codex CLI shares the same terse-mode script (its SessionStart hook I/O schema matches Claude

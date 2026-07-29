@@ -32,10 +32,10 @@ def test_detect_lang_uses_windows_system_lang_when_env_is_empty(
 def test_detect_lang_prefers_usage_lang_over_windows_system_lang(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("USAGE_LANG", "ja")
+    monkeypatch.setenv("USAGE_LANG", "en")
     monkeypatch.setattr(mod, "_windows_system_lang", lambda: "zh_TW")
 
-    assert mod._detect_lang() == "ja"
+    assert mod._detect_lang() == "en"
 
 
 def test_windows_system_lang_is_empty_off_windows(monkeypatch: pytest.MonkeyPatch) -> None:

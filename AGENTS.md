@@ -39,7 +39,8 @@
 - 環境用 `uv` 管理，`uv.lock` 是唯一真相；`--frozen` 不可省略。
 - 三個 stdlib-only 檔案（`usage_statusline.py`、`usage_statusline_forwarder.py`、`usage_session_resume.py`）要能在 macOS 內建的 Python 3.9 跑：**不可 import 第三方套件、不可用 `datetime.UTC`**（用 `timezone.utc`）。ruff 的 `UP017` 已針對這幾個檔關掉，別去「修好」它。
 - `menubar.py` 有成長政策：新功能邏輯放 leaf module（`menubar_state.py` 之類），這裡只留薄薄的 ObjC dispatch 殼。
-- 所有使用者可見字串必須走 `i18n.json` 的 `_t()` / JS `t()`，五種語言（`zh-TW`/`zh-CN`/`en`/`ja`/`ko`）都要補齊才能出貨。**app UI 的五語支援與 README 只留中英兩版是兩回事**，不要因為刪了 README 語言版本就去動 `i18n.json`。
+- 所有使用者可見字串必須走 `i18n.json` 的 `_t()` / JS `t()`。**本 fork 只出貨繁體中文與英文**（上游是五語），新增字串時 `zh-TW` 與 `en` 兩段都要補齊，`tests/test_i18n_key_parity.py` 會擋。
+- **兩語言的判定邏輯散在五個檔案**：`usage_lang._normalize_lang()` 是主程式的版本；`usage_statusline.py`、`usage_session_resume.py`、`usage_terse_mode.py`、`usage_terse_reminder.py` 因為必須 stdlib-only、不能 import `usage_lang`，各自帶一份複本；`session_hooks.py` 另有 `RESUME_LANGS` / `TERSE_LANGS`。**改一個就要改全部**。規則：所有中文語系（含簡體）→ `zh-TW`，其餘 → `en`。
 - **不要在 Windows 上跑 `uv lock`**：會把 macOS 的 PyObjC 相依標記成不可能達成、無聲地從 lock 檔裡丟掉，直接弄壞 macOS 打包。`pyproject.toml` 的 `[tool.uv] environments` 就是在防這件事。
 
 ## 常用指令（Windows / PowerShell）

@@ -1007,10 +1007,7 @@ def test_consensus_controls_and_usage_caps_are_translated_in_all_languages() -> 
     bundle = json.loads(I18N_PATH.read_text(encoding="utf-8"))
     cap_markers = {
         "zh-TW": "最多",
-        "zh-CN": "最多",
         "en": "up to",
-        "ja": "最大",
-        "ko": "최대",
     }
 
     for language, marker in cap_markers.items():

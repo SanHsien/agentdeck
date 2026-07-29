@@ -52,19 +52,6 @@ _DEFAULT_REMINDER: dict[str, str] = {
         "error messages stay byte-exact; security warnings and irreversible-action "
         "confirmations must still be written out in full.]"
     ),
-    "zh-CN": (
-        "[精简模式仍生效：这则回复保持精简；代码、指令、路径、错误信息照旧一字不改；"
-        "安全警示与不可逆操作确认仍要讲完整。]"
-    ),
-    "ja": (
-        "[簡潔モードは引き続き有効：この返信は簡潔に；コード、コマンド、パス、エラー"
-        "メッセージは一字そのまま；セキュリティ警告と不可逆操作の確認は引き続き完全に"
-        "記述すること。]"
-    ),
-    "ko": (
-        "[간결 모드 계속 적용 중: 이 답변은 짧게; 코드, 명령어, 경로, 오류 메시지는 한 "
-        "글자 그대로; 보안 경고와 되돌릴 수 없는 작업 확인은 여전히 완전히 적을 것.]"
-    ),
 }
 
 
@@ -94,16 +81,10 @@ def _detect_lang() -> str:
 
 def _normalize_lang(code: str) -> str:
     normalized = code.split(".")[0].strip().lower().replace("_", "-")
-    if normalized in {"zh-tw", "zh-hk", "zh-hant"} or normalized.startswith(("zh-tw-", "zh-hant")):
+    # Traditional Chinese and English are the only shipped languages: every
+    # Chinese variant maps to zh-TW, everything else falls back to English.
+    if normalized == "zh" or normalized.startswith("zh-"):
         return "zh-TW"
-    if normalized in {"zh-cn", "zh-sg", "zh-hans", "zh"} or normalized.startswith(
-        ("zh-cn-", "zh-hans")
-    ):
-        return "zh-CN"
-    if normalized.startswith("ja"):
-        return "ja"
-    if normalized.startswith("ko"):
-        return "ko"
     return "en"
 
 

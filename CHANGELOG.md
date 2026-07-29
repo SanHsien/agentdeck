@@ -7,6 +7,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+- **The UI ships in Traditional Chinese and English only**: this fork drops the Simplified Chinese, Japanese, and Korean sections from `i18n.json` and from the four stdlib-only hook scripts that each carry their own copy of the language table. Locale resolution folds *every* Chinese locale — Simplified included — into Traditional Chinese, and everything else falls back to English, so no system ends up without a translation. Maintaining five hand-synced translations for a personal fork was cost without readers; two languages that stay correct beat five that drift. The landing page (`docs/index.html`), which carries its own translation table, was trimmed to match.
+
 ### Fixed
 - **AI Council error messages are no longer shredded by unrelated environment variables**: when a CLI participant fails, its diagnostic text is scanned for the values of environment variables whose *names* look sensitive (`TOKEN`, `KEY`, `SECRET`, `AUTH`, …) and those values are replaced with `[REDACTED]`. The whole inherited environment is scanned, and the substitution had no minimum length — so a harmless flag matched on its name alone, such as Claude Code's own `CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH=1`, rewrote *every* `1` in the message and turned `CLI exited with status 1` into `CLI exited with status [REDACTED]`. Redaction now skips values shorter than 8 characters, which is far below the length of any real credential, so nothing that was actually protected before is exposed now.
 
