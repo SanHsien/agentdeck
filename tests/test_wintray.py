@@ -17,6 +17,7 @@ import menubar_state
 import prefs
 import win_login_item
 import wintray
+from i18n import _t
 from usage_notifications import NotificationEvent
 
 
@@ -847,6 +848,7 @@ def test_menu_actions_pass_real_pystray_signature_validation() -> None:
         refresh=lambda: None,
         toggle_login=lambda: None,
         open_ai_daily=lambda: None,
+        open_discussion=lambda: None,
         toggle_hide_section=lambda key: None,
         toggle_quota_notifications=lambda: None,
         toggle_window_keeper=lambda: None,
@@ -936,3 +938,69 @@ def test_monitor_dpi_scale_reports_a_usable_ratio_on_windows() -> None:
 
     assert isinstance(scale, float)
     assert 0.5 <= scale <= 8.0, scale
+
+
+def test_open_discussion_creates_the_controller_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    created: list[object] = []
+
+    class _Controller:
+        def __init__(self) -> None:
+            created.append(self)
+            self.shown = 0
+
+        def show(self) -> None:
+            self.shown += 1
+
+    import discussion_window_win
+
+    monkeypatch.setattr(
+        discussion_window_win, "WindowsDiscussionWindowController", _Controller
+    )
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+
+    controller.open_discussion()
+    controller.open_discussion()
+
+    # The bridge is expensive, so the controller is built on first use and reused.
+    assert len(created) == 1
+    assert controller.discussion is not None
+    assert controller.discussion.shown == 2
+
+
+def test_open_discussion_failure_does_not_take_the_tray_down(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import discussion_window_win
+
+    def _explode() -> None:
+        raise RuntimeError("no webview")
+
+    monkeypatch.setattr(
+        discussion_window_win, "WindowsDiscussionWindowController", _explode
+    )
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+
+    controller.open_discussion()  # must not raise: the tray is the only way back
+
+    assert controller.discussion is None
+
+
+def test_quit_shuts_the_discussion_bridge_down(monkeypatch: pytest.MonkeyPatch) -> None:
+    shutdowns: list[bool] = []
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+    controller.discussion = SimpleNamespace(shutdown=lambda: shutdowns.append(True))
+
+    controller.quit()
+
+    # A live DiscussionBridge owns worker threads; leaking them blocks exit.
+    assert shutdowns == [True]
+    assert controller.discussion is None
+
+
+def test_tray_menu_offers_the_ai_council() -> None:
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+
+    menu = wintray._menu(controller)
+    labels = [getattr(item, "text", None) for item in menu]
+
+    assert _t(controller.language, "discussion_window_title") in labels

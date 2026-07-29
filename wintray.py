@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 import os
@@ -529,6 +530,7 @@ class _WindowsTrayController:
         }
         self.icon: Any = None
         self.window: Any = None
+        self.discussion: Any = None
         self.visible = False
         self._positioned_this_show = False
         self.stopping = threading.Event()
@@ -1308,8 +1310,31 @@ class _WindowsTrayController:
         period = periods.get(project_range, "month")
         save_and_open(build_report_data(detect_agents(), period), language=self.language)
 
+    def open_discussion(self, _icon: Any = None, _item: Any = None) -> None:
+        """Open the AI Council window, creating it on first use.
+
+        The controller is built lazily because it starts a DiscussionBridge, and
+        a user who never opens the council should not pay for one. The window it
+        creates joins the pywebview loop `run()` already started, so there is no
+        second GUI loop to manage.
+        """
+        try:
+            if self.discussion is None:
+                from discussion_window_win import WindowsDiscussionWindowController
+
+                self.discussion = WindowsDiscussionWindowController()
+            self.discussion.show()
+        except Exception:
+            # A failure here must not take the tray down with it; the tray is
+            # the only way back to every other feature.
+            logger.exception("failed to open the AI Council window")
+
     def quit(self, _icon: Any = None, _item: Any = None) -> None:
         self.stopping.set()
+        if self.discussion is not None:
+            with contextlib.suppress(Exception):
+                self.discussion.shutdown()
+            self.discussion = None
         if self.icon is not None:
             self.icon.stop()
         if self.window is not None:
@@ -1333,6 +1358,9 @@ def _menu(controller: _WindowsTrayController) -> Any:
     return pystray.Menu(
         pystray.MenuItem("Open", controller.show_panel, default=True, visible=False),
         pystray.MenuItem(_t(controller.language, "panel_ai_daily"), controller.open_ai_daily),
+        pystray.MenuItem(
+            _t(controller.language, "discussion_window_title"), controller.open_discussion
+        ),
         pystray.MenuItem(
             _t(controller.language, "reset_panel_position"), controller.reset_panel_position
         ),
