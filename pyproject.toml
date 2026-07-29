@@ -21,6 +21,18 @@ windows = [
     "pywebview>=5.4; sys_platform == 'win32'",
 ]
 
+[tool.uv]
+# Lock for every platform we ship on, not just whichever one runs `uv lock`.
+# Without this, uv resolves against the running interpreter's environment and
+# rewrites the platform markers it can prove false there — a re-lock on Windows
+# turns every `sys_platform == 'darwin'` dependency into `python_version < '0'`,
+# silently dropping PyObjC from the lock and breaking the macOS build.
+environments = [
+    "sys_platform == 'darwin'",
+    "sys_platform == 'win32'",
+    "sys_platform == 'linux'",
+]
+
 [build-system]
 requires = ["setuptools>=83.0.0"]
 build-backend = "setuptools.build_meta"
