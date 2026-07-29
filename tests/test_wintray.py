@@ -224,6 +224,7 @@ def test_panel_position_is_clamped_and_persisted_on_hide(
     controller.window = window
     controller.visible = True
     monkeypatch.setattr(controller, "_working_area", lambda: (0, 0, 1000, 1080))
+    monkeypatch.setattr(controller, "_work_area_for_point", lambda point: (0, 0, 1000, 1080))
 
     controller._place_window()
 
@@ -252,6 +253,90 @@ def test_reset_panel_position_clears_preference_and_repositions_visible_window(
 
     assert prefs._load_preferences() == {}
     assert calls == [True]
+
+
+def test_switch_panel_keeps_dragged_position_before_new_height_is_measured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Regression: switch_panel() used to reset _content_height to None, so
+    # on_loaded() clamped the just-dragged position against PANEL_HEIGHTS'
+    # near-fullscreen placeholder for the new panel before its real height
+    # was measured, snapping a dragged window back up to the top of the
+    # screen on every switch.
+    moves: list[tuple[int, int]] = []
+    window = SimpleNamespace(
+        x=0,
+        y=0,
+        resize=lambda *args: None,
+        move=lambda x, y: moves.append((x, y)),
+        show=lambda: None,
+        hide=lambda: None,
+        load_html=lambda html: None,
+        evaluate_js=lambda code: None,
+    )
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+    controller.window = window
+    controller.visible = True
+    controller.active_panel_id = "world_cup"
+    monkeypatch.setattr(controller, "_working_area", lambda: (0, 0, 1920, 1080))
+    monkeypatch.setattr(controller, "_work_area_for_point", lambda point: (0, 0, 1920, 1080))
+
+    controller._place_window()
+    controller.handle_panel_message(json.dumps({"action": "content_height", "height": 700}))
+    window.x, window.y = 300, 200  # simulates the user dragging the window here
+
+    controller.switch_panel("cloud_observation")  # PANEL_HEIGHTS[...] == 1023
+    controller.on_loaded()
+
+    assert moves[-1] == (300, 200)
+
+    controller.handle_panel_message(json.dumps({"action": "content_height", "height": 650}))
+
+    assert moves[-1] == (300, 200)
+
+
+def test_switch_panel_keeps_dragged_position_on_secondary_monitor(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Regression: _working_area() only ever reports the *primary* monitor's
+    # work area (that's what SPI_GETWORKAREA returns). Clamping a dragged
+    # window against it snapped the window back onto the primary monitor on
+    # every panel switch, even when the user deliberately dragged it onto a
+    # secondary display.
+    primary = (0, 0, 1920, 1080)
+    secondary = (1920, 0, 4480, 1400)  # a monitor to the right of the primary
+
+    def work_area_for_point(point: tuple[int, int] | None) -> tuple[int, int, int, int]:
+        if point is not None and point[0] >= 1920:
+            return secondary
+        return primary
+
+    moves: list[tuple[int, int]] = []
+    window = SimpleNamespace(
+        x=0,
+        y=0,
+        resize=lambda *args: None,
+        move=lambda x, y: moves.append((x, y)),
+        show=lambda: None,
+        hide=lambda: None,
+        load_html=lambda html: None,
+        evaluate_js=lambda code: None,
+    )
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+    controller.window = window
+    controller.visible = True
+    controller.active_panel_id = "world_cup"
+    monkeypatch.setattr(controller, "_working_area", lambda: primary)
+    monkeypatch.setattr(controller, "_work_area_for_point", work_area_for_point)
+
+    controller._place_window()
+    controller.handle_panel_message(json.dumps({"action": "content_height", "height": 700}))
+    window.x, window.y = 2200, 300  # simulates dragging the window onto the secondary monitor
+
+    controller.switch_panel("cloud_observation")
+    controller.on_loaded()
+
+    assert moves[-1] == (2200, 300)
 
 
 def test_js_api_forwards_panel_message() -> None:

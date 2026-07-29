@@ -14,6 +14,11 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ### Fixed
 - **AI Council error messages are no longer shredded by unrelated environment variables**: when a CLI participant fails, its diagnostic text is scanned for the values of environment variables whose *names* look sensitive (`TOKEN`, `KEY`, `SECRET`, `AUTH`, …) and those values are replaced with `[REDACTED]`. The whole inherited environment is scanned, and the substitution had no minimum length — so a harmless flag matched on its name alone, such as Claude Code's own `CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH=1`, rewrote *every* `1` in the message and turned `CLI exited with status 1` into `CLI exited with status [REDACTED]`. Redaction now skips values shorter than 8 characters, which is far below the length of any real credential, so nothing that was actually protected before is exposed now.
 
+## [0.29.8] - 2026-07-29
+
+### Fixed
+- **The Windows panel no longer snaps back to the primary monitor on every panel switch**: dragging the popover onto a second display and then switching panel style (or theme) forced it right back onto the primary monitor. Windows' `SPI_GETWORKAREA` API only ever reports the *primary* monitor's work area, and the window was clamped against that single rectangle on every reposition regardless of which monitor it actually lived on — so a window dragged onto a secondary display got clamped straight back onto the primary one the next time the panel reloaded. Placement now looks up the work area of whichever monitor the window's current (or saved) position falls on via `MonitorFromPoint`/`GetMonitorInfoW`, so a window on a secondary display stays there across panel switches. A related issue on a single monitor is fixed alongside it: switching panels reset the remembered content height to `None`, so the window was briefly clamped against each panel's near-fullscreen placeholder height (`PANEL_HEIGHTS`) before its real height was measured, which could shove a dragged window toward the top of the screen; the previous panel's measured height is now kept as the transitional estimate instead.
+
 ## [0.29.7] - 2026-07-29
 
 ### Fixed
