@@ -94,3 +94,21 @@ def test_bridge_saves_valid_card_order_and_ignores_invalid_input(
     )
 
     assert prefs._load_preferences()["quota_card_order"] == ["agy", "claude", "codex"]
+
+
+def test_bridge_forwards_measured_content_height() -> None:
+    calls: list[tuple[object, object]] = []
+    web_view = object()
+    delegate = SimpleNamespace(
+        panelContentHeight_forView_=lambda height, view: calls.append((height, view))
+    )
+    bridge = UsageScriptBridge.alloc().init()
+    bridge.delegate = delegate
+    bridge.web_view = web_view
+
+    bridge.userContentController_didReceiveScriptMessage_(
+        None,
+        SimpleNamespace(body=lambda: '{"action":"content_height","height":612.5}'),
+    )
+
+    assert calls == [(612.5, web_view)]

@@ -20,6 +20,7 @@ from Quartz import CGColorCreateGenericRGB
 
 import talent_market_bridge
 from menubar_prefs import _save_quota_card_order, _valid_quota_card_order
+from panels.dynamic_height import inject_content_height_script
 from panels.payload import (
     _data_uri,
     _load_i18n_bundle,
@@ -163,6 +164,11 @@ class UsageScriptBridge(NSObject):
             except ValueError:
                 parsed = None
             if isinstance(parsed, dict) and "action" in parsed:
+                if parsed["action"] == "content_height":
+                    self.delegate.panelContentHeight_forView_(
+                        parsed.get("height"), self.web_view
+                    )
+                    return
                 if parsed["action"] == "set_card_order":
                     order = _valid_quota_card_order(parsed.get("order"))
                     if order is not None:
@@ -443,7 +449,7 @@ class HTMLPanel:
         try:
             if WKUserContentController is None or WKWebViewConfiguration is None:
                 raise RuntimeError("pyobjc-framework-WebKit is unavailable")
-            html = _load_panel_html(self.html_filename)
+            html = inject_content_height_script(_load_panel_html(self.html_filename))
             configuration = WKWebViewConfiguration.alloc().init()
             controller = WKUserContentController.alloc().init()
             configuration.setUserContentController_(controller)

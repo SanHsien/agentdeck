@@ -1,0 +1,50 @@
+from __future__ import annotations
+
+import math
+
+import pytest
+
+from panels.dynamic_height import (
+    CONTENT_HEIGHT_SCRIPT,
+    clamp_content_height,
+    inject_content_height_script,
+)
+
+
+def test_script_wraps_state_application_and_measures_without_height_constraints() -> None:
+    html = inject_content_height_script(
+        "<body><main class=\"wrap\"></main><script>"
+        "window.usageApplyState = function() {};</script></body>"
+    )
+
+    assert html.index("usageApplyStateWithDynamicHeight") > html.index(
+        "window.usageApplyState = function()"
+    )
+    assert 'element.style.height = "auto"' in CONTENT_HEIGHT_SCRIPT
+    assert 'element.style.minHeight = "0"' in CONTENT_HEIGHT_SCRIPT
+    assert "wrap.getBoundingClientRect()" in CONTENT_HEIGHT_SCRIPT
+    assert 'action: "content_height"' in CONTENT_HEIGHT_SCRIPT
+    assert "requestAnimationFrame" not in CONTENT_HEIGHT_SCRIPT
+    # Panels draw their edges with padding on whichever layer wraps .wrap, and
+    # the viewport-based panels nest an extra padded .viewport in between, so
+    # the whole ancestor chain has to be released and measured — assuming a
+    # fixed html/body/.wrap depth loses that layer's spacing.
+    assert "parentElement" in CONTENT_HEIGHT_SCRIPT
+    assert "paddingTop" in CONTENT_HEIGHT_SCRIPT
+    assert "paddingBottom" in CONTENT_HEIGHT_SCRIPT
+
+
+@pytest.mark.parametrize(
+    ("value", "maximum", "expected"),
+    [
+        (100, 900.0, 240.0),
+        (550.5, 900.0, 550.5),
+        (1200, 900.0, 900.0),
+        (True, 900.0, None),
+        ("550", 900.0, None),
+        (math.inf, 900.0, None),
+        (550, 200.0, None),
+    ],
+)
+def test_clamp_content_height(value: object, maximum: float, expected: float | None) -> None:
+    assert clamp_content_height(value, maximum) == expected

@@ -43,6 +43,7 @@ from AppKit import (
     NSMutableAttributedString,
     NSPopover,
     NSPopoverBehaviorTransient,
+    NSScreen,
     NSStatusBar,
     NSTextAttachment,
     NSVariableStatusItemLength,
@@ -129,6 +130,7 @@ from panels.base import (
     resolve_resource,
     save_active_panel_id,
 )
+from panels.dynamic_height import clamp_content_height
 from prefs import _load_preferences, _save_preferences
 from pricing import calculate_cost, warm_up_pricing
 from service_status import CLAUDE_STATUS, CODEX_STATUS, get_service_status
@@ -806,6 +808,23 @@ class AppDelegate(NSObject):
         warm_up_pricing(self._refresh_after_pricing_warm_up)
         thread = threading.Thread(target=self._maybe_check_update_in_background, daemon=True)
         thread.start()
+
+    def panelContentHeight_forView_(self, value: object, view: Any) -> None:
+        if view is not self.popover_controller.currentContentView():
+            return
+        screen = NSScreen.mainScreen()
+        maximum = (
+            self.active_panel.preferred_size()[1]
+            if screen is None
+            else float(screen.visibleFrame().size.height) - 24.0
+        )
+        height = clamp_content_height(value, maximum)
+        if height is None:
+            return
+        size = NSMakeSize(self.active_panel.preferred_size()[0], height)
+        self.popover.setContentSize_(size)
+        self.popover_controller.view().setFrameSize_(size)
+        self.popover_controller.syncPanelFrames()
 
     def _refresh_after_pricing_warm_up(self) -> None:
         self.performSelectorOnMainThread_withObject_waitUntilDone_(

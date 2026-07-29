@@ -36,6 +36,7 @@ from menubar_prefs import (
     _quota_notifications_enabled,
     _window_keeper_enabled,
 )
+from panels.dynamic_height import clamp_content_height, inject_content_height_script
 from panels.payload import _load_panel_html, _state_payload
 from prefs import _load_preferences, _save_preferences
 from pricing import calculate_cost
@@ -360,7 +361,7 @@ def draw_tray_icon(used_percent: float | None) -> Image:
 
 
 def panel_html(filename: str) -> str:
-    html = _load_panel_html(filename)
+    html = inject_content_height_script(_load_panel_html(filename))
     marker = "<head>"
     return html.replace(marker, f"{marker}\n{JS_SHIM}", 1)
 
@@ -482,6 +483,7 @@ class _WindowsTrayController:
         self._cached_projects: tuple[list[tuple[str, int, float | None]], ...] | None = None
         self._history_scan: menubar_state.HistorySourceScan | None = None
         self._history_scan_at: float | None = None
+        self._content_height: int | None = None
 
     def _empty_state(self) -> menubar_state.PopoverState:
         missing = menubar_state._missing_row
@@ -524,7 +526,24 @@ class _WindowsTrayController:
         return next(item[2] for item in available_panels() if item[0] == self.active_panel_id)
 
     def panel_height(self) -> int:
-        return PANEL_HEIGHTS[self.active_panel_id]
+        return self._content_height or PANEL_HEIGHTS[self.active_panel_id]
+
+    def _apply_content_height(self, value: object) -> None:
+        work_area = self._working_area()
+        maximum = (
+            float(work_area[3] - work_area[1] - 24)
+            if work_area is not None
+            else float(PANEL_HEIGHTS[self.active_panel_id])
+        )
+        height = clamp_content_height(value, maximum)
+        if height is None:
+            return
+        rounded = int(round(height))
+        if rounded == self._content_height:
+            return
+        self._content_height = rounded
+        if self.visible:
+            self._place_window()
 
     def attach(self, icon: Any, window: Any) -> None:
         self.icon = icon
@@ -611,7 +630,7 @@ class _WindowsTrayController:
         if work_area is None:
             return
         left, top, right, bottom = work_area
-        height = min(self.panel_height(), max(640, bottom - top - 24))
+        height = min(self.panel_height(), max(240, bottom - top - 24))
         self.window.resize(PANEL_WIDTH, height)
         if force_default:
             position = self._default_window_position(work_area, height)
@@ -835,6 +854,7 @@ class _WindowsTrayController:
 
     def switch_panel(self, panel_id: str) -> None:
         self.active_panel_id = panel_id
+        self._content_height = None
         _save_active_panel_id(panel_id)
         # A panel reload is initialized from ``latest_state`` in ``on_loaded``.
         # Card order is changed directly by the JS bridge, outside the refresh
@@ -1068,6 +1088,9 @@ class _WindowsTrayController:
             action = payload.get("action")
             if action == "open_menu":
                 return self._panel_menu_data()
+            if action == "content_height":
+                self._apply_content_height(payload.get("height"))
+                return None
             if action == "set_card_order":
                 order = payload.get("order")
                 if (

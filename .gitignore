@@ -13,6 +13,11 @@ usage.err.log
 build/
 dist/
 *.egg-info/
+# Windows PyInstaller output (scripts/build_windows.ps1) and its release archive.
+# Vendors a full copy of the deps, which otherwise drowns ruff/mypy in errors.
+winbuild/
+usage-windows.zip
+usage-windows.zip.sha256
 # Compiled instate-cli binary (built from the separate ~/Developer/instate project).
 # Contains private role content — must never enter usage's public git history.
 vendor/

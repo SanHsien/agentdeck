@@ -167,6 +167,41 @@ def test_panel_html_installs_webkit_shim_without_changing_asset() -> None:
     assert "button, a, input, select, textarea, label, summary" in html
     assert "cursor: grab" in html
     assert "cursor: grabbing" in html
+    assert "usageApplyStateWithDynamicHeight" in html
+
+
+def test_content_height_message_resizes_visible_panel_with_work_area_clamp(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+    controller.visible = True
+    calls: list[str] = []
+    monkeypatch.setattr(controller, "_working_area", lambda: (0, 0, 1000, 800))
+    monkeypatch.setattr(controller, "_place_window", lambda: calls.append("place"))
+
+    controller.handle_panel_message(
+        json.dumps({"action": "content_height", "height": 510.4})
+    )
+    controller.handle_panel_message(
+        json.dumps({"action": "content_height", "height": 5000})
+    )
+
+    assert controller.panel_height() == 776
+    assert calls == ["place", "place"]
+
+
+def test_invalid_content_height_keeps_registered_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+    fallback = wintray.PANEL_HEIGHTS[controller.active_panel_id]
+    monkeypatch.setattr(controller, "_working_area", lambda: (0, 0, 1000, 800))
+
+    controller.handle_panel_message(
+        json.dumps({"action": "content_height", "height": "510"})
+    )
+
+    assert controller.panel_height() == fallback
 
 
 def test_panel_position_is_clamped_and_persisted_on_hide(
