@@ -84,7 +84,19 @@
 - 剪貼簿讀圖改用 Windows API 或 Pillow 的 `ImageGrab.grabclipboard()`；檔案挑選改用 pywebview 的 `create_file_dialog`。
 - **注意 DPI**：新視窗的定位若要用 Win32 工作區，必須沿用 `wintray._monitor_dpi_scale()` / `_to_logical_rect()`，否則會重蹈 v0.30.0 修掉的那個 bug。
 
+> **步驟 1 已完成**（`7993231` 建立 Windows host、`861250f` 接上系統匣選單）。維護者已於 2026-07-29 實機點開視窗確認可正常顯示。
+
 **步驟 2 — 移除 macOS 專屬程式碼。**
+
+⚠️ **動手前先看這份相依分析（2026-07-29 實測）**，`menubar`／`panels` 這些名字會騙人：
+
+- **真正在 module 層綁 PyObjC 的只有 3 個檔案**：`menubar.py`、`login_item.py`、`panels/web_panel.py`。這三個可以直接刪。
+- **名字像 macOS、其實平台中立且被 `wintray` 依賴，不可刪**：`menubar_state.py`、`menubar_prefs.py`、`menubar_agy.py`、`panels/payload.py`、`panels/dynamic_height.py`。
+- **有順序陷阱、不能直接刪**：
+  - `discussion_window.py` —— AppKit 是**延遲 import**（寫在函式內），所以在 Windows 上照樣可載入，而 `discussion_window_win.py` 正是靠這點沿用它的 `parse_discussion_action`、`serialize_event_batch`、`save_attachment_bytes`、`import_attachment_file`、`attachment_thumbnail_data_uri`、`_load_discussion_html`、`PARTICIPANT_LABELS`、`DROP_MAX_BYTES`、`ATTACHMENT_SUFFIXES`。**必須先把這些中立函式搬進 `discussion_window_win.py`（或另立中立模組），才能刪掉 PyObjC 外殼**，否則 Windows 版直接壞掉。
+  - `talent_market_bridge.py` —— 同樣是延遲 import。`list_personas` 仍被 Windows 版使用（缺 vendor binary 時回傳 `[]`，優雅降級），只有 `pick_folder` / `pick_image_file` 綁 PyObjC。
+
+
 以下模組的 Windows 對應**早就存在**，不是要「改寫」，是刪除冗餘：
 `menubar.py` → `wintray.py`；`panels/web_panel.py` → wintray 的 WebView2 面板；`login_item.py` → `win_login_item.py`；`setup_app.py`／`scripts/build_app.sh`／`scripts/build_icns.sh`／`scripts/make_app_icon.py`／`*.plist`／`scripts/install-launchagent.sh` → `scripts/build_windows.ps1`。
 連帶要清：`pyproject.toml` 的 PyObjC 相依與 `[dependency-groups] build` 的 py2app、`tests/conftest.py` 的 `collect_ignore`、macOS-only 測試、`.github/workflows` 的 macOS job、README／CLAUDE.md／landing page 的 macOS 敘述。
