@@ -8,13 +8,13 @@
 
 Keep Claude Code, Codex, and Antigravity quota in view while you work. `usage` puts session limits, weekly limits, and cost context in the macOS menu bar or Windows system tray, so you can manage usage before it interrupts a session.
 
-[繁體中文](README.md) · English
+[繁體中文](README.md) · English &nbsp;|&nbsp; [Landing page](https://sanhsien.github.io/usage/)
 
 [![Python](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)](#install)
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 
-> This is a fork of [`aqua5230/usage`](https://github.com/aqua5230/usage), maintained independently with no upstream contributions planned. The UI ships in Traditional Chinese and English only. Upstream's Discussions, landing page, and star count belong to that project and are no longer mirrored here; installers still come from upstream's Releases.
+> This is a fork of [`aqua5230/usage`](https://github.com/aqua5230/usage), maintained independently with no upstream contributions planned. The UI ships in Traditional Chinese and English only. Upstream's Discussions and star count belong to that project and are no longer mirrored here; **installers still come from upstream's Releases** (this fork publishes none). The landing page is served from this repo's `docs/`.
 
 <p align="center">
   <img src="docs/showcase.en.png" alt="usage — Claude Code, Codex, and Antigravity quota pinned to the macOS menu bar" width="820">

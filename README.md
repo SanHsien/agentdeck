@@ -8,13 +8,13 @@
 
 讓 Claude Code、Codex 與 Antigravity 的額度在工作時持續可見。`usage` 把 session 限額、每週限額與成本脈絡放進 macOS 選單列或 Windows 系統匣，讓你在工作被打斷前就先掌握用量。
 
-繁體中文 · [English](README.en.md)
+繁體中文 · [English](README.en.md) &nbsp;|&nbsp; [介紹頁](https://sanhsien.github.io/usage/)
 
 [![Python](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)](#安裝)
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 
-> 這是 [`aqua5230/usage`](https://github.com/aqua5230/usage) 的 fork，獨立維護、不回貢上游。介面語言改為繁體中文與英文兩種。原專案的 Discussions、介紹頁與 star 數屬於上游，本文件不再轉貼；安裝檔仍取自上游的 Release。
+> 這是 [`aqua5230/usage`](https://github.com/aqua5230/usage) 的 fork，獨立維護、不回貢上游。介面語言改為繁體中文與英文兩種。上游的 Discussions 與 star 數屬於原專案、本文件不再轉貼；**安裝檔仍取自上游的 Release**（本 fork 未自行發佈）。介紹頁由本 repo 的 `docs/` 提供。
 
 <p align="center">
   <img src="docs/showcase.en.png" alt="usage — 把 Claude Code、Codex 與 Antigravity 的額度釘在 macOS 選單列" width="820">
