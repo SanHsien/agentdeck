@@ -70,7 +70,31 @@
 ## 待辦
 
 - [x] 修掉 P3（含迴歸測試）—— `8ac5d52`（2026-07-29）。
-- [ ] 若之後要動 macOS 專屬路徑（`menubar*.py`、`panels/`、`setup_app.py`），需安排 macOS 實測，本機無法驗收。
+- [x] Windows DPI 縮放缺陷（225% 下面板開在螢幕外）—— v0.30.0。
+
+### 進行中：轉為 Windows 專用並改名（2026-07-29 決定，依此順序）
+
+維護者決定本 fork **只做 Windows**，不再提供 macOS。三步驟，前一步完成才進下一步：
+
+**步驟 1 — 把 AI 圓桌討論移植到 Windows。**
+這是唯一「有功能、但 Windows 沒有對應」的東西（AI 人才市場依賴 gitignore 掉的私有 `vendor/instate-cli`，跨平台都缺，不在此列）。
+- `discussion_cli.py`、`discussion_bridge.py`、`discussion_session.py` 已是平台中立，不必動。
+- 只有 `discussion_window.py` 綁 PyObjC，且僅三處：視窗建立（NSWindow + WKWebView）、剪貼簿讀圖（NSPasteboard）、檔案挑選（NSOpenPanel）。該檔第 40–570 行（附件處理、`parse_discussion_action`、`_load_discussion_html`、事件序列化）全部平台中立，可直接沿用。
+- 作法：把 `DiscussionWindowController` 改寫成 pywebview 版。**pywebview 支援多視窗共用同一個 `webview.start()` 迴圈**，所以圓桌視窗是按需建立的第二個視窗，不需要另起 GUI 迴圈；沿用 `wintray.py` 既有的 `webview.create_window(...)` + `js_api` 橋接模式。
+- 剪貼簿讀圖改用 Windows API 或 Pillow 的 `ImageGrab.grabclipboard()`；檔案挑選改用 pywebview 的 `create_file_dialog`。
+- **注意 DPI**：新視窗的定位若要用 Win32 工作區，必須沿用 `wintray._monitor_dpi_scale()` / `_to_logical_rect()`，否則會重蹈 v0.30.0 修掉的那個 bug。
+
+**步驟 2 — 移除 macOS 專屬程式碼。**
+以下模組的 Windows 對應**早就存在**，不是要「改寫」，是刪除冗餘：
+`menubar.py` → `wintray.py`；`panels/web_panel.py` → wintray 的 WebView2 面板；`login_item.py` → `win_login_item.py`；`setup_app.py`／`scripts/build_app.sh`／`scripts/build_icns.sh`／`scripts/make_app_icon.py`／`*.plist`／`scripts/install-launchagent.sh` → `scripts/build_windows.ps1`。
+連帶要清：`pyproject.toml` 的 PyObjC 相依與 `[dependency-groups] build` 的 py2app、`tests/conftest.py` 的 `collect_ignore`、macOS-only 測試、`.github/workflows` 的 macOS job、README／CLAUDE.md／landing page 的 macOS 敘述。
+`usage_statusline.py` 等三個 stdlib-only 檔案的「要能在 macOS 內建 Python 3.9 跑」限制隨之解除，但**先不要**順手現代化語法——那是獨立的一次改動。
+
+**步驟 3 — 改名 `usage` → `quotatray`。**
+維護者確認**不需要 legacy 相容層**（沒有其他使用者）。要一起改：repo 名稱、`pyproject.toml` 的 `name`、所有 `usage_*.py` 模組名與 `py-modules` 清單、hook 檔名（`~/.claude/usage-statusline.py` 等）、狀態檔（`usage-status.json`）、settings key、`~/.usage/` 快取目錄、`USAGE_LANG` / `USAGE_DEBUG` 環境變數、bundle id、`usage.exe`、README／文件／landing page。
+**改名後維護者本機已安裝的 hook 會失效**（2026-07-25 裝的），必須重跑一次 `--setup`；改名的同一次改動要一併處理舊 hook 的解除安裝，不要留孤兒檔案在 `~/.claude/`。
+
+版號依 SemVer（見 `docs/DECISIONS.md` D-05）：步驟 1 是新功能 → MINOR；步驟 2、3 是破壞性改動，`0.y.z` 階段同樣 → MINOR。
 
 ## 教訓
 
