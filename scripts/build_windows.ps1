@@ -54,3 +54,14 @@ $Executable = Join-Path $OutputDir "usage.exe"
 if (-not (Test-Path $Executable -PathType Leaf)) {
     throw "PyInstaller did not produce $Executable"
 }
+
+# AGPL-3.0 §4 requires every copy of the program to carry the license text, and
+# §5a requires a notice that this is a modified version. PyInstaller only bundles
+# the *dependencies'* license files, so ship ours next to the executable.
+foreach ($doc in @("LICENSE", "NOTICE.md", "README.md")) {
+    $source = Join-Path $RepoRoot $doc
+    if (-not (Test-Path $source -PathType Leaf)) {
+        throw "Required distribution document is missing: $doc"
+    }
+    Copy-Item $source (Join-Path $OutputDir $doc)
+}

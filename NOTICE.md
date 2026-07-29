@@ -9,6 +9,19 @@ Copyright (c) aqua5230 與各貢獻者
 
 本專案依 **GNU Affero General Public License v3.0 only（AGPL-3.0-only）** 授權，完整條款見同目錄的 [`LICENSE`](LICENSE)。
 
+## 修改聲明（AGPL-3.0 §5a）
+
+**本作品是上游 `aqua5230/usage` 的修改版本。** 修改始於 **2026-07-29**，由 [@SanHsien](https://github.com/SanHsien) 進行，並持續維護中。
+
+自該日起的主要修改：
+
+- 專案轉為 **Windows 專用**，移除 macOS 專屬程式碼路徑（授權允許修改包含移除功能；此舉不影響上游版本）。
+- 介面語言由五種（`zh-TW` / `zh-CN` / `en` / `ja` / `ko`）精簡為繁體中文與英文兩種。
+- 修正 Windows 高 DPI 縮放下面板開在螢幕外的缺陷，以及子行程診斷輸出被過度塗銷的缺陷。
+- 文件結構調整：README 改以繁體中文為預設。
+
+逐項變更與日期見 [`CHANGELOG.zh-TW.md`](CHANGELOG.zh-TW.md)；完整修改歷程見本 repo 的 git commit 紀錄。
+
 AGPL-3.0 的重點義務（僅為摘要，以 `LICENSE` 全文為準）：
 
 - 散布本軟體或其修改版時，必須一併提供對應的完整原始碼，並沿用 AGPL-3.0。
