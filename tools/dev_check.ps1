@@ -82,6 +82,9 @@ Invoke-Gate 'mypy' @('run', '--no-sync', 'mypy', '.')
 # CI 把雙語文件對稱性當獨立一步跑（.github/workflows/check.yml），這裡跟上，
 # 免得 README / CHANGELOG 只改了一邊要等 push 之後才發現。
 Invoke-Gate 'doc-parity' @('run', '--no-sync', 'python', 'scripts/check_doc_parity.py')
+# ai_updates.json arrives refreshed from upstream merges; without this the
+# published page would silently drift behind the data it renders.
+Invoke-Gate 'ai-updates' @('run', '--no-sync', 'python', 'scripts/build_ai_updates.py', '--check')
 
 if ($SkipTests) {
     Write-Host ''

@@ -1075,7 +1075,7 @@ class _WindowsTrayController:
         win_login_item.disable() if win_login_item.is_enabled() else win_login_item.enable()
 
     def open_ai_daily(self, _icon: Any = None, _item: Any = None) -> None:
-        webbrowser.open("https://aqua5230.github.io/ai-updates/")
+        webbrowser.open("https://sanhsien.github.io/usage/ai-updates/")
 
     def toggle_hide_section(self, preference_key: str) -> None:
         preferences = _load_preferences()
