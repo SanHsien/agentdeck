@@ -4,11 +4,11 @@
 
 # usage
 
-### Quota visibility for Claude Code, Codex, and Antigravity, built into the macOS menu bar and Windows system tray.
+### 把 Claude Code、Codex 與 Antigravity 額度直接放進 macOS 選單列與 Windows 系統匣
 
-Keep Claude Code, Codex, and Antigravity quota in view while you work. `usage` puts session limits, weekly limits, and cost context in the macOS menu bar or Windows system tray, so you can manage usage before it interrupts a session.
+讓 Claude Code、Codex 與 Antigravity 的額度在工作時持續可見。`usage` 把 session 限額、每週限額與成本脈絡放進 macOS 選單列或 Windows 系統匣，讓你在工作被打斷前就先掌握用量。
 
-[繁體中文](README.zh-TW.md) · [简体中文](README.zh-CN.md) · English · [日本語](README.ja.md) · [한국어](README.ko.md) &nbsp;|&nbsp; [Discussions](https://github.com/aqua5230/usage/discussions) &nbsp;|&nbsp; [Landing page](https://aqua5230.github.io/usage/)
+繁體中文 · [English](README.en.md) &nbsp;|&nbsp; [Discussions](https://github.com/aqua5230/usage/discussions) &nbsp;|&nbsp; [官方介紹頁](https://aqua5230.github.io/usage/)
 
 [![CI](https://github.com/aqua5230/usage/actions/workflows/check.yml/badge.svg)](https://github.com/aqua5230/usage/actions/workflows/check.yml)
 [![Latest Release](https://img.shields.io/github/v/release/aqua5230/usage)](https://github.com/aqua5230/usage/releases/latest)
@@ -18,159 +18,167 @@ Keep Claude Code, Codex, and Antigravity quota in view while you work. `usage` p
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/13538/badge)](https://www.bestpractices.dev/projects/13538)
 
 <p align="center">
-  <img src="docs/showcase.en.png" alt="usage — Claude Code, Codex, and Antigravity quota pinned to the macOS menu bar" width="820">
+  <img src="docs/showcase.en.png" alt="usage — 把 Claude Code、Codex 與 Antigravity 的額度釘在 macOS 選單列" width="820">
 </p>
 
-`usage` keeps your **Claude Code, Codex, and Antigravity** quota pinned to the top-right of your screen, color-coded so warning levels read at a glance. Claude Code and Codex numbers are read passively from local files already on your machine, and reading them **never calls Anthropic or OpenAI's LLM APIs** — so watching your quota never adds to your token usage. Antigravity quota comes from Google's official quota endpoint, using the sign-in the Antigravity CLI already stores locally.
+`usage` 把 **Claude Code、Codex 與 Antigravity** 的額度釘在螢幕右上角的選單列，用顏色標好警戒級別，掃一眼就懂。Claude Code 與 Codex 的數字是被動讀自你機器上原本就在寫的本機檔案，讀取這些數字**不會呼叫 Anthropic 或 OpenAI 的 LLM API**——所以看額度這件事本身永遠不會增加你的用量。Antigravity 額度則來自 Google 官方額度端點，用的是 Antigravity CLI 本來就存在本機的登入身分。
 
-## Why usage?
+## 為什麼需要 usage？
 
-Running out of quota mid-session is expensive — especially during a long refactor or debugging run that depends on Claude Code. `usage` surfaces 5-hour and weekly limits *before* you hit the wall, and keeps them visible the whole time. There's no command to run and no page to open; the answer is just there, where you already look.
+長時間重構或除錯若依賴 Claude Code，無預警撞到額度上限代價很高。`usage` 讓你在撞牆前就先看到 5 小時與每週限額，並且全程留在畫面上——不用停下來跑指令、也不用另外開頁面，答案就在你本來就在看的地方。
 
-## Quick Start
+## 快速上手
 
 ```bash
 brew install --cask aqua5230/usage/usage
 ```
 
-It lands in your Applications folder automatically. Right-click **Open** once to pass Gatekeeper, then click the menu bar icon. Prefer a direct download or want the full setup flow? See [Install](#install) below.
+安裝後會自動進入「應用程式」資料夾。先右鍵**「打開」**一次讓 Gatekeeper 放行，再點選單列圖示即可。想直接下載，或想看完整設定流程？見下方 [安裝](#安裝)。
 
-## What You Get
+## 你會得到什麼
 
-### Live Visibility
+### 即時可見性
 
-- **Always-on Monitor:** Your quota lives in the menu bar, color-coded from green to red. Click when you want the full session, weekly, and per-project breakdown.
-- **Antigravity Support:** Antigravity (Gemini) session and weekly quota show up as a third card in every panel. Numbers come straight from the official quota API, using the sign-in the Antigravity CLI already keeps on your machine — refreshed every few minutes, with live reset countdowns.
-- **Service Status Alerts:** An orange-red banner appears when Claude Code, Claude API, or Codex API has an outage or degraded performance, read from their public Statuspage.io pages — never an LLM usage API. Antigravity isn't covered; it has no public status page.
-- **Context Nudges & Notifications:** When your context window hits 70%, the status line nudges you to `/clear` or `/compact` to prevent token waste. You can also opt-in to system notifications for quota limits and recoveries.
-- **Hide Sections:** Only use one or two of the tools? Hide the Claude Code, Codex, or Antigravity section from the menu bar and panels completely with a single click.
+- **常駐監控：** 額度常駐選單列，顏色標示警戒級別（綠到紅）。點開能看 Session、Weekly 與各專案用量細節。
+- **Antigravity 支援：** Antigravity（Gemini）的 Session 與每週額度以第三張卡片出現在每一款面板。數字直接向官方額度 API 查詢，用的是 Antigravity CLI 本來就存在你機器上的登入身分——每幾分鐘自動刷新，重置倒數即時遞減。
+- **服務狀態警示：** Claude Code、Claude API 或 Codex API 發生故障或效能降級時，相關面板底部會顯示橘紅警示橫幅，數字只讀官方公開的 Statuspage.io 狀態頁——絕不呼叫 LLM 用量 API。Antigravity 因沒有可用的公開狀態頁，暫不支援。
+- **上下文提醒與系統通知：** Context Window 達 70% 時，狀態列會提醒你 `/clear` 或 `/compact` 來避免浪費；也可自選開啟系統通知，在接近門檻或額度恢復時提醒。
+- **獨立隱藏區塊：** 沒有全部都用？一鍵就能把 Claude Code、Codex 或 Antigravity 從選單列及面板上徹底隱藏。
 
-### Workflow Helpers
+### 工作流程輔助
 
-- **Progress Concierge:** Open a new Claude Code session and `usage` hands your last progress straight to the AI, including your last request, uncommitted changes, and unfinished todos. No `/resume`, no recap. Fully local, off by default.
-- **Token Saver:** A menu-bar toggle asks Claude Code and Codex to answer more tersely, saving output tokens while keeping code and error messages byte-exact. A light reminder keeps long conversations from drifting back to verbose — tested to keep late replies ~40% shorter.
-- **Token-waste Health Check:** A daily background diagnosis scans your logs for waste, including repeated file reads, polluter directories, and noisy Bash output. If it finds issues, a one-line heads-up appears; say "show me" and the AI walks you through fixes.
+- **進度管家 (Progress Concierge)：** 開新對話時，自動把你上次的請求、未提交的 commits 與待辦清單交給 AI，不用重講一遍進度。完全本機、預設關閉。
+- **省 token 模式 (Token Saver)：** 一鍵讓 Claude Code 與 Codex 講話更精簡，省下輸出 token，但程式碼與錯誤訊息保證一個字都不縮水。輕聲提醒維持精簡，長對話也不走鐘——實測對話後段回覆少約 40%。
+- **Token 浪費健檢：** 每日背景診斷重複讀取檔案、污染目錄與雜訊輸出。當發現浪費時會有一行提示，AI 也能帶你看懂問題並給出改善建議。
 
-### Reporting & Insight
+### 報告與洞察
 
-- **Deep HTML Reports:** Shareable HTML reports of daily and weekly token trends, project rankings, and cost — including a Year in Review with a contribution heatmap and "Wrapped" summary. Export as .html, .csv, or .png, fully offline, with optional project-name masking.
-- **TUI & CLI:** Prefer the terminal? Run the rich TUI dashboard with `python3 main.py --tui`, or generate deep analytics with `python3 usage_cli.py report`.
+- **深度 HTML 報告：** 視覺化呈現每日與每週趨勢、專案排行與成本，包含帶有貢獻熱力圖與 Wrapped 摘要的 Year in Review。一鍵另存 .html／.csv／.png 分享，全程離線、可選擇隱藏專案名稱。
+- **TUI 與 CLI 支援：** 偏好終端機的話，可用 `python3 main.py --tui` 開 Rich TUI 面板，或用 `python3 usage_cli.py report` 產出深度分析報告。
 
-### Experience & Customization
+### 體驗與客製化
 
-- **10 Visual Themes:** Switch between panel styles including Classic, Matrix, Windows 95, Newspaper, Cloud Observation, Midnight Aquarium, Prism Arcade, Black Hole, World Cup 2026, and Lepidoptera (blueprint).
-- **Drag to Reorder:** Grab any quota card and drag it up or down to swap the order — the arrangement is shared across every theme and survives restarts.
-- **AI Talent Market:** Bring a ready-made AI team into Claude Code. Browse and install curated subagent personas into `~/.claude/agents/` instantly. Runs fully locally via the bundled CLI.
-- **AI Council:** Open a dedicated window and run a multi-round discussion between Claude Code, Codex, and Antigravity — pick participants, models, and a debate style, with a token estimate up front. Steer it between rounds, see who dissents in the consensus tally, and let it stop early once everyone agrees. Seats can wear AI Talent Market personas and reference real files via an optional read-only folder.
-- **AI Update Daily:** Opens a daily-updated public [page](https://aqua5230.github.io/ai-updates/) covering Claude Code, Codex, and Antigravity, with the full history kept. Reviewed items get a plain-language summary in all five UI languages; unreviewed ones show the original source text.
-- **Spirit Companions:** A small animated white silhouette lives beside your usage percentages — a phoenix for Claude, a dragon for Codex, a lion for Antigravity. Each accelerates dynamically as its own tool's token burn rate climbs.
-- **Automatic Localization:** UI text is available in Traditional Chinese, Simplified Chinese, English, Japanese, and Korean, automatically matching your system settings.
+- **10 款視覺面板：** 可在 Classic、Matrix、Windows 95、Newspaper、Cloud Observation、Midnight Aquarium、Prism Arcade、Black Hole、World Cup 2026 與 Lepidoptera（藍曬圖）之間切換。
+- **拖曳排序：** 按住任何一張額度卡上下拖曳就能交換順序，排法在所有主題間共用、重開也會記住。
+- **AI 人才市場：** 將整個 AI 團隊帶進 Claude Code。瀏覽並一鍵將精選 subagent persona 安裝到 `~/.claude/agents/`，全程透過內建 CLI 在本機完成。
+- **AI 圓桌討論：** 開一個獨立視窗，讓 Claude Code、Codex、Antigravity 進行多輪討論——自選參與者、模型與辯論風格，開始前就看得到大約會花多少 token。可以在輪間插話引導方向，共識計票看得出誰不同意，並讓討論在全體同意時提早收尾。位子可以戴上 AI 人才市場的專家角色，也能附上唯讀資料夾讓參與者參考真實檔案。
+- **AI 更新日報：** 開啟每天自動更新的公開[網頁](https://aqua5230.github.io/ai-updates/)，涵蓋 Claude Code、Codex、Antigravity 三套工具、保留完整歷史。已審核的更新顯示五語白話版，未審核的顯示官方原文。
+- **神獸夥伴：** 百分比旁常駐一隻小型白色動畫神獸（Claude 是鳳凰，Codex 是飛龍，Antigravity 是獅子），各自跟著自家工具的 token 燃燒率動態加速。
+- **自動多語言 (i18n)：** 介面支援繁中、簡中、英、日、韓，自動跟隨系統語言設定。
 
-## Privacy & Data Sources
+## 隱私與資料來源
 
-- Claude Code and Codex numbers are read **only from local log files** on your machine; reading them **never calls Anthropic or OpenAI's LLM APIs**.
-- Antigravity quota requires network access, and only if you use it: quota is fetched from Google's official quota endpoint using the OAuth credential the Antigravity CLI already stored after sign-in — read from macOS Keychain, Windows Credential Manager, or a local token file depending on CLI version. `usage` reads that credential without writing it back and keeps any refreshed access token in memory only; the call itself only reads quota metadata and never consumes your model quota.
-- Background network activity: the Antigravity quota/token endpoints above, public Claude and Codex status pages to flag outages, a public model-pricing table to estimate cost (falls back to built-in prices offline), and occasionally checking GitHub for a new version. Claude Code and Codex log contents are never uploaded.
+- Claude Code 與 Codex 的數字**只讀本機紀錄檔**；讀取這些數字**不會呼叫 Anthropic 或 OpenAI 的 LLM API**。
+- Antigravity 額度需要連網，而且只有你真的使用它才會發生：額度是用 Antigravity CLI 登入後存下的 OAuth 憑證，向 Google 官方額度端點查詢——依 CLI 版本不同，這個憑證讀自 macOS Keychain、Windows 認證管理員，或本機 token 檔。`usage` 只讀取這個憑證而不寫回，任何刷新後的 access token 也只留在記憶體中；這個呼叫本身只讀額度資訊，絕不消耗你的模型額度。
+- 背景連網範圍：上述 Antigravity 額度／token 端點、用來標示故障的 Claude 與 Codex 公開狀態頁、估算成本用的公開價格表（斷網會用內建預設），以及偶爾檢查 GitHub 版本更新。Claude Code 與 Codex 的紀錄檔內容不會被上傳。
 
-## Requirements
+## 環境需求
 
-- macOS 12 (Monterey) or newer, or Windows 10/11
-- Claude Code, Codex, or Antigravity has been used at least once (so local usage data exists).
-- (Source runs only) Python 3.13.
+- macOS 12（Monterey）或更新版本，或 Windows 10/11
+- 已經使用過 Claude Code、Codex 或 Antigravity（需有本機用量資料）
+- （僅限從原始碼跑）Python 3.13
 
-## Install
+## 安裝
 
-### 1. Homebrew (Recommended)
+### 1. Homebrew（推薦）
 
-Installing via Homebrew means a single `brew upgrade --cask usage` keeps it current.
+安裝後，未來只需 `brew upgrade --cask usage` 即可自動更新。
 
 ```bash
 brew install --cask aqua5230/usage/usage
 ```
 
-*(First launch: right-click `usage.app` in Finder → **Open** to pass Gatekeeper).*
+*（第一次開啟：請在 Finder 找到 `usage.app` 按右鍵 → **打開** 讓系統放行）。*
 
-### 2. Download for macOS
+### 2. 下載 macOS App
 
-1. Download the latest `usage.app.zip` from the [GitHub Releases page](https://github.com/aqua5230/usage/releases/latest).
-2. Unzip it and drag `usage.app` into your Applications folder.
-3. First launch: in Finder, right-click `usage.app` → **Open** → confirm Open.
+1. 到 [GitHub Releases 頁面](https://github.com/aqua5230/usage/releases/latest) 下載最新的 `usage.app.zip`。
+2. 解壓縮，將 `usage.app` 拖進「應用程式」資料夾。
+3. 第一次開啟：在 Finder 對 `usage.app` 按右鍵 → **打開** → 確認打開。
 
-## Windows Support
+## Windows 支援
 
-Windows has the full core experience: the TUI, Claude Code status-line hook, and Codex history parsing all work natively. Download `usage-windows.zip` from the [latest GitHub Release](https://github.com/aqua5230/usage/releases/latest), unzip it, then run `usage.exe`—no installer is needed. The tray UI requires Microsoft Edge WebView2 Runtime, which is normally included with Windows 10 and 11.
+Windows 可完整使用核心功能：TUI、Claude Code 狀態列 hook 與 Codex 記錄解析都原生支援。從[最新 GitHub Release](https://github.com/aqua5230/usage/releases/latest)下載 `usage-windows.zip`，解壓後執行 `usage.exe` 即可，無須安裝程式。系統匣 UI 需要 Microsoft Edge WebView2 Runtime；Windows 10 與 11 通常已內建。
 
-The system-tray icon updates with your Claude quota percentage; its tooltip summarizes the Claude and Codex windows. Left-click opens the same 10 quota themes available on macOS (Classic plus the other nine) in WebView2. Right-click provides panel switching, refresh, launch at login, check for updates, and quit.
+系統匣圖示會隨 Claude 額度百分比更新；提示文字摘要 Claude 與 Codex 的各視窗。左鍵會用 WebView2 開啟與 macOS 相同的 10 款主題面板（Classic 加另外九款）；右鍵可切換面板、重新整理、設定開機自啟、檢查更新與結束。
 
-Windows differences: the panel opens at the bottom-right of the working area rather than next to the tray icon; update prompts use a system Yes/No dialog; and the AI Talent Market and AI Council panels are macOS-only.
+Windows 的差異：面板開在工作區右下角，而非貼齊系統匣圖示；更新提示使用系統 Yes/No 對話框；AI 人才市場與 AI 圓桌討論面板僅提供 macOS。
 
-### First Launch: Set Up the Status Line
+### 首次打開：設定狀態列
 
-If you've used Codex, `usage` picks up its history automatically. For Claude Code, click the **"Set Up Status Line"** button in the app popover to install the sync hook.
-Restart the relevant tool afterward (fully Cmd+Q Claude Code and re-open it).
+如果你用過 Codex，它會自動讀到資料。若是 Claude Code，請點選單彈窗內的**「設定狀態列 (Set Up Status Line)」**按鈕來安裝同步 hook。
+完成後請重開相關工具（將 Claude Code 用 Cmd+Q 完全結束後重開）。
 
-Once set up, the bottom of the Claude Code window will show a status line like this:
-
-<p align="center">
-  <img src="docs/statusline.en.png" alt="Claude Code statusLine display (English)" width="640">
-</p>
-
-## Theme Gallery
-
-Switch between **10 visual themes** directly from the UI:
+設定完成後，Claude Code 視窗底部會出現這樣的狀態列：
 
 <p align="center">
-  <img src="docs/matrix.en.png" width="32%" alt="Matrix theme" />
-  <img src="docs/win95.en.png" width="32%" alt="Windows 95 theme" />
-  <img src="docs/world_cup.en.png" width="32%" alt="World Cup HUD theme" />
-  <img src="docs/newspaper.en.png" width="32%" alt="Newspaper theme" />
-  <img src="docs/aquarium.en.png" width="32%" alt="Aquarium theme" />
-  <img src="docs/black_hole.en.png" width="32%" alt="Black Hole theme" />
+  <img src="docs/statusline.png" alt="Claude Code statusLine 顯示樣式（繁中）" width="640">
 </p>
 
-## Troubleshooting
+## 主題展示
 
-If the menu bar shows `--`, it's usually not broken — there's just no local data yet.
+內建 **10 款可切換的視覺主題**，可直接在 UI 中切換：
 
-| Symptom | Likely cause | Fix |
-|---------|--------------|-----|
-| Menu bar shows `--` | No data yet, or Claude Code hook not refreshed | Run one Codex conversation. For Claude Code, click "Set Up Status Line" or run `python3 main.py --setup` |
-| Accidentally hit "Quit" | Process terminated | Relaunch `usage.app` from Spotlight or Applications. (`launchctl start com.lollapalooza.usage` only works if you enabled Launch at Login.) |
-| Status says "N minutes stale" | Claude Code isn't running | Open Claude Code and let it run |
-| Codex section is empty | No Codex history found | Run a Codex conversation to generate logs |
-| Today's cost shows $0.00 | Model pricing missing | Delete `~/.usage/pricing_cache.json` or check `USAGE_DEBUG=1` |
-| Antigravity card is missing | Antigravity CLI not installed or not signed in | Install and sign in to the Antigravity CLI; the card appears automatically once a background quota fetch succeeds |
-| App won't open | macOS Gatekeeper blocked it | Right-click `usage.app` in Finder → Open |
-| App crashes immediately (arm64) | py2app bundling bug in older versions | Upgrade to **v0.11.1 or newer** |
+<p align="center">
+  <img src="docs/matrix.png" width="32%" alt="Matrix 主題" />
+  <img src="docs/win95.png" width="32%" alt="Windows 95 主題" />
+  <img src="docs/world_cup.png" width="32%" alt="世界盃 HUD 主題" />
+  <img src="docs/newspaper.png" width="32%" alt="復古報紙主題" />
+  <img src="docs/aquarium.png" width="32%" alt="深夜水族箱主題" />
+  <img src="docs/black_hole.png" width="32%" alt="黑洞主題" />
+</p>
 
-## Comparison
+## 常見問題排查
 
-| Feature | usage | ccusage | TokenTracker |
-|---------|:-----:|:-------:|:------------:|
-| Always on screen | ✅ | — | ✅ |
-| macOS menu bar | ✅ | — | ✅ |
-| Claude Code & Codex usage | ✅ | Claude only | ✅ |
-| Antigravity (Gemini) usage | ✅ | — | — |
-| Claude Code & Codex service-status alerts | ✅ | — | — |
-| HTML deep reports & UI | ✅ | ✅ | — |
-| AI Talent Market | macOS only | — | — |
-| AI Council | macOS only | — | — |
-| AI Update Daily | ✅ | — | — |
-| Progress Concierge & Token Saver | ✅ | — | — |
-| Token-waste Health Check | ✅ | — | — |
-| No LLM API calls to read quota | ✅ | ✅ | ✅ |
-| Open-source license | AGPL-3.0 | MIT | — |
+如果顯示 `--` 先別急，絕大多數情況只是還沒有本機資料。
 
-## Development
+| 症狀 | 原因 | 解法 |
+|------|------|------|
+| menu bar 顯示 `--` | 尚無資料或 hook 未更新 | 先跑一次 Codex。若為 Claude Code，點擊「設定狀態列」或跑 `python3 main.py --setup` |
+| 不小心按到「結束」 | 程式已終止 | 透過 Spotlight 或應用程式重新開啟 `usage.app`。（`launchctl start com.lollapalooza.usage` 只在你開啟過「開機自啟」時才有作用。） |
+| 顯示「N 分鐘未更新」 | Claude Code 未執行 | 打開 Claude Code 跑一下就會更新 |
+| Codex 區塊空白 | 找不到 Codex 紀錄 | 用 Codex 跑一次對話 |
+| 今日花費是 $0.00 | 價格表對不上或抓取失敗 | 刪掉 `~/.usage/pricing_cache.json` 重新抓取 |
+| Antigravity 卡片沒出現 | 未安裝或未登入 Antigravity CLI | 安裝並登入 Antigravity CLI，背景額度查詢成功後卡片會自動出現 |
+| App 打不開 | Gatekeeper 擋住 | Finder → 找到 `usage.app` → 按右鍵 → 打開 |
+| App 一開就閃退 (arm64)| 舊版打包 bug | 請升級至 **v0.11.1 或更新版本** |
 
-Want to run the terminal TUI, configure custom agents, or build the app yourself? Check out the **[development docs](docs/DEVELOPMENT.md)**.
+## 跟其他工具比較
 
-## License
+| 功能 | usage | ccusage | TokenTracker |
+|------|:-----:|:-------:|:------------:|
+| 一直在螢幕上 | ✅ | — | ✅ |
+| macOS 選單列 | ✅ | — | ✅ |
+| Claude Code 與 Codex 支援 | ✅ | 僅 Claude | ✅ |
+| Antigravity（Gemini）支援 | ✅ | — | — |
+| Claude Code 與 Codex 服務狀態警示 | ✅ | — | — |
+| HTML 深度報告與 UI 面板 | ✅ | ✅ | — |
+| AI 人才市場 | 僅 macOS | — | — |
+| AI 圓桌討論 | 僅 macOS | — | — |
+| AI 更新日報 | ✅ | — | — |
+| 進度管家與省 token 模式 | ✅ | — | — |
+| Token 浪費健檢 | ✅ | — | — |
+| 讀取額度時不呼叫 LLM API | ✅ | ✅ | ✅ |
+| 開源授權 | AGPL-3.0 | MIT | — |
 
-Licensed under AGPL-3.0-only (see [LICENSE](LICENSE)). If you fork or redistribute a modified version, please credit the original author and link back to:
+## 開發
+
+想用指令模式、跑 TUI、設定 agent 或自己打包 App？完整說明在 **[開發文件 (docs/DEVELOPMENT.zh-TW.md)](docs/DEVELOPMENT.zh-TW.md)**。
+
+## 其他可參考專案
+
+以下專案只作**概念與流程參考**，不是 `usage` 的執行依賴，也沒有任何原始碼被併入本專案。授權未宣告的專案在法律上等同保留所有權利，無法併入本 AGPL-3.0 repo，因此僅供觀念對照。
+
+| 名稱 | 授權 | 可參考點 |
+| --- | --- | --- |
+| [karpathy/llm-council](https://github.com/karpathy/llm-council) | 未宣告 | 多模型協作回答同一問題的三階段流程：各模型獨立作答 → 匿名互評排名 → 由「主席」模型彙整成最終答案。與本專案「AI 圓桌討論」的多輪討論、共識計票屬同一類設計，其中**匿名互評**（隱藏模型身分以避免評分偏向名氣）是值得對照的做法。技術上走 OpenRouter + FastAPI + React，與本專案直接驅動本機 CLI、離線運作的路線不同。 |
+
+## 授權
+
+採用 AGPL-3.0-only（見 [LICENSE](LICENSE)）。若 fork 或發佈衍生版本，請標注原作者與專案連結：
 https://github.com/aqua5230/usage
 
-## Star History
+## Star 成長
 
 <a href="https://star-history.com/#aqua5230/usage&Date">
   <img src="https://api.star-history.com/svg?repos=aqua5230/usage&type=Date" alt="usage Star History Chart" width="600">
