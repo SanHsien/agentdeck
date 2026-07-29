@@ -40,7 +40,9 @@ git remote add upstream https://github.com/aqua5230/usage.git
 | CLAUDE.md 的 Release/changelog 段 | 描述五語 README 與英文預設 | 改寫為中英雙語、繁中預設 |
 | 其他文件（CONTRIBUTING / SECURITY / CHANGELOG / docs/DEVELOPMENT） | 英文為預設 `.md`，中文為 `.zh-TW.md` | **維持上游慣例不變** |
 
-新增檔案（上游沒有，不會有衝突）：`AGENTS.md`、`SKILL.md`、`NOTICE.md`、`REPO_REVIEW.md`、`docs/FORK.zh-TW.md`、`docs/DEVELOPMENT.win.zh-TW.md`、`tools/`、`.claude/settings.json`。
+新增檔案（上游沒有，不會有衝突）：`AGENTS.md`、`SKILL.md`、`NOTICE.md`、`REPO_REVIEW.md`、`docs/FORK.zh-TW.md`、`docs/DECISIONS.md`、`docs/DEVELOPMENT.win.zh-TW.md`、`tools/`、`.pre-commit-config.yaml`、`.claude/settings.json`。
+
+分叉背後的取捨記在 [`DECISIONS.md`](DECISIONS.md)（D-01 獨立維護、D-02 README 語言結構、D-03 不在 Windows 重 lock、D-04 測試環境失敗的處理層級）。
 
 ## 撿上游更新
 

@@ -29,7 +29,9 @@
 | `scripts/check_doc_parity.py` | `DOC_PAIRS` 比對 `README.md` ↔ `README.zh-TW.md` | 改為 `README.en.md` ↔ `README.md` |
 | 其他文件（CONTRIBUTING / SECURITY / CHANGELOG / docs/DEVELOPMENT） | 英文為預設 `.md`，中文為 `.zh-TW.md` | **維持不變** |
 
-新增檔案（上游沒有）：`AGENTS.md`、`SKILL.md`、`NOTICE.md`、`REPO_REVIEW.md`、`docs/FORK.zh-TW.md`、`docs/DEVELOPMENT.win.zh-TW.md`、`tools/`、`.claude/settings.json`。
+新增檔案（上游沒有）：`AGENTS.md`、`SKILL.md`、`NOTICE.md`、`REPO_REVIEW.md`、`docs/FORK.zh-TW.md`、`docs/DECISIONS.md`、`docs/DEVELOPMENT.win.zh-TW.md`、`tools/`、`.pre-commit-config.yaml`、`.claude/settings.json`。
+
+**有取捨的決定寫進 [`docs/DECISIONS.md`](docs/DECISIONS.md)**，不要只留在 commit message 裡——那是為了避免日後重複討論同一個問題。
 
 ## 技術
 
