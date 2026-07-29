@@ -582,6 +582,49 @@ class _WindowsTrayController:
             return (rect.left, rect.top, rect.right, rect.bottom)
         return None
 
+    def _work_area_for_point(
+        self, point: tuple[int, int] | None
+    ) -> tuple[int, int, int, int] | None:
+        """Work area of the monitor nearest ``point``, falling back to the primary monitor.
+
+        SPI_GETWORKAREA (``_working_area``) only ever reports the primary
+        monitor, so clamping a dragged window against it snaps the window
+        back onto the primary monitor every time the panel is switched,
+        even when the user deliberately dragged it onto a secondary display.
+        """
+        if point is None or os.name != "nt":
+            return self._working_area()
+        import ctypes
+
+        class Rect(ctypes.Structure):
+            _fields_ = [
+                ("left", ctypes.c_long),
+                ("top", ctypes.c_long),
+                ("right", ctypes.c_long),
+                ("bottom", ctypes.c_long),
+            ]
+
+        class MonitorInfo(ctypes.Structure):
+            _fields_ = [
+                ("cbSize", ctypes.c_ulong),
+                ("rcMonitor", Rect),
+                ("rcWork", Rect),
+                ("dwFlags", ctypes.c_ulong),
+            ]
+
+        class Point(ctypes.Structure):
+            _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+
+        MONITOR_DEFAULTTONEAREST = 2
+        user32: Any = ctypes.windll.user32
+        handle = user32.MonitorFromPoint(Point(point[0], point[1]), MONITOR_DEFAULTTONEAREST)
+        info = MonitorInfo()
+        info.cbSize = ctypes.sizeof(MonitorInfo)
+        if handle and user32.GetMonitorInfoW(handle, ctypes.byref(info)):
+            work = info.rcWork
+            return (work.left, work.top, work.right, work.bottom)
+        return self._working_area()
+
     def _saved_window_position(self) -> tuple[int, int] | None:
         value = _load_preferences().get("usage.windowPosition")
         if not isinstance(value, dict):
@@ -626,25 +669,30 @@ class _WindowsTrayController:
     def _place_window(self, *, force_default: bool = False) -> None:
         if self.window is None:
             return
-        work_area = self._working_area()
-        if work_area is None:
+        primary_work_area = self._working_area()
+        if primary_work_area is None:
             return
+
+        # Resolve the *target* anchor point before picking a work area, then
+        # look up the work area of whichever monitor that point is on. The
+        # primary monitor's work area is only a fallback for the "no anchor
+        # yet" (first-ever launch) case — using it unconditionally would
+        # clamp a window the user dragged onto a secondary display back onto
+        # the primary one every time the panel is switched.
+        if force_default:
+            anchor = None
+        elif self._positioned_this_show:
+            anchor = self._current_window_position() or self._saved_window_position()
+        else:
+            anchor = self._saved_window_position()
+
+        work_area = self._work_area_for_point(anchor) or primary_work_area
         left, top, right, bottom = work_area
         height = min(self.panel_height(), max(240, bottom - top - 24))
         self.window.resize(PANEL_WIDTH, height)
-        if force_default:
-            position = self._default_window_position(work_area, height)
-        elif self._positioned_this_show:
-            current_position = self._current_window_position()
-            position = (
-                current_position
-                or self._saved_window_position()
-                or self._default_window_position(work_area, height)
-            )
-        else:
-            position = self._saved_window_position() or self._default_window_position(
-                work_area, height
-            )
+        position = anchor if anchor is not None else self._default_window_position(
+            work_area, height
+        )
         self.window.move(*self._clamp_window_position(position, work_area, height))
         self._positioned_this_show = True
 
@@ -854,7 +902,11 @@ class _WindowsTrayController:
 
     def switch_panel(self, panel_id: str) -> None:
         self.active_panel_id = panel_id
-        self._content_height = None
+        # Deliberately keep the previous panel's measured height instead of
+        # resetting to None: on_loaded() clamps the window to fit before the
+        # new panel reports its real height, and PANEL_HEIGHTS' fallback
+        # values are near-fullscreen placeholders that would clamp a dragged
+        # window's Y position back up to the top of the screen every switch.
         _save_active_panel_id(panel_id)
         # A panel reload is initialized from ``latest_state`` in ``on_loaded``.
         # Card order is changed directly by the JS bridge, outside the refresh
