@@ -15,6 +15,20 @@ CONTENT_HEIGHT_SCRIPT = """
   function naturalContentHeight() {
     var wrap = document.querySelector(".wrap");
     if (!wrap) return null;
+    // A panel can explicitly mark a flexible region whose current laid-out
+    // height is part of the design (for example, world_cup's empty pitch).
+    // Preserve only those declared floors while releasing the viewport height
+    // chain; ordinary content can still contract when a quota row disappears.
+    var floors = Array.from(
+      wrap.querySelectorAll("[data-usage-height-floor]"),
+      function(element) {
+        return {
+          element: element,
+          height: element.getBoundingClientRect().height,
+          minHeight: element.style.minHeight
+        };
+      }
+    );
     // Panels nest .wrap differently: most put it straight in <body>, but the
     // viewport-based ones (world_cup, aquarium, black_hole, ...) insert a
     // padded .viewport in between. Walk the real ancestor chain instead of
@@ -33,6 +47,9 @@ CONTENT_HEIGHT_SCRIPT = """
         element.style.height = "auto";
         element.style.minHeight = "0";
         element.style.maxHeight = "none";
+      });
+      floors.forEach(function(floor) {
+        floor.element.style.minHeight = floor.height + "px";
       });
       // Force reflow with viewport constraints disabled. Restoration remains
       // in this synchronous task, so the temporary styles are never painted.
@@ -53,6 +70,9 @@ CONTENT_HEIGHT_SCRIPT = """
         properties.forEach(function(property, propertyIndex) {
           element.style[property] = saved[elementIndex][propertyIndex];
         });
+      });
+      floors.forEach(function(floor) {
+        floor.element.style.minHeight = floor.minHeight;
       });
     }
   }

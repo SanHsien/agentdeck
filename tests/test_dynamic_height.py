@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from pathlib import Path
 
 import pytest
 
@@ -9,6 +10,8 @@ from panels.dynamic_height import (
     clamp_content_height,
     inject_content_height_script,
 )
+
+PANEL_ASSETS = Path(__file__).parents[1] / "assets" / "panels"
 
 
 def test_script_wraps_state_application_and_measures_without_height_constraints() -> None:
@@ -32,6 +35,14 @@ def test_script_wraps_state_application_and_measures_without_height_constraints(
     assert "parentElement" in CONTENT_HEIGHT_SCRIPT
     assert "paddingTop" in CONTENT_HEIGHT_SCRIPT
     assert "paddingBottom" in CONTENT_HEIGHT_SCRIPT
+    assert 'querySelectorAll("[data-usage-height-floor]")' in CONTENT_HEIGHT_SCRIPT
+    assert 'floor.element.style.minHeight = floor.height + "px"' in CONTENT_HEIGHT_SCRIPT
+
+
+def test_world_cup_declares_its_pitch_height_floor() -> None:
+    html = (PANEL_ASSETS / "world_cup.html").read_text(encoding="utf-8")
+
+    assert '<div style="flex:1" data-usage-height-floor></div>' in html
 
 
 @pytest.mark.parametrize(
