@@ -331,10 +331,6 @@ def main() -> None:
             asyncio.run(
                 run_tui(mock=args.mock, interval=args.interval, force_group=args.force_group)
             )
-    elif sys.platform == "darwin":
-        menubar = _import_module_with_oserror_retry("menubar")
-        menubar.show_forwarder_mode_prompt_if_needed()
-        menubar.run_app(mock=args.mock, interval=args.interval)
     elif sys.platform == "win32":
         try:
             wintray = importlib.import_module("wintray")

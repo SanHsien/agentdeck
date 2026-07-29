@@ -5,6 +5,14 @@
 本檔記錄 usage 所有重要變更。格式參考 [Keep a Changelog](https://keepachangelog.com/)，
 版號遵循[語意化版本 2.0.0](https://semver.org/lang/zh-TW/)。
 
+## [Unreleased]
+
+### 移除
+- **macOS 支援**：本 fork 專注 Windows，因此移除 PyObjC 選單列（`menubar.py`）、WKWebView 彈出面板（`panels/web_panel.py`）、LaunchAgent 開機項（`login_item.py`）、py2app 打包（`setup_app.py` 與周邊 shell 腳本）與 macOS CI job，連同 PyObjC 相依與 macOS 語系偵測。過程中**沒有任何東西需要移植**——`wintray.py`、`win_login_item.py`、`scripts/build_windows.ps1` 本來就是對應的 Windows 版本，所以這是移除冗餘而非移除能力。平台中立的模組保留原本的 `menubar_*`／`panels.*` 命名，且仍是命脈，不可依檔名誤刪。
+
+### 新增
+- **AI 圓桌討論支援 Windows**：原本僅 macOS。它的邏輯本來就是平台中立的，因此只重寫了視窗外殼——掛在系統匣既有 GUI 迴圈上的第二個 pywebview 視窗。可從系統匣選單開啟。
+
 ## [0.30.0] - 2026-07-29
 
 ### 修正

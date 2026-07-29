@@ -28,21 +28,6 @@ def _normalize_lang(code: str | None) -> str:
     return "en"
 
 
-def _detect_macos_lang() -> str:
-    try:
-        from Foundation import NSLocale
-
-        preferred = NSLocale.preferredLanguages()
-        if preferred:
-            return _normalize_lang(str(preferred[0]))
-        locale = NSLocale.currentLocale()
-        identifier_attr = getattr(locale, "localeIdentifier", None)
-        identifier = identifier_attr() if callable(identifier_attr) else identifier_attr
-        return _normalize_lang(str(identifier) if identifier is not None else None)
-    except Exception:
-        return "en"
-
-
 def _detect_windows_lang() -> str:
     try:
         import ctypes
@@ -63,8 +48,6 @@ def detect_lang(env: Mapping[str, str] | None = None) -> str:
         value = source.get(key, "").strip()
         if value:
             return _normalize_lang(value)
-    if env is None:
-        if sys.platform == "win32":
-            return _detect_windows_lang()
-        return _detect_macos_lang()
+    if env is None and sys.platform == "win32":
+        return _detect_windows_lang()
     return "en"

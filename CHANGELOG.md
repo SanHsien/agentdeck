@@ -6,6 +6,14 @@ All notable changes to usage are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
+## [Unreleased]
+
+### Removed
+- **macOS support**: this fork is Windows-only, so the PyObjC menu bar (`menubar.py`), the WKWebView popover (`panels/web_panel.py`), the LaunchAgent login item (`login_item.py`), the py2app build (`setup_app.py` and the shell scripts around it), and the macOS CI jobs are gone, along with the PyObjC dependencies and the macOS locale probe. Nothing was ported in the process — `wintray.py`, `win_login_item.py`, and `scripts/build_windows.ps1` were already the Windows equivalents, so this removes redundancy rather than capability. The platform-neutral modules keep their historical `menubar_*` and `panels.*` names and are still load-bearing.
+
+### Added
+- **AI Council runs on Windows**: previously macOS-only. Its logic was already platform-neutral, so only the window shell was rewritten — a second pywebview window on the tray's existing GUI loop. Reachable from the tray menu.
+
 ## [0.30.0] - 2026-07-29
 
 ### Fixed

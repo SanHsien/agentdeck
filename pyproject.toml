@@ -7,10 +7,6 @@ requires-python = ">=3.13"
 license = "AGPL-3.0-only"
 license-files = ["LICENSE"]
 dependencies = [
-    "pyobjc-framework-Cocoa>=11.0; sys_platform == 'darwin'",
-    "pyobjc-framework-Quartz>=11.0; sys_platform == 'darwin'",
-    "pyobjc-framework-UserNotifications>=11.0; sys_platform == 'darwin'",
-    "pyobjc-framework-WebKit>=11.0; sys_platform == 'darwin'",
     "rich>=15.0.0,<16.0.0",
 ]
 
@@ -22,13 +18,9 @@ windows = [
 ]
 
 [tool.uv]
-# Lock for every platform we ship on, not just whichever one runs `uv lock`.
-# Without this, uv resolves against the running interpreter's environment and
-# rewrites the platform markers it can prove false there — a re-lock on Windows
-# turns every `sys_platform == 'darwin'` dependency into `python_version < '0'`,
-# silently dropping PyObjC from the lock and breaking the macOS build.
+# This fork ships Windows only. Linux stays in the list because the TUI and CLI
+# still run there; macOS was dropped along with the PyObjC menu bar.
 environments = [
-    "sys_platform == 'darwin'",
     "sys_platform == 'win32'",
     "sys_platform == 'linux'",
 ]
@@ -40,7 +32,6 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 py-modules = [
     "main",
-    "menubar",
     "menubar_prefs",
     "menubar_state",
     "usage_notifications",
@@ -51,7 +42,6 @@ py-modules = [
     "usage_statusline",
     "setup_hook",
     "session_hooks",
-    "login_item",
     "win_login_item",
     "wintray",
     "usage_client",
@@ -86,9 +76,6 @@ dev = [
     "mypy>=2.3.0",
     "pytest>=9.1.1",
 ]
-build = [
-    "py2app>=0.28; sys_platform == 'darwin'",
-]
 
 [tool.ruff]
 target-version = "py313"
@@ -120,13 +107,6 @@ exclude = "^(build|dist|release-win)/"
 
 [[tool.mypy.overrides]]
 module = ["rich.*", "PIL.*", "pystray.*", "webview.*"]
-ignore_missing_imports = true
-
-# PyObjC C-extension frameworks ship without type stubs / py.typed marker.
-# `ignore_missing_imports` is the standard idiom for stubless modules — this
-# is NOT suppressing a real bug, just declaring the frameworks are untyped.
-[[tool.mypy.overrides]]
-module = ["AppKit", "Foundation", "objc", "Quartz", "UserNotifications", "WebKit"]
 ignore_missing_imports = true
 
 # usage_cli's key readers pair a POSIX branch (termios/tty) with a Windows
