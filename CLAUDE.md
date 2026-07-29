@@ -100,8 +100,28 @@ All user-visible strings in panels and UI **must** be looked up from `i18n.json`
 ### Release / changelog
 
 - This project is **bilingual (Traditional Chinese + English)**, and every doc must be updated in both languages together. **This fork diverges from upstream on the README specifically:**
-  - **README**: Traditional Chinese is the default (`README.md`); English lives at `README.en.md`. The upstream `README.zh-CN.md` / `README.ja.md` / `README.ko.md` variants have been **removed** — do not reintroduce them. (This only affects the README files; the app UI still ships all five languages via `i18n.json`.)
+  - **README**: Traditional Chinese is the default (`README.md`); English lives at `README.en.md`. The upstream `README.zh-CN.md` / `README.ja.md` / `README.ko.md` variants have been **removed** — do not reintroduce them. The app UI was reduced to the same two languages; see the i18n rule above.
   - **Every other doc** keeps the upstream convention: the suffix-less `.md` is **English** and Traditional Chinese lives alongside as `.zh-TW.md`. This covers CONTRIBUTING, SECURITY, CHANGELOG, and `docs/DEVELOPMENT`. GitHub only surfaces the suffix-less `CONTRIBUTING.md` / `SECURITY.md` in its community tabs, never `*.zh-TW.md`, which is why English stays the default there.
   - `scripts/check_doc_parity.py` gates all of the above in CI by comparing `##` heading counts; its `DOC_PAIRS` tuple already reflects the inverted README pair (`README.en.md` ↔ `README.md`).
 - Version is bumped in `pyproject.toml`; CI builds `usage.app.zip` and attaches it on `v*` tags (`.github/workflows/release.yml`).
 - The `.app` build flow renames `dist/main.app` → `dist/usage.app` (see `scripts/build_app.sh`) — this is expected, not a bug.
+
+### Versioning — Semantic Versioning 2.0.0 (required)
+
+Every version this fork publishes **must** follow [Semantic Versioning 2.0.0](https://semver.org/): `MAJOR.MINOR.PATCH`, tagged `vX.Y.Z`. Never invent date stamps, build numbers, or arbitrary suffixes.
+
+The project is currently in the `0.y.z` series, where SemVer designates the public API as unstable. Until a `1.0.0` is declared deliberately, apply the pre-1.0 rules:
+
+| Change | Bump | Examples in this project |
+|---|---|---|
+| Breaking — users must act, or behavior they relied on disappears | **MINOR** (`0.29.x` → `0.30.0`) | Removing UI languages; changing a hook's on-disk filename or settings key; dropping a `usage-*.json` read path; renaming a CLI flag |
+| New capability, backward compatible | **MINOR** | A new panel theme, a new CLI subcommand, a new quota source |
+| Bug fix or internal change, no interface movement | **PATCH** (`0.29.7` → `0.29.8`) | The redaction length floor; a Windows path fix; a typo in a translation |
+
+Post-1.0 the first row moves to MAJOR. Nothing else changes.
+
+Rules that hold regardless:
+
+- **`pyproject.toml`'s `version` is the single source of truth.** A `vX.Y.Z` tag must point at a commit whose `pyproject.toml` says exactly `X.Y.Z` — a tag whose code doesn't match its number is worse than no tag.
+- Accumulate changes under `## [Unreleased]` in **both** `CHANGELOG.md` and `CHANGELOG.zh-TW.md`; at release time rename that heading to `## [X.Y.Z] - YYYY-MM-DD` in both. `scripts/check_doc_parity.py` compares the newest version heading across the two files and fails CI if they disagree.
+- One version number per release, applied everywhere at once: `pyproject.toml`, both changelogs, the tag.

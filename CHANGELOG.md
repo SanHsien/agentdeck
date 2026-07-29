@@ -3,7 +3,8 @@
 [繁體中文](CHANGELOG.zh-TW.md) · English
 
 All notable changes to usage are documented here.
-Format follows [Keep a Changelog](https://keepachangelog.com/).
+Format follows [Keep a Changelog](https://keepachangelog.com/);
+versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
 ## [Unreleased]
 

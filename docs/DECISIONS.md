@@ -65,3 +65,37 @@
 - **環境變數塗銷** —— 一開始也被歸類為「環境汙染」，dev_check 曾移除短值的機密名稱環境變數來繞過。但根因其實在程式碼（`discussion_cli` 的塗銷沒有值長度下限），**已修復**（見 [`REPO_REVIEW.md`](../REPO_REVIEW.md) P3），繞道程式碼已從 dev_check 移除。
 
 **教訓**：繞道留在本機腳本裡，會讓本機的執行環境跟 CI 不一致，反而遮蔽同類回歸。根因修掉後要記得把繞道一起拆掉。
+
+---
+
+## D-05：版本一律採語意化版本（SemVer 2.0.0）
+
+**日期**：2026-07-29
+
+**決定**：本 fork 之後發的所有版本都用 `MAJOR.MINOR.PATCH`、tag 為 `vX.Y.Z`。不用日期版號、不用 build number、不加任意後綴。規則寫進 [`CLAUDE.md`](../CLAUDE.md) 的 Versioning 段與 [`AGENTS.md`](../AGENTS.md)，讓之後接手的 AI 一律遵守。
+
+**為什麼**：版號是給人與工具讀的合約——看到 PATCH 就知道可以無腦升，看到 MINOR 就知道要看 changelog。日期版號完全不帶這個訊息，升級風險得自己翻 diff 才知道。上游本來就用 `vX.Y.Z`，只是從未把規則寫下來，所以判斷標準散在各人腦裡。
+
+**目前處於 `0.y.z`**：SemVer 明定 `0.y.z` 的公開介面不穩定，所以破壞相容性的改動升 **MINOR** 而非 MAJOR。要進 `1.0.0` 必須是刻意宣告，不是自然長到那裡。
+
+**已知的判斷範例**：
+- 介面語言從五種減到兩種（D-02）→ 對日／韓使用者是破壞性改動 → **MINOR**。
+- 塗銷長度下限（P3 修復）→ 純修 bug、介面不動 → **PATCH**。
+
+**硬性約束**：`pyproject.toml` 的 `version` 是唯一真相，`vX.Y.Z` tag 必須指向版號相符的 commit。**版號與程式碼不符的 tag，比沒有 tag 更糟**——這正是本次 fork 一度出現的狀況（見 D-06）。
+
+---
+
+## D-06：吃下上游 v0.29.8，讓 tag 與程式碼相符
+
+**日期**：2026-07-29
+
+**背景**：清理 tag 時選擇只保留上游最新的 `v0.29.8`，但那個 tag 指向的 commit 並不在本 fork 的 `main` 歷史中——`pyproject.toml` 當時仍是 `0.29.7`。等於 repo 裡有一個宣稱 v0.29.8、實際不是 v0.29.8 的 tag。
+
+**決定**：合併 `upstream/main` 的那 2 個 commit（多螢幕面板位置、mypy 的 `ctypes.windll` 檢查，都是 Windows 修復），讓 tag 名副其實。
+
+**同時處理的分支清理**：fork 繼承自上游的 4 個分支全部刪除。
+- `feat/ai-council`、`fix/burn-rate-exclude-cache-read`：已完全併入 `main`，直接刪。
+- `fix/windows-claude-quota-fallback`、`fix/windows-project-resolver-drive-root`：初看像「上游未合併的 Windows 修復」，**實際比對後發現是過時的舊實作**——`main` 早已有同功能且更完整的版本（例如 `_encoded_path_root` 在 `main` 同時處理 `"C"` 與 `"C:"`，分支版只處理 `"C:"`），分支版的 `usage_session_resume.py` 甚至還帶著 D-02 已刪除的語言表。合併會退步，因此一併刪除。
+
+**教訓**：`git log main..branch` 顯示「分支領先 N 個 commit」只說明 commit 不在歷史中，**不代表改動沒進去**——上游可能 squash 合併或重新實作過。判斷分支要不要留，得比對**當前檔案內容**，不是比對 commit 圖。

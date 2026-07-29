@@ -2,7 +2,8 @@
 
 繁體中文 · [English](CHANGELOG.md)
 
-本檔記錄 usage 所有重要變更。格式參考 [Keep a Changelog](https://keepachangelog.com/)。
+本檔記錄 usage 所有重要變更。格式參考 [Keep a Changelog](https://keepachangelog.com/)，
+版號遵循[語意化版本 2.0.0](https://semver.org/lang/zh-TW/)。
 
 ## [Unreleased]
 

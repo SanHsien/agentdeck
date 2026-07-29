@@ -70,5 +70,6 @@ menu bar 模式是 macOS 專屬；Windows 對應的是 `wintray.py`（system tra
 - 文件用繁體中文撰寫；`README.en.md` 與其他英文版文件（CONTRIBUTING / SECURITY / CHANGELOG / docs/DEVELOPMENT）維持英文，中英內容要互相對應。
 - 改 README 時**兩邊一起改**：`README.md`（繁中）與 `README.en.md`（英文）的 `##` 章節數必須一致，CI 的 `scripts/check_doc_parity.py` 會擋。
 - 動任何 `~/.claude/settings.json` 的安裝／解除流程（`setup_hook.py`、`session_hooks.py`）前先備份，那會動到本機真實的 Claude Code 設定。
+- **版本一律用語意化版本（SemVer 2.0.0）**：`MAJOR.MINOR.PATCH`，tag 為 `vX.Y.Z`，**禁止**自創日期版號、build number 或任意後綴。目前在 `0.y.z` 階段：破壞相容性的改動（移除語言、改 hook 檔名／設定 key、拔掉讀取路徑、改 CLI 參數）進 **MINOR**，新功能也進 MINOR，純修 bug 進 **PATCH**；滿 `1.0.0` 之後破壞性改動才升 MAJOR。`pyproject.toml` 的 `version` 是唯一真相，tag 必須指向版號相符的 commit。完整規則見 [`CLAUDE.md`](CLAUDE.md) 的 Versioning 段。
 - **測試綠了才准 commit**：`pwsh tools/dev_check.ps1` 全綠再提交，驗證與 commit 之間用 `&&` 閘門，不要用 `;` 串接。
 - **修 bug 必回註 `REPO_REVIEW.md`**：每修掉一個列出的問題，回到對應項目補上修復 commit hash 與日期；過程中額外發現並修掉的也要補註。review 維持 latest-only，修復狀態必須跟上現況。
