@@ -21,7 +21,7 @@ Keep Claude Code, Codex, and Antigravity quota in view while you work. `usage` p
   <img src="docs/showcase.en.png" alt="usage — Claude Code, Codex, and Antigravity quota pinned to the macOS menu bar" width="820">
 </p>
 
-`usage` keeps your **Claude Code, Codex, and Antigravity** quota pinned to the top-right of your screen, color-coded so warning levels read at a glance. Every number is read passively from local files already on your machine. It **never calls the Anthropic / OpenAI API** and **never reads the Keychain**, so the monitor itself never adds to your token usage.
+`usage` keeps your **Claude Code, Codex, and Antigravity** quota pinned to the top-right of your screen, color-coded so warning levels read at a glance. Claude Code and Codex numbers are read passively from local files already on your machine, and reading them **never calls Anthropic or OpenAI's LLM APIs** — so watching your quota never adds to your token usage. Antigravity quota comes from Google's official quota endpoint, using the sign-in the Antigravity CLI already stores locally.
 
 ## Why usage?
 
@@ -68,14 +68,13 @@ It lands in your Applications folder automatically. Right-click **Open** once to
 
 ## Privacy & Data Sources
 
-- Usage numbers are read **only from local log files** on your machine.
-- It **never calls the Anthropic / OpenAI API** and **never reads the Keychain** (macOS's password vault).
-- Antigravity quota is fetched from the official quota API using the OAuth token the Antigravity CLI stores locally after sign-in. `usage` treats that token file as strictly read-only, and the call itself only reads quota metadata — it never consumes your model quota.
-- The only network activity: fetching a public model-pricing table to estimate cost (falls back to built-in prices offline) and occasionally checking GitHub for a new version. **Nothing is ever uploaded.**
+- Claude Code and Codex numbers are read **only from local log files** on your machine; reading them **never calls Anthropic or OpenAI's LLM APIs**.
+- Antigravity quota requires network access, and only if you use it: quota is fetched from Google's official quota endpoint using the OAuth credential the Antigravity CLI already stored after sign-in — read from macOS Keychain, Windows Credential Manager, or a local token file depending on CLI version. `usage` reads that credential without writing it back and keeps any refreshed access token in memory only; the call itself only reads quota metadata and never consumes your model quota.
+- Background network activity: the Antigravity quota/token endpoints above, public Claude and Codex status pages to flag outages, a public model-pricing table to estimate cost (falls back to built-in prices offline), and occasionally checking GitHub for a new version. Claude Code and Codex log contents are never uploaded.
 
 ## Requirements
 
-- macOS or Windows 10/11
+- macOS 12 (Monterey) or newer, or Windows 10/11
 - Claude Code, Codex, or Antigravity has been used at least once (so local usage data exists).
 - (Source runs only) Python 3.13.
 
@@ -101,7 +100,7 @@ brew install --cask aqua5230/usage/usage
 
 Windows has the full core experience: the TUI, Claude Code status-line hook, and Codex history parsing all work natively. Download `usage-windows.zip` from the [latest GitHub Release](https://github.com/aqua5230/usage/releases/latest), unzip it, then run `usage.exe`—no installer is needed. The tray UI requires Microsoft Edge WebView2 Runtime, which is normally included with Windows 10 and 11.
 
-The system-tray icon updates with your Claude quota percentage; its tooltip summarizes the Claude and Codex windows. Left-click opens the same 11 HTML panels as macOS (Classic plus the ten themes) in WebView2. Right-click provides panel switching, refresh, launch at login, check for updates, and quit.
+The system-tray icon updates with your Claude quota percentage; its tooltip summarizes the Claude and Codex windows. Left-click opens the same 10 quota themes available on macOS (Classic plus the other nine) in WebView2. Right-click provides panel switching, refresh, launch at login, check for updates, and quit.
 
 Windows differences: the panel opens at the bottom-right of the working area rather than next to the tray icon; update prompts use a system Yes/No dialog; and the AI Talent Market and AI Council panels are macOS-only.
 
@@ -136,7 +135,7 @@ If the menu bar shows `--`, it's usually not broken — there's just no local da
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
 | Menu bar shows `--` | No data yet, or Claude Code hook not refreshed | Run one Codex conversation. For Claude Code, click "Set Up Status Line" or run `python3 main.py --setup` |
-| Accidentally hit "Quit" | Process terminated | Launch `usage.app` from Spotlight / Applications, or run `launchctl start com.lollapalooza.usage` |
+| Accidentally hit "Quit" | Process terminated | Relaunch `usage.app` from Spotlight or Applications. (`launchctl start com.lollapalooza.usage` only works if you enabled Launch at Login.) |
 | Status says "N minutes stale" | Claude Code isn't running | Open Claude Code and let it run |
 | Codex section is empty | No Codex history found | Run a Codex conversation to generate logs |
 | Today's cost shows $0.00 | Model pricing missing | Delete `~/.usage/pricing_cache.json` or check `USAGE_DEBUG=1` |
@@ -159,7 +158,7 @@ If the menu bar shows `--`, it's usually not broken — there's just no local da
 | AI Update Daily | ✅ | — | — |
 | Progress Concierge & Token Saver | ✅ | — | — |
 | Token-waste Health Check | ✅ | — | — |
-| Zero API calls | ✅ | ✅ | ✅ |
+| No LLM API calls to read quota | ✅ | ✅ | ✅ |
 | Open-source license | AGPL-3.0 | MIT | — |
 
 ## Development

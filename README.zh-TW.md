@@ -21,7 +21,7 @@
   <img src="docs/showcase.en.png" alt="usage — 把 Claude Code、Codex 與 Antigravity 的額度釘在 macOS 選單列" width="820">
 </p>
 
-`usage` 把 **Claude Code、Codex 與 Antigravity** 的額度釘在螢幕右上角的選單列，用顏色標好警戒級別，掃一眼就懂。每個數字都被動讀自你機器上原本就在寫的本機檔案。它**不呼叫 Anthropic / OpenAI 的 API，也不讀 Keychain**，所以這個監看器本身永遠不會增加你的用量。
+`usage` 把 **Claude Code、Codex 與 Antigravity** 的額度釘在螢幕右上角的選單列，用顏色標好警戒級別，掃一眼就懂。Claude Code 與 Codex 的數字是被動讀自你機器上原本就在寫的本機檔案，讀取這些數字**不會呼叫 Anthropic 或 OpenAI 的 LLM API**——所以看額度這件事本身永遠不會增加你的用量。Antigravity 額度則來自 Google 官方額度端點，用的是 Antigravity CLI 本來就存在本機的登入身分。
 
 ## 為什麼需要 usage？
 
@@ -68,14 +68,13 @@ brew install --cask aqua5230/usage/usage
 
 ## 隱私與資料來源
 
-- 用量數字**只讀本機紀錄檔**。
-- **絕對不呼叫 Anthropic / OpenAI API，不讀 Keychain**（macOS 內建密碼保險箱）。
-- Antigravity 額度是用 Antigravity CLI 登入後存在本機的 OAuth token 向官方額度 API 查詢。`usage` 對那個 token 檔只讀不寫，這個呼叫也只讀額度資訊——絕不消耗你的模型額度。
-- 唯二連網：抓公開價格表估算成本（斷網會用內建預設），以及偶爾檢查 GitHub 版本更新。**不會上傳任何資料。**
+- Claude Code 與 Codex 的數字**只讀本機紀錄檔**；讀取這些數字**不會呼叫 Anthropic 或 OpenAI 的 LLM API**。
+- Antigravity 額度需要連網，而且只有你真的使用它才會發生：額度是用 Antigravity CLI 登入後存下的 OAuth 憑證，向 Google 官方額度端點查詢——依 CLI 版本不同，這個憑證讀自 macOS Keychain、Windows 認證管理員，或本機 token 檔。`usage` 只讀取這個憑證而不寫回，任何刷新後的 access token 也只留在記憶體中；這個呼叫本身只讀額度資訊，絕不消耗你的模型額度。
+- 背景連網範圍：上述 Antigravity 額度／token 端點、用來標示故障的 Claude 與 Codex 公開狀態頁、估算成本用的公開價格表（斷網會用內建預設），以及偶爾檢查 GitHub 版本更新。Claude Code 與 Codex 的紀錄檔內容不會被上傳。
 
 ## 環境需求
 
-- macOS 或 Windows 10/11
+- macOS 12（Monterey）或更新版本，或 Windows 10/11
 - 已經使用過 Claude Code、Codex 或 Antigravity（需有本機用量資料）
 - （僅限從原始碼跑）Python 3.13
 
@@ -101,7 +100,7 @@ brew install --cask aqua5230/usage/usage
 
 Windows 可完整使用核心功能：TUI、Claude Code 狀態列 hook 與 Codex 記錄解析都原生支援。從[最新 GitHub Release](https://github.com/aqua5230/usage/releases/latest)下載 `usage-windows.zip`，解壓後執行 `usage.exe` 即可，無須安裝程式。系統匣 UI 需要 Microsoft Edge WebView2 Runtime；Windows 10 與 11 通常已內建。
 
-系統匣圖示會隨 Claude 額度百分比更新；提示文字摘要 Claude 與 Codex 的各視窗。左鍵會用 WebView2 開啟與 macOS 相同的 11 款 HTML 面板（Classic 加十款主題）；右鍵可切換面板、重新整理、設定開機自啟、檢查更新與結束。
+系統匣圖示會隨 Claude 額度百分比更新；提示文字摘要 Claude 與 Codex 的各視窗。左鍵會用 WebView2 開啟與 macOS 相同的 10 款主題面板（Classic 加另外九款）；右鍵可切換面板、重新整理、設定開機自啟、檢查更新與結束。
 
 Windows 的差異：面板開在工作區右下角，而非貼齊系統匣圖示；更新提示使用系統 Yes/No 對話框；AI 人才市場與 AI 圓桌討論面板僅提供 macOS。
 
@@ -136,7 +135,7 @@ Windows 的差異：面板開在工作區右下角，而非貼齊系統匣圖示
 | 症狀 | 原因 | 解法 |
 |------|------|------|
 | menu bar 顯示 `--` | 尚無資料或 hook 未更新 | 先跑一次 Codex。若為 Claude Code，點擊「設定狀態列」或跑 `python3 main.py --setup` |
-| 不小心按到「結束」 | 程式已終止 | 透過 Spotlight 重新開啟 `usage.app`，或跑 `launchctl start com.lollapalooza.usage` |
+| 不小心按到「結束」 | 程式已終止 | 透過 Spotlight 或應用程式重新開啟 `usage.app`。（`launchctl start com.lollapalooza.usage` 只在你開啟過「開機自啟」時才有作用。） |
 | 顯示「N 分鐘未更新」 | Claude Code 未執行 | 打開 Claude Code 跑一下就會更新 |
 | Codex 區塊空白 | 找不到 Codex 紀錄 | 用 Codex 跑一次對話 |
 | 今日花費是 $0.00 | 價格表對不上或抓取失敗 | 刪掉 `~/.usage/pricing_cache.json` 重新抓取 |
@@ -159,7 +158,7 @@ Windows 的差異：面板開在工作區右下角，而非貼齊系統匣圖示
 | AI 更新日報 | ✅ | — | — |
 | 進度管家與省 token 模式 | ✅ | — | — |
 | Token 浪費健檢 | ✅ | — | — |
-| 零 API 呼叫 | ✅ | ✅ | ✅ |
+| 讀取額度時不呼叫 LLM API | ✅ | ✅ | ✅ |
 | 開源授權 | AGPL-3.0 | MIT | — |
 
 ## 開發

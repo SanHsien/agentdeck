@@ -21,7 +21,7 @@
   <img src="docs/showcase.en.png" alt="usage — 固定在 macOS 菜单栏中的 Claude Code、Codex 与 Antigravity 配额" width="820">
 </p>
 
-`usage` 将你的 **Claude Code、Codex 和 Antigravity** 配额固定显示在屏幕右上角，并以颜色区分，让你一眼辨识警示等级。所有数值都以被动方式从你电脑上已有的本地文件读取。它**从不调用 Anthropic / OpenAI API**，也**从不读取钥匙串**，因此这个监视器本身不会增加你的 token 使用量。
+`usage` 将你的 **Claude Code、Codex 和 Antigravity** 配额固定显示在屏幕右上角，并以颜色区分，让你一眼辨识警示等级。Claude Code 和 Codex 的数值以被动方式从你电脑上已有的本地文件读取，读取这些数值**不会调用 Anthropic 或 OpenAI 的 LLM API**——所以查看配额本身永远不会增加你的 token 使用量。Antigravity 配额则来自 Google 官方配额接口，使用的是 Antigravity CLI 本就保存在本机的登录身份。
 
 ## 为什么选择 usage？
 
@@ -68,14 +68,13 @@ brew install --cask aqua5230/usage/usage
 
 ## 隐私与数据来源
 
-- 使用量数值**仅从本机本地日志文件**读取。
-- 它**从不调用 Anthropic / OpenAI API**，也**从不读取钥匙串**（macOS 的密码保险库）。
-- Antigravity 配额通过 Antigravity CLI 登录后保存在本地的 OAuth token 向官方配额 API 查询。`usage` 对该 token 文件只读不写，该调用也只读取配额信息——绝不消耗你的模型配额。
-- 唯一的网络活动：获取公开的模型价格表以估算费用（离线时回退到内置价格），以及偶尔在 GitHub 检查新版本。**绝不会上传任何内容。**
+- Claude Code 和 Codex 的数值**仅从本机本地日志文件**读取；读取这些数值**不会调用 Anthropic 或 OpenAI 的 LLM API**。
+- Antigravity 配额需要联网，且只有你实际使用它才会发生：配额通过 Antigravity CLI 登录后保存的 OAuth 凭据，向 Google 官方配额接口查询——依 CLI 版本不同，该凭据读自 macOS 钥匙串、Windows 凭据管理器，或本地 token 文件。`usage` 只读取该凭据而不写回，任何刷新后的 access token 也只保留在内存中；该调用本身只读取配额信息，绝不消耗你的模型配额。
+- 后台网络活动范围：上述 Antigravity 配额／token 接口、用于标记故障的 Claude 与 Codex 公开状态页、用于估算费用的公开模型价格表（离线时回退到内置价格），以及偶尔在 GitHub 检查新版本。Claude Code 与 Codex 的日志内容不会被上传。
 
 ## 系统要求
 
-- macOS 或 Windows 10/11
+- macOS 12（Monterey）或更新版本，或 Windows 10/11
 - 至少使用过一次 Claude Code、Codex 或 Antigravity（以便存在本地使用数据）。
 - （仅限源代码运行）Python 3.13。
 
@@ -101,7 +100,7 @@ brew install --cask aqua5230/usage/usage
 
 Windows 原生支持完整核心功能：TUI、Claude Code 状态栏 hook 和 Codex 记录解析均可使用。从[最新 GitHub Release](https://github.com/aqua5230/usage/releases/latest)下载 `usage-windows.zip`，解压后直接运行 `usage.exe`，无需安装。系统托盘 UI 需要 Microsoft Edge WebView2 Runtime；Windows 10 和 11 通常已经内置。
 
-系统托盘图标会随 Claude 配额百分比更新；提示文字会汇总 Claude 和 Codex 的各个窗口。左键通过 WebView2 打开与 macOS 相同的 11 个 HTML 面板（Classic 加十个主题）；右键可切换面板、刷新、设置开机自启、检查更新和退出。
+系统托盘图标会随 Claude 配额百分比更新；提示文字会汇总 Claude 和 Codex 的各个窗口。左键通过 WebView2 打开与 macOS 相同的 10 款主题面板（Classic 加另外九款）；右键可切换面板、刷新、设置开机自启、检查更新和退出。
 
 Windows 的差异：面板显示在工作区右下角，而不是紧贴系统托盘图标；更新提示使用系统 Yes/No 对话框；AI 人才市场与 AI 圆桌讨论面板仅限 macOS。
 
@@ -136,7 +135,7 @@ Windows 的差异：面板显示在工作区右下角，而不是紧贴系统托
 | 症状 | 可能原因 | 解决方法 |
 |---------|--------------|-----|
 | 菜单栏显示 `--` | 尚无数据，或 Claude Code hook 未刷新 | 进行一次 Codex 对话。对于 Claude Code，点击“Set Up Status Line”或运行 `python3 main.py --setup` |
-| 误点“Quit” | 进程已终止 | 从 Spotlight / Applications 启动 `usage.app`，或运行 `launchctl start com.lollapalooza.usage` |
+| 误点“Quit” | 进程已终止 | 从 Spotlight 或 Applications 重新启动 `usage.app`。（`launchctl start com.lollapalooza.usage` 仅在你开启过“开机自启”时有效。） |
 | 状态显示“N minutes stale” | Claude Code 未运行 | 打开 Claude Code 并让它运行 |
 | Codex 区块为空 | 未找到 Codex 历史记录 | 进行一次 Codex 对话以生成日志 |
 | 今日费用显示 $0.00 | 缺少模型价格 | 删除 `~/.usage/pricing_cache.json`，或检查 `USAGE_DEBUG=1` |
@@ -159,7 +158,7 @@ Windows 的差异：面板显示在工作区右下角，而不是紧贴系统托
 | AI 更新日报 | ✅ | — | — |
 | 进度管家与 Token 节省器 | ✅ | — | — |
 | Token 浪费健康检查 | ✅ | — | — |
-| 零 API 调用 | ✅ | ✅ | ✅ |
+| 读取配额时不调用 LLM API | ✅ | ✅ | ✅ |
 | 开源许可证 | AGPL-3.0 | MIT | — |
 
 ## 开发

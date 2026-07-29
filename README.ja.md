@@ -21,7 +21,7 @@
   <img src="docs/showcase.en.png" alt="usage — macOSメニューバーに固定されたClaude Code、Codex、Antigravityのクォータ" width="820">
 </p>
 
-`usage` は **Claude Code、Codex、Antigravity** のクォータを画面右上に固定し、警告レベルをひと目で判断できるよう色分けして表示します。すべての数値は、すでにマシンにあるローカルファイルから受動的に読み取られます。**Anthropic / OpenAI API を呼び出すことはなく**、**キーチェーンを読み取ることもありません**。そのため、モニター自体がtoken使用量を増やすことはありません。
+`usage` は **Claude Code、Codex、Antigravity** のクォータを画面右上に固定し、警告レベルをひと目で判断できるよう色分けして表示します。Claude CodeとCodexの数値は、すでにマシンにあるローカルファイルから受動的に読み取られ、それらを読み取る際に**Anthropic または OpenAI の LLM API を呼び出すことはありません**——そのため、クォータを見ること自体がtoken使用量を増やすことはありません。Antigravityのクォータは、Antigravity CLIがすでにローカルに保存しているサインイン情報を使ってGoogleの公式クォータエンドポイントから取得します。
 
 ## なぜusage？
 
@@ -68,14 +68,13 @@ Applicationsフォルダに自動でインストールされます。Gatekeeper�
 
 ## プライバシーとデータソース
 
-- 使用量の数値は、マシン上の**ローカルログファイルのみ**から読み取られます。
-- **Anthropic / OpenAI API を呼び出すことはなく**、**キーチェーンを読み取ることもありません**（macOSのパスワード保管庫）。
-- Antigravityのクォータは、Antigravity CLIがサインイン後にローカルへ保存するOAuth tokenを使って公式クォータAPIに問い合わせて取得します。`usage` はそのtokenファイルを読み取り専用として扱い、この呼び出しもクォータ情報を読むだけです——あなたのモデルクォータを消費することは決してありません。
-- ネットワーク通信は、コスト見積もり用の公開モデル価格表の取得（オフライン時は内蔵価格にフォールバック）と、GitHubでの新バージョン確認をときどき行うだけです。**何もアップロードされることはありません。**
+- Claude CodeとCodexの数値は、マシン上の**ローカルログファイルのみ**から読み取られ、それらを読み取る際に**Anthropic または OpenAI の LLM API を呼び出すことはありません**。
+- Antigravityのクォータにはネットワーク接続が必要で、実際に使用している場合のみ発生します：クォータは、Antigravity CLIがサインイン後に保存したOAuth資格情報を使ってGoogleの公式クォータエンドポイントに問い合わせて取得します——CLIのバージョンにより、macOSのキーチェーン、Windowsの資格情報マネージャー、またはローカルのtokenファイルから読み取られます。`usage` はその資格情報を読み取るだけで書き戻さず、更新されたaccess tokenもメモリ内にのみ保持します。この呼び出し自体もクォータ情報を読むだけで、あなたのモデルクォータを消費することは決してありません。
+- バックグラウンドのネットワーク通信は、上記のAntigravityクォータ／tokenエンドポイント、障害を知らせるためのClaudeとCodexの公開ステータスページ、コスト見積もり用の公開モデル価格表の取得（オフライン時は内蔵価格にフォールバック）、およびときどき行われるGitHubでの新バージョン確認です。Claude CodeとCodexのログ内容がアップロードされることはありません。
 
 ## 必要環境
 
-- macOS または Windows 10/11
+- macOS 12（Monterey）以降、または Windows 10/11
 - Claude Code、Codex、またはAntigravityを少なくとも一度使用済みであること（ローカル使用量データが存在するため）。
 - （ソースから実行する場合のみ）Python 3.13。
 
@@ -101,7 +100,7 @@ brew install --cask aqua5230/usage/usage
 
 Windowsでも主要機能をすべてネイティブで利用できます。TUI、Claude Codeのステータスラインhook、Codex履歴の解析に対応しています。[最新のGitHub Release](https://github.com/aqua5230/usage/releases/latest)から`usage-windows.zip`をダウンロードし、展開して`usage.exe`を実行してください。インストールは不要です。システムトレイUIにはMicrosoft Edge WebView2 Runtimeが必要ですが、通常はWindows 10/11に含まれています。
 
-システムトレイのアイコンはClaudeのクォータ率に合わせて更新され、ツールチップにはClaudeとCodexの各ウィンドウの概要が表示されます。左クリックでWebView2上にmacOSと同じ11種類のHTMLパネル（Classicと10テーマ）を開き、右クリックではパネル切替、更新、ログイン時に起動、更新確認、終了を行えます。
+システムトレイのアイコンはClaudeのクォータ率に合わせて更新され、ツールチップにはClaudeとCodexの各ウィンドウの概要が表示されます。左クリックでWebView2上にmacOSと同じ10種類のテーマパネル（Classicと他の9テーマ）を開き、右クリックではパネル切替、更新、ログイン時に起動、更新確認、終了を行えます。
 
 Windowsでの相違点：パネルはトレイアイコンの隣ではなく作業領域の右下に開きます。更新通知はシステムのYes/Noダイアログです。AI Talent MarketおよびAI円卓会議パネルはmacOS専用です。
 
@@ -136,7 +135,7 @@ UIから直接 **10種類のビジュアルテーマ**を切り替えられま�
 | 症状 | 考えられる原因 | 対処法 |
 |---------|--------------|-----|
 | メニューバーに `--` と表示される | データがまだない、またはClaude Code hookが更新されていない | Codexで会話を一度実行します。Claude Codeでは「Set Up Status Line」をクリックするか、`python3 main.py --setup` を実行します |
-| 誤って「Quit」を選んだ | プロセスが終了した | Spotlight / Applicationsから `usage.app` を起動するか、`launchctl start com.lollapalooza.usage` を実行します |
+| 誤って「Quit」を選んだ | プロセスが終了した | SpotlightまたはApplicationsから `usage.app` を再起動してください（`launchctl start com.lollapalooza.usage` はログイン時に起動を有効にしている場合のみ機能します）。 |
 | 状態が「N minutes stale」と表示される | Claude Codeが実行されていない | Claude Codeを開いて実行したままにします |
 | Codexセクションが空 | Codex履歴が見つからない | Codexで会話を実行してログを生成します |
 | 今日のコストが$0.00と表示される | モデル価格情報がない | `~/.usage/pricing_cache.json` を削除するか、`USAGE_DEBUG=1` を確認します |
@@ -159,7 +158,7 @@ UIから直接 **10種類のビジュアルテーマ**を切り替えられま�
 | AI更新日報 | ✅ | — | — |
 | 進捗コンシェルジュとToken セーバー | ✅ | — | — |
 | Token浪費ヘルスチェック | ✅ | — | — |
-| API呼び出しゼロ | ✅ | ✅ | ✅ |
+| クォータ読取時のLLM API呼び出しなし | ✅ | ✅ | ✅ |
 | オープンソースライセンス | AGPL-3.0 | MIT | — |
 
 ## 開発

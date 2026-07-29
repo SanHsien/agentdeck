@@ -21,7 +21,7 @@
   <img src="docs/showcase.en.png" alt="usage — macOS 메뉴 막대에 고정된 Claude Code, Codex, Antigravity 할당량" width="820">
 </p>
 
-`usage`는 화면 오른쪽 상단에 **Claude Code, Codex, Antigravity** 할당량을 고정하고, 경고 수준을 한눈에 파악하도록 색상으로 구분합니다. 모든 수치는 이미 컴퓨터에 있는 로컬 파일에서 수동적으로 읽습니다. **Anthropic / OpenAI API를 호출하지 않으며**, **키체인도 읽지 않으므로** 모니터 자체가 token 사용량을 늘리지 않습니다.
+`usage`는 화면 오른쪽 상단에 **Claude Code, Codex, Antigravity** 할당량을 고정하고, 경고 수준을 한눈에 파악하도록 색상으로 구분합니다. Claude Code와 Codex의 수치는 이미 컴퓨터에 있는 로컬 파일에서 수동적으로 읽으며, 이를 읽을 때 **Anthropic 또는 OpenAI의 LLM API를 호출하지 않습니다**——그래서 할당량을 보는 것 자체가 token 사용량을 늘리지 않습니다. Antigravity 할당량은 Antigravity CLI가 이미 로컬에 저장해 둔 로그인 정보를 사용해 Google의 공식 할당량 엔드포인트에서 가져옵니다.
 
 ## 왜 usage인가요?
 
@@ -68,14 +68,13 @@ Applications 폴더에 자동으로 설치됩니다. Gatekeeper를 통과하려�
 
 ## 개인정보 보호와 데이터 소스
 
-- 사용량 수치는 컴퓨터의 **로컬 로그 파일에서만** 읽습니다.
-- **Anthropic / OpenAI API를 호출하지 않으며**, **키체인도 읽지 않습니다**(macOS의 암호 보관함).
-- Antigravity 할당량은 Antigravity CLI가 로그인 후 로컬에 저장하는 OAuth token으로 공식 할당량 API에 조회해 가져옵니다. `usage`는 그 token 파일을 읽기 전용으로만 다루며, 이 호출 역시 할당량 정보만 읽습니다——모델 할당량을 소비하는 일은 결코 없습니다.
-- 유일한 네트워크 활동은 비용 추정을 위한 공개 모델 가격표 가져오기(오프라인에서는 내장 가격으로 대체)와 가끔 GitHub에서 새 버전을 확인하는 것입니다. **어떤 데이터도 업로드하지 않습니다.**
+- Claude Code와 Codex의 수치는 컴퓨터의 **로컬 로그 파일에서만** 읽으며, 이를 읽을 때 **Anthropic 또는 OpenAI의 LLM API를 호출하지 않습니다**.
+- Antigravity 할당량에는 네트워크 연결이 필요하며, 실제로 사용하는 경우에만 해당됩니다: 할당량은 Antigravity CLI가 로그인 후 저장한 OAuth 자격 증명으로 Google의 공식 할당량 엔드포인트에 조회해 가져옵니다——CLI 버전에 따라 macOS 키체인, Windows 자격 증명 관리자, 또는 로컬 token 파일에서 읽습니다. `usage`는 그 자격 증명을 다시 쓰지 않고 읽기만 하며, 갱신된 access token도 메모리에만 보관합니다. 이 호출 자체도 할당량 정보만 읽으며, 모델 할당량을 소비하는 일은 결코 없습니다.
+- 백그라운드 네트워크 활동 범위: 위의 Antigravity 할당량/token 엔드포인트, 장애를 알리기 위한 Claude와 Codex의 공개 상태 페이지, 비용 추정을 위한 공개 모델 가격표(오프라인에서는 내장 가격으로 대체), 그리고 가끔 GitHub에서 새 버전을 확인하는 것입니다. Claude Code와 Codex의 로그 내용은 업로드되지 않습니다.
 
 ## 요구 사항
 
-- macOS 또는 Windows 10/11
+- macOS 12(Monterey) 이상, 또는 Windows 10/11
 - Claude Code, Codex 또는 Antigravity를 한 번 이상 사용한 적이 있어야 합니다(로컬 사용량 데이터가 있어야 함).
 - (소스 실행만 해당) Python 3.13.
 
@@ -101,7 +100,7 @@ brew install --cask aqua5230/usage/usage
 
 Windows에서도 핵심 기능을 모두 네이티브로 사용할 수 있습니다. TUI, Claude Code 상태 줄 hook, Codex 기록 분석을 지원합니다.[최신 GitHub Release](https://github.com/aqua5230/usage/releases/latest)에서 `usage-windows.zip`을 내려받아 압축을 풀고 `usage.exe`를 실행하면 됩니다. 설치는 필요하지 않습니다. 시스템 트레이 UI에는 Microsoft Edge WebView2 Runtime이 필요하며, 보통 Windows 10/11에 이미 포함되어 있습니다.
 
-시스템 트레이 아이콘은 Claude 할당량 비율에 따라 업데이트되고, 도구 설명에는 Claude와 Codex의 각 창 요약이 표시됩니다. 왼쪽 클릭하면 WebView2에서 macOS와 같은 11개 HTML 패널(Classic과 10개 테마)을 열고, 오른쪽 클릭 메뉴에서는 패널 전환, 새로 고침, 로그인 시 실행, 업데이트 확인, 종료를 할 수 있습니다.
+시스템 트레이 아이콘은 Claude 할당량 비율에 따라 업데이트되고, 도구 설명에는 Claude와 Codex의 각 창 요약이 표시됩니다. 왼쪽 클릭하면 WebView2에서 macOS와 같은 10개 테마 패널(Classic과 나머지 9개)을 열고, 오른쪽 클릭 메뉴에서는 패널 전환, 새로 고침, 로그인 시 실행, 업데이트 확인, 종료를 할 수 있습니다.
 
 Windows의 차이점: 패널은 트레이 아이콘 옆이 아니라 작업 영역 오른쪽 아래에 열립니다. 업데이트 알림은 시스템 Yes/No 대화 상자를 사용합니다. AI Talent Market 및 AI 원탁 토론 패널은 macOS 전용입니다.
 
@@ -136,7 +135,7 @@ UI에서 직접 **10가지 시각 테마**를 전환하세요.
 | 증상 | 가능한 원인 | 해결 방법 |
 |---------|--------------|-----|
 | 메뉴 막대에 `--` 표시 | 아직 데이터가 없거나 Claude Code hook이 갱신되지 않음 | Codex 대화를 한 번 실행하세요. Claude Code는 "Set Up Status Line"을 클릭하거나 `python3 main.py --setup`을 실행하세요 |
-| 실수로 "Quit" 선택 | 프로세스가 종료됨 | Spotlight / Applications에서 `usage.app`을 실행하거나 `launchctl start com.lollapalooza.usage`을 실행하세요 |
+| 실수로 "Quit" 선택 | 프로세스가 종료됨 | Spotlight 또는 Applications에서 `usage.app`을 다시 실행하세요. (`launchctl start com.lollapalooza.usage`는 로그인 시 실행을 켜둔 경우에만 작동합니다.) |
 | 상태에 "N minutes stale" 표시 | Claude Code가 실행 중이 아님 | Claude Code를 열고 실행 상태로 두세요 |
 | Codex 섹션이 비어 있음 | Codex 기록을 찾지 못함 | Codex 대화를 실행하여 로그를 생성하세요 |
 | 오늘 비용이 $0.00으로 표시 | 모델 가격 정보 없음 | `~/.usage/pricing_cache.json`을 삭제하거나 `USAGE_DEBUG=1`을 확인하세요 |
@@ -159,7 +158,7 @@ UI에서 직접 **10가지 시각 테마**를 전환하세요.
 | AI 업데이트 일보 | ✅ | — | — |
 | 진행 상황 컨시어지 및 Token 절약기 | ✅ | — | — |
 | Token 낭비 상태 점검 | ✅ | — | — |
-| API 호출 없음 | ✅ | ✅ | ✅ |
+| 할당량 조회 시 LLM API 호출 없음 | ✅ | ✅ | ✅ |
 | 오픈 소스 라이선스 | AGPL-3.0 | MIT | — |
 
 ## 개발
