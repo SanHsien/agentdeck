@@ -841,6 +841,56 @@ def test_sensitive_environment_values_are_redacted_from_errors(
     assert errors == ["request failed for [REDACTED]"]
 
 
+def test_short_sensitive_environment_values_do_not_redact_ordinary_output(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The environment is inherited wholesale, so name-only matches like Claude
+    # Code's CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH=1 reach the redactor. A
+    # single-character value must not blank out every "1" in the diagnostic.
+    process = FakeProcess(
+        io.StringIO(),
+        io.StringIO("CLI exited with status 1 after 1 retry\n"),
+        returncode=1,
+    )
+    _install_fake_popen(monkeypatch, process)
+
+    _, errors, _, _ = _run(
+        ClaudeAdapter(),
+        _invocation(env={"CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH": "1"}),
+    )
+
+    assert errors == ["CLI exited with status 1 after 1 retry"]
+
+
+@pytest.mark.parametrize(
+    ("length", "expect_redacted"),
+    [
+        (discussion_cli.MIN_REDACTED_VALUE_LENGTH - 1, False),
+        (discussion_cli.MIN_REDACTED_VALUE_LENGTH, True),
+    ],
+)
+def test_redaction_length_floor_is_inclusive(
+    monkeypatch: pytest.MonkeyPatch,
+    length: int,
+    expect_redacted: bool,
+) -> None:
+    value = "s" * length
+    process = FakeProcess(
+        io.StringIO(),
+        io.StringIO(f"request failed for {value}\n"),
+        returncode=1,
+    )
+    _install_fake_popen(monkeypatch, process)
+
+    _, errors, _, _ = _run(
+        ClaudeAdapter(),
+        _invocation(env={"SERVICE_TOKEN": value}),
+    )
+
+    expected = "[REDACTED]" if expect_redacted else value
+    assert errors == [f"request failed for {expected}"]
+
+
 def test_stream_output_limit_appends_visible_marker(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

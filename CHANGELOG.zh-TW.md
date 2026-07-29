@@ -4,6 +4,11 @@
 
 本檔記錄 usage 所有重要變更。格式參考 [Keep a Changelog](https://keepachangelog.com/)。
 
+## [Unreleased]
+
+### 修正
+- **AI 圓桌討論的錯誤訊息不再被無關的環境變數打碎**：CLI 參與者失敗時，診斷文字會被掃過一遍，把「*名稱*看起來像機密」的環境變數（`TOKEN`、`KEY`、`SECRET`、`AUTH` 等）的值換成 `[REDACTED]`。掃描範圍是整個繼承下來的環境，而替換又沒有設下最短長度——於是像 Claude Code 自己注入的 `CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH=1` 這種只是名稱撞到的無害旗標，會把訊息裡**每一個** `1` 都換掉，`CLI exited with status 1` 變成 `CLI exited with status [REDACTED]`。現在長度不足 8 個字元的值不再塗銷，這個門檻遠低於任何真實憑證的長度，原本真正受保護的內容不會因此外露。
+
 ## [0.29.7] - 2026-07-29
 
 ### 修正

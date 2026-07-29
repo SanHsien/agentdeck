@@ -69,9 +69,10 @@ $env:USAGE_DEBUG=1; uv run --no-sync python main.py   # 讓被吞掉的例外浮
 
 ## 已知的 Windows 測試失敗
 
-`pytest` 在 Windows 上有兩個測試會失敗，**都是環境問題、不是 code bug**（1171 passed / 21 skipped / 2 failed）。根因與處理方式記在 [`REPO_REVIEW.md`](../REPO_REVIEW.md)：
+`pytest` 在 Windows 上有一個測試會失敗，是**本機權限限制、不是 code bug**：
 
-- `test_usage_dir_sweeper.py::test_keeps_matching_directory_and_symlink`：建立符號連結需要權限（開發人員模式或系統管理員）。
-- `test_discussion_cli.py::test_stdout_diagnostic_tail_has_fixed_line_limit`：在 Claude Code SDK session 裡跑才會失敗。`tools/dev_check.ps1` 已處理。
+- `test_usage_dir_sweeper.py::test_keeps_matching_directory_and_symlink`：建立符號連結需要權限（開發人員模式或系統管理員）。`tools/dev_check.ps1` 會先實測本機能不能建連結，不能才排除這一條並印出說明；CI 的 windows-latest 有權限，那裡照跑。
+
+（曾有第二個失敗 `test_discussion_cli.py::test_stdout_diagnostic_tail_has_fixed_line_limit`，根因是 `discussion_cli` 的塗銷邏輯沒有值長度下限，已修復，見 [`REPO_REVIEW.md`](../REPO_REVIEW.md) P3。）
 
 21 個 skip 全部是 macOS / POSIX 專屬測試（PyObjC、process group signal、`/bin/sh` quoting），在 Windows 上 skip 是正確行為。

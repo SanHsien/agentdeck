@@ -1,27 +1,16 @@
 #requires -Version 7.0
 <#
 .SYNOPSIS
-    跑本專案的三道 CI gate：ruff check、mypy .、pytest。
+    跑本專案的 CI gate：ruff check、mypy .、雙語文件對稱性、pytest。
 
 .DESCRIPTION
-    等同上游 .github/workflows/check.yml 的 Windows job。三項全綠才能 commit。
+    等同 .github/workflows/check.yml。全綠才能 commit。
 
-    另外會把「名稱看起來像機密、但值短到會誤傷」的環境變數從子行程環境移除，
-    理由見 -SkipEnvScrub 的說明。
+    這個腳本刻意不動執行環境：跑起來的條件要跟 CI 一致，否則本機的綠燈沒有意義。
+    唯一的例外是符號連結權限，那是本機權限限制、CI 上不存在（見下方 pytest 段落）。
 
 .PARAMETER SkipTests
     只跑 ruff 與 mypy，跳過比較慢的 pytest（約 3.5 分鐘）。
-
-.PARAMETER SkipEnvScrub
-    不移除短值機密環境變數。
-
-    discussion_cli.py 會把「名稱含 TOKEN/KEY/SECRET/PASSWORD/PASSWD/CREDENTIAL/AUTH
-    的環境變數值」從子行程輸出裡塗成 [REDACTED]。在 Claude Code SDK session 裡，
-    CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH 的值是 "1"（名稱含 AUTH），於是輸出中
-    每一個 "1" 都被塗掉，test_stdout_diagnostic_tail_has_fixed_line_limit 就炸了。
-    這是測試環境汙染，不是 code bug（一般終端機沒有這個變數）。
-
-    加這個參數可以重現原始行為。
 
 .EXAMPLE
     pwsh tools/dev_check.ps1
@@ -30,8 +19,7 @@
 #>
 [CmdletBinding()]
 param(
-    [switch]$SkipTests,
-    [switch]$SkipEnvScrub
+    [switch]$SkipTests
 )
 
 Set-StrictMode -Version Latest
@@ -47,21 +35,6 @@ if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
 if (-not (Test-Path '.venv')) {
     Write-Host 'FAIL: 沒有 .venv。請先跑：uv sync --frozen --group dev --extra windows' -ForegroundColor Red
     exit 1
-}
-
-# 短值的「機密」環境變數會讓 discussion_cli 的塗銷邏輯誤傷普通輸出（見上方說明）。
-$scrubbed = @()
-if (-not $SkipEnvScrub) {
-    $pattern = 'TOKEN|KEY|SECRET|PASSWORD|PASSWD|CREDENTIAL|AUTH'
-    foreach ($item in Get-ChildItem Env:) {
-        if ($item.Name -match $pattern -and $item.Value.Length -gt 0 -and $item.Value.Length -le 4) {
-            Remove-Item "Env:$($item.Name)"
-            $scrubbed += $item.Name
-        }
-    }
-    if ($scrubbed.Count -gt 0) {
-        Write-Host "note: 已從本次執行環境移除短值機密變數：$($scrubbed -join ', ')" -ForegroundColor DarkGray
-    }
 }
 
 $failed = @()
@@ -102,6 +75,9 @@ function Invoke-Gate {
 
 Invoke-Gate 'ruff' @('run', '--no-sync', 'ruff', 'check')
 Invoke-Gate 'mypy' @('run', '--no-sync', 'mypy', '.')
+# CI 把雙語文件對稱性當獨立一步跑（.github/workflows/check.yml），這裡跟上，
+# 免得 README / CHANGELOG 只改了一邊要等 push 之後才發現。
+Invoke-Gate 'doc-parity' @('run', '--no-sync', 'python', 'scripts/check_doc_parity.py')
 
 if ($SkipTests) {
     Write-Host ''

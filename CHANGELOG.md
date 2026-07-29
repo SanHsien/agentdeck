@@ -5,6 +5,11 @@
 All notable changes to usage are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Fixed
+- **AI Council error messages are no longer shredded by unrelated environment variables**: when a CLI participant fails, its diagnostic text is scanned for the values of environment variables whose *names* look sensitive (`TOKEN`, `KEY`, `SECRET`, `AUTH`, …) and those values are replaced with `[REDACTED]`. The whole inherited environment is scanned, and the substitution had no minimum length — so a harmless flag matched on its name alone, such as Claude Code's own `CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH=1`, rewrote *every* `1` in the message and turned `CLI exited with status 1` into `CLI exited with status [REDACTED]`. Redaction now skips values shorter than 8 characters, which is far below the length of any real credential, so nothing that was actually protected before is exposed now.
+
 ## [0.29.7] - 2026-07-29
 
 ### Fixed

@@ -69,6 +69,13 @@ SENSITIVE_ENV_NAME_RE = re.compile(
     r"(?:TOKEN|KEY|SECRET|PASSWORD|PASSWD|CREDENTIAL|AUTH)",
     re.IGNORECASE,
 )
+# Redaction scans the whole inherited environment (merged_env starts from
+# os.environ), so plenty of harmless flags match SENSITIVE_ENV_NAME_RE on name
+# alone — Claude Code's own CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH=1 is one.
+# Substituting a value that short rewrites every "1" in the diagnostic text and
+# leaves the error unreadable. Real credentials are comfortably longer than this
+# floor, so skipping short values costs no protection.
+MIN_REDACTED_VALUE_LENGTH = 8
 
 
 @dataclass(frozen=True)
@@ -836,6 +843,6 @@ def _clean_text(text: str) -> str:
 def _redact_environment_values(message: str, environment: Mapping[str, str]) -> str:
     redacted = message
     for name, value in environment.items():
-        if value and SENSITIVE_ENV_NAME_RE.search(name):
+        if len(value) >= MIN_REDACTED_VALUE_LENGTH and SENSITIVE_ENV_NAME_RE.search(name):
             redacted = redacted.replace(value, "[REDACTED]")
     return redacted
