@@ -221,6 +221,37 @@ def test_find_system_python_uses_current_interpreter_on_windows(
     assert setup_hook._find_system_python() == r"C:\\Program Files\\Python\\python.exe"
 
 
+def test_find_system_python_skips_unusable_windows_candidates(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    candidates = {
+        "python": r"C:\\Users\\test\\AppData\\Local\\Microsoft\\WindowsApps\\python.exe",
+        "py": r"C:\\Program Files\\Python\\py.exe",
+    }
+    monkeypatch.setattr(shutil, "which", candidates.get)
+    monkeypatch.setattr(
+        setup_hook,
+        "_is_working_python",
+        lambda path: path == candidates["py"],
+    )
+
+    assert setup_hook._find_system_python() == candidates["py"]
+
+
+def test_find_system_python_uses_working_windows_candidate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    candidate = r"C:\\Program Files\\Python\\python.exe"
+    monkeypatch.setattr(shutil, "which", lambda name: candidate if name == "python" else None)
+    monkeypatch.setattr(setup_hook, "_is_working_python", lambda path: path == candidate)
+
+    assert setup_hook._find_system_python() == candidate
+
+
 def test_find_system_python_avoids_non_ascii_windows_interpreter(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -231,6 +262,7 @@ def test_find_system_python_avoids_non_ascii_windows_interpreter(
         "which",
         lambda name: r"C:\\Program Files\\Python\\python.exe" if name == "python" else None,
     )
+    monkeypatch.setattr(setup_hook, "_is_working_python", lambda _path: True)
 
     assert setup_hook._find_system_python() == r"C:\\Program Files\\Python\\python.exe"
 

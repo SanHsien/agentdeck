@@ -4,6 +4,11 @@
 
 本檔記錄 usage 所有重要變更。格式參考 [Keep a Changelog](https://keepachangelog.com/)。
 
+## [0.29.6] - 2026-07-29
+
+### 修正
+- **Windows 版 Claude Code 面板不再永久卡在 `--`**：安裝程式原本只用 `shutil.which()` 找到 `python`/`py` 就直接採用，沒有驗證它真的能執行——導致沒裝真正 Python 的 Windows 機器上，statusLine hook 會被悄悄接到 Windows 10/11 內建、用來導去微軟商店的「App Execution Alias」空殼 `python.exe`/`python3.exe`。這個空殼每次刷新都靜默失敗，`usage-status.json` 永遠不會被寫出來，面板因此永久顯示 `--`——不是「還在載入」的過渡狀態。安裝程式現在會先實際執行候選路徑的 `--version` 驗證能不能跑，跑不動就跳過換下一個。
+
 ## [0.29.5] - 2026-07-27
 
 ### 變更

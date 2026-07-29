@@ -129,6 +129,15 @@ def _statusline_command_target_exists() -> bool:
     return True
 
 
+def _is_working_python(path: str) -> bool:
+    """Return whether ``path`` can run as a Python interpreter."""
+    try:
+        result = subprocess.run([path, "--version"], capture_output=True, timeout=3)
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return result.returncode == 0
+
+
 def _find_system_python() -> str:
     if sys.platform == "win32":
         executable = sys.executable
@@ -142,7 +151,7 @@ def _find_system_python() -> str:
         # on Windows.  The hook is stdlib-only, so an ASCII-path Python from
         # PATH (or the Windows launcher) is preferable to this app's venv.
         for candidate in (shutil.which("python"), shutil.which("py")):
-            if candidate and _is_ascii_path(candidate):
+            if candidate and _is_ascii_path(candidate) and _is_working_python(candidate):
                 return candidate
         return "python"
     if os.path.exists("/usr/bin/python3"):
