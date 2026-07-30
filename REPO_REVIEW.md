@@ -1,6 +1,6 @@
 # Repo Review
 
-覆核日期：2026-07-30 · 版本：v0.31.0 · 分支：`main`
+覆核日期：2026-07-30 · 版本：v0.31.1 · 分支：`main`
 
 本檔維持 **latest-only**：只記**當前狀態與未解問題**。修掉一項就從這裡拿掉，不要留成流水帳——歷史在 git log 與 [`CHANGELOG.zh-TW.md`](CHANGELOG.zh-TW.md)，決策理由在 [`docs/DECISIONS.md`](docs/DECISIONS.md)。這裡只回答兩件事：**現在這個 repo 健康嗎、還有什麼沒解決**。
 

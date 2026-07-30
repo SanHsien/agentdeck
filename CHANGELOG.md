@@ -2,9 +2,24 @@
 
 [繁體中文](CHANGELOG.zh-TW.md) · English
 
-All notable changes to usage are documented here.
+All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
+
+## [0.31.1] - 2026-07-30
+
+### Fixed
+- **Platform and product name across the landing page and READMEs**: titles, taglines, the nav brand, install cards, and feature cards still said "usage" and "macOS menu bar". The "5-language interface" card was outright false — this fork ships two. Everything now describes a Windows tray app with two languages; both language tables hold 73 keys and render with no stale terms.
+- **Download filenames**: the READMEs still named `usage-windows.zip` and `usage.exe`, while the build script has been producing `agentdeck-windows.zip` and `agentdeck.exe` — following the instructions found nothing.
+- **Dead footer links**: OpenSSF Best Practices and Buy me a coffee both pointed upstream and had lost their hrefs; removed. Releases now links to this repository.
+
+### Changed
+- **Artwork de-branded**: `docs/hero.png` drops the original author's app icon and restates the lockup as agentdeck / Windows Tray App, with the backdrop rebuilt by harmonic inpainting so no patch seam remains. `docs/readme-logo.png` is a new original mark — a fanned deck of cards with a terminal prompt, drawn by `tools/make_logo.py` — and the favicon points at it; og:image and twitter:image point at the hero. Upstream's butler-cat scene art stays, used under AGPL-3.0 and credited in `NOTICE.md`.
+- **Removed `docs/showcase.{en,zh-TW}.png`**: MacBook photos, unreferenced once the READMEs moved to the hero banner.
+
+### Tests
+- **`test_keeps_matching_directory_and_symlink` split three ways**: one test covered both a directory and a symlink, so a machine without symlink privilege lost both. The new junction case is a reparse point an ordinary Windows user can create (verified: no elevation needed, `lstat` reports `S_ISDIR`) and exercises the same "not a regular file, leave it alone" branch, so that behaviour stays covered locally; only the symlink variant is deselected by `tools/dev_check.ps1`.
+- **AI Council window verified on real hardware for the first time**: `REPO_REVIEW.md` claimed this had been done, but nothing in the suite starts a GUI loop. Opening it confirmed the window builds, renders all four panes, and closes cleanly — and surfaced a clipped participant row at 900×640, now filed as P5.
 
 ## [0.31.0] - 2026-07-30
 

@@ -2,8 +2,23 @@
 
 繁體中文 · [English](CHANGELOG.md)
 
-本檔記錄 usage 所有重要變更。格式參考 [Keep a Changelog](https://keepachangelog.com/)，
+本檔記錄 agentdeck 所有重要變更。格式參考 [Keep a Changelog](https://keepachangelog.com/)，
 版號遵循[語意化版本 2.0.0](https://semver.org/lang/zh-TW/)。
+
+## [0.31.1] - 2026-07-30
+
+### 修正
+- **介紹頁與 README 的平台與名稱敘述**：標題、標語、導覽列品牌、安裝卡與功能卡仍寫著「usage」與「macOS menu bar」，其中「5 語言介面」那張卡在本 fork 已縮成兩語，屬於不實描述。全部改為 Windows 系統匣與雙語，兩份語言表各 73 個 key、實際渲染後零殘留。
+- **下載指示的檔名**：README 仍寫 `usage-windows.zip` 與 `usage.exe`，但建置腳本早已產出 `agentdeck-windows.zip` 與 `agentdeck.exe`——照著做會找不到檔案。
+- **頁尾失效連結**：OpenSSF Best Practices 與 Buy me a coffee 兩個連結指向上游、且已無 href，直接移除；Releases 補上本 repo 的連結。
+
+### 變更
+- **美術資產去除上游品牌**：`docs/hero.png` 移除原作者的應用程式圖示，字標與副標改為 agentdeck／Windows Tray App（背景以調和修補重建，無補丁接縫）。`docs/readme-logo.png` 換成本專案原創標記（一疊卡片＋終端提示符，由 `tools/make_logo.py` 產生），favicon 指向它；og:image／twitter:image 改指 hero。上游的管家貓場景插畫依 AGPL-3.0 保留使用，來源已記於 `NOTICE.md`。
+- **移除 `docs/showcase.{en,zh-TW}.png`**：macOS 實機照，README 改用 hero 橫幅後已無引用。
+
+### 測試
+- **`test_keeps_matching_directory_and_symlink` 拆成三條**：原本一條測試同時涵蓋目錄與符號連結，沒有符號連結權限的機器會整條失去覆蓋。新增的 junction 案例是一般 Windows 使用者就能建立的 reparse point（實測免權限、`lstat` 報 `S_ISDIR`），走同一條「非一般檔案不刪」分支，因此本機仍覆蓋得到該行為，只有符號連結變體會被 `tools/dev_check.ps1` 排除。
+- **AI 圓桌視窗首次實機開窗驗證**：`REPO_REVIEW.md` 原本聲稱已實機驗證，但測試套件不會啟動 GUI loop。實際開窗確認視窗建立、四個區塊完整渲染、關閉乾淨；同時發現參與者列在 900×640 下被裁切，已記為 P5。
 
 ## [0.31.0] - 2026-07-30
 
