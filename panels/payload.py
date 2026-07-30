@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import base64
 import json
-import os
 import sys
 from functools import cache, lru_cache
 from pathlib import Path
@@ -16,11 +15,8 @@ if TYPE_CHECKING:
 
 
 def resolve_resource(name: str) -> str:
-    resource_root = os.environ.get("RESOURCEPATH")
-    if resource_root:
-        bundled = Path(resource_root) / name
-        if bundled.exists():
-            return str(bundled)
+    # py2app's RESOURCEPATH was checked here too, until macOS support was
+    # removed on 2026-07-29. Only PyInstaller's _MEIPASS is live now.
     frozen_root = getattr(sys, "_MEIPASS", None)
     if frozen_root:
         bundled = Path(frozen_root) / "assets" / name
@@ -30,11 +26,6 @@ def resolve_resource(name: str) -> str:
 
 
 def _i18n_path() -> Path:
-    resource_root = os.environ.get("RESOURCEPATH")
-    if resource_root:
-        bundled = Path(resource_root) / "i18n.json"
-        if bundled.exists():
-            return bundled
     frozen_root = getattr(sys, "_MEIPASS", None)
     if frozen_root:
         bundled = Path(frozen_root) / "i18n.json"

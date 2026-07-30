@@ -98,7 +98,7 @@
 ### 尚未動工
 
 - ~~**面板開啟位置**：貼齊系統匣圖示~~ → **不做，已從落差清單移除**。審視上游 `4dbf916` 發現上游反而放棄了貼齊選單列圖示，改成可拖曳並記住位置的浮動面板——Windows 早就是這個行為。詳見 `docs/DECISIONS.md` D-07。
-- **`i18n.packaged_resource_path` 的 `RESOURCEPATH` 分支**：py2app 專用，現在是死碼（環境變數不存在就跳過，無害）。清掉時要一併改寫 `tests/test_i18n_packaged_path.py`。**純清理，非落差。**
+- ~~**`RESOURCEPATH` 死碼**~~ → **已清除**（2026-07-30）。`i18n.packaged_resource_path` 與 `panels/payload.py` 的兩個 helper 只剩 PyInstaller 的 `_MEIPASS` 分支；`tests/test_i18n_packaged_path.py` 改寫為測 `_MEIPASS`，並多加一條測試釘住「`RESOURCEPATH` 不再被採信」——留著環境變數卻不再使用，日後若別的工具設了同名變數就會讀到陌生檔案。
 
 ## 待辦
 

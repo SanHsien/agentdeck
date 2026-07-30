@@ -6,16 +6,19 @@
 
 """Regression tests for ``i18n.packaged_resource_path``.
 
-These cover the fix for the py2app launch crash where
-``Path(__file__).with_name("i18n.json")`` resolved into
-``lib/python313.zip/i18n.json`` and raised ``NotADirectoryError`` at first
-read. The fix prefers the ``RESOURCEPATH`` env var py2app injects at
-launch (pointing at ``Contents/Resources/``) and only falls back to the
-source-adjacent path when running outside a bundle.
+In a frozen build the module lives inside the bundle, so the source-adjacent
+path points into an archive rather than at a readable file — reading it raised
+``NotADirectoryError`` at launch. The fix prefers PyInstaller's ``sys._MEIPASS``
+and falls back to the source path only when running outside a bundle.
+
+These cases covered py2app's ``RESOURCEPATH`` until macOS support was removed on
+2026-07-29. Nothing sets that variable now, so they moved to ``_MEIPASS`` and one
+test was added to pin that the old variable is genuinely ignored.
 """
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -23,91 +26,107 @@ import pytest
 from i18n import packaged_resource_path
 
 
-def test_prefers_RESOURCEPATH_when_file_exists(
+def test_prefers_the_bundle_when_the_file_is_there(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    bundle = tmp_path / "Resources"
+    bundle = tmp_path / "_internal"
     bundle.mkdir()
-    (bundle / "i18n.json").write_text("{}", encoding="utf-8")
+    bundled = bundle / "i18n.json"
+    bundled.write_text("{}", encoding="utf-8")
+    source = tmp_path / "src" / "i18n.json"
+    monkeypatch.setattr(sys, "_MEIPASS", str(bundle), raising=False)
 
-    source_path = tmp_path / "source" / "i18n.json"
-    source_path.parent.mkdir()
-    source_path.write_text('{"different": {}}', encoding="utf-8")
-
-    monkeypatch.setenv("RESOURCEPATH", str(bundle))
-    resolved = packaged_resource_path("i18n.json", source_path)
-
-    assert resolved == bundle / "i18n.json"
+    assert packaged_resource_path("i18n.json", source) == bundled
 
 
-def test_falls_back_to_source_path_when_RESOURCEPATH_unset(
+def test_falls_back_to_the_source_path_outside_a_bundle(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.delenv("RESOURCEPATH", raising=False)
-    source_path = tmp_path / "i18n.json"
-    source_path.write_text("{}", encoding="utf-8")
+    monkeypatch.delattr(sys, "_MEIPASS", raising=False)
+    source = tmp_path / "i18n.json"
 
-    resolved = packaged_resource_path("i18n.json", source_path)
-    assert resolved == source_path
+    assert packaged_resource_path("i18n.json", source) == source
 
 
-def test_falls_back_when_RESOURCEPATH_set_but_file_missing(
+def test_falls_back_when_the_bundle_lacks_the_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """RESOURCEPATH exists but does not contain the file → fall through."""
-    bundle = tmp_path / "Resources"
+    # A resource the build forgot to declare must not resolve to a path that does
+    # not exist; falling back to the source copy turns a packaging mistake into a
+    # working app instead of a read error at some random later moment.
+    bundle = tmp_path / "_internal"
     bundle.mkdir()
-    # deliberately do NOT create bundle/i18n.json
+    source = tmp_path / "src" / "i18n.json"
+    monkeypatch.setattr(sys, "_MEIPASS", str(bundle), raising=False)
 
-    source_path = tmp_path / "source" / "i18n.json"
-    source_path.parent.mkdir()
-    source_path.write_text("{}", encoding="utf-8")
-
-    monkeypatch.setenv("RESOURCEPATH", str(bundle))
-    resolved = packaged_resource_path("i18n.json", source_path)
-
-    assert resolved == source_path
+    assert packaged_resource_path("i18n.json", source) == source
 
 
-def test_falls_back_when_RESOURCEPATH_empty_string(
+def test_an_empty_meipass_is_treated_as_unset(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Empty RESOURCEPATH is treated as unset (defensive)."""
-    monkeypatch.setenv("RESOURCEPATH", "")
-    source_path = tmp_path / "i18n.json"
-    source_path.write_text("{}", encoding="utf-8")
+    source = tmp_path / "i18n.json"
+    monkeypatch.setattr(sys, "_MEIPASS", "", raising=False)
 
-    resolved = packaged_resource_path("i18n.json", source_path)
-    assert resolved == source_path
+    assert packaged_resource_path("i18n.json", source) == source
 
 
-def test_simulated_py2app_zipfile_path_does_not_crash(
+def test_nested_resource_names_resolve_under_the_bundle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # persona_store asks for "personas" and html_report for
+    # "critters/<beast>/wrapped.png", so names with separators have to work.
+    bundle = tmp_path / "_internal"
+    nested = bundle / "critters" / "phoenix"
+    nested.mkdir(parents=True)
+    target = nested / "wrapped.png"
+    target.write_bytes(b"png")
+    monkeypatch.setattr(sys, "_MEIPASS", str(bundle), raising=False)
+
+    resolved = packaged_resource_path(
+        "critters/phoenix/wrapped.png", tmp_path / "src" / "wrapped.png"
+    )
+
+    assert resolved == target
+
+
+def test_a_source_path_that_points_inside_an_archive_is_avoided(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """End-to-end repro of the original crash.
 
-    Pre-fix: the source-mode path was the only option, and inside py2app
-    it resolved to ``lib/python313.zip/i18n.json`` — an invalid path through
-    the zipfile that raised ``NotADirectoryError`` on read. This test
-    reconstructs the same shape: a path that points inside a regular file
-    (simulating the zip) and asserts that packaged_resource_path returns
-    the bundled copy instead of the broken zip-internal path.
+    Pre-fix the source-mode path was the only option, and in a frozen build it
+    resolved to something like ``lib/python313.zip/i18n.json`` — a path through a
+    regular file, which raises ``NotADirectoryError`` on read. This rebuilds that
+    shape and asserts the bundled copy wins.
     """
-    resources = tmp_path / "Resources"
-    resources.mkdir()
-    (resources / "i18n.json").write_text('{"en": {}}', encoding="utf-8")
+    bundle = tmp_path / "_internal"
+    bundle.mkdir()
+    (bundle / "i18n.json").write_text('{"en": {}}', encoding="utf-8")
 
-    fake_zip = resources / "lib" / "python313.zip"
-    fake_zip.parent.mkdir()
-    fake_zip.write_bytes(b"PK\x05\x06" + b"\x00" * 18)  # minimal empty-zip footer
-    # this is what Path(__file__).with_name resolves to when __file__ is inside the zip
-    crashing_source_path = fake_zip / "i18n.json"
+    fake_archive = bundle / "lib" / "python313.zip"
+    fake_archive.parent.mkdir()
+    fake_archive.write_bytes(b"PK\x05\x06" + b"\x00" * 18)  # minimal empty-zip footer
+    crashing_source_path = fake_archive / "i18n.json"
+    monkeypatch.setattr(sys, "_MEIPASS", str(bundle), raising=False)
 
-    monkeypatch.setenv("RESOURCEPATH", str(resources))
     resolved = packaged_resource_path("i18n.json", crashing_source_path)
 
-    # Must NOT return the crashing path
     assert resolved != crashing_source_path
-    # Must return the real, readable file
-    assert resolved == resources / "i18n.json"
-    assert resolved.read_text() == '{"en": {}}'
+    assert resolved.read_text(encoding="utf-8") == '{"en": {}}'
+
+
+def test_py2apps_resourcepath_is_no_longer_consulted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # macOS packaging is gone. A RESOURCEPATH in the environment now belongs to
+    # some other tool, not to a bundle we produced, so following it would read a
+    # stranger's file.
+    bundle = tmp_path / "Resources"
+    bundle.mkdir()
+    (bundle / "i18n.json").write_text("{}", encoding="utf-8")
+    source = tmp_path / "src" / "i18n.json"
+    monkeypatch.setenv("RESOURCEPATH", str(bundle))
+    monkeypatch.delattr(sys, "_MEIPASS", raising=False)
+
+    assert packaged_resource_path("i18n.json", source) == source

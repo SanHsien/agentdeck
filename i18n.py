@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 import json
-import os
 import sys
 from functools import lru_cache
 from pathlib import Path
@@ -16,30 +15,23 @@ from usage_lang import detect_lang
 
 
 def packaged_resource_path(filename: str, source_mode_path: Path) -> Path:
-    """Resolve a data file across source-mode and py2app-bundle layouts.
+    """Resolve a data file across source-mode and PyInstaller-bundle layouts.
 
-    py2app declares data files via setup_app.py ``OPTIONS["resources"]`` and
-    copies them to ``Contents/Resources/`` — adjacent to ``lib/python313.zip``,
-    not inside it. py2app injects the ``RESOURCEPATH`` env var at launch
-    pointing at that directory; we prefer it when present.
+    Why this exists: in a frozen build this module lives inside the bundle, so
+    ``Path(__file__).with_name("i18n.json")`` points at a path through an
+    archive rather than at a readable file. PyInstaller sets ``sys._MEIPASS`` to
+    the directory it unpacked the declared data files into, so that is checked
+    first; in source mode (and in tests) the attribute is absent and the
+    source-adjacent path is the correct answer.
 
-    Why this exists: in py2app builds this module is compiled into
-    ``lib/python313.zip``, so ``Path(__file__).with_name("i18n.json")``
-    resolves to ``lib/python313.zip/i18n.json`` — an invalid path through
-    the zipfile that raises ``NotADirectoryError`` at first read. In source
-    mode (and tests) ``RESOURCEPATH`` is unset and the source-adjacent
-    fallback path is correct.
+    Callers pass the source-mode path explicitly, as the literal
+    ``Path(__file__).with_name("...")``, so ``tests/test_packaged_resources.py``
+    can statically find every declared resource and check that
+    ``scripts/build_windows.ps1`` bundles it under the name asked for here.
 
-    The callers pass the source-mode path explicitly (as the literal
-    ``Path(__file__).with_name("...")``) so that
-    ``tests/test_packaged_resources.py`` can still statically detect every
-    declared resource and enforce that ``setup_app.py`` lists it.
+    py2app's ``RESOURCEPATH`` was consulted here until macOS support was removed
+    on 2026-07-29; nothing sets that variable now.
     """
-    resource_root = os.environ.get("RESOURCEPATH")
-    if resource_root:
-        bundled = Path(resource_root) / filename
-        if bundled.exists():
-            return bundled
     frozen_root = getattr(sys, "_MEIPASS", None)
     if frozen_root:
         bundled = Path(frozen_root) / filename

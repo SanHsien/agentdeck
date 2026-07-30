@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import base64
+import sys
 from datetime import UTC, datetime, tzinfo
 from pathlib import Path
 from typing import Any
@@ -369,7 +370,7 @@ def test_generate_html_matches_golden_snapshot(
     assert html_report.generate_html(data, language=language) == expected
 
 
-def test_sprite_data_uri_reads_py2app_resourcepath_layout(
+def test_sprite_data_uri_reads_the_frozen_bundle_layout(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -379,7 +380,7 @@ def test_sprite_data_uri_reads_py2app_resourcepath_layout(
     (tmp_path / "critters" / "dragon").mkdir(parents=True)
     (tmp_path / "critters" / "phoenix" / "wrapped.png").write_bytes(phoenix_png)
     (tmp_path / "critters" / "dragon" / "wrapped.png").write_bytes(dragon_png)
-    monkeypatch.setenv("RESOURCEPATH", str(tmp_path))
+    monkeypatch.setattr(sys, "_MEIPASS", str(tmp_path), raising=False)
 
     html_report._sprite_data_uri.cache_clear()
     try:
