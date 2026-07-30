@@ -149,3 +149,24 @@
 **考慮過**：`aicockpit`（意思最直白，但 `ai` 前綴過於常見、識別度低）、`aitower`（航管塔比喻漂亮，但與「面板／系統匣」的直覺聯結弱）。
 
 **刻意不改的東西**：內部 Python 模組檔名（`usage_client.py`、`usage_statusline.py` 等 12 個）。理由是「程式名稱」指的是使用者看得到的東西——執行檔、hook 檔名、設定路徑、環境變數；模組檔名是內部實作，改它要動到每一個 import，產生大量無使用者價值的 churn。**但 `usage_statusline.py` 安裝到 `~/.claude/` 時的檔名要改**（那是使用者看得到的）。若日後仍想改模組名，那是獨立一次重構。
+
+---
+
+## D-10：fork 繼承的四個 workflow，逐一決定開或不開
+
+**日期**：2026-07-30
+
+**背景**：GitHub 對 fork 預設停用繼承來的 workflow。啟用 Actions 時只有一部分被開起來，其餘停在 `disabled_fork`——即使它們設定了 `push: main` 也從來沒觸發過。實測 `gh api .../actions/workflows` 才看得出來，只看 `.github/workflows/` 有哪些檔案會誤判成「有在跑」。
+
+**決定**（不是全開，也不是全關）：
+
+| Workflow | 處置 | 理由 |
+|---|---|---|
+| `codeql.yml` | **啟用** | 真實的安全掃描，成本低。已實測跑綠並掛上徽章 |
+| `cflite_batch.yml` | **啟用** | fuzz 目標是本 repo 真實存在的 `fuzz/fuzz_codex_loader.py`、`fuzz_history_loader.py`，打的正是解析磁碟上 JSONL 的程式碼——那是最容易被畸形輸入弄壞的地方。實測 build 與 30 分鐘 fuzzing 全綠 |
+| `cflite_pr.yml` | **保留但預期不會觸發** | 只在 PR 時跑，而目前的工作流程是直接推 main，所以它幾乎不會啟動。**這不是缺陷，不要當成死設定清掉**：它是 `mode: code-change`、只跑 5 分鐘，休眠時成本為零；本 repo 是公開的且 `CONTRIBUTING.md` 邀請外部 PR，而外部貢獻正是最需要在合併前 fuzz 的場景。batch 顧「推 main」這條路徑，PR 模式顧「外部貢獻」那條，兩條都有守 |
+| `scorecard.yml` | **維持停用** | 它的產出是 OpenSSF Scorecard 分數，而本 repo 已刻意移除 OpenSSF 徽章。開了只會產生沒人看的分數 |
+
+**啟用前必須先修的東西**：`.clusterfuzzlite/project.yaml` 仍寫著上游的 `homepage`、`main_repo` 與**原作者的聯絡信箱**；容器也還把原始碼解到 `$SRC/usage`，而 `build.sh` 用「macOS-only 相依」替自己的 `PYTHONPATH` 辯護——那些相依早在移除 macOS 支援時就刪光了。**繼承來的設定會沉默地繼續指向上游**，啟用它等於用上游的身分對外運作。
+
+**教訓**：「workflow 檔案存在」不等於「workflow 有在跑」，「workflow 有在跑」也不等於「它跑的是你的專案」。兩件都要實測。
