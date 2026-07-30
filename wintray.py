@@ -29,6 +29,7 @@ from burn_rate import BurnRateTracker
 from history_loader import UsageEntry, load_entries
 from i18n import _t
 from menubar_prefs import (
+    _auto_update_check_enabled,
     _hide_agy_enabled,
     _hide_claude_enabled,
     _hide_codex_enabled,
@@ -51,6 +52,13 @@ if TYPE_CHECKING:
     from PIL.Image import Image
 
 logger = logging.getLogger(__name__)
+
+# MessageBoxW uMSGBOXPARAMS icon flags.
+MB_ICON_WARNING = 0x30
+MB_ICON_INFO = 0x40
+MB_YESNOCANCEL = 0x03
+# Matches upstream's UPDATE_ALERT_BODY_LIMIT so both hosts truncate alike.
+UPDATE_PROMPT_BODY_LIMIT = 2000
 
 SLOW_POLL_INTERVAL_S = 300
 HISTORY_SCAN_CACHE_SECONDS = 30.0
@@ -794,6 +802,7 @@ class _WindowsTrayController:
             self.interval if self.visible else max(self.interval, SLOW_POLL_INTERVAL_S)
         ):
             self.refresh()
+            self._maybe_auto_check_update()
 
     def refresh(self) -> None:
         if not self.refresh_lock.acquire(blocking=False):
@@ -1101,7 +1110,8 @@ class _WindowsTrayController:
         if enabled:
             self._message_box(
                 f"{_t(self.language, 'window_keeper_sleep_title')}\n\n"
-                f"{_t(self.language, 'window_keeper_sleep_body_windows')}"
+                f"{_t(self.language, 'window_keeper_sleep_body_windows')}\n\n"
+                f"{_t(self.language, 'window_keeper_tooltip')}"
             )
 
     def toggle_session_resume(self, _icon: Any = None, _item: Any = None) -> None:
@@ -1115,9 +1125,12 @@ class _WindowsTrayController:
                 session_hooks.disable_session_resume()
             else:
                 session_hooks.enable_session_resume()
-        except Exception:
-            if os.environ.get("USAGE_DEBUG") == "1":
-                logger.warning("toggle session resume failed", exc_info=True)
+                self._explain_feature("project_butler_tooltip")
+        except Exception as exc:
+            logger.warning("toggle session resume failed", exc_info=True)
+            self._report_action_result(
+                _t(self.language, "resume_action_failed"), detail=str(exc), failed=True
+            )
 
     def toggle_terse_mode(self, _icon: Any = None, _item: Any = None) -> None:
         threading.Thread(target=self._toggle_terse_mode_in_background, daemon=True).start()
@@ -1130,9 +1143,12 @@ class _WindowsTrayController:
                 session_hooks.disable_terse_mode()
             else:
                 session_hooks.enable_terse_mode()
-        except Exception:
-            if os.environ.get("USAGE_DEBUG") == "1":
-                logger.warning("toggle terse mode failed", exc_info=True)
+                self._explain_feature("terse_mode_tooltip")
+        except Exception as exc:
+            logger.warning("toggle terse mode failed", exc_info=True)
+            self._report_action_result(
+                _t(self.language, "resume_action_failed"), detail=str(exc), failed=True
+            )
 
     def _process_quota_notifications(self, state: menubar_state.PopoverState) -> None:
         try:
@@ -1183,22 +1199,115 @@ class _WindowsTrayController:
         self.icon.notify(message, _t(self.language, f"notif_{event.kind}_title"))
 
     def check_update(self, _icon: Any = None, _item: Any = None) -> None:
-        def worker() -> None:
-            result = update_checker.check_latest_release_result(_current_version())
-            if result.release is not None:
-                release = result.release
-                title = _t(self.language, "update_alert_title", version=release.version)
-                if self._message_box(f"{title}\n\n{release.body[:2000]}", style=0x44) == 6:
-                    webbrowser.open(release.html_url)
-            else:
+        """Manual check from the tray menu: always report, even a skipped version."""
+        threading.Thread(
+            target=self._check_update_in_background,
+            kwargs={"manual": True},
+            daemon=True,
+        ).start()
+
+    def _maybe_auto_check_update(self) -> None:
+        """Daily background check, matching what upstream's menu bar does.
+
+        Windows previously had the manual menu item only, so the "checks GitHub
+        at most once a day" behaviour the README promises never actually ran here.
+        """
+        import update_gate
+
+        preferences = _load_preferences()
+        if not _auto_update_check_enabled(preferences):
+            return
+        if not update_gate.auto_check_is_due(preferences):
+            return
+        self._check_update_in_background(manual=False)
+
+    def _check_update_in_background(self, *, manual: bool) -> None:
+        import update_gate
+
+        preferences = _load_preferences()
+        result = update_checker.check_latest_release_result(_current_version())
+        release = result.release
+
+        preferences = _load_preferences()
+        preferences["last_update_check"] = update_gate.build_check_cache_entry(
+            _current_version(), release
+        )
+        _save_preferences(preferences)
+
+        if release is None:
+            if manual:
+                # An automatic check stays silent here: nagging every day that
+                # there is nothing new is worse than saying nothing.
                 self._message_box(
                     _t(
                         self.language,
                         "update_check_failed" if result.failed else "update_no_new_version",
                     )
                 )
+            return
 
-        threading.Thread(target=worker, daemon=True).start()
+        if not manual and not update_gate.should_prompt(preferences, release.version):
+            return
+
+        self._show_update_prompt(release)
+
+    def _show_update_prompt(self, release: Any) -> None:
+        import update_gate
+
+        title = _t(self.language, "update_alert_title", version=release.version)
+        # MessageBoxW cannot relabel its buttons, so the three choices upstream
+        # shows as named buttons are spelled out in the body instead. Without this
+        # legend "No" would read as "don't download" rather than "never ask again
+        # for this version".
+        legend = "\n".join(
+            (
+                f"[{_t(self.language, 'update_btn_download')}]  →  Yes",
+                f"[{_t(self.language, 'update_btn_skip')}]  →  No",
+                f"[{_t(self.language, 'update_btn_later')}]  →  Cancel / Esc",
+            )
+        )
+        body = release.body[:UPDATE_PROMPT_BODY_LIMIT]
+        choice = self._message_box(
+            f"{title}\n\n{body}\n\n{legend}", style=MB_YESNOCANCEL | MB_ICON_INFO
+        )
+        action, updates = update_gate.resolve_message_box_choice(choice, release.version)
+
+        if action == "open":
+            webbrowser.open(release.html_url)
+            return
+
+        preferences = _load_preferences()
+        preferences.update(updates)
+        if action == "dismiss":
+            preferences["update_dismissed_at"] = time.time()
+        _save_preferences(preferences)
+
+    def _explain_feature(self, tooltip_key: str) -> None:
+        """Show what a feature does, at the moment the user switches it on.
+
+        pystray's MenuItem has no tooltip, so the text upstream shows on hover
+        has nowhere to live in the tray menu. Delivering it on enable keeps the
+        explanation rather than dropping it, and matches how window_keeper has
+        always introduced itself on this platform.
+        """
+        with contextlib.suppress(Exception):
+            self._message_box(_t(self.language, tooltip_key))
+
+    def _report_action_result(
+        self, message: str, *, detail: str = "", failed: bool = False
+    ) -> None:
+        """Tell the user how an action they asked for turned out.
+
+        Upstream shows a modal NSAlert for each of these; a MessageBox is the
+        closest Windows equivalent and, unlike a tray balloon, cannot be missed
+        while the user is looking elsewhere. Staying silent — the previous
+        behaviour — made a failed hook install indistinguishable from a panel
+        that simply had no data yet, which is the worst possible outcome for the
+        one action the whole Claude Code integration depends on.
+        """
+        text = f"{message}\n\n{detail}" if detail else message
+        with contextlib.suppress(Exception):
+            self._message_box(text, style=MB_ICON_WARNING if failed else MB_ICON_INFO)
 
     def _message_box(self, text: str, *, style: int = 0x40) -> int:
         import ctypes
@@ -1290,15 +1399,39 @@ class _WindowsTrayController:
         return None
 
     def _toggle_statusline(self) -> None:
-        _toggle_statusline_settings()
+        try:
+            _toggle_statusline_settings()
+        except Exception as exc:
+            logger.warning("statusLine settings toggle failed", exc_info=True)
+            self._report_action_result(
+                _t(self.language, "statusline_action_failed"), detail=str(exc), failed=True
+            )
         self.refresh()
 
     def _install_hook(self) -> None:
         import session_hooks
         import setup_hook
 
-        if setup_hook.setup() == 0:
+        try:
+            code = setup_hook.setup()
+        except Exception as exc:
+            logger.warning("statusLine hook install failed", exc_info=True)
+            self._report_action_result(
+                _t(self.language, "hook_install_failed"),
+                detail=str(exc) or _t(self.language, "hook_install_failed_default"),
+                failed=True,
+            )
+            self.refresh()
+            return
+        if code == 0:
             session_hooks._migrate_bundled_python_commands_if_needed()
+            self._report_action_result(_t(self.language, "hook_installed_restart"))
+        else:
+            self._report_action_result(
+                _t(self.language, "hook_install_failed"),
+                detail=_t(self.language, "hook_install_failed_default"),
+                failed=True,
+            )
         self.refresh()
 
     def _analyze_usage(self, project_range: str) -> None:
@@ -1308,7 +1441,13 @@ class _WindowsTrayController:
 
         periods = {"1d": "today", "7d": "last7", "30d": "last30", "all": "all"}
         period = periods.get(project_range, "month")
-        save_and_open(build_report_data(detect_agents(), period), language=self.language)
+        try:
+            save_and_open(build_report_data(detect_agents(), period), language=self.language)
+        except Exception as exc:
+            logger.warning("analysis report generation failed", exc_info=True)
+            self._report_action_result(
+                _t(self.language, "analysis_failed"), detail=str(exc), failed=True
+            )
 
     def open_discussion(self, _icon: Any = None, _item: Any = None) -> None:
         """Open the AI Council window, creating it on first use.

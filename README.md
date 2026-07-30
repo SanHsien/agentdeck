@@ -4,29 +4,29 @@
 
 # usage
 
-### 把 Claude Code、Codex 與 Antigravity 額度直接放進 macOS 選單列與 Windows 系統匣
+### 把 Claude Code、Codex 與 Antigravity 額度直接放進 Windows 系統匣
 
-讓 Claude Code、Codex 與 Antigravity 的額度在工作時持續可見。`usage` 把 session 限額、每週限額與成本脈絡放進 macOS 選單列或 Windows 系統匣，讓你在工作被打斷前就先掌握用量。
+讓 Claude Code、Codex 與 Antigravity 的額度在工作時持續可見。`usage` 把 session 限額、每週限額與成本脈絡放進 Windows 系統匣，讓你在工作被打斷前就先掌握用量。
 
 繁體中文 · [English](README.en.md) &nbsp;|&nbsp; [介紹頁](https://sanhsien.github.io/usage/)
 
 [![Python](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/)
-[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)](#安裝)
+[![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](#安裝)
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 
 > **這個 fork 專注在 Windows。**
 >
 > 這是 [`aqua5230/usage`](https://github.com/aqua5230/usage) 的 fork，獨立維護、不回貢上游。開發與驗收都在 Windows 11 原生環境進行：Windows 專屬的問題（系統匣、DPI 縮放、路徑處理）會優先修，並附實測證據。
 >
-> macOS 的程式碼原封保留、不會刻意破壞，但**本 fork 無法驗收 macOS**（選單列與 `.app` 打包需要在 macOS 上實測）。要 macOS 版請用上游。
+> **macOS 支援已於 2026-07-29 移除**：選單列（PyObjC）、`.app` 打包與相關程式碼都已刪除，PyObjC 相依也一併移除。要 macOS 版請用[上游](https://github.com/aqua5230/usage)。上游的 macOS 實作保留在 `reference/upstream-macos/` 供移植時對照。
 >
 > 其他差異：介面語言改為繁體中文與英文兩種；上游的 Discussions 與 star 數屬於原專案、本文件不再轉貼。介紹頁由本 repo 的 `docs/` 提供。
 
 <p align="center">
-  <img src="docs/showcase.en.png" alt="usage — 把 Claude Code、Codex 與 Antigravity 的額度釘在 macOS 選單列" width="820">
+  <img src="docs/showcase.en.png" alt="usage — 把 Claude Code、Codex 與 Antigravity 的額度釘在 Windows 系統匣" width="820">
 </p>
 
-`usage` 把 **Claude Code、Codex 與 Antigravity** 的額度釘在螢幕右上角的選單列，用顏色標好警戒級別，掃一眼就懂。Claude Code 與 Codex 的數字是被動讀自你機器上原本就在寫的本機檔案，讀取這些數字**不會呼叫 Anthropic 或 OpenAI 的 LLM API**——所以看額度這件事本身永遠不會增加你的用量。Antigravity 額度則來自 Google 官方額度端點，用的是 Antigravity CLI 本來就存在本機的登入身分。
+`usage` 把 **Claude Code、Codex 與 Antigravity** 的額度釘在系統匣，用顏色標好警戒級別，掃一眼就懂。Claude Code 與 Codex 的數字是被動讀自你機器上原本就在寫的本機檔案，讀取這些數字**不會呼叫 Anthropic 或 OpenAI 的 LLM API**——所以看額度這件事本身永遠不會增加你的用量。Antigravity 額度則來自 Google 官方額度端點，用的是 Antigravity CLI 本來就存在本機的登入身分。
 
 ## 為什麼需要 usage？
 
@@ -34,21 +34,19 @@
 
 ## 快速上手
 
-```bash
-brew install --cask aqua5230/usage/usage
-```
+從[最新 Release](https://github.com/SanHsien/usage/releases/latest) 下載 `usage-windows.zip`，解壓後執行 `usage.exe` —— 無須安裝程式。
 
-安裝後會自動進入「應用程式」資料夾。先右鍵**「打開」**一次讓 Gatekeeper 放行，再點選單列圖示即可。想直接下載，或想看完整設定流程？見下方 [安裝](#安裝)。
+系統匣會出現額度圖示，左鍵開面板、右鍵開選單。完整設定流程見下方 [安裝](#安裝)。
 
 ## 你會得到什麼
 
 ### 即時可見性
 
-- **常駐監控：** 額度常駐選單列，顏色標示警戒級別（綠到紅）。點開能看 Session、Weekly 與各專案用量細節。
+- **常駐監控：** 額度常駐系統匣，顏色標示警戒級別（綠到紅）。點開能看 Session、Weekly 與各專案用量細節。
 - **Antigravity 支援：** Antigravity（Gemini）的 Session 與每週額度以第三張卡片出現在每一款面板。數字直接向官方額度 API 查詢，用的是 Antigravity CLI 本來就存在你機器上的登入身分——每幾分鐘自動刷新，重置倒數即時遞減。
 - **服務狀態警示：** Claude Code、Claude API 或 Codex API 發生故障或效能降級時，相關面板底部會顯示橘紅警示橫幅，數字只讀官方公開的 Statuspage.io 狀態頁——絕不呼叫 LLM 用量 API。Antigravity 因沒有可用的公開狀態頁，暫不支援。
 - **上下文提醒與系統通知：** Context Window 達 70% 時，狀態列會提醒你 `/clear` 或 `/compact` 來避免浪費；也可自選開啟系統通知，在接近門檻或額度恢復時提醒。
-- **獨立隱藏區塊：** 沒有全部都用？一鍵就能把 Claude Code、Codex 或 Antigravity 從選單列及面板上徹底隱藏。
+- **獨立隱藏區塊：** 沒有全部都用？一鍵就能把 Claude Code、Codex 或 Antigravity 從系統匣及面板上徹底隱藏。
 
 ### 工作流程輔助
 
@@ -65,54 +63,51 @@ brew install --cask aqua5230/usage/usage
 
 - **10 款視覺面板：** 可在 Classic、Matrix、Windows 95、Newspaper、Cloud Observation、Midnight Aquarium、Prism Arcade、Black Hole、World Cup 2026 與 Lepidoptera（藍曬圖）之間切換。
 - **拖曳排序：** 按住任何一張額度卡上下拖曳就能交換順序，排法在所有主題間共用、重開也會記住。
-- **AI 人才市場：** 將整個 AI 團隊帶進 Claude Code。瀏覽並一鍵將精選 subagent persona 安裝到 `~/.claude/agents/`，全程透過內建 CLI 在本機完成。
-- **AI 圓桌討論：** 開一個獨立視窗，讓 Claude Code、Codex、Antigravity 進行多輪討論——自選參與者、模型與辯論風格，開始前就看得到大約會花多少 token。可以在輪間插話引導方向，共識計票看得出誰不同意，並讓討論在全體同意時提早收尾。位子可以戴上 AI 人才市場的專家角色，也能附上唯讀資料夾讓參與者參考真實檔案。
-- **AI 更新日報：** 開啟每天自動更新的公開[網頁](https://aqua5230.github.io/ai-updates/)，涵蓋 Claude Code、Codex、Antigravity 三套工具、保留完整歷史。已審核的更新顯示白話版（該頁自行提供多語，與本程式的介面語言無關），未審核的顯示官方原文。
+- **AI 圓桌討論：** 開一個獨立視窗，讓 Claude Code、Codex、Antigravity 進行多輪討論——自選參與者、模型與辯論風格，開始前就看得到大約會花多少 token。可以在輪間插話引導方向，共識計票看得出誰不同意，並讓討論在全體同意時提早收尾。可附上唯讀資料夾讓參與者參考真實檔案。（指派專家角色需要 AI 人才市場，本 fork 暫未提供。）
+- **AI 更新日報：** 開啟[更新彙整頁](https://sanhsien.github.io/usage/ai-updates/)，涵蓋 Claude Code、Codex、Antigravity 與相關工具，附官方原文對照。頁面由本 repo 的 `ai_updates.json` 產生（`scripts/build_ai_updates.py`），資料隨上游同步更新。
 - **神獸夥伴：** 百分比旁常駐一隻小型白色動畫神獸（Claude 是鳳凰，Codex 是飛龍，Antigravity 是獅子），各自跟著自家工具的 token 燃燒率動態加速。
 - **自動多語言 (i18n)：** 介面支援繁體中文與英文，自動跟隨系統語言設定。所有中文語系（含簡體）都會套用繁體中文，其餘語系回退英文。
 
 ## 隱私與資料來源
 
 - Claude Code 與 Codex 的數字**只讀本機紀錄檔**；讀取這些數字**不會呼叫 Anthropic 或 OpenAI 的 LLM API**。
-- Antigravity 額度需要連網，而且只有你真的使用它才會發生：額度是用 Antigravity CLI 登入後存下的 OAuth 憑證，向 Google 官方額度端點查詢——依 CLI 版本不同，這個憑證讀自 macOS Keychain、Windows 認證管理員，或本機 token 檔。`usage` 只讀取這個憑證而不寫回，任何刷新後的 access token 也只留在記憶體中；這個呼叫本身只讀額度資訊，絕不消耗你的模型額度。
+- Antigravity 額度需要連網，而且只有你真的使用它才會發生：額度是用 Antigravity CLI 登入後存下的 OAuth 憑證，向 Google 官方額度端點查詢——依 CLI 版本不同，在 Windows 上，這個憑證讀自認證管理員或本機 token 檔（依 CLI 版本而定）。`usage` 只讀取這個憑證而不寫回，任何刷新後的 access token 也只留在記憶體中；這個呼叫本身只讀額度資訊，絕不消耗你的模型額度。
 - 背景連網範圍：上述 Antigravity 額度／token 端點、用來標示故障的 Claude 與 Codex 公開狀態頁、估算成本用的公開價格表（斷網會用內建預設），以及偶爾檢查 GitHub 版本更新。Claude Code 與 Codex 的紀錄檔內容不會被上傳。
 
 ## 環境需求
 
-- macOS 12（Monterey）或更新版本，或 Windows 10/11
+- Windows 10 或 11
 - 已經使用過 Claude Code、Codex 或 Antigravity（需有本機用量資料）
 - （僅限從原始碼跑）Python 3.13
 
 ## 安裝
 
-### 1. Homebrew（推薦）
+1. 到[最新 Release](https://github.com/SanHsien/usage/releases/latest) 下載 `usage-windows.zip`。
+2. 解壓到任何位置，執行 `usage.exe`。無須安裝程式、不寫登錄檔（除非你開啟「開機自啟」）。
+3. 想開機自動啟動：右鍵選單勾選「開機時啟動」。
 
-安裝後，未來只需 `brew upgrade --cask usage` 即可自動更新。
+系統匣 UI 需要 Microsoft Edge WebView2 Runtime，Windows 10 與 11 通常已內建。
 
-```bash
-brew install --cask aqua5230/usage/usage
+系統匣圖示會隨 Claude 額度百分比更新；提示文字摘要 Claude 與 Codex 的各視窗。左鍵用 WebView2 開啟 10 款主題面板；右鍵可切換面板、重新整理、設定開機自啟、檢查更新與結束。
+
+已知限制：面板開在工作區右下角，而非貼齊系統匣圖示（`Shell_NotifyIconGetRect` 尚未接上）；更新提示用系統三鈕對話框，按鈕文字由 Windows 決定，因此三個選項的對應寫在訊息內容裡；AI 人才市場需要上游未公開的 `instate-cli` 二進位，暫未提供。
+
+## 從原始碼執行
+
+```powershell
+uv sync --frozen --group dev --extra windows
+uv run --no-sync python main.py            # 系統匣（預設）
+uv run --no-sync python main.py --tui      # 終端機 TUI
+uv run --no-sync python main.py --mock     # 假資料預覽
+uv run --no-sync python main.py --doctor   # 環境與 hook 診斷
 ```
 
-*（第一次開啟：請在 Finder 找到 `usage.app` 按右鍵 → **打開** 讓系統放行）。*
-
-### 2. 下載 macOS App
-
-1. 到 [GitHub Releases 頁面](https://github.com/aqua5230/usage/releases/latest) 下載最新的 `usage.app.zip`。
-2. 解壓縮，將 `usage.app` 拖進「應用程式」資料夾。
-3. 第一次開啟：在 Finder 對 `usage.app` 按右鍵 → **打開** → 確認打開。
-
-## Windows 支援
-
-Windows 可完整使用核心功能：TUI、Claude Code 狀態列 hook 與 Codex 記錄解析都原生支援。從[最新 GitHub Release](https://github.com/aqua5230/usage/releases/latest)下載 `usage-windows.zip`，解壓後執行 `usage.exe` 即可，無須安裝程式。系統匣 UI 需要 Microsoft Edge WebView2 Runtime；Windows 10 與 11 通常已內建。
-
-系統匣圖示會隨 Claude 額度百分比更新；提示文字摘要 Claude 與 Codex 的各視窗。左鍵會用 WebView2 開啟與 macOS 相同的 10 款主題面板（Classic 加另外九款）；右鍵可切換面板、重新整理、設定開機自啟、檢查更新與結束。
-
-Windows 的差異：面板開在工作區右下角，而非貼齊系統匣圖示；更新提示使用系統 Yes/No 對話框；AI 人才市場與 AI 圓桌討論面板僅提供 macOS。
+需要 Python 3.13。開發環境完整說明見 [開發文件](docs/DEVELOPMENT.win.zh-TW.md)。
 
 ### 首次打開：設定狀態列
 
 如果你用過 Codex，它會自動讀到資料。若是 Claude Code，請點選單彈窗內的**「設定狀態列 (Set Up Status Line)」**按鈕來安裝同步 hook。
-完成後請重開相關工具（將 Claude Code 用 Cmd+Q 完全結束後重開）。
+完成後請完全關閉 Claude Code 再重開（不是只關視窗）。
 
 設定完成後，Claude Code 視窗底部會出現這樣的狀態列：
 
@@ -139,27 +134,25 @@ Windows 的差異：面板開在工作區右下角，而非貼齊系統匣圖示
 
 | 症狀 | 原因 | 解法 |
 |------|------|------|
-| menu bar 顯示 `--` | 尚無資料或 hook 未更新 | 先跑一次 Codex。若為 Claude Code，點擊「設定狀態列」或跑 `python3 main.py --setup` |
-| 不小心按到「結束」 | 程式已終止 | 透過 Spotlight 或應用程式重新開啟 `usage.app`。（`launchctl start com.lollapalooza.usage` 只在你開啟過「開機自啟」時才有作用。） |
+| 系統匣圖示顯示 `--` | 尚無資料或 hook 未更新 | 先跑一次 Codex。若為 Claude Code，點擊「設定狀態列」或跑 `python3 main.py --setup` |
+| 不小心按到「結束」 | 程式已終止 | 重新執行 `usage.exe`。 |
 | 顯示「N 分鐘未更新」 | Claude Code 未執行 | 打開 Claude Code 跑一下就會更新 |
 | Codex 區塊空白 | 找不到 Codex 紀錄 | 用 Codex 跑一次對話 |
 | 今日花費是 $0.00 | 價格表對不上或抓取失敗 | 刪掉 `~/.usage/pricing_cache.json` 重新抓取 |
 | Antigravity 卡片沒出現 | 未安裝或未登入 Antigravity CLI | 安裝並登入 Antigravity CLI，背景額度查詢成功後卡片會自動出現 |
-| App 打不開 | Gatekeeper 擋住 | Finder → 找到 `usage.app` → 按右鍵 → 打開 |
-| App 一開就閃退 (arm64)| 舊版打包 bug | 請升級至 **v0.11.1 或更新版本** |
 
 ## 跟其他工具比較
 
 | 功能 | usage | ccusage | TokenTracker |
 |------|:-----:|:-------:|:------------:|
 | 一直在螢幕上 | ✅ | — | ✅ |
-| macOS 選單列 | ✅ | — | ✅ |
+| Windows 系統匣 | ✅ | — | — |
 | Claude Code 與 Codex 支援 | ✅ | 僅 Claude | ✅ |
 | Antigravity（Gemini）支援 | ✅ | — | — |
 | Claude Code 與 Codex 服務狀態警示 | ✅ | — | — |
 | HTML 深度報告與 UI 面板 | ✅ | ✅ | — |
-| AI 人才市場 | 僅 macOS | — | — |
-| AI 圓桌討論 | 僅 macOS | — | — |
+| AI 人才市場 | 未提供 | — | — |
+| AI 圓桌討論 | ✅ | — | — |
 | AI 更新日報 | ✅ | — | — |
 | 進度管家與省 token 模式 | ✅ | — | — |
 | Token 浪費健檢 | ✅ | — | — |
@@ -168,7 +161,7 @@ Windows 的差異：面板開在工作區右下角，而非貼齊系統匣圖示
 
 ## 開發
 
-想用指令模式、跑 TUI、設定 agent 或自己打包 App？完整說明在 **[開發文件 (docs/DEVELOPMENT.zh-TW.md)](docs/DEVELOPMENT.zh-TW.md)**。
+想跑 TUI、設定 agent 或自己打包？完整說明在 **[Windows 開發文件](docs/DEVELOPMENT.win.zh-TW.md)**；移植 macOS 功能到 Windows 的方法見 **[移植手冊](docs/PORTING.zh-TW.md)**。
 
 ## 其他可參考專案
 

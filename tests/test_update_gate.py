@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from typing import Any
 
 import pytest
@@ -100,3 +101,53 @@ def test_resolve_alert_choice(
     expected: tuple[str, dict[str, str]],
 ) -> None:
     assert update_gate.resolve_alert_choice(result_code, "0.12.0") == expected
+
+
+@pytest.mark.parametrize(
+    ("code", "expected_action", "expected_prefs"),
+    [
+        (update_gate.IDYES, "open", {}),
+        (update_gate.IDNO, "skip", {"update_skipped_version": "1.2.3"}),
+        (update_gate.IDCANCEL, "dismiss", {}),
+        (0, "dismiss", {}),  # Windows returns 0 when the box cannot be shown
+        (99, "dismiss", {}),  # undocumented code
+    ],
+)
+def test_resolve_message_box_choice(
+    code: int, expected_action: str, expected_prefs: dict[str, str]
+) -> None:
+    # Escape and the close button both return IDCANCEL, so anything that is not an
+    # explicit No must defer. Skipping on an accidental dismissal would hide the
+    # release for good.
+    assert update_gate.resolve_message_box_choice(code, "1.2.3") == (
+        expected_action,
+        expected_prefs,
+    )
+
+
+def test_dismissed_recently_window() -> None:
+    now = time.time()
+
+    assert update_gate.dismissed_recently({"update_dismissed_at": now}) is True
+    assert (
+        update_gate.dismissed_recently(
+            {"update_dismissed_at": now - update_gate.UPDATE_DISMISS_SECONDS - 1}
+        )
+        is False
+    )
+
+
+@pytest.mark.parametrize("value", [None, "", "not-a-number", {}, []])
+def test_dismissed_recently_ignores_unusable_values(value: object) -> None:
+    # A corrupt preferences file must not suppress update prompts forever.
+    assert update_gate.dismissed_recently({"update_dismissed_at": value}) is False
+
+
+def test_should_prompt_respects_skip_and_dismissal() -> None:
+    assert update_gate.should_prompt({}, "1.2.3") is True
+    assert update_gate.should_prompt({"update_skipped_version": "1.2.3"}, "1.2.3") is False
+    # A skip applies to that version only; a newer one must still prompt.
+    assert update_gate.should_prompt({"update_skipped_version": "1.2.2"}, "1.2.3") is True
+    assert (
+        update_gate.should_prompt({"update_dismissed_at": time.time()}, "1.2.3") is False
+    )

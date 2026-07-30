@@ -16,6 +16,8 @@
 - **要**判斷 Windows 上實際能不能做到，能做就排進待辦、動手移植。
 - 真的做不到（缺少 Windows API、依賴 macOS 專屬二進位）才記為受阻，**並寫明卡在什麼具體技術限制**，不是含糊的「平台不同」。
 
+**動手前先讀 [`docs/PORTING.zh-TW.md`](docs/PORTING.zh-TW.md)** —— 移植的盤點方法、可行性判斷、實作規矩與驗收標準都在裡面,含實際踩過的坑（盤點用的 grep 錯過三次、對話框按鈕配置讓 Escape 觸發了不可逆選項）。
+
 已知落差清單與移植狀態見 [`REPO_REVIEW.md`](REPO_REVIEW.md) 的「Windows 平台落差移植待辦」。發現新落差就補進那份清單。
 
 參考素材：[`reference/upstream-macos/`](reference/upstream-macos/) 放著已從本 repo 移除的上游 macOS 實作，**唯讀、不參與建置與檢查**，用途是移植功能時對照原本的行為。
@@ -53,11 +55,11 @@
 
 - Python **3.13**（`requires-python >= 3.13`；mypy 也釘 3.13）。本機預設的 `python` 是 3.14，**不要**拿它建環境，一律用 uv 指定 3.13。
 - 環境用 `uv` 管理，`uv.lock` 是唯一真相；`--frozen` 不可省略。
-- 三個 stdlib-only 檔案（`usage_statusline.py`、`usage_statusline_forwarder.py`、`usage_session_resume.py`）要能在 macOS 內建的 Python 3.9 跑：**不可 import 第三方套件、不可用 `datetime.UTC`**（用 `timezone.utc`）。ruff 的 `UP017` 已針對這幾個檔關掉，別去「修好」它。
-- `menubar.py` 有成長政策：新功能邏輯放 leaf module（`menubar_state.py` 之類），這裡只留薄薄的 ObjC dispatch 殼。
+- **stdlib-only 檔案**（`usage_statusline.py`、`usage_statusline_forwarder.py`、`usage_session_resume.py`、`usage_terse_mode.py`、`usage_terse_reminder.py`）要能被使用者的 Claude Code 用**任何** `python3` 執行，不是本專案的 venv：**不可 import 第三方套件**。ruff 的 `UP017`（`datetime.UTC`）豁免是舊 macOS 3.9 下限的遺留，可以另案重新評估。
+- `wintray.py` 有成長政策：新功能的**邏輯**放中立 leaf module（`menubar_state.py`、`update_gate.py` 之類），`wintray.py` 只留薄薄的 UI 外殼。理由是外殼裡的判斷測不到——見 [`docs/PORTING.zh-TW.md`](docs/PORTING.zh-TW.md) 第三節。
 - 所有使用者可見字串必須走 `i18n.json` 的 `_t()` / JS `t()`。**本 fork 只出貨繁體中文與英文**（上游是五語），新增字串時 `zh-TW` 與 `en` 兩段都要補齊，`tests/test_i18n_key_parity.py` 會擋。
 - **兩語言的判定邏輯散在五個檔案**：`usage_lang._normalize_lang()` 是主程式的版本；`usage_statusline.py`、`usage_session_resume.py`、`usage_terse_mode.py`、`usage_terse_reminder.py` 因為必須 stdlib-only、不能 import `usage_lang`，各自帶一份複本；`session_hooks.py` 另有 `RESUME_LANGS` / `TERSE_LANGS`。**改一個就要改全部**。規則：所有中文語系（含簡體）→ `zh-TW`，其餘 → `en`。
-- **不要在 Windows 上跑 `uv lock`**：會把 macOS 的 PyObjC 相依標記成不可能達成、無聲地從 lock 檔裡丟掉，直接弄壞 macOS 打包。`pyproject.toml` 的 `[tool.uv] environments` 就是在防這件事。
+- **改版號時不要跑 `uv lock`**：手動改 `uv.lock` 裡 `usage` 那一行的 `version` 即可，零解析風險。`pyproject.toml` 的 `[tool.uv] environments` 現在只鎖 win32 與 linux。
 
 ## 常用指令（Windows / PowerShell）
 
@@ -78,7 +80,7 @@ uv run --no-sync python main.py --mock      # 假資料預覽
 uv run --no-sync python main.py --doctor    # 環境／hook 診斷
 ```
 
-menu bar 模式是 macOS 專屬；Windows 對應的是 `wintray.py`（system tray）。
+不加參數的預設模式就是系統匣（`wintray.py`）。macOS 支援已於 2026-07-29 移除，對照用的上游實作在 `reference/upstream-macos/`。
 
 ## 開發原則
 

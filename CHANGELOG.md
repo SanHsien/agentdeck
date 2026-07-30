@@ -8,6 +8,16 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **Failed actions say so instead of failing silently**: installing the statusLine hook, toggling it, toggling session resume or terse mode, and generating a report all reported nothing when they failed. A failed hook install was the worst of them — the panel just showed `--` forever, which looks identical to having no data yet, so there was no way to tell the difference. Each now reports its outcome, with the underlying error where there is one.
+- **The update prompt can skip a version again**: Windows only ever had a two-button dialog, so "skip this version" had nowhere to go. It is a three-button dialog now. Windows controls the button labels, so the message body spells out which button means what. Escape and the close button both defer rather than skip — suppressing a release because a dialog was dismissed would hide it for good.
+- **Automatic daily update checks**: the README has always said usage checks GitHub at most once a day, but on Windows only the manual menu item existed. The daily check now runs, honouring the auto-check preference, the once-a-day interval, a recent "later" answer, and a skipped version.
+- **Features explain themselves when switched on**: pystray menu items cannot carry tooltips, so the hover text upstream shows for Progress Concierge, Token Saver, and Keep Awake had nowhere to live. Each now explains itself once on enable, the way Keep Awake already did.
+
+### Changed
+- `update_gate` gained `UPDATE_DISMISS_SECONDS`, `dismissed_recently()`, `should_prompt()`, and `resolve_message_box_choice()`. The dismiss window and its check lived in `menubar.py` until macOS support was removed; putting them in a platform-neutral module means both the gating and the dialog-code mapping are unit-tested rather than only reachable by opening a dialog.
+- Both READMEs now describe a Windows-only app: no Homebrew, no `.app`, no Gatekeeper or `launchctl` troubleshooting, and the AI Update Daily link points at this fork's own page.
+
 ### Removed
 - **macOS support**: this fork is Windows-only, so the PyObjC menu bar (`menubar.py`), the WKWebView popover (`panels/web_panel.py`), the LaunchAgent login item (`login_item.py`), the py2app build (`setup_app.py` and the shell scripts around it), and the macOS CI jobs are gone, along with the PyObjC dependencies and the macOS locale probe. Nothing was ported in the process — `wintray.py`, `win_login_item.py`, and `scripts/build_windows.ps1` were already the Windows equivalents, so this removes redundancy rather than capability. The platform-neutral modules keep their historical `menubar_*` and `panels.*` names and are still load-bearing.
 

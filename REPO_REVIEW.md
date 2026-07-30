@@ -71,23 +71,34 @@
 
 **維護者意圖：這些不是「可接受的平台差異」，是待移植的工作。** 規則見 [`AGENTS.md`](AGENTS.md) 開頭。對照上游實作請看 [`reference/upstream-macos/`](reference/upstream-macos/)。
 
-以下 17 個 UI 字串在上游 macOS 版有、Windows 版沒有（2026-07-29 以 `_t()` 呼叫比對得出）。**這些落差在 macOS 移除前就已存在於上游，不是移除造成的**——`git show 81b89e1:wintray.py` 可驗證每一個都是 `base=0`。
+移植方法與踩過的坑見 [`docs/PORTING.zh-TW.md`](docs/PORTING.zh-TW.md)。
 
-| 落差 | i18n key | 可行性評估 |
-|---|---|---|
-| Hook 安裝失敗／需重啟的提示 | `hook_install_failed`、`hook_install_failed_default`、`hook_installed_restart` | **可做**。Windows 目前安裝 statusLine hook 失敗時沒有任何回饋，使用者只會看到面板一直 `--`。應該接上系統通知或托盤氣泡。**優先度最高**——這是靜默失敗。 |
-| 報告產生失敗提示 | `analysis_failed` | **可做**。同上，目前失敗無聲。 |
-| Session resume／statusline 操作失敗提示 | `resume_action_failed`、`statusline_action_failed` | **可做**。同上。 |
-| 更新檢查結果提示 | `update_check_failed`、`update_no_new_version` | **可做**。Windows 只在「有新版」時用 Yes/No 對話框，檢查失敗或已是最新時沒有回饋。 |
-| 更新對話框三選項 | `update_btn_download`、`update_btn_later`、`update_btn_skip` | **可做但需自製對話框**。Windows 用系統 Yes/No，少了「跳過這一版」。要三選項得用 pywebview 或 Win32 TaskDialog。 |
-| 選單項 tooltip | `project_butler_tooltip`、`terse_mode_tooltip`、`window_keeper_tooltip` | **受阻於 pystray**：pystray 的 `MenuItem` 沒有 tooltip 參數。替代方案是把說明併進選單文字，或改用自製托盤選單。 |
-| 螢幕保持喚醒的睡眠通知 | `window_keeper_sleep_title`、`window_keeper_sleep_body` | **可做**。`window_keeper` 功能在 Windows 已有（`toggle_window_keeper`），但系統即將睡眠時的通知沒接。 |
-| AI 人才市場面板 | `panel_talent_market` | **受阻**：依賴 `vendor/instate-cli` 二進位，由上游一個私有專案建置且已 gitignore，**跨平台都缺**，不是 Windows 的問題。要做得先自己實作 persona 安裝邏輯。 |
+**這些落差在 macOS 移除前就已存在於上游，不是移除造成的**——`git show 81b89e1:wintray.py` 可驗證每一個都是 `base=0`。
 
-其餘已知落差：
+> ⚠️ **先前記在這裡的「17 個」是錯的。** 用來比對的 grep 只認雙引號，漏掉 f-string 裡的單引號與跨行的 `_t()` 呼叫，也沒考慮 `window_keeper_sleep_body_windows` 這種平台變體 key。引號無關重新盤點後，`update_check_failed`、`update_no_new_version`、`window_keeper_sleep_title` 其實早就有。正確的盤點方法寫在移植手冊第一節。
 
-- **面板開啟位置**：Windows 開在工作區右下角，macOS 貼齊選單列圖示。pystray 不提供圖示座標，要用 Win32 `Shell_NotifyIconGetRect` 取得托盤圖示位置才能貼齊。**可做**。
-- **`i18n.packaged_resource_path` 的 `RESOURCEPATH` 分支**：py2app 專用，現在是死碼（環境變數不存在就跳過，無害）。清掉時要一併改寫 `tests/test_i18n_packaged_path.py`。**純清理，非落差**。
+### 已完成（2026-07-30）
+
+| 落差 | 做法 |
+|---|---|
+| hook 安裝結果無回饋 | `_report_action_result()` 回報成功（需重啟）或失敗，附錯誤細節 |
+| statusLine 切換、session resume、terse mode、報告產生失敗無聲 | 同上，四處都接上 |
+| 更新提示只有兩選項、無法跳過版本 | `MB_YESNOCANCEL` 三選項 + `update_gate.resolve_message_box_choice()`；按鈕配置讓 Escape 落在「稍後」而非「跳過」 |
+| **完全沒有自動每日更新檢查**（README 卻宣稱有） | `_maybe_auto_check_update()` 掛進輪詢迴圈，採用 `auto_check_is_due` / `dismissed_recently` / `should_prompt` 三道閘門 |
+| 選單項 tooltip（pystray 不支援） | 改為啟用該功能時用對話框說明一次，沿用 `window_keeper` 既有模式 |
+
+`update_gate.py` 新增 `UPDATE_DISMISS_SECONDS`、`dismissed_recently()`、`should_prompt()`、`resolve_message_box_choice()`——原本 `UPDATE_DISMISS_SECONDS` 與 dismiss 判斷住在已刪除的 `menubar.py`，搬到中立模組後兩者都有測試守著。
+
+### 仍受阻
+
+| 落差 | 卡在哪 |
+|---|---|
+| AI 人才市場面板（`panel_talent_market`） | **不是移植問題。** `talent_market_bridge.py` 仍在 repo 且平台中立，它只是 shell out 到 `vendor/instate-cli`；而那個二進位建自上游作者機器上的私有專案（`build_app.sh:11` 寫死 `/Users/lollapalooza/Developer/instate`），備援下載需 `INSTATE_CLI_TOKEN`，來源與 dist 兩個 repo 對外皆 404（2026-07-30 實測），且它是 macOS 二進位、Windows 無法執行。任何人 clone 公開 repo 在 macOS 上也一樣拿不到。要有這功能得**自己寫 persona 來源**（產生定義寫進 `~/.claude/agents/`），屬新功能提案，不在移植範圍。詳見 [`reference/upstream-macos/README.md`](reference/upstream-macos/README.md)。 |
+
+### 尚未動工
+
+- **面板開啟位置**：Windows 開在工作區右下角，上游貼齊選單列圖示。pystray 不提供圖示座標，需用 Win32 `Shell_NotifyIconGetRect` 取得系統匣圖示矩形才能貼齊。**可做，尚未做。** 實作時務必用 `_monitor_dpi_scale()` / `_to_logical_rect()` 換算，否則會重蹈 v0.30.0 的 DPI bug。
+- **`i18n.packaged_resource_path` 的 `RESOURCEPATH` 分支**：py2app 專用，現在是死碼（環境變數不存在就跳過，無害）。清掉時要一併改寫 `tests/test_i18n_packaged_path.py`。**純清理，非落差。**
 
 ## 待辦
 

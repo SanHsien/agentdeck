@@ -7,6 +7,16 @@
 
 ## [Unreleased]
 
+### 新增
+- **動作失敗會說出來，不再靜默**：安裝 statusLine hook、切換 hook、切換 session resume 或省 token 模式、產生報告，這五件事失敗時原本完全沒有回饋。其中最糟的是 hook 安裝失敗——面板會永遠顯示 `--`，而那跟「還沒有資料」長得一模一樣，使用者無從分辨。現在每一項都會回報結果，有錯誤訊息就一併附上。
+- **更新提示可以跳過版本了**：Windows 原本只有兩個按鈕的對話框，「跳過這一版」無處可放。現在是三鈕對話框。按鈕文字由 Windows 決定，因此三個選項的對應寫在訊息內容裡。Escape 與關閉鈕都是「稍後」而非「跳過」——因為對話框被關掉就永久隱藏該版更新，是不可接受的。
+- **自動每日更新檢查**：README 一直寫著「每天最多一次查 GitHub」，但 Windows 上只有手動選單項，這件事從未真的發生。現在每日檢查會執行，並採用自動檢查偏好、一天一次的間隔、近期「稍後」的冷卻，以及已跳過的版本。
+- **功能啟用時會自我說明**：pystray 的選單項無法帶 tooltip，上游為進度管家、省 token 模式、螢幕保持喚醒提供的滑鼠提示文字因此無處安放。現在三者都在啟用時說明一次，比照螢幕保持喚醒原本的做法。
+
+### 變更
+- `update_gate` 新增 `UPDATE_DISMISS_SECONDS`、`dismissed_recently()`、`should_prompt()`、`resolve_message_box_choice()`。冷卻時間與其判斷原本住在 `menubar.py`，隨 macOS 移除而消失；改放中立模組後，閘門判斷與對話框回傳碼映射都有單元測試守著，不再只能靠開對話框手動點。
+- README 兩版都改為描述 Windows 專用的程式：移除 Homebrew、`.app`、Gatekeeper 與 `launchctl` 相關排查，AI 更新日報連結改指向本 fork 自己的頁面。
+
 ### 移除
 - **macOS 支援**：本 fork 專注 Windows，因此移除 PyObjC 選單列（`menubar.py`）、WKWebView 彈出面板（`panels/web_panel.py`）、LaunchAgent 開機項（`login_item.py`）、py2app 打包（`setup_app.py` 與周邊 shell 腳本）與 macOS CI job，連同 PyObjC 相依與 macOS 語系偵測。過程中**沒有任何東西需要移植**——`wintray.py`、`win_login_item.py`、`scripts/build_windows.ps1` 本來就是對應的 Windows 版本，所以這是移除冗餘而非移除能力。平台中立的模組保留原本的 `menubar_*`／`panels.*` 命名，且仍是命脈，不可依檔名誤刪。
 
