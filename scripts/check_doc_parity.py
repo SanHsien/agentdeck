@@ -22,13 +22,15 @@ class DocPair:
 
 
 DOC_PAIRS = (
-    # README is the one doc where this fork inverts the upstream convention:
-    # Traditional Chinese is the default (README.md) and English lives at
-    # README.en.md. Every other doc keeps English as the suffix-less default.
+    # README, CONTRIBUTING and SECURITY invert the upstream convention:
+    # Traditional Chinese is the suffix-less default and English lives at
+    # *.en.md, because those three are what a reader of this fork lands on
+    # first (GitHub links CONTRIBUTING.md and SECURITY.md from its own UI).
+    # CHANGELOG and docs/DEVELOPMENT keep English as the suffix-less default.
     DocPair("README", "README.en.md", "README.md"),
     DocPair("CHANGELOG", "CHANGELOG.md", "CHANGELOG.zh-TW.md"),
-    DocPair("CONTRIBUTING", "CONTRIBUTING.md", "CONTRIBUTING.zh-TW.md"),
-    DocPair("SECURITY", "SECURITY.md", "SECURITY.zh-TW.md"),
+    DocPair("CONTRIBUTING", "CONTRIBUTING.en.md", "CONTRIBUTING.md"),
+    DocPair("SECURITY", "SECURITY.en.md", "SECURITY.md"),
     DocPair("docs/DEVELOPMENT", "docs/DEVELOPMENT.md", "docs/DEVELOPMENT.zh-TW.md"),
 )
 

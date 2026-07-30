@@ -192,6 +192,8 @@ uv run --no-sync python main.py --doctor   # 環境與 hook 診斷
 | [fork 說明](docs/FORK.zh-TW.md) | 本 fork 專屬檔案與同步流程 |
 | [Repo Review](REPO_REVIEW.md) | 當前健康狀態與未解問題 |
 | [變更紀錄](CHANGELOG.zh-TW.md) | 逐版變更 |
+| [貢獻指南](CONTRIBUTING.md) | 送 PR 前該知道的事：閘門、雙語文件規則、版號規則 |
+| [安全性政策](SECURITY.md) | 支援版本與漏洞回報方式 |
 
 ## 開發
 
@@ -204,6 +206,7 @@ uv run --no-sync python main.py --doctor   # 環境與 hook 診斷
 | 名稱 | 授權 | 可參考點 |
 | --- | --- | --- |
 | [karpathy/llm-council](https://github.com/karpathy/llm-council) | 未宣告 | 多模型協作回答同一問題的三階段流程：各模型獨立作答 → 匿名互評排名 → 由「主席」模型彙整成最終答案。與本專案「AI 圓桌討論」的多輪討論、共識計票屬同一類設計，其中**匿名互評**（隱藏模型身分以避免評分偏向名氣）是值得對照的做法。技術上走 OpenRouter + FastAPI + React，與本專案直接驅動本機 CLI、離線運作的路線不同。 |
+| [gkfriend/codex-usage-companion](https://github.com/gkfriend/codex-usage-companion) | MIT | 同樣是 Windows 專用、本機優先、無遙測的 Codex 額度常駐顯示，解的是同一個問題。**取數路徑不同，值得對照**：它註冊 Codex 外掛的 `SessionStart` / `Stop` hook，並讀本機 `codex app-server` 的 rate-limit 通知，是事件驅動；`agentdeck` 則掃 `~/.codex/sessions/*.jsonl`，不需使用者安裝任何東西。它附掛在 Codex Desktop 視窗上、只管 Codex；`agentdeck` 是獨立系統匣程式，涵蓋 Claude Code、Codex 與 Antigravity。技術上是 C# / .NET 8。授權為 MIT，與 AGPL-3.0 單向相容——真要借用程式碼在法律上可行，但目前沒有借用。 |
 
 ## 授權
 

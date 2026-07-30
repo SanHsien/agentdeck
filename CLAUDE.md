@@ -53,7 +53,7 @@ Claude Code ──stdin──> usage_statusline.py (hook) ──write──> ~/.
 ```
 
 - **Claude Code side**: `usage_statusline.py` is installed into `~/.claude/agentdeck-statusline.py` by `setup_hook.py` and wired into `~/.claude/settings.json`'s `statusLine`. Every time Claude Code refreshes its status line, it pipes the session JSON to the hook on stdin; the hook atomically writes it to `~/.claude/agentdeck-status.json`. The UI reads that file — never the network.
-- **Codex side**: no hook is possible (Codex CLI has no equivalent), so `codex_loader.py` scans `~/.codex/sessions/**/*.jsonl` and pulls `rate_limits` straight from the conversation logs.
+- **Codex side**: `codex_loader.py` scans `~/.codex/sessions/**/*.jsonl` and pulls `rate_limits` straight from the conversation logs. This used to be documented as "no hook is possible"; that is no longer true — Codex CLI 0.129 ships `codex plugin` with a marketplace, plugins can register `SessionStart` / `Stop` hooks, and `codex app-server` exposes rate-limit notifications locally. The log scan stays for now because it needs nothing installed on the user's side, but an event-driven path exists and is worth evaluating; see the reference table in the README.
 - **Read priority** in `usage_client.py`: the newest usable data from `agentdeck-status.json` → `usag-status.json` (v0.1.x legacy) → `tt-status.json` (compat fallback for users migrating from the third-party tool `stormzhang/token-tracker`) or Claude Code's `~/.claude.json` `cachedUsageUtilization` fallback; **no `token-tracker` module or source exists in this repository**.
 
 ### Module map
@@ -96,8 +96,8 @@ All user-visible strings in panels and UI **must** be looked up from `i18n.json`
 ### Release / changelog
 
 - This project is **bilingual (Traditional Chinese + English)**, and every doc must be updated in both languages together. **This fork diverges from upstream on the README specifically:**
-  - **README**: Traditional Chinese is the default (`README.md`); English lives at `README.en.md`. The upstream `README.zh-CN.md` / `README.ja.md` / `README.ko.md` variants have been **removed** — do not reintroduce them. The app UI was reduced to the same two languages; see the i18n rule above.
-  - **Every other doc** keeps the upstream convention: the suffix-less `.md` is **English** and Traditional Chinese lives alongside as `.zh-TW.md`. This covers CONTRIBUTING, SECURITY, CHANGELOG, and `docs/DEVELOPMENT`. GitHub only surfaces the suffix-less `CONTRIBUTING.md` / `SECURITY.md` in its community tabs, never `*.zh-TW.md`, which is why English stays the default there.
+  - **README, CONTRIBUTING, SECURITY**: Traditional Chinese is the default (`README.md`, `CONTRIBUTING.md`, `SECURITY.md`); English lives at `*.en.md`. These three are what a reader lands on first — GitHub links `CONTRIBUTING.md` and `SECURITY.md` from its own community and security tabs and never `*.en.md` — so the maintainer's language is the default there. The upstream `README.zh-CN.md` / `README.ja.md` / `README.ko.md` variants have been **removed** — do not reintroduce them. The app UI was reduced to the same two languages; see the i18n rule above.
+  - **CHANGELOG and `docs/DEVELOPMENT`** keep the upstream convention: the suffix-less `.md` is **English** and Traditional Chinese lives alongside as `.zh-TW.md`.
   - `scripts/check_doc_parity.py` gates all of the above in CI by comparing `##` heading counts; its `DOC_PAIRS` tuple already reflects the inverted README pair (`README.en.md` ↔ `README.md`).
 - Version is bumped in `pyproject.toml`; CI builds `usage.app.zip` and attaches it on `v*` tags (`.github/workflows/release.yml`).
 

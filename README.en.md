@@ -192,6 +192,8 @@ If the menu bar shows `--`, it's usually not broken — there's just no local da
 | [Fork notes](docs/FORK.zh-TW.md) | Fork-specific files and the sync process |
 | [Repo review](REPO_REVIEW.md) | Current health and open issues |
 | [Changelog](CHANGELOG.md) | Per-version changes |
+| [Contributing](CONTRIBUTING.en.md) | What to know before a PR: the gates, the bilingual doc rule, the versioning rule |
+| [Security policy](SECURITY.en.md) | Supported versions and how to report a vulnerability |
 
 ## Development
 
@@ -204,6 +206,7 @@ The projects below are **conceptual and workflow references only** — they are 
 | Name | License | What's worth referencing |
 | --- | --- | --- |
 | [karpathy/llm-council](https://github.com/karpathy/llm-council) | Undeclared | A three-stage pipeline for having several models answer one question together: each model answers independently → they rank each other's **anonymized** answers → a designated "chairman" model compiles the final answer. Same family of design as this project's AI Council (multi-round discussion, consensus tally); the **anonymized peer review** — hiding model identity so rankings aren't swayed by reputation — is the part most worth comparing against. Technically it runs on OpenRouter + FastAPI + React, unlike this project's offline, local-CLI-driven approach. |
+| [gkfriend/codex-usage-companion](https://github.com/gkfriend/codex-usage-companion) | MIT | Another Windows-only, local-first, telemetry-free always-on Codex quota display — the same problem. **The data path differs and is worth comparing**: it registers a Codex plugin's `SessionStart` / `Stop` hooks and reads rate-limit notifications from the local `codex app-server`, so it is event-driven, while `agentdeck` scans `~/.codex/sessions/*.jsonl` and needs nothing installed on the user's side. It attaches to the Codex Desktop window and covers Codex only; `agentdeck` is a standalone tray app covering Claude Code, Codex, and Antigravity. Built in C# / .NET 8. MIT is one-way compatible with AGPL-3.0, so borrowing code would be legally possible — none has been. |
 
 ## License
 
