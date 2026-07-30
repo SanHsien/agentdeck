@@ -47,7 +47,7 @@ class FakeWinreg:
 def test_win_login_item_round_trip(monkeypatch: pytest.MonkeyPatch) -> None:
     fake = FakeWinreg()
     monkeypatch.setattr(win_login_item, "_winreg", lambda: fake)
-    monkeypatch.setattr(win_login_item, "_command", lambda: '"usage.exe"')
+    monkeypatch.setattr(win_login_item, "_command", lambda: '"agentdeck.exe"')
 
     assert win_login_item.is_enabled() is False
     win_login_item.enable()
@@ -58,8 +58,8 @@ def test_win_login_item_round_trip(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_win_login_item_detects_different_command(monkeypatch: pytest.MonkeyPatch) -> None:
     fake = FakeWinreg()
-    fake.values[win_login_item.VALUE_NAME] = '"old-usage.exe"'
+    fake.values[win_login_item.VALUE_NAME] = '"old-agentdeck.exe"'
     monkeypatch.setattr(win_login_item, "_winreg", lambda: fake)
-    monkeypatch.setattr(win_login_item, "_command", lambda: '"usage.exe"')
+    monkeypatch.setattr(win_login_item, "_command", lambda: '"agentdeck.exe"')
 
     assert win_login_item.is_enabled() is False

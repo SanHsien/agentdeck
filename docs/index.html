@@ -4,19 +4,19 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta name="theme-color" content="#0a0a0a" />
-<title>usage — pin your Claude Code &amp; Codex quota to the menu bar</title>
-<meta name="description" data-i18n-attr="content:meta_desc" content="macOS menu bar tracker for Claude Code &amp; Codex quota, tokens, and cost. Reads your local files directly — never connects to Anthropic or OpenAI. HTML reports, 10 visual themes, AGPL-3.0." />
-<meta property="og:title" content="usage — pin your Claude Code & Codex quota to the menu bar" />
-<meta property="og:description" content="macOS menu bar tracker for Claude Code & Codex quota, tokens, and cost. Reads your local files directly — never connects to Anthropic or OpenAI." />
-<meta property="og:image" content="https://sanhsien.github.io/usage/logo.png" />
-<meta property="og:url" content="https://sanhsien.github.io/usage/" />
+<title>agentdeck — pin your Claude Code &amp; Codex quota to the Windows tray</title>
+<meta name="description" data-i18n-attr="content:meta_desc" content="Windows tray tracker for Claude Code &amp; Codex quota, tokens, and cost. Reads your local files directly — never connects to Anthropic or OpenAI. HTML reports, 10 visual themes, AGPL-3.0." />
+<meta property="og:title" content="agentdeck — pin your Claude Code & Codex quota to the Windows tray" />
+<meta property="og:description" content="Windows tray tracker for Claude Code & Codex quota, tokens, and cost. Reads your local files directly — never connects to Anthropic or OpenAI." />
+<meta property="og:image" content="https://sanhsien.github.io/agentdeck/logo.png" />
+<meta property="og:url" content="https://sanhsien.github.io/agentdeck/" />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:image" content="https://sanhsien.github.io/usage/logo.png" />
+<meta name="twitter:image" content="https://sanhsien.github.io/agentdeck/logo.png" />
 <link rel="icon" type="image/png" href="avatar.png" />
-<link rel="alternate" hreflang="en" href="https://sanhsien.github.io/usage/#en" />
-<link rel="alternate" hreflang="zh-TW" href="https://sanhsien.github.io/usage/#zh-TW" />
-<link rel="alternate" hreflang="x-default" href="https://sanhsien.github.io/usage/" />
+<link rel="alternate" hreflang="en" href="https://sanhsien.github.io/agentdeck/#en" />
+<link rel="alternate" hreflang="zh-TW" href="https://sanhsien.github.io/agentdeck/#zh-TW" />
+<link rel="alternate" hreflang="x-default" href="https://sanhsien.github.io/agentdeck/" />
 <style>
 :root {
   --bg: #0a0a0a;
@@ -347,16 +347,6 @@ footer .wrap { display: flex; flex-direction: column; align-items: center; gap: 
 footer p { color: var(--fg-dimmer); font-size: 13px; }
 footer .links { display: flex; gap: 24px; font-size: 14px; color: var(--fg-dim); flex-wrap: wrap; justify-content: center; }
 footer .links a:hover { color: var(--fg); }
-footer .kofi {
-  display: inline-block;
-  background: #ff5e5b;
-  color: white;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-}
-footer .kofi:hover { background: #ff7572; }
 </style>
 </head>
 <body>
@@ -364,13 +354,13 @@ footer .kofi:hover { background: #ff7572; }
 
 <header class="topbar">
   <div class="wrap">
-    <a href="#" class="brand"><span class="brand-dot">🐾</span> usage</a>
+    <a href="#" class="brand"><span class="brand-dot">🐾</span> agentdeck</a>
     <nav>
       <a href="#features" data-i18n="nav_features">Features</a>
       <a href="#resume" data-i18n="nav_resume">Resume</a>
       <a href="#install" data-i18n="nav_install">Install</a>
       <a href="#screenshots" data-i18n="nav_screenshots">Screenshots</a>
-      <a href="https://github.com/SanHsien/usage" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/SanHsien/agentdeck" target="_blank" rel="noopener">GitHub</a>
     </nav>
     <div class="lang">
       <button id="lang-btn" class="lang-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
@@ -387,15 +377,15 @@ footer .kofi:hover { background: #ff7572; }
 
 <section class="hero">
   <div class="wrap">
-    <span class="eyebrow" data-i18n="eyebrow">macOS · open source · AGPL-3.0</span>
-    <h1 data-i18n="h1">Pin your <span class="accent">Claude Code</span> &amp; <span class="accent">Codex</span><br>quota to the menu bar.</h1>
-    <p class="lead" data-i18n="lead">A tiny macOS menu bar app that shows how much of your AI quota is left — like a battery percentage for tokens. Reads your local files directly — never phones home to Anthropic or OpenAI.</p>
+    <span class="eyebrow" data-i18n="eyebrow">Windows · open source · AGPL-3.0</span>
+    <h1 data-i18n="h1">Pin your <span class="accent">Claude Code</span> &amp; <span class="accent">Codex</span><br>quota to the Windows tray.</h1>
+    <p class="lead" data-i18n="lead">A small Windows tray app that shows how much of your AI quota is left — like a battery percentage for tokens. Reads your local files directly — never phones home to Anthropic or OpenAI.</p>
     <div class="cta">
-      <a class="btn btn-primary" data-i18n="cta_download">↓ Download .app</a>
-      <a class="btn btn-secondary" href="https://github.com/SanHsien/usage" target="_blank" rel="noopener" data-i18n="cta_star">★ Star on GitHub</a>
+      <a class="btn btn-primary" href="https://github.com/SanHsien/agentdeck/releases/latest" target="_blank" rel="noopener" data-i18n="cta_download">↓ Download for Windows</a>
+      <a class="btn btn-secondary" href="https://github.com/SanHsien/agentdeck" target="_blank" rel="noopener" data-i18n="cta_star">★ Star on GitHub</a>
     </div>
     <div class="shot">
-      <img data-shot src="popover.en.png" data-img-en="popover.en.png" data-img-cjk="popover.png" alt="usage popover" />
+      <img data-shot src="popover.en.png" data-img-en="popover.en.png" data-img-cjk="popover.png" alt="agentdeck panel" />
     </div>
   </div>
 </section>
@@ -416,7 +406,7 @@ footer .kofi:hover { background: #ff7572; }
       <div class="card">
         <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 13a8.5 8.5 0 0 1 17 0"/><path d="M12 13l3.8-2.6"/><circle cx="12" cy="13" r="1.3" fill="currentColor" stroke="none"/></svg></span>
         <h3 data-i18n="card1_h">5-hour &amp; 7-day quota at a glance</h3>
-        <p data-i18n="card1_p">Both Claude Code session (5h) and weekly (7d) percentages live in the menu bar. Click for a full popover with per-project usage and cost.</p>
+        <p data-i18n="card1_p">Both Claude Code session (5h) and weekly (7d) percentages live in the tray. Click for a full panel with per-project usage and cost.</p>
       </div>
       <div class="card">
         <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></span>
@@ -436,12 +426,12 @@ footer .kofi:hover { background: #ff7572; }
       <div class="card">
         <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
         <h3 data-i18n="card5_h">10 visual panel themes</h3>
-        <p data-i18n="card5_p">Matrix digital rain, Windows 95, retro newspaper, midnight aquarium, World Cup FIFA HUD, Lepidoptera blueprint — pick a mood for your menu bar pop-out.</p>
+        <p data-i18n="card5_p">Matrix digital rain, Windows 95, retro newspaper, midnight aquarium, World Cup FIFA HUD, Lepidoptera blueprint — pick a mood for your tray pop-out.</p>
       </div>
       <div class="card">
         <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.5 3.8 5.7 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.7-3.8-9S9.5 5.5 12 3z"/></svg></span>
-        <h3 data-i18n="card6_h">5-language interface</h3>
-        <p data-i18n="card6_p">Auto-detects your macOS language. Supports 繁體中文, 简体中文, English, 日本語, 한국어 — all strings translated, not just menus.</p>
+        <h3 data-i18n="card6_h">Bilingual interface</h3>
+        <p data-i18n="card6_p">Auto-detects your Windows display language. 繁體中文 and English — every string translated, not just menus.</p>
       </div>
       <div class="card">
         <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19"/><circle cx="9.5" cy="8" r="3"/><path d="M20 19v-1.5a3.5 3.5 0 0 0-2.5-3.37"/><path d="M14.5 4.13a3 3 0 0 1 0 5.74"/></svg></span>
@@ -471,7 +461,7 @@ footer .kofi:hover { background: #ff7572; }
       <div class="card">
         <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 5v14"/><path d="M13 9l7 7"/><path d="M20 9l-7 7"/></svg></span>
         <h3 data-i18n="card12_h">Hide Sections</h3>
-        <p data-i18n="card12_p">Only use one tool? Hide the Claude Code or Codex section from the menu bar and panels completely with a single click.</p>
+        <p data-i18n="card12_p">Only use one tool? Hide the Claude Code or Codex section from the tray and panels completely with a single click.</p>
       </div>
       <div class="card">
         <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h9a2 2 0 0 1 2 2V12a2 2 0 0 1-2 2H10l-3 2.5V14H6a2 2 0 0 1-2-2V7.5a2 2 0 0 1 2-2z"/><path d="M17 9h1a2 2 0 0 1 2 2v3.5a2 2 0 0 1-2 2h-.5v2l-2.2-2H13"/></svg></span>
@@ -510,15 +500,16 @@ footer .kofi:hover { background: #ff7572; }
     <div class="install-row">
       <div class="install-card">
         <div class="label" data-i18n="install_label_rec">RECOMMENDED</div>
-        <h3 data-i18n="install_h_brew">Homebrew</h3>
-        <p data-i18n="install_p_brew">One command. <code>brew upgrade</code> keeps it current.</p>
-<pre><code>brew install --cask aqua5230/usage/usage</code></pre>
+        <h3 data-i18n="install_h_zip">Download and run</h3>
+        <p data-i18n="install_p_zip">Grab <code>agentdeck-windows.zip</code> from Releases, unzip anywhere, run <code>agentdeck.exe</code>. No installer.</p>
+        <a class="btn btn-secondary" style="width: 100%; justify-content: center;" href="https://github.com/SanHsien/agentdeck/releases/latest" target="_blank" rel="noopener" data-i18n="install_btn_releases">→ Open Releases page</a>
       </div>
       <div class="install-card">
-        <div class="label" data-i18n="install_label_dir">DIRECT</div>
-        <h3 data-i18n="install_h_app">Download .app</h3>
-        <p data-i18n="install_p_app">Latest <code>usage.app.zip</code> from GitHub Releases — unzip, drag to <code>/Applications</code>.</p>
-        <a class="btn btn-secondary" style="width: 100%; justify-content: center;" data-i18n="install_btn_releases">→ Open Releases page</a>
+        <div class="label" data-i18n="install_label_dir">FROM SOURCE</div>
+        <h3 data-i18n="install_h_src">Run from source</h3>
+        <p data-i18n="install_p_src">Python 3.13 and uv. See the development docs for the full setup.</p>
+<pre><code>uv sync --frozen --group dev --extra windows
+uv run python main.py</code></pre>
       </div>
     </div>
   </div>
@@ -527,7 +518,7 @@ footer .kofi:hover { background: #ff7572; }
 <section id="screenshots">
   <div class="wrap">
     <h2 data-i18n="screen_h2">Pick a panel that fits your mood.</h2>
-    <p class="subtitle" data-i18n="screen_sub">Ten built-in themes. Change anytime from the popover toolbar.</p>
+    <p class="subtitle" data-i18n="screen_sub">Ten built-in themes. Change anytime from the panel toolbar.</p>
     <div class="gallery">
       <div class="tile"><img data-shot src="matrix.en.png" data-img-en="matrix.en.png" data-img-cjk="matrix.png" alt="Matrix theme" /><span class="caption">matrix</span></div>
       <div class="tile"><img data-shot src="win95.en.png" data-img-en="win95.en.png" data-img-cjk="win95.png" alt="Windows 95 theme" /><span class="caption">win95</span></div>
@@ -552,32 +543,30 @@ footer .kofi:hover { background: #ff7572; }
   <div class="wrap">
     <p><span data-i18n="footer_tag_pre">Built by</span> <a href="https://github.com/aqua5230" target="_blank" rel="noopener" style="color: var(--fg-dim);">@aqua5230</a> <span data-i18n="footer_fork_by">· forked by</span> <a href="https://github.com/SanHsien" target="_blank" rel="noopener" style="color: var(--fg-dim);">@SanHsien</a> <span data-i18n="footer_tag_post">· AGPL-3.0 · No cloud. No tracking. Just yours.</span></p>
     <div class="links">
-      <a href="https://github.com/SanHsien/usage" target="_blank" rel="noopener">GitHub</a>
-      <a data-i18n="footer_releases">Releases</a>
-      <a href="https://github.com/SanHsien/usage/blob/main/CHANGELOG.md" target="_blank" rel="noopener" data-i18n="footer_changelog">Changelog</a>
-      <a href="https://github.com/SanHsien/usage/blob/main/LICENSE" target="_blank" rel="noopener" data-i18n="footer_license">License</a>
-      <a data-i18n="footer_openssf">OpenSSF Best Practices</a>
+      <a href="https://github.com/SanHsien/agentdeck" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/SanHsien/agentdeck/releases" target="_blank" rel="noopener" data-i18n="footer_releases">Releases</a>
+      <a href="https://github.com/SanHsien/agentdeck/blob/main/CHANGELOG.md" target="_blank" rel="noopener" data-i18n="footer_changelog">Changelog</a>
+      <a href="https://github.com/SanHsien/agentdeck/blob/main/LICENSE" target="_blank" rel="noopener" data-i18n="footer_license">License</a>
     </div>
-    <a class="kofi" data-i18n="footer_kofi">☕ Buy me a coffee</a>
   </div>
 </footer>
 
-<img class="mascot-pet" src="mascot.png" loading="lazy" data-i18n-attr="alt:mascot_alt" alt="The usage butler cat, your progress concierge" />
+<img class="mascot-pet" src="mascot.png" loading="lazy" data-i18n-attr="alt:mascot_alt" alt="The agentdeck butler cat, your progress concierge" />
 
 <script>
 const T = {
   'en': {
     _label: 'EN',
-    meta_title: 'usage — pin your Claude Code & Codex quota to the menu bar',
-    meta_desc: 'macOS menu bar tracker for Claude Code & Codex quota, tokens, and cost. Reads your local files directly — never connects to Anthropic or OpenAI. HTML reports, 10 visual themes, AGPL-3.0.',
+    meta_title: 'agentdeck — pin your Claude Code & Codex quota to the Windows tray',
+    meta_desc: 'Windows tray tracker for Claude Code & Codex quota, tokens, and cost. Reads your local files directly — never connects to Anthropic or OpenAI. HTML reports, 10 visual themes, AGPL-3.0.',
     nav_features: 'Features',
     nav_resume: 'Resume',
     nav_install: 'Install',
     nav_screenshots: 'Panels',
-    eyebrow: 'macOS · open source · AGPL-3.0',
-    h1: 'Pin your <span class="accent">Claude Code</span> &amp; <span class="accent">Codex</span><br>quota to the menu bar.',
-    lead: 'A tiny macOS menu bar app that shows how much of your AI quota is left — like a battery percentage for tokens. Reads your local files directly — never phones home to Anthropic or OpenAI.',
-    cta_download: '↓ Download .app',
+    eyebrow: 'Windows · open source · AGPL-3.0',
+    h1: 'Pin your <span class="accent">Claude Code</span> &amp; <span class="accent">Codex</span><br>quota to the Windows tray.',
+    lead: 'A small Windows tray app that shows how much of your AI quota is left — like a battery percentage for tokens. Reads your local files directly — never phones home to Anthropic or OpenAI.',
+    cta_download: '↓ Download for Windows',
     cta_star: '★ Star on GitHub',
     strip_1: '<strong>Reads your local files</strong> — never connects to Anthropic or OpenAI',
     strip_2: '<strong>Local-only</strong> — reads files on your disk',
@@ -585,7 +574,7 @@ const T = {
     features_h2: 'Built for developers who burn tokens.',
     features_sub: "Stop guessing if you're about to hit the rate limit mid-refactor.",
     card1_h: '5-hour &amp; 7-day quota at a glance',
-    card1_p: 'Both Claude Code session (5h) and weekly (7d) percentages live in the menu bar. Click for a full popover with per-project usage and cost.',
+    card1_p: 'Both Claude Code session (5h) and weekly (7d) percentages live in the tray. Click for a full panel with per-project usage and cost.',
     card2_h: 'Claude Code + Codex, one app',
     card2_p: 'Track Anthropic and OpenAI quota side by side. Codex auto-detected from <code>~/.codex/sessions/</code> with no setup.',
     card3_h: 'Local-only by design',
@@ -593,9 +582,9 @@ const T = {
     card4_h: 'One-click HTML reports',
     card4_p: 'Today, week, month, or all-time — get a shareable HTML report with token / cost trends, top projects, and model breakdown. Project names hide by default for client-safe sharing.',
     card5_h: '10 visual panel themes',
-    card5_p: 'Matrix digital rain, Windows 95, retro newspaper, midnight aquarium, World Cup FIFA HUD, Lepidoptera blueprint — pick a mood for your menu bar pop-out.',
-    card6_h: '5-language interface',
-    card6_p: 'Auto-detects your macOS language. Supports 繁體中文, 简体中文, English, 日本語, 한국어 — all strings translated, not just menus.',
+    card5_p: 'Matrix digital rain, Windows 95, retro newspaper, midnight aquarium, World Cup FIFA HUD, Lepidoptera blueprint — pick a mood for your tray pop-out.',
+    card6_h: 'Bilingual interface',
+    card6_p: 'Auto-detects your Windows display language. 繁體中文 and English — every string translated, not just menus.',
     card7_h: 'AI Talent Market',
     card7_p: 'Install a curated team of Claude Code subagent personas — a one-person law practice, a solo software studio, and more — straight into <code>~/.claude/agents/</code>, then call one by name in your next conversation.',
     card8_h: 'Terse Mode',
@@ -607,7 +596,7 @@ const T = {
     card11_h: 'TUI & CLI',
     card11_p: 'Love the terminal? Run the rich TUI dashboard with <code>python3 main.py --tui</code>, or generate deep analytics with <code>python3 usage_cli.py report</code>.',
     card12_h: 'Hide Sections',
-    card12_p: 'Only use one tool? Hide the Claude Code or Codex section from the menu bar and panels completely with a single click.',
+    card12_p: 'Only use one tool? Hide the Claude Code or Codex section from the tray and panels completely with a single click.',
     card13_h: 'AI Council',
     card13_p: 'Run a multi-round discussion between Claude Code, Codex, and Antigravity on one topic. Pick who joins, which model each one uses, and how many rounds — with a token estimate shown before you start.',
     resume_label: 'PROGRESS CONCIERGE',
@@ -618,18 +607,18 @@ const T = {
     resume_point2: 'Reads local files only',
     resume_point3: 'One menu toggle (off by default)',
     resume_img_alt: 'Resume restoring your last session in the CLI',
-    mascot_alt: 'The usage butler cat, your progress concierge',
+    mascot_alt: 'The agentdeck butler cat, your progress concierge',
     install_h2: 'Install in 10 seconds.',
     install_sub: 'Two ways to get it running. Both free, both AGPL-3.0.',
     install_label_rec: 'RECOMMENDED',
-    install_h_brew: 'Homebrew',
-    install_p_brew: 'One command. <code>brew upgrade</code> keeps it current.',
-    install_label_dir: 'DIRECT',
-    install_h_app: 'Download .app',
-    install_p_app: 'Latest <code>usage.app.zip</code> from GitHub Releases — unzip, drag to <code>/Applications</code>.',
+    install_h_zip: 'Download and run',
+    install_p_zip: 'Grab <code>agentdeck-windows.zip</code> from Releases, unzip anywhere, run <code>agentdeck.exe</code>. No installer.',
+    install_label_dir: 'FROM SOURCE',
+    install_h_src: 'Run from source',
+    install_p_src: 'Python 3.13 and uv. See the development docs for the full setup.',
     install_btn_releases: '→ Open Releases page',
     screen_h2: 'Pick a panel that fits your mood.',
-    screen_sub: 'Ten built-in themes. Change anytime from the popover toolbar.',
+    screen_sub: 'Ten built-in themes. Change anytime from the panel toolbar.',
     report_h: 'Your AI usage, in one shareable page.',
     report_p: 'Generate an HTML report with token spend, cost, top projects, and model distribution — plus an AI Tool Update Digest summarizing recent changes, and a year-in-review page with a GitHub-style contribution heatmap and a "Wrapped" card. Send to your manager. Use as a client invoice attachment. Project names hide by default.',
     footer_tag_pre: 'Built by',
@@ -638,21 +627,19 @@ const T = {
     footer_releases: 'Releases',
     footer_changelog: 'Changelog',
     footer_license: 'License',
-    footer_openssf: 'OpenSSF Best Practices',
-    footer_kofi: '☕ Buy me a coffee',
   },
   'zh-TW': {
     _label: '繁中',
-    meta_title: 'usage — 把 Claude Code 和 Codex 的用量釘在 menu bar',
-    meta_desc: 'macOS menu bar 工具，監控 Claude Code 和 Codex 的配額、token 用量與成本。直接讀本機紀錄，不連到 Anthropic 或 OpenAI。HTML 報告、10 款主題、AGPL-3.0。',
+    meta_title: 'agentdeck — 把 Claude Code 和 Codex 的用量釘在 Windows 系統匣',
+    meta_desc: 'Windows 系統匣工具，監控 Claude Code 和 Codex 的配額、token 用量與成本。直接讀本機紀錄，不連到 Anthropic 或 OpenAI。HTML 報告、10 款主題、AGPL-3.0。',
     nav_features: '功能',
     nav_resume: '進度管家',
     nav_install: '安裝',
     nav_screenshots: '面板',
-    eyebrow: 'macOS · 開源 · AGPL-3.0',
-    h1: '把 <span class="accent">Claude Code</span> 和 <span class="accent">Codex</span><br>的用量釘在 menu bar。',
-    lead: '一個迷你的 macOS menu bar 小工具，把你 AI 配額剩多少顯示在螢幕右上角——像電池百分比一樣直觀。直接讀本機紀錄，不連到服務端查用量。',
-    cta_download: '↓ 下載 .app',
+    eyebrow: 'Windows · 開源 · AGPL-3.0',
+    h1: '把 <span class="accent">Claude Code</span> 和 <span class="accent">Codex</span><br>的用量釘在系統匣。',
+    lead: '一個輕巧的 Windows 系統匣小工具，把你 AI 配額剩多少顯示在工作列右下角——像電池百分比一樣直觀。直接讀本機紀錄，不連到服務端查用量。',
+    cta_download: '↓ 下載 Windows 版',
     cta_star: '★ 給個星星',
     strip_1: '<strong>直接讀本機紀錄</strong>，不連 Anthropic 或 OpenAI 查用量',
     strip_2: '<strong>本地讀取</strong>——只看你磁碟上的檔案',
@@ -660,7 +647,7 @@ const T = {
     features_h2: '為燒 token 的開發者打造。',
     features_sub: '別再憑感覺猜還剩多少配額了。',
     card1_h: '5 小時與 7 天配額一覽',
-    card1_p: 'Claude Code 的 5 小時和 7 天百分比同時顯示在 menu bar。點開可看完整 popover、各專案用量與成本。',
+    card1_p: 'Claude Code 的 5 小時和 7 天百分比同時顯示在系統匣。點開可看完整面板、各專案用量與成本。',
     card2_h: 'Claude Code + Codex 一個 app 搞定',
     card2_p: 'Anthropic 跟 OpenAI 的配額並排顯示。Codex 從 <code>~/.codex/sessions/</code> 自動偵測，不需設定。',
     card3_h: '天生本地優先',
@@ -669,20 +656,20 @@ const T = {
     card4_p: '今日、本週、本月或全部——產出可分享的 HTML 報告，內含 token / 成本走勢、各專案排行與模型分布。預設隱藏專案名稱，安全分享給客戶。',
     card5_h: '10 款視覺面板主題',
     card5_p: '駭客任務數字雨、Windows 95、復古報紙、午夜水族箱、世界盃 FIFA 轉播、蝴蝶藍圖——挑個喜歡的氛圍。',
-    card6_h: '5 語言介面',
-    card6_p: '自動偵測 macOS 系統語言。支援繁體中文、简体中文、English、日本語、한국어——每一條訊息都翻譯。',
+    card6_h: '雙語介面',
+    card6_p: '自動偵測 Windows 系統語言。繁體中文與 English——每一條訊息都翻譯。',
     card7_h: 'AI 人才市場',
     card7_p: '把整套 Claude Code 角色人設檔——律師事務所、軟體工作室等——一次安裝進 <code>~/.claude/agents/</code>，下次對話點名就能用。',
     card8_h: '精簡模式',
-    card8_p: '選單列開關，讓 Claude Code——連同裝好的 Codex CLI——整個對話回答更簡短：內容不變、字變少，但程式碼、指令、錯誤訊息一個字都不會被縮減。',
+    card8_p: '系統匣選單開關，讓 Claude Code——連同裝好的 Codex CLI——整個對話回答更簡短：內容不變、字變少，但程式碼、指令、錯誤訊息一個字都不會被縮減。',
     card9_h: '召喚神獸',
-    card9_p: '選單列可選開關——Claude 是鳳凰、Codex 是肥龍——token 燒得越快牠跑越快，不看數字也能感覺自己的燒錢節奏。',
+    card9_p: '系統匣選單可選開關——Claude 是鳳凰、Codex 是肥龍——token 燒得越快牠跑越快，不看數字也能感覺自己的燒錢節奏。',
     card10_h: '撞牆前先提醒你',
     card10_p: '上下文窗用到 70% 時，狀態列會提醒你 <code>/clear</code> 或 <code>/compact</code>，避免浪費 token；你也能另外開啟配額門檻與恢復通知的系統提醒。',
     card11_h: 'TUI 與 CLI',
     card11_p: '終端機派也照顧到。用 <code>python3 main.py --tui</code> 跑 rich TUI 儀表板，或用 <code>python3 usage_cli.py report</code> 產出深度分析報告。',
     card12_h: '隱藏區塊',
-    card12_p: '只用其中一個工具？一鍵把 Claude Code 或 Codex 區塊從選單列和面板完全藏掉。',
+    card12_p: '只用其中一個工具？一鍵把 Claude Code 或 Codex 區塊從系統匣選單和面板完全藏掉。',
     card13_h: 'AI 圓桌討論',
     card13_p: '讓 Claude Code、Codex、Antigravity 針對同一個題目進行多輪討論。自選誰加入、各自用哪個模型、討論幾輪——開始前就看得到大約會花多少 token。',
     resume_label: '進度管家',
@@ -697,14 +684,14 @@ const T = {
     install_h2: '10 秒安裝完成。',
     install_sub: '兩種方式都免費、都 AGPL-3.0。',
     install_label_rec: '推薦',
-    install_h_brew: 'Homebrew',
-    install_p_brew: '一行指令搞定。日後 <code>brew upgrade</code> 自動更新。',
-    install_label_dir: '直接',
-    install_h_app: '下載 .app',
-    install_p_app: '從 GitHub Releases 抓最新的 <code>usage.app.zip</code>——解壓縮、拖到 <code>/Applications</code>。',
+    install_h_zip: '下載即用',
+    install_p_zip: '從 Releases 抓 <code>agentdeck-windows.zip</code>，解壓到任何位置，執行 <code>agentdeck.exe</code>。無須安裝程式。',
+    install_label_dir: '從原始碼',
+    install_h_src: '從原始碼執行',
+    install_p_src: '需要 Python 3.13 與 uv。完整設定見開發文件。',
     install_btn_releases: '→ 開啟 Releases 頁面',
     screen_h2: '挑一個你喜歡的面板。',
-    screen_sub: '10 款內建主題。隨時從 popover 工具列切換。',
+    screen_sub: '10 款內建主題。隨時從面板工具列切換。',
     report_h: '你的 AI 用量，一頁可分享。',
     report_p: '產出 HTML 報告，內含 token 開銷、成本、專案排行、模型分布，外加一份 AI Tool Update Digest 摘要最近工具更新，還有年度回顧頁——GitHub 風格貢獻熱力圖，加一張「Wrapped」卡。傳給主管、附在客戶請款裡都行。預設隱藏專案名稱。',
     footer_tag_pre: '作者：',
@@ -713,8 +700,6 @@ const T = {
     footer_releases: 'Releases',
     footer_changelog: 'Changelog',
     footer_license: 'License',
-    footer_openssf: 'OpenSSF Best Practices',
-    footer_kofi: '☕ 請我喝杯咖啡',
   },
 };
 
@@ -725,7 +710,7 @@ function detectLang() {
   const hash = decodeURIComponent(location.hash.slice(1));
   if (T[hash]) return hash;
   try {
-    const stored = localStorage.getItem('usage_lang');
+    const stored = localStorage.getItem('agentdeck_lang');
     if (T[stored]) return stored;
   } catch (e) { /* ignore */ }
   const b = (navigator.language || 'en');
@@ -766,7 +751,7 @@ function applyLang(lang) {
     b.setAttribute('aria-current', b.dataset.lang === lang ? 'true' : 'false');
   });
 
-  try { localStorage.setItem('usage_lang', lang); } catch (e) { /* ignore */ }
+  try { localStorage.setItem('agentdeck_lang', lang); } catch (e) { /* ignore */ }
   const desired = '#' + lang;
   if (location.hash !== desired) history.replaceState(null, '', desired);
 }

@@ -23,18 +23,18 @@
 > 其他差異：介面語言改為繁體中文與英文兩種；上游的 Discussions 與 star 數屬於原專案、本文件不再轉貼。介紹頁由本 repo 的 `docs/` 提供。
 
 <p align="center">
-  <img src="docs/showcase.en.png" alt="agentdeck — 把 Claude Code、Codex 與 Antigravity 的額度釘在 Windows 系統匣" width="820">
+  <img src="docs/hero.png" alt="agentdeck — 把 Claude Code、Codex 與 Antigravity 的額度釘在 Windows 系統匣" width="820">
 </p>
 
 `agentdeck` 把 **Claude Code、Codex 與 Antigravity** 的額度釘在系統匣，用顏色標好警戒級別，掃一眼就懂。Claude Code 與 Codex 的數字是被動讀自你機器上原本就在寫的本機檔案，讀取這些數字**不會呼叫 Anthropic 或 OpenAI 的 LLM API**——所以看額度這件事本身永遠不會增加你的用量。Antigravity 額度則來自 Google 官方額度端點，用的是 Antigravity CLI 本來就存在本機的登入身分。
 
-## 為什麼需要 usage？
+## 為什麼需要 agentdeck？
 
 長時間重構或除錯若依賴 Claude Code，無預警撞到額度上限代價很高。`agentdeck` 讓你在撞牆前就先看到 5 小時與每週限額，並且全程留在畫面上——不用停下來跑指令、也不用另外開頁面，答案就在你本來就在看的地方。
 
 ## 快速上手
 
-從[最新 Release](https://github.com/SanHsien/agentdeck/releases/latest) 下載 `usage-windows.zip`，解壓後執行 `usage.exe` —— 無須安裝程式。
+從[最新 Release](https://github.com/SanHsien/agentdeck/releases/latest) 下載 `agentdeck-windows.zip`，解壓後執行 `agentdeck.exe` —— 無須安裝程式。
 
 系統匣會出現額度圖示，左鍵開面板、右鍵開選單。完整設定流程見下方 [安裝](#安裝)。
 
@@ -72,7 +72,7 @@
 ## 隱私與資料來源
 
 - Claude Code 與 Codex 的數字**只讀本機紀錄檔**；讀取這些數字**不會呼叫 Anthropic 或 OpenAI 的 LLM API**。
-- Antigravity 額度需要連網，而且只有你真的使用它才會發生：額度是用 Antigravity CLI 登入後存下的 OAuth 憑證，向 Google 官方額度端點查詢——依 CLI 版本不同，在 Windows 上，這個憑證讀自認證管理員或本機 token 檔（依 CLI 版本而定）。`usage` 只讀取這個憑證而不寫回，任何刷新後的 access token 也只留在記憶體中；這個呼叫本身只讀額度資訊，絕不消耗你的模型額度。
+- Antigravity 額度需要連網，而且只有你真的使用它才會發生：額度是用 Antigravity CLI 登入後存下的 OAuth 憑證，向 Google 官方額度端點查詢——依 CLI 版本不同，在 Windows 上，這個憑證讀自認證管理員或本機 token 檔（依 CLI 版本而定）。`agentdeck` 只讀取這個憑證而不寫回，任何刷新後的 access token 也只留在記憶體中；這個呼叫本身只讀額度資訊，絕不消耗你的模型額度。
 - 背景連網範圍：上述 Antigravity 額度／token 端點、用來標示故障的 Claude 與 Codex 公開狀態頁、估算成本用的公開價格表（斷網會用內建預設），以及偶爾檢查 GitHub 版本更新。Claude Code 與 Codex 的紀錄檔內容不會被上傳。
 
 ## 環境需求
@@ -83,8 +83,8 @@
 
 ## 安裝
 
-1. 到[最新 Release](https://github.com/SanHsien/agentdeck/releases/latest) 下載 `usage-windows.zip`。
-2. 解壓到任何位置，執行 `usage.exe`。無須安裝程式、不寫登錄檔（除非你開啟「開機自啟」）。
+1. 到[最新 Release](https://github.com/SanHsien/agentdeck/releases/latest) 下載 `agentdeck-windows.zip`。
+2. 解壓到任何位置，執行 `agentdeck.exe`。無須安裝程式、不寫登錄檔（除非你開啟「開機自啟」）。
 3. 想開機自動啟動：右鍵選單勾選「開機時啟動」。
 
 系統匣 UI 需要 Microsoft Edge WebView2 Runtime，Windows 10 與 11 通常已內建。
@@ -138,7 +138,7 @@ uv run --no-sync python main.py --doctor   # 環境與 hook 診斷
 | 症狀 | 原因 | 解法 |
 |------|------|------|
 | 系統匣圖示顯示 `--` | 尚無資料或 hook 未更新 | 先跑一次 Codex。若為 Claude Code，點擊「設定狀態列」或跑 `python3 main.py --setup` |
-| 不小心按到「結束」 | 程式已終止 | 重新執行 `usage.exe`。 |
+| 不小心按到「結束」 | 程式已終止 | 重新執行 `agentdeck.exe`。 |
 | 顯示「N 分鐘未更新」 | Claude Code 未執行 | 打開 Claude Code 跑一下就會更新 |
 | Codex 區塊空白 | 找不到 Codex 紀錄 | 用 Codex 跑一次對話 |
 | 今日花費是 $0.00 | 價格表對不上或抓取失敗 | 刪掉 `~/.agentdeck/pricing_cache.json` 重新抓取 |

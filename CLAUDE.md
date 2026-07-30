@@ -29,7 +29,7 @@ uv run pytest -v
 # Single test
 uv run pytest tests/test_usage_client.py::test_name -v
 
-# Build the Windows bundle (output: dist/usage-windows/usage.exe)
+# Build the Windows bundle (output: dist/agentdeck-windows/agentdeck.exe)
 pwsh scripts/build_windows.ps1
 ```
 

@@ -23,18 +23,18 @@ Keep Claude Code, Codex, and Antigravity quota in view while you work. `agentdec
 > Other differences: the UI ships in Traditional Chinese and English only; upstream's Discussions and star count belong to that project and are no longer mirrored here. The landing page is served from this repo's `docs/`.
 
 <p align="center">
-  <img src="docs/showcase.en.png" alt="agentdeck — Claude Code, Codex, and Antigravity quota pinned to the Windows system tray" width="820">
+  <img src="docs/hero.png" alt="agentdeck — Claude Code, Codex, and Antigravity quota pinned to the Windows system tray" width="820">
 </p>
 
 `agentdeck` keeps your **Claude Code, Codex, and Antigravity** quota pinned to the system tray, color-coded so warning levels read at a glance. Claude Code and Codex numbers are read passively from local files already on your machine, and reading them **never calls Anthropic or OpenAI's LLM APIs** — so watching your quota never adds to your token usage. Antigravity quota comes from Google's official quota endpoint, using the sign-in the Antigravity CLI already stores locally.
 
-## Why usage?
+## Why agentdeck?
 
-Running out of quota mid-session is expensive — especially during a long refactor or debugging run that depends on Claude Code. `usage` surfaces 5-hour and weekly limits *before* you hit the wall, and keeps them visible the whole time. There's no command to run and no page to open; the answer is just there, where you already look.
+Running out of quota mid-session is expensive — especially during a long refactor or debugging run that depends on Claude Code. `agentdeck` surfaces 5-hour and weekly limits *before* you hit the wall, and keeps them visible the whole time. There's no command to run and no page to open; the answer is just there, where you already look.
 
 ## Quick Start
 
-Download `usage-windows.zip` from the [latest release](https://github.com/SanHsien/agentdeck/releases/latest), unzip it, and run `usage.exe` — no installer needed.
+Download `agentdeck-windows.zip` from the [latest release](https://github.com/SanHsien/agentdeck/releases/latest), unzip it, and run `agentdeck.exe` — no installer needed.
 
 A quota icon appears in the system tray: left-click for the panel, right-click for the menu. For the full setup flow, see [Install](#install) below.
 
@@ -50,7 +50,7 @@ A quota icon appears in the system tray: left-click for the panel, right-click f
 
 ### Workflow Helpers
 
-- **Progress Concierge:** Open a new Claude Code session and `usage` hands your last progress straight to the AI, including your last request, uncommitted changes, and unfinished todos. No `/resume`, no recap. Fully local, off by default.
+- **Progress Concierge:** Open a new Claude Code session and `agentdeck` hands your last progress straight to the AI, including your last request, uncommitted changes, and unfinished todos. No `/resume`, no recap. Fully local, off by default.
 - **Token Saver:** A tray-menu toggle asks Claude Code and Codex to answer more tersely, saving output tokens while keeping code and error messages byte-exact. A light reminder keeps long conversations from drifting back to verbose — tested to keep late replies ~40% shorter.
 - **Token-waste Health Check:** A daily background diagnosis scans your logs for waste, including repeated file reads, polluter directories, and noisy Bash output. If it finds issues, a one-line heads-up appears; say "show me" and the AI walks you through fixes.
 
@@ -72,7 +72,7 @@ A quota icon appears in the system tray: left-click for the panel, right-click f
 ## Privacy & Data Sources
 
 - Claude Code and Codex numbers are read **only from local log files** on your machine; reading them **never calls Anthropic or OpenAI's LLM APIs**.
-- Antigravity quota requires network access, and only if you use it: quota is fetched from Google's official quota endpoint using the OAuth credential the Antigravity CLI already stored after sign-in — on Windows that credential is read from Credential Manager or a local token file, depending on CLI version. `usage` reads that credential without writing it back and keeps any refreshed access token in memory only; the call itself only reads quota metadata and never consumes your model quota.
+- Antigravity quota requires network access, and only if you use it: quota is fetched from Google's official quota endpoint using the OAuth credential the Antigravity CLI already stored after sign-in — on Windows that credential is read from Credential Manager or a local token file, depending on CLI version. `agentdeck` reads that credential without writing it back and keeps any refreshed access token in memory only; the call itself only reads quota metadata and never consumes your model quota.
 - Background network activity: the Antigravity quota/token endpoints above, public Claude and Codex status pages to flag outages, a public model-pricing table to estimate cost (falls back to built-in prices offline), and occasionally checking GitHub for a new version. Claude Code and Codex log contents are never uploaded.
 
 ## Requirements
@@ -83,8 +83,8 @@ A quota icon appears in the system tray: left-click for the panel, right-click f
 
 ## Install
 
-1. Download `usage-windows.zip` from the [latest release](https://github.com/SanHsien/agentdeck/releases/latest).
-2. Unzip it anywhere and run `usage.exe`. No installer, and nothing written to the registry unless you enable launch at login.
+1. Download `agentdeck-windows.zip` from the [latest release](https://github.com/SanHsien/agentdeck/releases/latest).
+2. Unzip it anywhere and run `agentdeck.exe`. No installer, and nothing written to the registry unless you enable launch at login.
 3. To start with Windows: tick "Launch at Login" in the right-click menu.
 
 The tray UI requires Microsoft Edge WebView2 Runtime, which is normally included with Windows 10 and 11.
@@ -109,7 +109,7 @@ Requires Python 3.13. Full setup notes are in the [development docs](docs/DEVELO
 
 ### First Launch: Set Up the Status Line
 
-If you've used Codex, `usage` picks up its history automatically. For Claude Code, click the **"Set Up Status Line"** button in the app popover to install the sync hook.
+If you've used Codex, `agentdeck` picks up its history automatically. For Claude Code, click the **"Set Up Status Line"** button in the app popover to install the sync hook.
 Fully quit Claude Code afterwards and reopen it (closing the window is not enough).
 
 Once set up, the bottom of the Claude Code window will show a status line like this:
@@ -138,7 +138,7 @@ If the menu bar shows `--`, it's usually not broken — there's just no local da
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
 | Menu bar shows `--` | No data yet, or Claude Code hook not refreshed | Run one Codex conversation. For Claude Code, click "Set Up Status Line" or run `python3 main.py --setup` |
-| Accidentally hit "Quit" | Process terminated | Run `usage.exe` again. |
+| Accidentally hit "Quit" | Process terminated | Run `agentdeck.exe` again. |
 | Status says "N minutes stale" | Claude Code isn't running | Open Claude Code and let it run |
 | Codex section is empty | No Codex history found | Run a Codex conversation to generate logs |
 | Today's cost shows $0.00 | Model pricing missing | Delete `~/.agentdeck/pricing_cache.json` or check `AGENTDECK_DEBUG=1` |
@@ -168,7 +168,7 @@ Want to run the terminal TUI, configure custom agents, or build it yourself? See
 
 ## Other Reference Projects
 
-The projects below are **conceptual and workflow references only** — they are not runtime dependencies of `usage`, and none of their source code has been incorporated. A project with no declared license is legally all-rights-reserved and cannot be merged into this AGPL-3.0 repository, so it serves purely as a point of comparison.
+The projects below are **conceptual and workflow references only** — they are not runtime dependencies of `agentdeck`, and none of their source code has been incorporated. A project with no declared license is legally all-rights-reserved and cannot be merged into this AGPL-3.0 repository, so it serves purely as a point of comparison.
 
 | Name | License | What's worth referencing |
 | --- | --- | --- |

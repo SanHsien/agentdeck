@@ -44,8 +44,8 @@ UI_TEXT = {
         "generated": "資料日期",
         "original": "官方原文",
         "empty": "這個工具目前沒有收錄的更新。",
-        "source": "資料來自 usage 專案內的 ai_updates.json，隨上游同步更新。",
-        "back": "← 回到 usage",
+        "source": "資料來自 agentdeck 專案內的 ai_updates.json，隨上游同步更新。",
+        "back": "← 回到 agentdeck",
     },
     "en": {
         "title": "AI Update Daily",
@@ -54,10 +54,10 @@ UI_TEXT = {
         "original": "Original text",
         "empty": "No updates recorded for this tool yet.",
         "source": (
-            "Data comes from ai_updates.json inside the usage project, "
+            "Data comes from ai_updates.json inside the agentdeck project, "
             "refreshed with upstream."
         ),
-        "back": "← Back to usage",
+        "back": "← Back to agentdeck",
     },
 }
 
@@ -155,7 +155,7 @@ def render_page(data: dict[str, Any]) -> str:
             f'<main>{render_language(data, language)}</main>'
             f'<footer><p>{html.escape(strings["source"])}</p>'
             f'<p><a href="../">{html.escape(strings["back"])}</a> · '
-            f'<a href="https://github.com/SanHsien/usage">github.com/SanHsien/usage</a></p>'
+            f'<a href="https://github.com/SanHsien/agentdeck">github.com/SanHsien/agentdeck</a></p>'
             f"</footer></div>"
         )
     buttons = "".join(
@@ -169,7 +169,7 @@ def render_page(data: dict[str, Any]) -> str:
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{html.escape(UI_TEXT[DEFAULT_LANGUAGE]["title"])} — usage</title>
+<title>{html.escape(UI_TEXT[DEFAULT_LANGUAGE]["title"])} — agentdeck</title>
 <style>
 :root {{ color-scheme: dark; --bg:#0a0a0a; --card:#161616; --line:#2a2a2a;
   --fg:#f2f2f2; --dim:#9a9a9a; --accent:#f49164; }}
