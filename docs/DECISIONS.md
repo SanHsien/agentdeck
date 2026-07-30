@@ -99,3 +99,31 @@
 - `fix/windows-claude-quota-fallback`、`fix/windows-project-resolver-drive-root`：初看像「上游未合併的 Windows 修復」，**實際比對後發現是過時的舊實作**——`main` 早已有同功能且更完整的版本（例如 `_encoded_path_root` 在 `main` 同時處理 `"C"` 與 `"C:"`，分支版只處理 `"C:"`），分支版的 `usage_session_resume.py` 甚至還帶著 D-02 已刪除的語言表。合併會退步，因此一併刪除。
 
 **教訓**：`git log main..branch` 顯示「分支領先 N 個 commit」只說明 commit 不在歷史中，**不代表改動沒進去**——上游可能 squash 合併或重新實作過。判斷分支要不要留，得比對**當前檔案內容**，不是比對 commit 圖。
+
+---
+
+## D-07：面板不貼齊系統匣圖示——上游也放棄了這個做法
+
+**日期**：2026-07-30
+
+**背景**：先前把「Windows 面板開在工作區右下角，而非貼齊系統匣圖示」列為待移植的落差，打算用 Win32 `Shell_NotifyIconGetRect` 取得圖示座標來貼齊。
+
+**決定**：**不做**，把它從落差清單移除。
+
+**為什麼**：審視上游 `4dbf916`（feat: let the panel float free of the menu bar icon）時發現，上游把 NSPopover 換成了可自由拖曳、記住位置、失焦不關閉的浮動 NSPanel——**理由正是 NSPopover 被 AppKit 綁在狀態列項目上、無法手動定位**。也就是說上游是在**放棄**貼齊圖示，往 Windows 早就有的行為收斂（`_place_window` + `usage.windowPosition` 記憶位置）。
+
+實作 `Shell_NotifyIconGetRect` 會讓本 fork 背離上游剛剛選定的方向，而且是為了一個上游認定為缺點的行為。
+
+**教訓**：把落差寫進待辦之後，仍要在動手前確認上游現在怎麼想。這條落差在盤點時是真的，兩個上游 commit 之後就不是了——**盤點有保存期限**。
+
+---
+
+## D-08：上游 v0.29.9 全數審視後未採用
+
+**日期**：2026-07-30
+
+**決定**：`616d48f`、`4dbf916`、`c2af3a9`、`d2d36c8`、`e94cd4d` 五筆全部不採用，`last_reviewed` 推進至 `e94cd4d`，`last_merged` 維持 `5fbf0ba`。
+
+**為什麼**：五筆動到的檔案全部是本 fork 已刪除的 macOS 模組（`menubar.py`、`panels/web_panel.py`、`panels/__init__.py`）、上游新建而本 fork 沒有的檔案（`panel_window_state.py`），或已刪除的 README 語言版本。逐筆理由記在 [`UPSTREAM.md`](UPSTREAM.md) 的 Skipped 表。
+
+**這是第一次實際跑完那套流程**，而它立刻產出了 D-07 這個非顯而易見的結論——證明「逐筆讀內容」而非「看標題決定」是對的。

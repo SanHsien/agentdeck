@@ -8,6 +8,13 @@
 ## [Unreleased]
 
 ### 新增
+- **AI 人才市場改為自製開源版**：上游的角色內容來自一顆閉源二進位，其原始碼與發佈 repo 對外都是 404、且只有 macOS 版——任何人 clone 公開 repo 在兩個平台上都用不到這個功能。改由 `persona_store` 提供：角色定義放在 repo 的 `personas/*.json`，安裝後成為一般的 Claude Code subagent（寫入 `~/.claude/agents/`），手動改過會標示為 drift 並提供還原。**若你原本已有同名 agent，安裝會先備份再覆寫，且解除安裝絕不刪除不是我們寫的檔案。**
+- **每週上游審視**：上游仍活躍，因此新增排程 workflow，回報比 `docs/UPSTREAM.md` 的 `last_reviewed` 更新的 commit，並開一張追蹤 issue。採用就推進兩個標記；不採用只推進 `last_reviewed`，但必須在 Skipped 表補一列理由——只推進標記卻不記理由，等於把「當初為什麼跳過」丟掉。
+
+### 變更
+- AI 圓桌討論的平台中立部分移到 `discussion_assets`，`discussion_window_win` 專責 pywebview 外殼。macOS host 已移除。
+
+### 新增
 - **動作失敗會說出來，不再靜默**：安裝 statusLine hook、切換 hook、切換 session resume 或省 token 模式、產生報告，這五件事失敗時原本完全沒有回饋。其中最糟的是 hook 安裝失敗——面板會永遠顯示 `--`，而那跟「還沒有資料」長得一模一樣，使用者無從分辨。現在每一項都會回報結果，有錯誤訊息就一併附上。
 - **更新提示可以跳過版本了**：Windows 原本只有兩個按鈕的對話框，「跳過這一版」無處可放。現在是三鈕對話框。按鈕文字由 Windows 決定，因此三個選項的對應寫在訊息內容裡。Escape 與關閉鈕都是「稍後」而非「跳過」——因為對話框被關掉就永久隱藏該版更新，是不可接受的。
 - **自動每日更新檢查**：README 一直寫著「每天最多一次查 GitHub」，但 Windows 上只有手動選單項，這件事從未真的發生。現在每日檢查會執行，並採用自動檢查偏好、一天一次的間隔、近期「稍後」的冷卻，以及已跳過的版本。

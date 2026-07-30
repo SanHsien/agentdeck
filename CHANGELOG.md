@@ -9,6 +9,13 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **AI Talent Market, reimplemented in the open**: upstream sourced its roles from a closed binary whose source and distribution repos are both 404 to anyone else and which only ever shipped for macOS — so the feature was unreachable from a public clone on either platform. `persona_store` replaces it: role definitions live in `personas/*.json` in this repository, install writes an ordinary Claude Code subagent to `~/.claude/agents/`, and hand-edits are reported as drift with a restore offered. An agent you already own under the same name is backed up before being replaced, and never deleted by uninstall.
+- **Weekly upstream review**: upstream is still active, so a scheduled workflow reports commits newer than the `last_reviewed` marker in `docs/UPSTREAM.md` and opens one tracking issue. Adopting a commit advances both markers; skipping one advances `last_reviewed` and owes a row in the Skipped table, because a marker without a reason loses the answer to "why did we skip that?".
+
+### Changed
+- The AI Council window's neutral half moved to `discussion_assets`, leaving `discussion_window_win` as the pywebview host. The macOS host is gone.
+
+### Added
 - **Failed actions say so instead of failing silently**: installing the statusLine hook, toggling it, toggling session resume or terse mode, and generating a report all reported nothing when they failed. A failed hook install was the worst of them — the panel just showed `--` forever, which looks identical to having no data yet, so there was no way to tell the difference. Each now reports its outcome, with the underlying error where there is one.
 - **The update prompt can skip a version again**: Windows only ever had a two-button dialog, so "skip this version" had nowhere to go. It is a three-button dialog now. Windows controls the button labels, so the message body spells out which button means what. Escape and the close button both defer rather than skip — suppressing a release because a dialog was dismissed would hide it for good.
 - **Automatic daily update checks**: the README has always said usage checks GitHub at most once a day, but on Windows only the manual menu item existed. The daily check now runs, honouring the auto-check preference, the once-a-day interval, a recent "later" answer, and a skipped version.

@@ -97,7 +97,7 @@
 
 ### 尚未動工
 
-- **面板開啟位置**：Windows 開在工作區右下角，上游貼齊選單列圖示。pystray 不提供圖示座標，需用 Win32 `Shell_NotifyIconGetRect` 取得系統匣圖示矩形才能貼齊。**可做，尚未做。** 實作時務必用 `_monitor_dpi_scale()` / `_to_logical_rect()` 換算，否則會重蹈 v0.30.0 的 DPI bug。
+- ~~**面板開啟位置**：貼齊系統匣圖示~~ → **不做，已從落差清單移除**。審視上游 `4dbf916` 發現上游反而放棄了貼齊選單列圖示，改成可拖曳並記住位置的浮動面板——Windows 早就是這個行為。詳見 `docs/DECISIONS.md` D-07。
 - **`i18n.packaged_resource_path` 的 `RESOURCEPATH` 分支**：py2app 專用，現在是死碼（環境變數不存在就跳過，無害）。清掉時要一併改寫 `tests/test_i18n_packaged_path.py`。**純清理，非落差。**
 
 ## 待辦
