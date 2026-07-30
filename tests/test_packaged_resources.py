@@ -96,6 +96,11 @@ def _bundled_paths() -> set[str]:
         source = ROOT / match.group(1)
         prefix = "" if dest.strip() == "." else dest.strip().replace("\\", "/").strip("/")
         if source.is_dir():
+            # A directory can itself be the resource name — persona_store asks
+            # for "personas" and walks it at runtime — so record the destination
+            # directory as well as every file inside it.
+            if prefix:
+                paths.add(prefix)
             for child in source.rglob("*"):
                 if child.is_file():
                     rel = child.relative_to(source).as_posix()

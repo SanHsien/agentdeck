@@ -118,11 +118,22 @@ def test_draw_tray_icon_and_tooltip(monkeypatch: pytest.MonkeyPatch) -> None:
     ]
 
 
-def test_windows_panels_exclude_talent_market() -> None:
+def test_all_panels_including_talent_market_are_available() -> None:
+    # talent_market used to be excluded because it needed a macOS-only vendored
+    # binary. persona_store replaced that binary with role definitions shipped in
+    # this repo, so the panel is reachable on Windows now.
     ids = [panel[0] for panel in wintray.available_panels()]
 
     assert "classic" in ids
-    assert "talent_market" not in ids
+    assert "talent_market" in ids
+    assert len(ids) == len(wintray.WINDOWS_PANELS)
+
+
+def test_every_panel_has_a_registered_height() -> None:
+    # A panel without a height entry raises KeyError in panel_height() the moment
+    # the user switches to it.
+    for panel_id, _key, _filename in wintray.available_panels():
+        assert panel_id in wintray.PANEL_HEIGHTS, panel_id
 
 
 def test_system_background_color_dark(monkeypatch: pytest.MonkeyPatch) -> None:

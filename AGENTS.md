@@ -22,6 +22,20 @@
 
 參考素材：[`reference/upstream-macos/`](reference/upstream-macos/) 放著已從本 repo 移除的上游 macOS 實作，**唯讀、不參與建置與檢查**，用途是移植功能時對照原本的行為。
 
+## 收到「上游更新檢查」issue 時
+
+上游仍在活躍開發。`.github/workflows/upstream-check.yml` 每週跑 `tools/check_upstream_updates.py`，發現上游有比 `docs/UPSTREAM.md` 的 `last_reviewed` 更新的 commit 時，會開／更新一個「上游更新檢查」issue。
+
+處理流程（**適用所有 AI agent 與人**）：
+
+1. 逐筆讀 commit 內容，判斷是否適用本 fork（Windows-only、中英雙語、已移除 macOS）。
+2. **採用** → `git merge` 或 `git cherry-pick`，完成後同時推進 `docs/UPSTREAM.md` 的 `last_merged` 與 `last_reviewed`。
+3. **不採用** → 只推進 `last_reviewed`，**並且**在 `docs/UPSTREAM.md` 的「Skipped」表補一列（commit／標題／審視日期／理由），在 [`docs/DECISIONS.md`](docs/DECISIONS.md) 記一句理由。
+
+`last_reviewed` 只負責「這次不用再提醒」，Skipped 表才負責「不失憶」——**兩件事缺一不可**。只推進標記卻不記理由，日後想查「當初為什麼跳過」會查無所獲。
+
+macOS 專屬的 commit 一律不採用，但仍要進 Skipped 表，理由寫「macOS-only，本 fork 已移除該平台」。
+
 ## 這是 fork，但獨立維護
 
 - 上游：[`aqua5230/usage`](https://github.com/aqua5230/usage)（AGPL-3.0-only）。
@@ -47,7 +61,7 @@
 | `scripts/check_doc_parity.py` | `DOC_PAIRS` 比對 `README.md` ↔ `README.zh-TW.md` | 改為 `README.en.md` ↔ `README.md` |
 | 其他文件（CONTRIBUTING / SECURITY / CHANGELOG / docs/DEVELOPMENT） | 英文為預設 `.md`，中文為 `.zh-TW.md` | **維持不變** |
 
-新增檔案（上游沒有）：`AGENTS.md`、`SKILL.md`、`NOTICE.md`、`REPO_REVIEW.md`、`docs/FORK.zh-TW.md`、`docs/DECISIONS.md`、`docs/DEVELOPMENT.win.zh-TW.md`、`tools/`、`.pre-commit-config.yaml`、`.claude/settings.json`。
+新增檔案（上游沒有）：`AGENTS.md`、`SKILL.md`、`NOTICE.md`、`REPO_REVIEW.md`、`persona_store.py`、`personas/`、`discussion_window_win.py`、`discussion_assets.py`、`docs/FORK.zh-TW.md`、`docs/DECISIONS.md`、`docs/DEVELOPMENT.win.zh-TW.md`、`docs/PORTING.zh-TW.md`、`docs/UPSTREAM.md`、`tools/`、`reference/`、`.pre-commit-config.yaml`、`.claude/settings.json`。
 
 **有取捨的決定寫進 [`docs/DECISIONS.md`](docs/DECISIONS.md)**，不要只留在 commit message 裡——那是為了避免日後重複討論同一個問題。
 

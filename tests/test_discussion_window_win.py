@@ -130,12 +130,12 @@ def test_clipboard_image_returns_none_when_the_clipboard_is_empty(
     assert win.read_clipboard_image() is None
 
 
-def test_drain_limit_matches_the_macos_host() -> None:
-    # Both hosts must page events identically; a mismatch would make one of them
-    # stall on a burst while the other kept up.
-    import discussion_window
+def test_drain_limit_and_shared_serializer() -> None:
+    # The neutral half of the feature lives in discussion_assets and is shared,
+    # so a change there must keep serving this host.
+    import discussion_assets
 
-    events = discussion_window.serialize_event_batch([], {})
+    events = discussion_assets.serialize_event_batch([], {})
 
     assert isinstance(events, str)
     assert win.EVENT_DRAIN_LIMIT == 50

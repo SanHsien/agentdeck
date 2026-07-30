@@ -826,7 +826,7 @@ def _terminate_process_group_win(process: subprocess.Popen[str]) -> None:
         return
 
 
-# AI Council only runs its GUI on macOS today (see discussion_window.py), but
+# AI Council's GUI host is discussion_window_win.py (pywebview), but
 # this CLI layer is imported and type-checked on Windows CI too. `start_new_session`
 # on the Popen call above is a POSIX-only no-op on Windows, so termination there
 # falls back to plain terminate()/kill() instead of process-group signals.

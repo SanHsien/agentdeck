@@ -63,6 +63,7 @@ A quota icon appears in the system tray: left-click for the panel, right-click f
 
 - **10 Visual Themes:** Switch between panel styles including Classic, Matrix, Windows 95, Newspaper, Cloud Observation, Midnight Aquarium, Prism Arcade, Black Hole, World Cup 2026, and Lepidoptera (blueprint).
 - **Drag to Reorder:** Grab any quota card and drag it up or down to swap the order — the arrangement is shared across every theme and survives restarts.
+- **AI Talent Market (our own implementation):** Installs ready-made subagent roles into `~/.claude/agents/`. Upstream sourced its roles from a closed binary whose source and distribution repos are both 404 to everyone else and which only shipped for macOS, so nobody cloning the public repo could use the feature. This fork replaced it with an open implementation: role definitions live in [`personas/`](personas/) and can be edited or extended. If you hand-edit an installed role the panel flags it and offers a restore. **If you already have an agent of the same name, installing backs it up first and tells you the backup filename.**
 - **AI Council:** Open a dedicated window and run a multi-round discussion between Claude Code, Codex, and Antigravity — pick participants, models, and a debate style, with a token estimate up front. Steer it between rounds, see who dissents in the consensus tally, and let it stop early once everyone agrees. Seats can reference real files via an optional read-only folder. (Persona assignment needs the AI Talent Market, which is unavailable here.)
 - **AI Update Daily:** Opens an [update digest](https://sanhsien.github.io/usage/ai-updates/) covering Claude Code, Codex, Antigravity and related tools, with the original release text alongside each entry. The page is generated from this repo's `ai_updates.json` by `scripts/build_ai_updates.py`, and the data refreshes with upstream.
 - **Spirit Companions:** A small animated white silhouette lives beside your usage percentages — a phoenix for Claude, a dragon for Codex, a lion for Antigravity. Each accelerates dynamically as its own tool's token burn rate climbs.
@@ -90,7 +91,7 @@ The tray UI requires Microsoft Edge WebView2 Runtime, which is normally included
 
 The tray icon updates with your Claude quota percentage; its tooltip summarizes the Claude and Codex windows. Left-click opens the 10 quota themes in WebView2. Right-click provides panel switching, refresh, launch at login, check for updates, and quit.
 
-Known limits: the panel opens at the bottom-right of the working area rather than next to the tray icon (`Shell_NotifyIconGetRect` is not wired up yet); the update prompt uses a system three-button dialog whose button labels Windows controls, so the message body spells out which button means what; and the AI Talent Market needs an `instate-cli` binary upstream never published, so it is unavailable.
+Known limits: the panel opens at the bottom-right of the working area rather than next to the tray icon (`Shell_NotifyIconGetRect` is not wired up yet); the update prompt uses a system three-button dialog whose button labels Windows controls, so the message body spells out which button means what; and the AI Talent Market ships this fork's own role definitions ([`personas/`](personas/)), which differ from upstream's closed set.
 
 ## Running from Source
 

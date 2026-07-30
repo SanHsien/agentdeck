@@ -482,7 +482,9 @@
     "setup_hook_deleted": "✓ 已刪除 hook：{path}",
     "setup_status_file_deleted": "✓ 已刪除狀態檔：{path}",
     "wintray_unavailable": "Windows 系統匣介面尚未安裝，改用終端機 TUI。",
-    "wintray_already_running": "usage 已在執行中；請點系統匣的 usage 圖示開啟面板。"
+    "wintray_already_running": "usage 已在執行中；請點系統匣的 usage 圖示開啟面板。",
+    "talent_action_failed": "人才市場操作失敗",
+    "talent_replaced_existing": "你原本同名的 agent 已備份為 {backup}，可自行還原。"
   },
   "en": {
     "panel_default_name": "Default",
@@ -967,6 +969,8 @@
     "setup_hook_deleted": "✓ Deleted hook: {path}",
     "setup_status_file_deleted": "✓ Deleted status file: {path}",
     "wintray_unavailable": "The Windows tray interface is not installed; falling back to the terminal TUI.",
-    "wintray_already_running": "usage is already running; click the usage tray icon to open the panel."
+    "wintray_already_running": "usage is already running; click the usage tray icon to open the panel.",
+    "talent_action_failed": "Talent market action failed",
+    "talent_replaced_existing": "Your existing agent of the same name was backed up as {backup}."
   }
 }

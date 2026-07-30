@@ -57,6 +57,9 @@ logger = logging.getLogger(__name__)
 MB_ICON_WARNING = 0x30
 MB_ICON_INFO = 0x40
 MB_YESNOCANCEL = 0x03
+_TALENT_ACTIONS = frozenset(
+    {"install_role", "restore_role", "ignore_drift", "set_folder", "launch_role"}
+)
 # Matches upstream's UPDATE_ALERT_BODY_LIMIT so both hosts truncate alike.
 UPDATE_PROMPT_BODY_LIMIT = 2000
 
@@ -74,6 +77,7 @@ WINDOWS_PANELS = (
     ("black_hole", "panel_black_hole", "black_hole.html"),
     ("lepidoptera", "panel_lepidoptera", "lepidoptera.html"),
     ("world_cup", "panel_world_cup", "world_cup.html"),
+    ("talent_market", "panel_talent_market", "talent_market.html"),
 )
 PANEL_HEIGHTS = {
     "classic": 1004,
@@ -86,6 +90,7 @@ PANEL_HEIGHTS = {
     "black_hole": 1023,
     "lepidoptera": 1070,
     "world_cup": 812,
+    "talent_market": 812,
 }
 
 JS_SHIM = """
@@ -379,8 +384,13 @@ def _system_background_color() -> str:
 
 
 def available_panels() -> tuple[tuple[str, str, str], ...]:
-    """Windows excludes talent_market because its vendored CLI is macOS-only."""
-    return tuple(panel for panel in WINDOWS_PANELS if panel[0] != "talent_market")
+    """Every panel is available on Windows.
+
+    talent_market used to be excluded here because it depended on a macOS-only
+    vendored binary. persona_store replaced that binary with role definitions
+    shipped in this repository, so the panel works on Windows now.
+    """
+    return WINDOWS_PANELS
 
 
 def tray_icon_style(used_percent: float | None) -> tuple[str, tuple[int, int, int, int]]:
@@ -917,7 +927,7 @@ class _WindowsTrayController:
                 self.mock,
             )
         agy_window_keeper.maybe_ping(agy_result, self.mock)
-        return menubar_state.build_popover_state(
+        state = menubar_state.build_popover_state(
             outcome=outcome,
             codex_rows=codex_rows,
             agy_rows=(agy.session, agy.weekly),
@@ -947,6 +957,13 @@ class _WindowsTrayController:
                 history.history_error_key, self.language
             ),
         )
+        # Only load the talent roster while its panel is showing, so users on the
+        # other panels never pay for reading the persona packs.
+        if self.active_panel_id == "talent_market":
+            import talent_market_bridge
+
+            state.talent = talent_market_bridge.list_state(self.language)
+        return state
 
     async def _fetch(self) -> Any:
         return await self.usage_client.fetch_once()
@@ -1282,6 +1299,99 @@ class _WindowsTrayController:
             preferences["update_dismissed_at"] = time.time()
         _save_preferences(preferences)
 
+    def _handle_talent_action(self, action: str, payload: dict[str, object]) -> None:
+        """Apply a talent-market button press, then refresh the panel.
+
+        Runs on a worker thread because installing writes to ~/.claude/agents and
+        the panel must not freeze while that happens.
+        """
+        role_id = payload.get("roleId")
+        if not isinstance(role_id, str) or not role_id:
+            return
+        prompt = payload.get("taskPrompt")
+
+        def worker() -> None:
+            import talent_market_bridge
+
+            if action == "install_role":
+                result = talent_market_bridge.install_role(role_id, self.language)
+            elif action == "restore_role":
+                result = talent_market_bridge.restore_role(role_id)
+            elif action == "ignore_drift":
+                result = talent_market_bridge.ignore_drift(role_id)
+            elif action == "set_folder":
+                folder = self._pick_folder()
+                if folder is None:
+                    return
+                result = talent_market_bridge.set_folder(role_id, folder)
+            else:  # launch_role
+                result = self._launch_role(role_id, prompt if isinstance(prompt, str) else None)
+            if not result.get("ok"):
+                self._report_action_result(
+                    _t(self.language, "talent_action_failed"),
+                    detail=str(result.get("error") or ""),
+                    failed=True,
+                )
+            elif result.get("replaced_backup"):
+                # The user already had an agent under this name; say where it went
+                # rather than letting them discover the replacement later.
+                self._report_action_result(
+                    _t(self.language, "talent_replaced_existing", backup=result["replaced_backup"])
+                )
+            self.refresh()
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _launch_role(self, role_id: str, prompt: str | None) -> dict[str, object]:
+        """Open a terminal in the role's folder so Claude Code starts there.
+
+        Upstream launched the role through its private CLI. With the persona
+        installed as a normal subagent, "launch" only has to put the user in the
+        right directory — Claude Code picks the agent up from ~/.claude/agents.
+        """
+        import persona_store
+
+        entry = persona_store.list_state(self.language)
+        folder = ""
+        for pack in entry.get("packs", []):
+            for role in pack.get("roles", []):
+                if role.get("id") == role_id:
+                    folder = str(role.get("selectedFolderLabel") or "")
+        target = Path(folder).expanduser() if folder else Path.home()
+        if not target.is_dir():
+            return {"ok": False, "error": f"folder not found: {target}"}
+        try:
+            os.startfile(target)  # noqa: S606 - opens Explorer at the role's folder
+        except OSError as exc:
+            return {"ok": False, "error": str(exc)}
+        if prompt:
+            with contextlib.suppress(Exception):
+                self._copy_to_clipboard(prompt)
+        return {"ok": True}
+
+    def _copy_to_clipboard(self, text: str) -> None:
+        import subprocess
+
+        subprocess.run(  # noqa: S603 - fixed executable, text passed on stdin
+            ["clip"], input=text.encode("utf-16-le"), check=False, shell=False
+        )
+
+    def _pick_folder(self) -> str | None:
+        window = self.window
+        if window is None:
+            return None
+        import webview
+
+        try:
+            result = window.create_file_dialog(webview.FOLDER_DIALOG)
+        except Exception:  # noqa: BLE001 - a cancelled dialog is not an error
+            logger.debug("folder dialog failed", exc_info=True)
+            return None
+        if not result:
+            return None
+        first = result[0] if isinstance(result, (list, tuple)) else result
+        return str(first) if first else None
+
     def _explain_feature(self, tooltip_key: str) -> None:
         """Show what a feature does, at the moment the user switches it on.
 
@@ -1355,6 +1465,8 @@ class _WindowsTrayController:
                     self.toggle_hide_section(preference_key)
             elif action == "open_ai_daily":
                 self.open_ai_daily()
+            elif action in _TALENT_ACTIONS:
+                self._handle_talent_action(action, payload)
             elif action == "reset_panel_position":
                 self.reset_panel_position()
             elif action == "refresh":

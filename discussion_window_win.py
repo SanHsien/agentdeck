@@ -36,9 +36,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from discussion_bridge import DiscussionBridge, ParticipantSpec
-from discussion_cli import DetectionResult
-from discussion_window import (
+from discussion_assets import (
     ATTACHMENT_SUFFIXES,
     DROP_MAX_BYTES,
     PARTICIPANT_LABELS,
@@ -49,6 +47,8 @@ from discussion_window import (
     save_attachment_bytes,
     serialize_event_batch,
 )
+from discussion_bridge import DiscussionBridge, ParticipantSpec
+from discussion_cli import DetectionResult
 from i18n import _t
 from talent_market_bridge import list_personas
 from usage_lang import detect_lang

@@ -12,9 +12,9 @@ from dataclasses import asdict
 
 import pytest
 
+import discussion_assets
 import discussion_bridge
 import discussion_session
-import discussion_window
 from discussion_bridge import DiscussionBridge
 from discussion_session import (
     ConsensusCount,
@@ -437,14 +437,14 @@ def test_stop_interrupts_guidance_wait_and_leaves_no_waiting_thread() -> None:
 
 
 def test_parse_submit_guidance_accepts_string_and_rejects_other_types() -> None:
-    parsed = discussion_window.parse_discussion_action(
+    parsed = discussion_assets.parse_discussion_action(
         json.dumps({"action": "discussion_submit_guidance", "text": ""})
     )
 
     assert parsed.action == "discussion_submit_guidance"
     assert parsed.guidance_text == ""
     with pytest.raises(ValueError, match="requires a string text"):
-        discussion_window.parse_discussion_action(
+        discussion_assets.parse_discussion_action(
             json.dumps({"action": "discussion_submit_guidance", "text": 3})
         )
 

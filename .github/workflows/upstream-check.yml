@@ -1,0 +1,57 @@
+name: 上游更新檢查
+
+on:
+  schedule:
+    # 每週一 02:00 UTC 檢查 aqua5230/usage main 是否有比 docs/UPSTREAM.md 的
+    # last_reviewed 更新的 commit。上游活躍，一週一次夠即時、也不會變成雜訊。
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: upstream-check
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PYTHONUTF8: "1"
+      PYTHONIOENCODING: "utf-8"
+
+    steps:
+      - name: 檢出程式碼
+        uses: actions/checkout@v4
+
+      - name: 設定 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: 檢查上游更新
+        id: upstream
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python tools/check_upstream_updates.py \
+            --github-output \
+            --output upstream-check-report.md
+
+      - name: 建立或更新提醒 issue
+        if: steps.upstream.outputs.has_updates == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # 沿用同一個 issue，避免每週開一張新的把列表淹掉。
+          issue="$(gh issue list --state open --search '上游更新檢查 in:title' --json number --jq '.[0].number // empty')"
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --body-file upstream-check-report.md
+          else
+            gh issue create \
+              --title "上游更新檢查：有新 commit 待審視" \
+              --body-file upstream-check-report.md
+          fi
