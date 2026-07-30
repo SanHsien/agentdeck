@@ -12,6 +12,7 @@ Keep Claude Code, Codex, and Antigravity quota in view while you work. `agentdec
 
 [![Release](https://img.shields.io/github/v/release/SanHsien/agentdeck?sort=semver&color=ff8c42)](https://github.com/SanHsien/agentdeck/releases/latest)
 [![CI](https://github.com/SanHsien/agentdeck/actions/workflows/check.yml/badge.svg)](https://github.com/SanHsien/agentdeck/actions/workflows/check.yml)
+[![CodeQL](https://github.com/SanHsien/agentdeck/actions/workflows/codeql.yml/badge.svg)](https://github.com/SanHsien/agentdeck/actions/workflows/codeql.yml)
 [![Python](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/platform-Windows-0078D4.svg?logo=windows11&logoColor=white)](#install)
 [![Local-first](https://img.shields.io/badge/architecture-local--first-2E7D32.svg)](#privacy--data-sources)
