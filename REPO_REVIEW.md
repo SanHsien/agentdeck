@@ -135,9 +135,28 @@
 連帶要清：`pyproject.toml` 的 PyObjC 相依與 `[dependency-groups] build` 的 py2app、`tests/conftest.py` 的 `collect_ignore`、macOS-only 測試、`.github/workflows` 的 macOS job、README／CLAUDE.md／landing page 的 macOS 敘述。
 `usage_statusline.py` 等三個 stdlib-only 檔案的「要能在 macOS 內建 Python 3.9 跑」限制隨之解除，但**先不要**順手現代化語法——那是獨立的一次改動。
 
-**步驟 3 — 改名 `usage` → `quotatray`。**
-維護者確認**不需要 legacy 相容層**（沒有其他使用者）。要一起改：repo 名稱、`pyproject.toml` 的 `name`、所有 `usage_*.py` 模組名與 `py-modules` 清單、hook 檔名（`~/.claude/usage-statusline.py` 等）、狀態檔（`usage-status.json`）、settings key、`~/.usage/` 快取目錄、`USAGE_LANG` / `USAGE_DEBUG` 環境變數、bundle id、`usage.exe`、README／文件／landing page。
-**改名後維護者本機已安裝的 hook 會失效**（2026-07-25 裝的），必須重跑一次 `--setup`；改名的同一次改動要一併處理舊 hook 的解除安裝，不要留孤兒檔案在 `~/.claude/`。
+**步驟 3 — 改名 `usage` → `agentdeck`。**（名稱決定與理由見 `docs/DECISIONS.md` D-09。先前暫定的 `quotatray` 已作廢——它同樣只涵蓋監看那一半。）
+維護者確認**不需要 legacy 相容層**（沒有其他使用者）。
+
+⚠️ **不可盲目 find/replace。** repo 裡約 135 個檔案含 `usage` 字樣，混雜三種語意，必須分開處理：
+
+| 類別 | 例子 | 處置 |
+|---|---|---|
+| **產品名** | `usage.exe`、`~/.usage/`、`usage-status.json`、settings key `usage`、tray 標題 | **改** |
+| **英文單字「用量」** | 「your quota usage」、「token usage」、`UsageSnapshot`、`UsageEntry` | **不可改**——改了句子會壞、型別名也無意義 |
+| **內部模組檔名** | `usage_client.py`、`usage_rate.py` 等 12 個 | **不改**（D-09）；但它們**安裝到 `~/.claude/` 的檔名要改** |
+
+要改的落地物清單（每項都要實查取代結果）：
+
+- GitHub repo 名稱、`pyproject.toml` 的 `name`、`uv.lock` 的 `name`
+- 執行檔 `usage.exe` → `agentdeck.exe`、產出目錄 `dist/usage-windows` → `dist/agentdeck-windows`、release 資產名
+- hook 安裝檔名：`~/.claude/usage-statusline.py`、`usage-statusline-forwarder.py`、`usage-session-resume.py`、`usage-terse-mode.py`、`usage-terse-reminder.py`
+- 狀態與設定：`~/.claude/usage-status.json`、`usage-preferences.json`、`~/.claude/settings.json` 內的 `usage` key 與 `usage.windowPosition` 等 preference key
+- 快取與輸出目錄：`~/.usage/`（pricing、status、persona_state、discussion attachments）、`~/.usage-reports/`
+- 環境變數：`USAGE_LANG`、`USAGE_DEBUG`、`USAGE_*`（`TT_LANG` 是更早的 legacy，可一併清掉）
+- 文件與網頁：README ×2、CLAUDE.md、AGENTS.md、docs/*、landing page、i18n.json 內的產品名字串
+
+**收尾必做**：維護者本機 2026-07-25 裝的舊 hook 會變成孤兒。改名的同一次改動要**先跑舊名的 `--unsetup` 解除安裝，再用新名 `--setup` 重裝**，並實際確認 `~/.claude/` 沒有留下 `usage-*` 孤兒檔案、`settings.json` 沒有留下指向舊路徑的 `statusLine`。
 
 版號依 SemVer（見 `docs/DECISIONS.md` D-05）：步驟 1 是新功能 → MINOR；步驟 2、3 是破壞性改動，`0.y.z` 階段同樣 → MINOR。
 

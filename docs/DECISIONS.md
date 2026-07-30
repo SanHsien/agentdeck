@@ -127,3 +127,21 @@
 **為什麼**：五筆動到的檔案全部是本 fork 已刪除的 macOS 模組（`menubar.py`、`panels/web_panel.py`、`panels/__init__.py`）、上游新建而本 fork 沒有的檔案（`panel_window_state.py`），或已刪除的 README 語言版本。逐筆理由記在 [`UPSTREAM.md`](UPSTREAM.md) 的 Skipped 表。
 
 **這是第一次實際跑完那套流程**，而它立刻產出了 D-07 這個非顯而易見的結論——證明「逐筆讀內容」而非「看標題決定」是對的。
+
+---
+
+## D-09：改名為 `agentdeck`
+
+**日期**：2026-07-30
+
+**決定**：專案與程式改名 `usage` → **`agentdeck`**。
+
+**為什麼換掉 `usage`**：它只描述了額度監看，但這個程式現在還有多模型圓桌討論、角色（persona）安裝、報告分析、省 token 模式、浪費健檢。名字說不出一半的功能。
+
+**為什麼也換掉先前選的 `quotatray`**：同樣偏窄（quota + tray），只涵蓋監看那一半。
+
+**為什麼是 `agentdeck`**：現在的定位是「AI 編碼工具的駕駛艙」——既看儀表（額度、成本、燃燒率、服務狀態）也操作（召開圓桌、部署角色、切換模式）。`deck` 一詞剛好雙關：**儀表盤**（dashboard）＋**一副牌**（a deck of roles，正是人才市場的角色名單）。短、好念、不綁任何廠商——這點重要，因為它同時支援 Claude、Codex 與 Antigravity。
+
+**考慮過**：`aicockpit`（意思最直白，但 `ai` 前綴過於常見、識別度低）、`aitower`（航管塔比喻漂亮，但與「面板／系統匣」的直覺聯結弱）。
+
+**刻意不改的東西**：內部 Python 模組檔名（`usage_client.py`、`usage_statusline.py` 等 12 個）。理由是「程式名稱」指的是使用者看得到的東西——執行檔、hook 檔名、設定路徑、環境變數；模組檔名是內部實作，改它要動到每一個 import，產生大量無使用者價值的 churn。**但 `usage_statusline.py` 安裝到 `~/.claude/` 時的檔名要改**（那是使用者看得到的）。若日後仍想改模組名，那是獨立一次重構。
