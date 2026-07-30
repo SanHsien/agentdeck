@@ -93,17 +93,18 @@ if ($SkipTests) {
 else {
     $pytestArgs = @('run', '--no-sync', 'pytest', '-q')
 
-    # test_keeps_matching_directory_and_symlink 需要建立符號連結的權限（開發人員模式
-    # 或系統管理員）。沒有權限時它必定丟 WinError 1314，跟被測邏輯無關；先實測本機
-    # 能不能建連結，不能才排除這一個測試，並明講排除了什麼。
+    # test_keeps_matching_symlink 需要建立符號連結的權限（開發人員模式或系統管理員）。
+    # 沒有權限時它必定丟 WinError 1314，跟被測邏輯無關；先實測本機能不能建連結，不能
+    # 才排除這一條，並明講排除了什麼。同一個分支另有 directory 與 junction 兩條測試，
+    # 都不需要權限，所以本機仍覆蓋得到「非一般檔案不刪」這個行為。
     if (-not (Test-SymlinkCapability)) {
         Write-Host ''
         Write-Host 'note: 本機沒有建立符號連結的權限（需開發人員模式或系統管理員）。' -ForegroundColor Yellow
-        Write-Host '      已排除 test_usage_dir_sweeper.py::test_keeps_matching_directory_and_symlink，' -ForegroundColor Yellow
-        Write-Host '      這條在 CI 上仍會執行。' -ForegroundColor Yellow
+        Write-Host '      已排除 test_usage_dir_sweeper.py::test_keeps_matching_symlink，' -ForegroundColor Yellow
+        Write-Host '      這條在 CI 上仍會執行；同分支的 directory／junction 兩條照跑。' -ForegroundColor Yellow
         $pytestArgs += @(
             '--deselect',
-            'tests/test_usage_dir_sweeper.py::test_keeps_matching_directory_and_symlink'
+            'tests/test_usage_dir_sweeper.py::test_keeps_matching_symlink'
         )
     }
 

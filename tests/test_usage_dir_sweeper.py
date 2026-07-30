@@ -63,17 +63,43 @@ def test_keeps_nonmatching_names(tmp_path: Path) -> None:
     assert all(path.exists() for path in paths)
 
 
-def test_keeps_matching_directory_and_symlink(tmp_path: Path) -> None:
+def test_keeps_matching_directory(tmp_path: Path) -> None:
     now = 2_000_000_000.0
     matching_directory = tmp_path / "tmpDIR.tmp"
     matching_directory.mkdir()
+
+    assert sweep_stale_temp_files(tmp_path, now=now) == 0
+    assert matching_directory.is_dir()
+
+
+def test_keeps_matching_junction(tmp_path: Path) -> None:
+    """A junction is the reparse point Windows lets an ordinary user create.
+
+    Symlinks need Developer Mode or elevation, so this is the non-regular entry
+    that can be exercised on a stock machine — same ``S_ISREG`` branch.
+    """
+    import _winapi
+
+    now = 2_000_000_000.0
+    target = tmp_path / "target_dir"
+    target.mkdir()
+    junction = tmp_path / "tmpJUNC.tmp"
+    _winapi.CreateJunction(str(target), str(junction))
+
+    assert sweep_stale_temp_files(tmp_path, now=now) == 0
+    assert junction.is_junction()
+    assert target.is_dir()
+
+
+def test_keeps_matching_symlink(tmp_path: Path) -> None:
+    """Needs symlink privilege; `tools/dev_check.ps1` deselects it when absent."""
+    now = 2_000_000_000.0
     target = tmp_path / "target.txt"
     _make_old(target, now)
     link = tmp_path / "tmpLINK.tmp"
     link.symlink_to(target)
 
     assert sweep_stale_temp_files(tmp_path, now=now) == 0
-    assert matching_directory.is_dir()
     assert link.is_symlink()
     assert target.exists()
 

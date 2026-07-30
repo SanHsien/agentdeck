@@ -8,7 +8,7 @@
 
 - 四道閘門全綠：`ruff` / `mypy`（154 個檔案）/ 雙語文件對稱性 / `pytest`。
 - 已完成從 macOS 優先的上游轉為 **Windows 專用**，並改名為 **agentdeck**。
-- **未解問題：1 項**，且是本機環境限制、不是程式缺陷。
+- **未解問題：2 項**——一項是本機環境限制、不是程式缺陷，一項是 AI 圓桌視窗的版面外觀。
 
 ## 環境
 
@@ -22,13 +22,21 @@
 
 ## 未解問題
 
-### P4：`test_keeps_matching_directory_and_symlink` 需要符號連結權限
+### P4：`test_keeps_matching_symlink` 需要符號連結權限
 
 `tests/test_usage_dir_sweeper.py` 的這一條呼叫 `Path.symlink_to()`，在未開啟開發人員模式、也非系統管理員的 Windows 上丟 `OSError: [WinError 1314]`。
 
 - **這是環境限制，不是 code bug。** CI 的 windows-latest 有權限，在那裡照跑。
-- 處置：`tools/dev_check.ps1` 先實測本機能不能建連結，不能才 `--deselect` 這一條並印出說明。刻意不在測試裡加 `skipif`——那會讓覆蓋在本機靜默消失（理由見 `docs/DECISIONS.md` D-04）。
-- 要在本機也跑它：開啟 Windows 開發人員模式，或以系統管理員身分執行 pytest。
+- **影響已縮到最小。** 原本一條測試同時涵蓋目錄與符號連結，沒權限就整條消失。現已拆成三條：`test_keeps_matching_directory`、`test_keeps_matching_junction`（junction 是一般使用者就能建的 Windows reparse point，實測免權限、`lstat` 報 `S_ISDIR`）、`test_keeps_matching_symlink`。前兩條在本機照跑，所以「名稱吻合但不是一般檔案就不刪」這個行為本機仍然覆蓋得到，只有符號連結那個變體會缺。
+- 處置：`tools/dev_check.ps1` 先實測本機能不能建連結，不能才 `--deselect` 那一條並印出說明。刻意不在測試裡加 `skipif`——那會讓覆蓋在本機靜默消失（理由見 `docs/DECISIONS.md` D-04）。
+- 要連符號連結那條也在本機跑：開啟 Windows 開發人員模式（設定 → 系統 → 開發人員專用），或以系統管理員身分執行 pytest。這是系統設定，由維護者自行決定。
+
+### P5：AI 圓桌視窗的參與者列在 900×640 下被裁切
+
+2026-07-30 實機開窗驗證時發現：參與者那一列同時出現水平與垂直捲軸，模型名稱被右邊的下拉選單擠掉，只看得到第一個字。功能可用（可捲動），但外觀不對。
+
+- 尚未判定是本 fork 移植造成，還是上游在 macOS 上也如此——要比對 `reference/upstream-macos/` 的版面才能下結論。
+- 未修，因為還沒查明原因；查明前不要猜著調 CSS。
 
 ## 已確認正常
 
@@ -43,7 +51,7 @@
 
 | 落差 | 結果 |
 |---|---|
-| AI 圓桌討論僅 macOS | 移植完成（pywebview host），維護者實機驗證可開窗 |
+| AI 圓桌討論僅 macOS | 移植完成（pywebview host）；2026-07-30 實機開窗驗證：視窗建立成功、四個區塊完整渲染、關閉乾淨。已知外觀問題見下方 P5 |
 | hook 安裝／statusLine 切換／session resume／terse mode／報告產生失敗無回饋 | 五處都接上結果回報 |
 | 更新提示無法「跳過此版本」 | 三鈕對話框；Escape 落在「稍後」而非「跳過」 |
 | 無自動每日更新檢查（README 卻宣稱有） | 掛進輪詢，採用自動檢查偏好／每日間隔／近期「稍後」／已跳過版本四道閘門 |
