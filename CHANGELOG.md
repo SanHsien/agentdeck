@@ -8,6 +8,9 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
 ## Unreleased
 
+### Added
+- **Dated Codex repository audit**: `REVIEW_Codex.md` records the 2026-07-31 full-repo scope, findings, fixes, verification evidence, and two non-blocking follow-ups; `REPO_REVIEW.md` remains the latest-only operational summary.
+
 ### Fixed
 - **Update checks now follow this fork**: the tray still queried `aqua5230/usage`, so agentdeck releases newer than the upstream version were invisible. The endpoint and user agent now identify `SanHsien/agentdeck`, with a regression test for both.
 - **Fork ownership and Windows guidance**: project metadata, contribution/security policies, issue templates, architecture notes, and troubleshooting still mixed the old product name, upstream maintainer, macOS menu bar, or removed module names into current instructions. They now consistently describe agentdeck's Windows workflow and actual network scope.

@@ -7,6 +7,9 @@
 
 ## Unreleased
 
+### 新增
+- **Codex 定期 repo 審查報告**：`REVIEW_Codex.md` 記錄 2026-07-31 全 repo 的範圍、發現、修正、驗證證據與兩項非阻擋追蹤；`REPO_REVIEW.md` 繼續維持 latest-only 營運摘要。
+
 ### 修正
 - **版本更新改為追蹤本 fork**：系統匣原本仍查詢 `aqua5230/usage`，agentdeck 即使有較新的 release 也不會被看見。端點與 user agent 已改為 `SanHsien/agentdeck`，並用回歸測試守住兩者。
 - **fork 所有權與 Windows 指引**：專案中繼資料、貢獻／安全政策、issue 模板、架構說明與疑難排解，仍混有舊產品名、上游維護者、macOS menu bar 或已刪模組。現已統一為 agentdeck 的 Windows 工作流程與實際連網範圍。

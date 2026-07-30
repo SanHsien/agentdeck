@@ -1,14 +1,15 @@
 # Repo Review
 
-覆核日期：2026-07-30 · 版本：v0.31.1 · 分支：`main`
+覆核日期：2026-07-31 · 版本：v0.31.1 · 分支：`main` · 修正基準：`772f7d9`
 
 本檔維持 **latest-only**：只記**當前狀態與未解問題**。修掉一項就從這裡拿掉，不要留成流水帳——歷史在 git log 與 [`CHANGELOG.zh-TW.md`](CHANGELOG.zh-TW.md)，決策理由在 [`docs/DECISIONS.md`](docs/DECISIONS.md)。這裡只回答兩件事：**現在這個 repo 健康嗎、還有什麼沒解決**。
 
 ## 結論
 
-- 四道閘門全綠：`ruff` / `mypy`（154 個檔案）/ 雙語文件對稱性 / `pytest`。
+- 六道閘門全綠：lock freshness / `ruff` / `mypy`（155 個檔案）/ 雙語文件對稱性 / AI 更新頁 / `pytest`（1199 passed、7 skipped、1 個本機權限排除）。
 - 已完成從 macOS 優先的上游轉為 **Windows 專用**，並改名為 **agentdeck**。
-- **未解問題：2 項**——一項是本機環境限制、不是程式缺陷，一項是 AI 圓桌視窗的版面外觀。
+- 2026-07-31 Codex 審查修正了版本檢查仍指向上游、CI／release／本機 gate 不一致、錯誤的 wheel 設定、fork 所有權與 Windows 文件漂移，以及 AI 圓桌參與者列裁切；修正 commit 為 `772f7d9`。
+- **未解問題：2 項**——一項是本機環境限制、不是程式缺陷；一項是已修版面的實機目視重驗。
 
 ## 環境
 
@@ -31,18 +32,20 @@
 - 處置：`tools/dev_check.ps1` 先實測本機能不能建連結，不能才 `--deselect` 那一條並印出說明。刻意不在測試裡加 `skipif`——那會讓覆蓋在本機靜默消失（理由見 `docs/DECISIONS.md` D-04）。
 - 要連符號連結那條也在本機跑：開啟 Windows 開發人員模式（設定 → 系統 → 開發人員專用），或以系統管理員身分執行 pytest。這是系統設定，由維護者自行決定。
 
-### P5：AI 圓桌視窗的參與者列在 900×640 下被裁切
+### P5：AI 圓桌參與者列修正後仍需 900×640 實機目視重驗
 
-2026-07-30 實機開窗驗證時發現：參與者那一列同時出現水平與垂直捲軸，模型名稱被右邊的下拉選單擠掉，只看得到第一個字。功能可用（可捲動），但外觀不對。
+2026-07-30 實機開窗驗證時發現：參與者那一列同時出現水平與垂直捲軸，模型名稱被右邊的下拉選單擠掉，只看得到第一個字。
 
-- 尚未判定是本 fork 移植造成，還是上游在 macOS 上也如此——要比對 `reference/upstream-macos/` 的版面才能下結論。
-- 未修，因為還沒查明原因；查明前不要猜著調 CSS。
+- 2026-07-31 已確認根因：`participant-head` 把 badge、名稱、主持按鈕與兩個固定 128px 控制項塞進單列五欄；預設視窗的右側設定欄不足以容納。
+- 修正：設定欄較窄時，模型與 persona 控制項換到第二列，移除造成水平捲軸的固定單列需求；`tests/test_discussion_window_win.py` 有斷點與換列結構的回歸測試（`772f7d9`）。
+- 剩餘工作只是真實 WebView2 於 900×640 的目視重驗；在完成前不宣稱視覺驗收完成。
 
 ## 已確認正常
 
 - **不呼叫用量 API 的核心不變式**：程式碼中沒有任何 Anthropic / OpenAI 用量 API 呼叫。對外連線僅限 LiteLLM 公開價格表、Claude/OpenAI 公開狀態頁、GitHub Releases 更新檢查，以及使用者自己啟用 Antigravity 時的 Google 官方額度端點。
+- **更新檢查屬於本 fork**：`update_checker.py` 查詢 `SanHsien/agentdeck` 的 latest release，user agent 也是 `agentdeck/<version>`；單元測試同時鎖住 URL 與 header（`772f7d9`）。
 - **AGPL-3.0 合規**：`LICENSE` 與各檔 SPDX 標頭完好；`NOTICE.md` 有 §5a 要求的修改聲明與日期；建置腳本會把 `LICENSE`／`NOTICE.md`／`README.md` 放進發佈產出，缺任一個就讓建置失敗（§4）。
-- **打包資源**：`tests/test_packaged_resources.py` 守著「程式碼透過 `packaged_resource_path()` 要求的資源，都有用 `--add-data` 宣告給 PyInstaller」。
+- **發佈模型與打包資源**：本 repo 是 uv virtual root／flat application，不發佈 wheel；正式產物由 PyInstaller 建置。`tests/test_packaged_resources.py` 守著「程式碼透過 `packaged_resource_path()` 要求的資源，都有用 `--add-data` 宣告給 PyInstaller」。
 - **上游追蹤**：`docs/UPSTREAM.md` 的 `last_reviewed` 為 `e94cd4d`、`last_merged` 為 `5fbf0ba`；每週 workflow 會回報更新並開 issue。
 - **CI 實際涵蓋範圍**：`CI`、`CodeQL`、`上游更新檢查`、`Release` 為啟用狀態並有成功紀錄；`ClusterFuzzLite batch` 已啟用並實測跑完（build 與 30 分鐘 fuzzing 全綠、無 crash）。`ClusterFuzzLite PR` 保留但只在 PR 時觸發，`Scorecard` 刻意維持停用——理由見 `docs/DECISIONS.md` D-10。
 
@@ -52,7 +55,7 @@
 
 | 落差 | 結果 |
 |---|---|
-| AI 圓桌討論僅 macOS | 移植完成（pywebview host）；2026-07-30 實機開窗驗證：視窗建立成功、四個區塊完整渲染、關閉乾淨。已知外觀問題見下方 P5 |
+| AI 圓桌討論僅 macOS | 移植完成（pywebview host）；視窗建立與關閉已實機驗證。900×640 參與者列裁切已於 `772f7d9` 修正，待修正後目視重驗（P5） |
 | hook 安裝／statusLine 切換／session resume／terse mode／報告產生失敗無回饋 | 五處都接上結果回報 |
 | 更新提示無法「跳過此版本」 | 三鈕對話框；Escape 落在「稍後」而非「跳過」 |
 | 無自動每日更新檢查（README 卻宣稱有） | 掛進輪詢，採用自動檢查偏好／每日間隔／近期「稍後」／已跳過版本四道閘門 |
