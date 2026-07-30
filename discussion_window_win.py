@@ -6,7 +6,7 @@
 
 """Windows host for the AI Council window.
 
-``discussion_window.py`` keeps the whole feature's logic — action parsing,
+``discussion_assets.py`` keeps the whole feature's logic — action parsing,
 attachment handling, event serialization, HTML loading — platform-neutral, and
 wraps it in an NSWindow + WKWebView shell. This module supplies the Windows
 shell instead: a second pywebview window on the GUI loop ``wintray`` already
@@ -20,8 +20,8 @@ Only four things actually differ from the macOS host:
 * clipboard images come from Pillow's ``ImageGrab`` rather than NSPasteboard;
 * folder and file pickers come from pywebview rather than ``NSOpenPanel``.
 
-Everything else is imported from ``discussion_window`` so the two hosts cannot
-drift apart.
+Everything else is imported from ``discussion_assets``, which is all that remains
+of the shared implementation now that the macOS host is gone.
 """
 
 from __future__ import annotations

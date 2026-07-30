@@ -352,6 +352,51 @@ def _monitor_dpi_scale(monitor_handle: Any = None) -> float:
         return 1.0
 
 
+def _taskbar_edge() -> str:
+    """Which screen edge the taskbar occupies: top/bottom/left/right.
+
+    Uses ``SHAppBarMessage(ABM_GETTASKBARPOS)`` rather than the tray icon's own
+    rectangle: the icon rect would need pystray's private window handle, while
+    the taskbar edge is enough to pick the right corner and needs no private API.
+    Falls back to "bottom", the overwhelmingly common case, whenever the call is
+    unavailable or fails.
+    """
+    if os.name != "nt":
+        return "bottom"
+    import ctypes
+
+    class Rect(ctypes.Structure):
+        _fields_ = [
+            ("left", ctypes.c_long),
+            ("top", ctypes.c_long),
+            ("right", ctypes.c_long),
+            ("bottom", ctypes.c_long),
+        ]
+
+    class AppBarData(ctypes.Structure):
+        _fields_ = [
+            ("cbSize", ctypes.c_ulong),
+            ("hWnd", ctypes.c_void_p),
+            ("uCallbackMessage", ctypes.c_uint),
+            ("uEdge", ctypes.c_uint),
+            ("rc", Rect),
+            ("lParam", ctypes.c_longlong),
+        ]
+
+    edges = {0: "left", 1: "top", 2: "right", 3: "bottom"}
+    library_name = "windll"
+    try:
+        shell32: Any = getattr(ctypes, library_name).shell32
+        data = AppBarData()
+        data.cbSize = ctypes.sizeof(AppBarData)
+        ABM_GETTASKBARPOS = 0x00000005
+        if not shell32.SHAppBarMessage(ABM_GETTASKBARPOS, ctypes.byref(data)):
+            return "bottom"
+        return edges.get(int(data.uEdge), "bottom")
+    except (AttributeError, OSError, ValueError):
+        return "bottom"
+
+
 def _to_logical_rect(
     rect: tuple[int, int, int, int], scale: float
 ) -> tuple[int, int, int, int]:
@@ -757,10 +802,33 @@ class _WindowsTrayController:
 
     @staticmethod
     def _default_window_position(
-        work_area: tuple[int, int, int, int], height: int
+        work_area: tuple[int, int, int, int],
+        height: int,
+        taskbar_edge: str = "bottom",
     ) -> tuple[int, int]:
+        """First-run placement: the corner nearest the notification area.
+
+        The panel floats freely and remembers wherever the user drags it, so this
+        only decides where it appears before there is a remembered position. It
+        still matters: bottom-right is only near the tray when the taskbar is at
+        the bottom. With the taskbar on top the tray sits top-right and the panel
+        would open at the far corner of the screen from the icon just clicked.
+
+        Anchoring to the icon's exact rectangle was the alternative, but that
+        needs pystray's private window handle, and upstream independently moved
+        *away* from icon-anchored panels because anchoring blocks manual
+        placement (see docs/DECISIONS.md D-07).
+        """
         left, top, right, bottom = work_area
-        return (max(left + 12, right - PANEL_WIDTH - 12), max(top + 12, bottom - height - 12))
+        near_top = taskbar_edge == "top"
+        near_left = taskbar_edge == "left"
+        x = (
+            max(left + 12, min(left + 12, right - PANEL_WIDTH - 12))
+            if near_left
+            else max(left + 12, right - PANEL_WIDTH - 12)
+        )
+        y = top + 12 if near_top else max(top + 12, bottom - height - 12)
+        return (x, y)
 
     def _place_window(self, *, force_default: bool = False) -> None:
         if self.window is None:
@@ -787,7 +855,7 @@ class _WindowsTrayController:
         height = min(self.panel_height(), max(240, bottom - top - 24))
         self.window.resize(PANEL_WIDTH, height)
         position = anchor if anchor is not None else self._default_window_position(
-            work_area, height
+            work_area, height, _taskbar_edge()
         )
         self.window.move(*self._clamp_window_position(position, work_area, height))
         self._positioned_this_show = True

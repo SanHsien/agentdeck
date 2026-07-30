@@ -1015,3 +1015,45 @@ def test_tray_menu_offers_the_ai_council() -> None:
     labels = [getattr(item, "text", None) for item in menu]
 
     assert _t(controller.language, "discussion_window_title") in labels
+
+
+@pytest.mark.parametrize(
+    ("edge", "expected"),
+    [
+        ("bottom", (1315, 340)),  # tray bottom-right: panel bottom-right
+        ("top", (1315, 12)),  # tray top-right: panel must not open at the far corner
+        ("left", (12, 340)),  # tray bottom-left: hug the left edge
+        ("right", (1315, 340)),  # tray right: right edge, same as bottom
+    ],
+)
+def test_default_position_follows_the_taskbar_edge(
+    edge: str, expected: tuple[int, int]
+) -> None:
+    # The panel floats and remembers where it is dragged, so this only picks the
+    # first-run corner — but bottom-right is only near the tray when the taskbar
+    # is at the bottom. With the taskbar on top the old default opened the panel
+    # at the opposite corner from the icon the user had just clicked.
+    work_area = (0, 0, 1707, 912)
+
+    assert (
+        wintray._WindowsTrayController._default_window_position(work_area, 560, edge) == expected
+    )
+
+
+def test_default_position_assumes_bottom_when_the_edge_is_unknown() -> None:
+    work_area = (0, 0, 1707, 912)
+
+    assert wintray._WindowsTrayController._default_window_position(
+        work_area, 560, "nonsense"
+    ) == wintray._WindowsTrayController._default_window_position(work_area, 560, "bottom")
+
+
+def test_taskbar_edge_is_bottom_off_windows(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("wintray.os.name", "posix")
+
+    assert wintray._taskbar_edge() == "bottom"
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="SHAppBarMessage is Windows-only")
+def test_taskbar_edge_reports_a_real_edge_on_windows() -> None:
+    assert wintray._taskbar_edge() in {"top", "bottom", "left", "right"}

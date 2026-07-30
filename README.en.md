@@ -91,7 +91,9 @@ The tray UI requires Microsoft Edge WebView2 Runtime, which is normally included
 
 The tray icon updates with your Claude quota percentage; its tooltip summarizes the Claude and Codex windows. Left-click opens the 10 quota themes in WebView2. Right-click provides panel switching, refresh, launch at login, check for updates, and quit.
 
-Known limits: the panel opens at the bottom-right of the working area rather than next to the tray icon (`Shell_NotifyIconGetRect` is not wired up yet); the update prompt uses a system three-button dialog whose button labels Windows controls, so the message body spells out which button means what; and the AI Talent Market ships this fork's own role definitions ([`personas/`](personas/)), which differ from upstream's closed set.
+The panel **does not anchor to the tray icon**, by design: it is a free-floating window that remembers where you put it and stays open when you click elsewhere. Its first-run corner follows the taskbar — top-right if the taskbar is on top, hugging the left edge if it is on the left — and after that your position wins. Upstream later moved to the same floating model for exactly this reason: anchoring made the panel impossible to place by hand.
+
+Known limits: the update prompt uses a system three-button dialog whose button labels Windows controls, so the message body spells out which button means what; and the AI Talent Market ships this fork's own role definitions ([`personas/`](personas/)), which differ from upstream's closed set.
 
 ## Running from Source
 
