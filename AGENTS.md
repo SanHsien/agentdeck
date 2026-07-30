@@ -1,6 +1,6 @@
 # AGENTS.md
 
-給 AI agent（Codex、Claude Code、Gemini 等）在 **SanHsien/usage** 工作時的指引。
+給 AI agent（Codex、Claude Code、Gemini 等）在 **SanHsien/agentdeck** 工作時的指引。
 
 專案本身的架構說明在 [`CLAUDE.md`](CLAUDE.md)。這份文件補 fork 專屬的規則與 Windows 開發環境差異。
 
@@ -39,7 +39,7 @@ macOS 專屬的 commit 一律不採用，但仍要進 Skipped 表，理由寫「
 ## 這是 fork，但獨立維護
 
 - 上游：[`aqua5230/usage`](https://github.com/aqua5230/usage)（AGPL-3.0-only）。
-- 本 repo：[`SanHsien/usage`](https://github.com/SanHsien/usage)，remote `origin`；上游掛在 remote `upstream`（唯讀）。
+- 本 repo：[`SanHsien/agentdeck`](https://github.com/SanHsien/agentdeck)，remote `origin`；上游掛在 remote `upstream`（唯讀）。
 - **不回貢上游**。`main` 自由發展，允許與上游分叉；要不要撿上游的更新是選擇性的。
 - 因此**沒有「不准改上游檔案」這條限制**——任何檔案都可以改，包含 `CLAUDE.md`、`README*`、`.py`、`.github/`。要撿上游更新時再處理衝突即可。詳見 [`docs/FORK.zh-TW.md`](docs/FORK.zh-TW.md)。
 
@@ -60,8 +60,9 @@ macOS 專屬的 commit 一律不採用，但仍要進 Skipped 表，理由寫「
 | README 其他語言 | 另有 `zh-CN` / `ja` / `ko` 三版 | **已刪除**，不要重新加回 |
 | `scripts/check_doc_parity.py` | `DOC_PAIRS` 比對 `README.md` ↔ `README.zh-TW.md` | 改為 `README.en.md` ↔ `README.md` |
 | 其他文件（CONTRIBUTING / SECURITY / CHANGELOG / docs/DEVELOPMENT） | 英文為預設 `.md`，中文為 `.zh-TW.md` | **維持不變** |
+| 產品名稱與落地檔名 | `usage` / `~/.usage/` / `usage-statusline.py` | **`agentdeck`** / `~/.agentdeck/` / `agentdeck-statusline.py`（見 `docs/DECISIONS.md` D-09） |
 
-新增檔案（上游沒有）：`AGENTS.md`、`SKILL.md`、`NOTICE.md`、`REPO_REVIEW.md`、`persona_store.py`、`personas/`、`discussion_window_win.py`、`discussion_assets.py`、`docs/FORK.zh-TW.md`、`docs/DECISIONS.md`、`docs/DEVELOPMENT.win.zh-TW.md`、`docs/PORTING.zh-TW.md`、`docs/UPSTREAM.md`、`tools/`、`reference/`、`.pre-commit-config.yaml`、`.claude/settings.json`。
+新增檔案（上游沒有）：`AGENTS.md`、`SKILL.md`、`NOTICE.md`、`REPO_REVIEW.md`、`persona_store.py`、`personas/`、`discussion_window_win.py`、`discussion_assets.py`、`docs/FORK.zh-TW.md`、`docs/DECISIONS.md`、`docs/DEVELOPMENT.zh-TW.md`、`docs/PORTING.zh-TW.md`、`docs/UPSTREAM.md`、`tools/`、`reference/`、`.pre-commit-config.yaml`、`.claude/settings.json`。
 
 **有取捨的決定寫進 [`docs/DECISIONS.md`](docs/DECISIONS.md)**，不要只留在 commit message 裡——那是為了避免日後重複討論同一個問題。
 
@@ -73,7 +74,7 @@ macOS 專屬的 commit 一律不採用，但仍要進 Skipped 表，理由寫「
 - `wintray.py` 有成長政策：新功能的**邏輯**放中立 leaf module（`menubar_state.py`、`update_gate.py` 之類），`wintray.py` 只留薄薄的 UI 外殼。理由是外殼裡的判斷測不到——見 [`docs/PORTING.zh-TW.md`](docs/PORTING.zh-TW.md) 第三節。
 - 所有使用者可見字串必須走 `i18n.json` 的 `_t()` / JS `t()`。**本 fork 只出貨繁體中文與英文**（上游是五語），新增字串時 `zh-TW` 與 `en` 兩段都要補齊，`tests/test_i18n_key_parity.py` 會擋。
 - **兩語言的判定邏輯散在五個檔案**：`usage_lang._normalize_lang()` 是主程式的版本；`usage_statusline.py`、`usage_session_resume.py`、`usage_terse_mode.py`、`usage_terse_reminder.py` 因為必須 stdlib-only、不能 import `usage_lang`，各自帶一份複本；`session_hooks.py` 另有 `RESUME_LANGS` / `TERSE_LANGS`。**改一個就要改全部**。規則：所有中文語系（含簡體）→ `zh-TW`，其餘 → `en`。
-- **改版號時不要跑 `uv lock`**：手動改 `uv.lock` 裡 `usage` 那一行的 `version` 即可，零解析風險。`pyproject.toml` 的 `[tool.uv] environments` 現在只鎖 win32 與 linux。
+- **改版號時不要跑 `uv lock`**：手動改 `uv.lock` 裡 `agentdeck` 那一行的 `version` 即可，零解析風險。`pyproject.toml` 的 `[tool.uv] environments` 現在只鎖 win32 與 linux。
 
 ## 常用指令（Windows / PowerShell）
 
@@ -83,7 +84,7 @@ uv run --no-sync ruff check
 uv run --no-sync mypy .
 uv run --no-sync pytest -q
 uv run --no-sync pytest tests/test_usage_client.py::test_name -v   # 單一測試
-pwsh tools/dev_check.ps1                        # 一次跑完三道 gate
+pwsh tools/dev_check.ps1                        # 一次跑完四道閘門
 ```
 
 跑程式：

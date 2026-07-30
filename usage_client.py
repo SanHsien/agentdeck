@@ -23,7 +23,7 @@ from usage_lang import detect_lang
 
 logger = logging.getLogger(__name__)
 
-STATUS_FILE = os.path.expanduser("~/.claude/usage-status.json")
+STATUS_FILE = os.path.expanduser("~/.claude/agentdeck-status.json")
 LEGACY_STATUS_FILE = os.path.expanduser("~/.claude/usag-status.json")
 TT_STATUS_FILE = os.path.expanduser("~/.claude/tt-status.json")
 CLAUDE_JSON_FILE = os.path.expanduser("~/.claude.json")
@@ -120,7 +120,7 @@ def _iso_timestamp(value: Any) -> float | None:
 
 
 def _read_status_file() -> tuple[dict[str, Any], str, float] | None:
-    """Read the first available status JSON, preferring usage-owned files."""
+    """Read the first available status JSON, preferring agentdeck-owned files."""
     for path in (STATUS_FILE, LEGACY_STATUS_FILE, TT_STATUS_FILE):
         try:
             mtime = os.stat(path).st_mtime
@@ -130,12 +130,12 @@ def _read_status_file() -> tuple[dict[str, Any], str, float] | None:
             with open(path, encoding="utf-8") as f:
                 data = json.load(f)
         except (OSError, json.JSONDecodeError, UnicodeDecodeError):
-            if os.environ.get("USAGE_DEBUG") == "1":
+            if os.environ.get("AGENTDECK_DEBUG") == "1":
                 logger.warning("failed to read status file %s", path, exc_info=True)
             continue
         if isinstance(data, dict):
             return data, path, mtime
-        if os.environ.get("USAGE_DEBUG") == "1":
+        if os.environ.get("AGENTDECK_DEBUG") == "1":
             logger.warning("status file %s is not a JSON object", path)
     return None
 

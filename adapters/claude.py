@@ -192,7 +192,7 @@ def _parse_assistant_entry(data: dict[str, Any], project: str) -> UsageEntry | N
 
 
 def _debug_file_error(action: str, path: Path, exc: Exception) -> None:
-    if os.environ.get("USAGE_DEBUG") == "1":
+    if os.environ.get("AGENTDECK_DEBUG") == "1":
         print(f"{action} {path}: {exc}", file=sys.stderr)
 
 

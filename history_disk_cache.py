@@ -189,5 +189,5 @@ def flush_caches(
             else:
                 path.unlink(missing_ok=True)
     except Exception as exc:
-        if os.environ.get("USAGE_DEBUG") == "1":
+        if os.environ.get("AGENTDECK_DEBUG") == "1":
             logger.warning("failed to write history jsonl cache %s: %s", cache_path, exc)

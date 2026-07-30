@@ -116,7 +116,7 @@ def test_unsetup_without_install_is_safe_and_is_usage_hook_detects_commands(
     _ = setup_paths
 
     assert setup_hook.unsetup() == 0
-    assert setup_hook._is_usage_hook({"command": "python3 /tmp/usage-statusline.py"})
+    assert setup_hook._is_usage_hook({"command": "python3 /tmp/agentdeck-statusline.py"})
     assert not setup_hook._is_usage_hook({"command": "python3 /tmp/other.py"})
 
 
@@ -275,21 +275,21 @@ def test_windows_hook_commands_use_double_quotes(monkeypatch: pytest.MonkeyPatch
     monkeypatch.setattr(
         setup_hook,
         "HOOK_TARGET",
-        Path(r"C:\Users\test user\.claude\usage-statusline.py"),
+        Path(r"C:\Users\test user\.claude\agentdeck-statusline.py"),
     )
     monkeypatch.setattr(
         setup_hook,
         "FORWARDER_TARGET",
-        Path(r"C:\Users\test user\.claude\usage-statusline-forwarder.py"),
+        Path(r"C:\Users\test user\.claude\agentdeck-statusline-forwarder.py"),
     )
 
     assert setup_hook._statusline_command() == (
         '"C:/Program Files/Python/python.exe" '
-        '"C:/Users/test user/.claude/usage-statusline.py"'
+        '"C:/Users/test user/.claude/agentdeck-statusline.py"'
     )
     assert setup_hook._forwarder_command() == (
         '"C:/Program Files/Python/python.exe" '
-        '"C:/Users/test user/.claude/usage-statusline-forwarder.py"'
+        '"C:/Users/test user/.claude/agentdeck-statusline-forwarder.py"'
     )
 
 
@@ -352,7 +352,7 @@ def test_setup_codex_replaces_only_tui_status_line(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     codex_config = tmp_path / ".codex" / "config.toml"
-    codex_backup = tmp_path / ".codex" / "usage-backup.json"
+    codex_backup = tmp_path / ".codex" / "agentdeck-backup.json"
     codex_config.parent.mkdir()
     codex_config.write_text(
         """
@@ -383,7 +383,7 @@ def test_setup_codex_ignores_tui_text_outside_table(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     codex_config = tmp_path / ".codex" / "config.toml"
-    codex_backup = tmp_path / ".codex" / "usage-backup.json"
+    codex_backup = tmp_path / ".codex" / "agentdeck-backup.json"
     codex_config.parent.mkdir()
     codex_config.write_text(
         '''
@@ -431,7 +431,7 @@ def test_unsetup_codex_removes_only_tui_status_line_without_backup(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     codex_config = tmp_path / ".codex" / "config.toml"
-    codex_backup = tmp_path / ".codex" / "usage-backup.json"
+    codex_backup = tmp_path / ".codex" / "agentdeck-backup.json"
     legacy_backup = tmp_path / ".codex" / "tt-backup.json"
     codex_config.parent.mkdir()
     codex_config.write_text(
@@ -463,7 +463,7 @@ def test_unsetup_codex_keeps_backup_when_restore_write_fails(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     codex_config = tmp_path / ".codex" / "config.toml"
-    codex_backup = tmp_path / ".codex" / "usage-backup.json"
+    codex_backup = tmp_path / ".codex" / "agentdeck-backup.json"
     legacy_backup = tmp_path / ".codex" / "tt-backup.json"
     codex_config.parent.mkdir()
     codex_config.write_text('[tui]\nstatus_line = ["old"]\n', encoding="utf-8")
@@ -514,7 +514,7 @@ def test_unsetup_codex_bad_utf8_backup_falls_back_to_empty_status_line(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     codex_config = tmp_path / ".codex" / "config.toml"
-    codex_backup = tmp_path / ".codex" / "usage-backup.json"
+    codex_backup = tmp_path / ".codex" / "agentdeck-backup.json"
     legacy_backup = tmp_path / ".codex" / "tt-backup.json"
     codex_config.parent.mkdir()
     codex_config.write_text('[tui]\nstatus_line = ["old"]\n', encoding="utf-8")
@@ -589,7 +589,7 @@ def test_self_heal_migrates_bundled_python_commands(
     resume_source = tmp_path / "usage_session_resume.py"
     resume_source.write_text('__version__ = "1.0"\n', encoding="utf-8")
     monkeypatch.setattr(session_hooks, "_resolve_resume_source", lambda: resume_source)
-    resume_target = tmp_path / ".claude" / "usage-session-resume.py"
+    resume_target = tmp_path / ".claude" / "agentdeck-session-resume.py"
     monkeypatch.setattr(session_hooks, "RESUME_HOOK_TARGET", resume_target)
     settings.write_text(
         json.dumps(
@@ -642,7 +642,7 @@ def test_self_heal_keeps_correct_python_commands_unchanged(
 ) -> None:
     settings = setup_paths.settings
     hook_target = setup_paths.hook_target
-    resume_target = tmp_path / ".claude" / "usage-session-resume.py"
+    resume_target = tmp_path / ".claude" / "agentdeck-session-resume.py"
     monkeypatch.setattr(session_hooks, "RESUME_HOOK_TARGET", resume_target)
     resume_command = session_hooks._resume_command()
     settings.write_text(

@@ -60,7 +60,7 @@ MAX_CONCURRENT_PROCESSES = 4
 DELTA_FLUSH_CHARS = 128
 DELTA_FLUSH_SECONDS = 0.05
 GUIDANCE_TIMEOUT_SECONDS = 300.0
-DISCUSSIONS_DIRECTORY = Path("~/.usage/discussions").expanduser()
+DISCUSSIONS_DIRECTORY = Path("~/.agentdeck/discussions").expanduser()
 
 ParticipantSource = Literal["builtin", "argv", "login_shell"]
 AdapterFactory = Callable[["ParticipantSpec"], CLIAdapter]
@@ -991,7 +991,7 @@ class DiscussionBridge:
                 _render_discussion_markdown(snapshot), encoding="utf-8"
             )
         except Exception:
-            if os.environ.get("USAGE_DEBUG") == "1":
+            if os.environ.get("AGENTDECK_DEBUG") == "1":
                 logger.warning("failed to archive discussion %s", session_id, exc_info=True)
             return
 

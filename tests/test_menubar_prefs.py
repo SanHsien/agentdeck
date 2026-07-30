@@ -64,7 +64,7 @@ def test_quota_card_order_validates_preferences() -> None:
 def test_save_quota_card_order_ignores_invalid_values(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    preferences_file = tmp_path / "usage-preferences.json"
+    preferences_file = tmp_path / "agentdeck-preferences.json"
     monkeypatch.setattr(prefs, "PREFERENCES_FILE", preferences_file)
 
     assert menubar_prefs._save_quota_card_order(["agy", "claude", "codex"]) is True

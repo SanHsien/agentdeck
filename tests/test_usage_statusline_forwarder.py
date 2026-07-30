@@ -46,8 +46,8 @@ def test_main_fans_stdin_out_to_all_hooks(
     calls: list[tuple[list[str], str, int]] = []
     hooks = [
         "/tmp/claude-statusline.py",
-        "/tmp/usage-statusline-forwarder.py",
-        "/tmp/usage-statusline.py",
+        "/tmp/agentdeck-statusline-forwarder.py",
+        "/tmp/agentdeck-statusline.py",
     ]
 
     def fake_run(
@@ -76,10 +76,12 @@ def test_main_fans_stdin_out_to_all_hooks(
     usage_statusline_forwarder.main()
 
     assert calls == [
+        # Fan-out order is alphabetical — the forwarder globs and sorts — so
+        # agentdeck- sorts ahead of claude-, where usage- used to follow it.
+        ([sys.executable, "/tmp/agentdeck-statusline.py"], '{"session_id":"abc"}', 5),
         ([sys.executable, "/tmp/claude-statusline.py"], '{"session_id":"abc"}', 5),
-        ([sys.executable, "/tmp/usage-statusline.py"], '{"session_id":"abc"}', 5),
     ]
-    assert capsys.readouterr().out == "/tmp/claude-statusline.py\n/tmp/usage-statusline.py\n"
+    assert capsys.readouterr().out == "/tmp/agentdeck-statusline.py\n/tmp/claude-statusline.py\n"
 
 
 def test_main_reads_utf8_bytes_when_stdin_uses_cp950(

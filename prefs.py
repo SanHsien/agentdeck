@@ -13,7 +13,7 @@ from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
-PREFERENCES_FILE = Path(os.path.expanduser("~/.claude/usage-preferences.json"))
+PREFERENCES_FILE = Path(os.path.expanduser("~/.claude/agentdeck-preferences.json"))
 
 
 def _load_preferences(path: Path | None = None) -> dict[str, Any]:

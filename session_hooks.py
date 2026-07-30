@@ -51,12 +51,12 @@ CODEX_CONFIG = setup_hook.CODEX_CONFIG
 
 # Ceiling C — opt-in SessionStart hook that injects "where you left off" into a new
 # session. Off by default: enabled only via the menu toggle, never by self_heal.
-RESUME_HOOK_TARGET = Path(os.path.expanduser("~/.claude/usage-session-resume.py"))
-RESUME_PROMPT_SIDECAR = Path(os.path.expanduser("~/.claude/usage-resume-prompt.json"))
+RESUME_HOOK_TARGET = Path(os.path.expanduser("~/.claude/agentdeck-session-resume.py"))
+RESUME_PROMPT_SIDECAR = Path(os.path.expanduser("~/.claude/agentdeck-resume-prompt.json"))
 RESUME_HOOK_VERSION = "1.6"
 RESUME_MATCHER = "startup|clear"
 RESUME_LANGS = ("zh-TW", "en")
-_RESUME_MARKER = "usage-session-resume"
+_RESUME_MARKER = "agentdeck-session-resume"
 _RESUME_MARKERS = (_RESUME_MARKER, "usage_session_resume")
 _RESUME_DIAGNOSIS_CAUSE_KEYS = (
     "repeated_reads",
@@ -65,25 +65,25 @@ _RESUME_DIAGNOSIS_CAUSE_KEYS = (
     "noisy_bash",
     "repeated_bash",
 )
-TERSE_HOOK_TARGET = Path(os.path.expanduser("~/.claude/usage-terse-mode.py"))
-TERSE_PROMPT_SIDECAR = Path(os.path.expanduser("~/.claude/usage-terse-prompt.json"))
+TERSE_HOOK_TARGET = Path(os.path.expanduser("~/.claude/agentdeck-terse-mode.py"))
+TERSE_PROMPT_SIDECAR = Path(os.path.expanduser("~/.claude/agentdeck-terse-prompt.json"))
 TERSE_HOOK_VERSION = "1.0"
 TERSE_MATCHER = "startup|clear"
 TERSE_LANGS = ("zh-TW", "en")
-_TERSE_MARKER = "usage-terse-mode"
+_TERSE_MARKER = "agentdeck-terse-mode"
 _TERSE_MARKERS = (_TERSE_MARKER, "usage_terse_mode")
 # Codex CLI shares the same terse-mode script (its SessionStart hook I/O schema matches Claude
 # Code's). Installed into the user-global ~/.codex so one toggle covers both tools.
-CODEX_TERSE_HOOK_TARGET = Path(os.path.expanduser("~/.codex/usage-terse-mode.py"))
+CODEX_TERSE_HOOK_TARGET = Path(os.path.expanduser("~/.codex/agentdeck-terse-mode.py"))
 CODEX_HOOKS_JSON = Path(os.path.expanduser("~/.codex/hooks.json"))
 CODEX_TERSE_MATCHER = "startup|resume|clear"
 _FEATURES_HOOKS_REGEX = re.compile(r"(?m)^[ \t]*hooks\s*=\s*[A-Za-z0-9_]+")
 # Per-message tail reminder — a UserPromptSubmit hook installed alongside the SessionStart
 # terse hook. Re-injects a one-line nudge on every prompt so the terse style holds across a
 # long conversation. Claude Code only — Codex CLI has no UserPromptSubmit equivalent.
-TERSE_REMINDER_HOOK_TARGET = Path(os.path.expanduser("~/.claude/usage-terse-reminder.py"))
+TERSE_REMINDER_HOOK_TARGET = Path(os.path.expanduser("~/.claude/agentdeck-terse-reminder.py"))
 TERSE_REMINDER_MATCHER = ""
-_TERSE_REMINDER_MARKER = "usage-terse-reminder"
+_TERSE_REMINDER_MARKER = "agentdeck-terse-reminder"
 _TERSE_REMINDER_MARKERS = (_TERSE_REMINDER_MARKER, "usage_terse_reminder")
 
 
@@ -98,13 +98,13 @@ def _migrate_bundled_python_commands_if_needed(
     if isinstance(sl, dict):
         command = sl.get("command")
         if isinstance(command, str) and _uses_bundled_app_python(command):
-            if "usage-statusline-forwarder" in command:
+            if "agentdeck-statusline-forwarder" in command:
                 new_command = _forwarder_command()
                 if command != new_command:
                     sl["command"] = new_command
                     changed = True
                     details.append("statusLine=forwarder")
-            elif "usage-statusline" in command:
+            elif "agentdeck-statusline" in command:
                 new_command = _statusline_command()
                 if command != new_command:
                     sl["command"] = new_command
@@ -381,7 +381,7 @@ def _is_resume_entry(entry: object) -> bool:
 
 
 def _strip_resume_hooks(entry: object) -> object | None:
-    """Return ``entry`` with usage-owned resume hooks removed.
+    """Return ``entry`` with agentdeck-owned resume hooks removed.
 
     Removes only the resume hook *item*, not the whole entry, so a user who put their
     own hook in the same SessionStart entry doesn't lose it when we disable. Returns
@@ -1074,7 +1074,7 @@ def _append_self_heal_log(action: str, detail: str) -> None:
 
 
 def _run_quietly(func: Any, *args: Any, **kwargs: Any) -> Any:
-    if os.environ.get("USAGE_DEBUG") == "1":
+    if os.environ.get("AGENTDECK_DEBUG") == "1":
         return func(*args, **kwargs)
     output = io.StringIO()
     with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
@@ -1082,12 +1082,12 @@ def _run_quietly(func: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 def _debug_self_heal_failure(action: str, exc: BaseException) -> None:
-    if os.environ.get("USAGE_DEBUG") == "1":
+    if os.environ.get("AGENTDECK_DEBUG") == "1":
         print(f"usage self-heal {action} failed: {type(exc).__name__}: {exc}", file=sys.stderr)
 
 
 def self_heal() -> None:
-    """Best-effort startup repair for usage-owned Claude statusLine hooks."""
+    """Best-effort startup repair for agentdeck-owned Claude statusLine hooks."""
     try:
         settings = _load_settings()
         state = _detect_current_state(settings)

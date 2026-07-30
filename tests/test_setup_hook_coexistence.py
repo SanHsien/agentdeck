@@ -87,7 +87,7 @@ def test_install_when_forwarder_already_exists(
 def test_forwarder_calls_all_hooks(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     for name in ("a-statusline.py", "b-statusline.py", "c-statusline.py"):
         (tmp_path / name).write_text("", encoding="utf-8")
-    (tmp_path / "usage-statusline-forwarder.py").write_text("", encoding="utf-8")
+    (tmp_path / "agentdeck-statusline-forwarder.py").write_text("", encoding="utf-8")
 
     calls: list[list[str]] = []
 
@@ -141,7 +141,7 @@ def test_health_check_triggers_repair_when_displaced(
         encoding="utf-8",
     )
     hook_target.write_text("print('installed')\n", encoding="utf-8")
-    monkeypatch.setattr(main, "PREFERENCES_FILE", tmp_path / "usage-preferences.json")
+    monkeypatch.setattr(main, "PREFERENCES_FILE", tmp_path / "agentdeck-preferences.json")
     monkeypatch.setattr(main, "_show_repair_dialog", lambda: "repair")
     calls: list[bool] = []
 
@@ -163,13 +163,11 @@ def test_health_check_triggers_repair_when_hook_detection_raises(
 ) -> None:
     settings = setup_paths.settings
     hook_target = setup_paths.hook_target
-    settings.write_text(
-        json.dumps({"statusLine": {"type": "command", "command": "python3 usage-statusline.py"}}),
-        encoding="utf-8",
-    )
+    existing = {"type": "command", "command": "python3 agentdeck-statusline.py"}
+    settings.write_text(json.dumps({"statusLine": existing}), encoding="utf-8")
     hook_target.write_text("print('installed')\n", encoding="utf-8")
-    (tmp_path / ".claude" / "usage-status.json").write_text("{}", encoding="utf-8")
-    monkeypatch.setattr(main, "PREFERENCES_FILE", tmp_path / "usage-preferences.json")
+    (tmp_path / ".claude" / "agentdeck-status.json").write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(main, "PREFERENCES_FILE", tmp_path / "agentdeck-preferences.json")
     monkeypatch.setattr(
         setup_hook,
         "_detect_current_state",
@@ -195,11 +193,11 @@ def test_health_check_does_not_prompt_on_first_run_when_hook_detection_raises(
     setup_paths: SetupHookPaths,
 ) -> None:
     _ = setup_paths
-    monkeypatch.setattr(main, "PREFERENCES_FILE", tmp_path / "usage-preferences.json")
+    monkeypatch.setattr(main, "PREFERENCES_FILE", tmp_path / "agentdeck-preferences.json")
     monkeypatch.setattr(
         usage_client,
         "STATUS_FILE",
-        str(tmp_path / ".claude" / "usage-status.json"),
+        str(tmp_path / ".claude" / "agentdeck-status.json"),
     )
     monkeypatch.setattr(
         setup_hook,
@@ -223,7 +221,7 @@ def test_health_check_does_not_prompt_on_first_run_when_hook_detection_raises(
 def test_save_preferences_is_atomic_when_replace_fails(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    prefs_file = tmp_path / "usage-preferences.json"
+    prefs_file = tmp_path / "agentdeck-preferences.json"
     prefs_file.write_text('{"existing": true}\n', encoding="utf-8")
     monkeypatch.setattr(main, "PREFERENCES_FILE", prefs_file)
 

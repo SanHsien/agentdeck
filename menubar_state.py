@@ -592,7 +592,7 @@ def codex_rows(
             else codex_loader.load_rate_limits(jsonl_candidates=jsonl_candidates)
         )
     except Exception:
-        if os.environ.get("USAGE_DEBUG") == "1":
+        if os.environ.get("AGENTDECK_DEBUG") == "1":
             logger.warning("codex rate limits load failed", exc_info=True)
         rate_limits = None
 

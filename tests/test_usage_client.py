@@ -56,7 +56,7 @@ def _write_claude_json(path: Path, fetched_at: float) -> None:
 def test_read_status_file_returns_none_when_both_paths_missing(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setattr(usage_client, "STATUS_FILE", str(tmp_path / "usage-status.json"))
+    monkeypatch.setattr(usage_client, "STATUS_FILE", str(tmp_path / "agentdeck-status.json"))
     monkeypatch.setattr(usage_client, "LEGACY_STATUS_FILE", str(tmp_path / f"{LEGACY_NAME}.json"))
     monkeypatch.setattr(usage_client, "TT_STATUS_FILE", str(tmp_path / "tt-status.json"))
 
@@ -66,7 +66,7 @@ def test_read_status_file_returns_none_when_both_paths_missing(
 def test_read_status_file_skips_bad_json_and_prefers_usage_file(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    usage_path = tmp_path / "usage-status.json"
+    usage_path = tmp_path / "agentdeck-status.json"
     tt_path = tmp_path / "tt-status.json"
     monkeypatch.setattr(usage_client, "STATUS_FILE", str(usage_path))
     monkeypatch.setattr(usage_client, "LEGACY_STATUS_FILE", str(tmp_path / f"{LEGACY_NAME}.json"))
@@ -91,7 +91,7 @@ def test_read_status_file_skips_bad_encoding(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     # A half-written or non-UTF-8 status file must be skipped, not crash the poll loop.
-    usage_path = tmp_path / "usage-status.json"
+    usage_path = tmp_path / "agentdeck-status.json"
     tt_path = tmp_path / "tt-status.json"
     monkeypatch.setattr(usage_client, "STATUS_FILE", str(usage_path))
     monkeypatch.setattr(usage_client, "LEGACY_STATUS_FILE", str(tmp_path / f"{LEGACY_NAME}.json"))
@@ -116,7 +116,7 @@ def test_read_status_file_prefers_legacy_over_tt_compat(
 ) -> None:
     legacy_path = tmp_path / f"{LEGACY_NAME}-status.json"
     tt_path = tmp_path / "tt-status.json"
-    monkeypatch.setattr(usage_client, "STATUS_FILE", str(tmp_path / "usage-status.json"))
+    monkeypatch.setattr(usage_client, "STATUS_FILE", str(tmp_path / "agentdeck-status.json"))
     monkeypatch.setattr(usage_client, "LEGACY_STATUS_FILE", str(legacy_path))
     monkeypatch.setattr(usage_client, "TT_STATUS_FILE", str(tt_path))
 
@@ -141,7 +141,7 @@ def test_read_status_file_prefers_legacy_over_tt_compat(
 def test_read_status_file_returns_none_for_bad_usage_json(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    usage_path = tmp_path / "usage-status.json"
+    usage_path = tmp_path / "agentdeck-status.json"
     tt_path = tmp_path / "tt-status.json"
     monkeypatch.setattr(usage_client, "STATUS_FILE", str(usage_path))
     monkeypatch.setattr(usage_client, "LEGACY_STATUS_FILE", str(tmp_path / f"{LEGACY_NAME}.json"))
@@ -157,11 +157,11 @@ def test_read_status_file_logs_bad_json_in_debug_mode(
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    usage_path = tmp_path / "usage-status.json"
+    usage_path = tmp_path / "agentdeck-status.json"
     monkeypatch.setattr(usage_client, "STATUS_FILE", str(usage_path))
     monkeypatch.setattr(usage_client, "LEGACY_STATUS_FILE", str(tmp_path / f"{LEGACY_NAME}.json"))
     monkeypatch.setattr(usage_client, "TT_STATUS_FILE", str(tmp_path / "tt-status.json"))
-    monkeypatch.setenv("USAGE_DEBUG", "1")
+    monkeypatch.setenv("AGENTDECK_DEBUG", "1")
     usage_path.write_text("{bad json", encoding="utf-8")
 
     with caplog.at_level(logging.WARNING):
@@ -287,7 +287,7 @@ def test_fetch_once_mock_returns_success_with_expected_snapshot() -> None:
 def test_fetch_once_without_status_file_returns_non_success(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setattr(usage_client, "STATUS_FILE", str(tmp_path / "usage-status.json"))
+    monkeypatch.setattr(usage_client, "STATUS_FILE", str(tmp_path / "agentdeck-status.json"))
     monkeypatch.setattr(usage_client, "LEGACY_STATUS_FILE", str(tmp_path / f"{LEGACY_NAME}.json"))
     monkeypatch.setattr(usage_client, "TT_STATUS_FILE", str(tmp_path / "tt-status.json"))
 
@@ -302,7 +302,7 @@ def test_fetch_once_uses_claude_json_when_status_is_missing(
 ) -> None:
     fetched_at = 1_784_144_611.575
     claude_json_path = tmp_path / ".claude.json"
-    monkeypatch.setattr(usage_client, "STATUS_FILE", str(tmp_path / "usage-status.json"))
+    monkeypatch.setattr(usage_client, "STATUS_FILE", str(tmp_path / "agentdeck-status.json"))
     monkeypatch.setattr(usage_client, "LEGACY_STATUS_FILE", str(tmp_path / "legacy.json"))
     monkeypatch.setattr(usage_client, "TT_STATUS_FILE", str(tmp_path / "tt-status.json"))
     monkeypatch.setattr(usage_client, "CLAUDE_JSON_FILE", str(claude_json_path))
@@ -329,7 +329,7 @@ def test_fetch_once_prefers_complete_hook_over_claude_json_cache(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, status_age: float
 ) -> None:
     fetched_at = 1_784_144_611.575
-    status_path = tmp_path / "usage-status.json"
+    status_path = tmp_path / "agentdeck-status.json"
     claude_json_path = tmp_path / ".claude.json"
     monkeypatch.setattr(usage_client, "STATUS_FILE", str(status_path))
     monkeypatch.setattr(usage_client, "LEGACY_STATUS_FILE", str(tmp_path / "legacy.json"))
@@ -351,7 +351,7 @@ def test_fetch_once_uses_claude_json_when_hook_percentage_is_invalid(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, invalid_percentage: object
 ) -> None:
     fetched_at = 1_784_144_611.575
-    status_path = tmp_path / "usage-status.json"
+    status_path = tmp_path / "agentdeck-status.json"
     claude_json_path = tmp_path / ".claude.json"
     monkeypatch.setattr(usage_client, "STATUS_FILE", str(status_path))
     monkeypatch.setattr(usage_client, "LEGACY_STATUS_FILE", str(tmp_path / "legacy.json"))
@@ -387,7 +387,7 @@ def test_invalid_claude_json_preserves_missing_status_error(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, contents: str
 ) -> None:
     claude_json_path = tmp_path / ".claude.json"
-    monkeypatch.setattr(usage_client, "STATUS_FILE", str(tmp_path / "usage-status.json"))
+    monkeypatch.setattr(usage_client, "STATUS_FILE", str(tmp_path / "agentdeck-status.json"))
     monkeypatch.setattr(usage_client, "LEGACY_STATUS_FILE", str(tmp_path / "legacy.json"))
     monkeypatch.setattr(usage_client, "TT_STATUS_FILE", str(tmp_path / "tt-status.json"))
     monkeypatch.setattr(usage_client, "CLAUDE_JSON_FILE", str(claude_json_path))
@@ -401,7 +401,7 @@ def test_invalid_claude_json_preserves_missing_status_error(
 def test_invalid_claude_json_preserves_incomplete_status_loading(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    status_path = tmp_path / "usage-status.json"
+    status_path = tmp_path / "agentdeck-status.json"
     claude_json_path = tmp_path / ".claude.json"
     monkeypatch.setattr(usage_client, "STATUS_FILE", str(status_path))
     monkeypatch.setattr(usage_client, "LEGACY_STATUS_FILE", str(tmp_path / "legacy.json"))
@@ -419,7 +419,7 @@ def test_invalid_claude_json_preserves_incomplete_status_loading(
 def test_fetch_once_returns_awaiting_rate_limits_when_status_has_no_limits(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    status_path = tmp_path / "usage-status.json"
+    status_path = tmp_path / "agentdeck-status.json"
     monkeypatch.setattr(usage_client, "STATUS_FILE", str(status_path))
     monkeypatch.setattr(usage_client, "LEGACY_STATUS_FILE", str(tmp_path / f"{LEGACY_NAME}.json"))
     monkeypatch.setattr(usage_client, "TT_STATUS_FILE", str(tmp_path / "tt-status.json"))
@@ -434,7 +434,7 @@ def test_fetch_once_returns_awaiting_rate_limits_when_status_has_no_limits(
 def test_fetch_once_reuses_parsed_data_and_rebuilds_when_status_mtime_is_unchanged(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    status_path = tmp_path / "usage-status.json"
+    status_path = tmp_path / "agentdeck-status.json"
     monkeypatch.setattr(usage_client, "STATUS_FILE", str(status_path))
     monkeypatch.setattr(usage_client, "LEGACY_STATUS_FILE", str(tmp_path / f"{LEGACY_NAME}.json"))
     monkeypatch.setattr(usage_client, "TT_STATUS_FILE", str(tmp_path / "tt-status.json"))
@@ -516,7 +516,7 @@ def test_fetch_once_reuses_claude_json_snapshot_until_mtime_changes(
 def test_fetch_once_recomputes_stale_state_when_status_mtime_is_unchanged(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    status_path = tmp_path / "usage-status.json"
+    status_path = tmp_path / "agentdeck-status.json"
     monkeypatch.setattr(usage_client, "STATUS_FILE", str(status_path))
     monkeypatch.setattr(usage_client, "LEGACY_STATUS_FILE", str(tmp_path / f"{LEGACY_NAME}.json"))
     monkeypatch.setattr(usage_client, "TT_STATUS_FILE", str(tmp_path / "tt-status.json"))
@@ -578,7 +578,7 @@ def _patch_status_paths(
     tmp_path: Path,
     projects_dir: Path,
 ) -> Path:
-    status_path = tmp_path / "usage-status.json"
+    status_path = tmp_path / "agentdeck-status.json"
     monkeypatch.setattr(usage_client, "STATUS_FILE", str(status_path))
     monkeypatch.setattr(usage_client, "LEGACY_STATUS_FILE", str(tmp_path / f"{LEGACY_NAME}.json"))
     monkeypatch.setattr(usage_client, "TT_STATUS_FILE", str(tmp_path / "tt-status.json"))
@@ -752,7 +752,7 @@ def test_cached_claude_json_rezeroes_after_reset_passes(
     five_reset = datetime.fromisoformat("2026-07-16T08:29:59.915566+08:00").timestamp()
     seven_reset = datetime.fromisoformat("2026-07-17T04:59:59.915591+08:00").timestamp()
     claude_json_path = tmp_path / ".claude.json"
-    monkeypatch.setattr(usage_client, "STATUS_FILE", str(tmp_path / "usage-status.json"))
+    monkeypatch.setattr(usage_client, "STATUS_FILE", str(tmp_path / "agentdeck-status.json"))
     monkeypatch.setattr(usage_client, "LEGACY_STATUS_FILE", str(tmp_path / "legacy.json"))
     monkeypatch.setattr(usage_client, "TT_STATUS_FILE", str(tmp_path / "tt-status.json"))
     monkeypatch.setattr(usage_client, "CLAUDE_JSON_FILE", str(claude_json_path))

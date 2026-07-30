@@ -39,7 +39,7 @@ def _read_stdin_utf8() -> str:
     return cast(bytes, buffer.read()).decode("utf-8", "replace")
 
 
-PROMPT_SIDECAR = Path(os.path.expanduser("~/.claude/usage-terse-prompt.json"))
+PROMPT_SIDECAR = Path(os.path.expanduser("~/.claude/agentdeck-terse-prompt.json"))
 
 _DEFAULT_INSTRUCTION: dict[str, str] = {
     "zh-TW": (
@@ -101,7 +101,7 @@ def _windows_system_lang() -> str:
 
 
 def _detect_lang() -> str:
-    for key in ("USAGE_LANG", "TT_LANG", "LANG"):
+    for key in ("AGENTDECK_LANG", "TT_LANG", "LANG"):
         value = os.environ.get(key, "").strip()
         if value:
             return _normalize_lang(value)

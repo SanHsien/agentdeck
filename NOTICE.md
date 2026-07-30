@@ -33,7 +33,7 @@ AGPL-3.0 的重點義務（僅為摘要，以 `LICENSE` 全文為準）：
 ## fork 說明
 
 - 上游：<https://github.com/aqua5230/usage>
-- 本 fork：<https://github.com/SanHsien/usage>
+- 本 fork：<https://github.com/SanHsien/agentdeck>
 - fork 目的：個人使用與 Windows 環境相容性調整，獨立維護、不回貢上游。
 - fork 專屬檔案清單與同步流程見 [`docs/FORK.zh-TW.md`](docs/FORK.zh-TW.md)。
 - 本 fork 與上游維護者、Anthropic、OpenAI 皆無隸屬關係，也未獲其背書。

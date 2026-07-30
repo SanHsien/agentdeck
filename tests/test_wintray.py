@@ -219,7 +219,7 @@ def test_invalid_content_height_keeps_registered_fallback(
 def test_panel_position_is_clamped_and_persisted_on_hide(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    preferences_path = tmp_path / "usage-preferences.json"
+    preferences_path = tmp_path / "agentdeck-preferences.json"
     preferences_path.write_text(
         json.dumps({"usage.windowPosition": {"x": 5000, "y": -100}}), encoding="utf-8"
     )
@@ -249,7 +249,7 @@ def test_panel_position_is_clamped_and_persisted_on_hide(
 def test_reset_panel_position_clears_preference_and_repositions_visible_window(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    preferences_path = tmp_path / "usage-preferences.json"
+    preferences_path = tmp_path / "agentdeck-preferences.json"
     preferences_path.write_text(
         json.dumps({"usage.windowPosition": {"x": 123, "y": 234}}), encoding="utf-8"
     )
@@ -591,9 +591,9 @@ def test_run_app_wires_pystray_and_pywebview(
     wintray.run_app(mock=True, interval=60)
 
     assert events == [
-        ("window", "usage", True, "#eef2f7"),
+        ("window", "agentdeck", True, "#eef2f7"),
         "loaded_handler",
-        ("icon", "usage"),
+        ("icon", "agentdeck"),
         "run_detached",
         ("start", "edgechromium"),
     ]
@@ -1057,3 +1057,32 @@ def test_taskbar_edge_is_bottom_off_windows(monkeypatch: pytest.MonkeyPatch) -> 
 @pytest.mark.skipif(sys.platform != "win32", reason="SHAppBarMessage is Windows-only")
 def test_taskbar_edge_reports_a_real_edge_on_windows() -> None:
     assert wintray._taskbar_edge() in {"top", "bottom", "left", "right"}
+
+
+def test_explaining_a_feature_never_blocks_on_a_modal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Regression: _explain_feature used MessageBoxW, which blocks until someone
+    # clicks it. The toggles that call it run on daemon threads, so enabling a
+    # feature waited forever for a click — and it hung the whole test suite.
+    # Unsolicited information belongs in a tray balloon, not a modal.
+    notes: list[tuple[str, str]] = []
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+    controller.icon = SimpleNamespace(notify=lambda body, title: notes.append((body, title)))
+    monkeypatch.setattr(
+        controller,
+        "_message_box",
+        lambda *args, **kwargs: pytest.fail("_explain_feature must not open a modal"),
+    )
+
+    controller._explain_feature("terse_mode_tooltip")
+
+    assert notes, "the explanation was dropped instead of shown"
+    assert notes[0][0] == _t(controller.language, "terse_mode_tooltip")
+
+
+def test_explaining_a_feature_is_a_no_op_before_the_tray_exists() -> None:
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+    controller.icon = None
+
+    controller._explain_feature("terse_mode_tooltip")  # must not raise

@@ -2,7 +2,7 @@
 
 本倉庫 fork 自 [`aqua5230/usage`](https://github.com/aqua5230/usage)，但**獨立維護、不回貢上游**。這份文件講只有 fork 才需要知道的事：跟上游的關係、已經分叉了哪些地方、要撿上游更新時怎麼做。
 
-專案本身怎麼運作看 [`CLAUDE.md`](../CLAUDE.md)；Windows 開發環境看 [`DEVELOPMENT.win.zh-TW.md`](DEVELOPMENT.win.zh-TW.md)；agent 工作規則看 [`AGENTS.md`](../AGENTS.md)。
+專案本身怎麼運作看 [`CLAUDE.md`](../CLAUDE.md)；Windows 開發環境看 [`DEVELOPMENT.zh-TW.md`](DEVELOPMENT.zh-TW.md)；agent 工作規則看 [`AGENTS.md`](../AGENTS.md)。
 
 ## 定位
 
@@ -16,7 +16,7 @@
 ## Remote 配置
 
 ```
-origin    https://github.com/SanHsien/usage.git      (本 repo，可推)
+origin    https://github.com/SanHsien/agentdeck.git      (本 repo，可推)
 upstream  https://github.com/aqua5230/usage.git      (上游，唯讀)
 ```
 
@@ -37,16 +37,16 @@ git remote add upstream https://github.com/aqua5230/usage.git
 | README 預設語言 | 英文（`README.md`） | **繁體中文**（`README.md`），英文在 `README.en.md` |
 | README 其他語言 | 另有 `README.zh-CN.md` / `README.ja.md` / `README.ko.md` | **已刪除**，不要重新加回 |
 | `scripts/check_doc_parity.py` | `DOC_PAIRS` 比對 `README.md` ↔ `README.zh-TW.md` | 改為 `README.en.md` ↔ `README.md` |
-| CLAUDE.md 的 Release/changelog 段 | 描述五語 README 與英文預設 | 改寫為中英雙語、繁中預設 |
+| 產品名稱 | `usage` | **`agentdeck`**（見 `DECISIONS.md` D-09）；內部模組檔名仍是 `usage_*` |
 | 其他文件（CONTRIBUTING / SECURITY / CHANGELOG / docs/DEVELOPMENT） | 英文為預設 `.md`，中文為 `.zh-TW.md` | **維持上游慣例不變** |
 
-新增檔案（上游沒有，不會有衝突）：`AGENTS.md`、`SKILL.md`、`NOTICE.md`、`REPO_REVIEW.md`、`docs/FORK.zh-TW.md`、`docs/DECISIONS.md`、`docs/DEVELOPMENT.win.zh-TW.md`、`tools/`、`.pre-commit-config.yaml`、`.claude/settings.json`。
+新增檔案（上游沒有，不會有衝突）：`AGENTS.md`、`SKILL.md`、`NOTICE.md`、`REPO_REVIEW.md`、`docs/FORK.zh-TW.md`、`docs/DECISIONS.md`、`docs/DEVELOPMENT.zh-TW.md`、`tools/`、`.pre-commit-config.yaml`、`.claude/settings.json`。
 
 分叉背後的取捨記在 [`DECISIONS.md`](DECISIONS.md)（D-01 獨立維護、D-02 README 語言結構、D-03 不在 Windows 重 lock、D-04 測試環境失敗的處理層級）。
 
 ## Tag 政策
 
-本 repo **只保留最新一個 tag**（目前 `v0.29.8`），上游那 160 多個歷史 tag 已全部刪除——需要舊版本時從上游查即可，沒必要在這裡重複一份。
+本 repo **只保留最新一個 tag**，上游那 160 多個歷史 tag 已全部刪除——需要舊版本時從上游查即可，沒必要在這裡重複一份。
 
 `remote.upstream.tagOpt` 已設為 `--no-tags`，因為 `git fetch upstream` 預設會把上游所有可達的 tag 一起抓回本機，清完又長回來。新機器 clone 後要補上：
 
@@ -81,7 +81,7 @@ git cherry-pick <sha>
 
 **衝突多半會落在上表列的分叉點上**（尤其 README 與 `check_doc_parity.py`）。解衝突的原則：功能性的改動吃上游，語言／文件結構的決定保留本 fork 的。
 
-合併完**一定要重跑三道 gate**：
+合併完**一定要重跑閘門**：
 
 ```powershell
 pwsh tools/dev_check.ps1
@@ -96,6 +96,6 @@ uv sync --frozen --group dev --extra windows
 ## 改動須知
 
 - **改 README 要兩邊一起改**：`README.md`（繁中）與 `README.en.md`（英文）的 `##` 章節數必須一致，CI 的 `scripts/check_doc_parity.py` 會擋下不一致。內容也要互相對應翻譯，不要只補一邊。
-- **不要在 Windows 上跑 `uv lock`**：`pyproject.toml` 的 `[tool.uv] environments` 是刻意設定的，在 Windows 重 lock 會把 macOS 的 PyObjC 相依標記成不可能達成、無聲地從 lock 檔裡丟掉，直接弄壞 macOS 打包。`.claude/settings.json` 已 deny 這條指令。
+- **改版號時不要跑 `uv lock`**：手動改 `uv.lock` 裡 `agentdeck` 那一行的 `version` 即可，零解析風險。`.claude/settings.json` 已 deny `uv lock`。
 - **不要自己 bump 版本或打 `v*` tag**，除非真的要從本 fork 發版——那會觸發 `.github/workflows/release.yml`。
-- menu bar（PyObjC）與 `.app` 打包**只能在 macOS 驗收**。動到 `menubar*.py`、`panels/`、`setup_app.py`、`scripts/build_app.sh` 的改動，在 Windows 上無法證明它能跑，要標明「未在 macOS 實測」。
+- **macOS 支援已於 2026-07-29 移除**（見 `DECISIONS.md`）。上游那些 macOS 檔案的唯讀副本留在 `reference/upstream-macos/`，移植功能時對照用。

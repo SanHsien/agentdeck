@@ -13,7 +13,7 @@ possible Claude call; it does NOT touch any Anthropic quota API — it only shel
 out to the user's local ``claude`` CLI.
 
 That ping runs headless, so Claude Code's statusLine hook never fires and
-``usage-status.json`` keeps reporting the boundary we already handled. A
+``agentdeck-status.json`` keeps reporting the boundary we already handled. A
 cooldown clock therefore re-arms the keeper independently of the payload, so a
 machine that never opens Claude Code interactively still gets a fresh window
 every cycle instead of wedging after the first ping.
@@ -41,8 +41,8 @@ logger = logging.getLogger(__name__)
 
 # State file holding the last handled reset boundary and dispatch time. Module
 # constant so tests can monkeypatch it instead of touching the real
-# ``~/.usage/`` dir.
-WINDOW_KEEPER_STATE_PATH = Path(os.path.expanduser("~/.usage/window_keeper.json"))
+# ``~/.agentdeck/`` dir.
+WINDOW_KEEPER_STATE_PATH = Path(os.path.expanduser("~/.agentdeck/window_keeper.json"))
 
 PING_TIMEOUT_SECONDS = 180
 
@@ -252,5 +252,5 @@ def maybe_ping(
 
 
 def _debug_log(message: str, *, exc_info: bool = False) -> None:
-    if os.environ.get("USAGE_DEBUG") == "1":
+    if os.environ.get("AGENTDECK_DEBUG") == "1":
         logger.warning(message, exc_info=exc_info)

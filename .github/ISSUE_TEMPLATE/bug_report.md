@@ -22,10 +22,10 @@ labels: bug
 - Mode: [menu bar / TUI / mock]
 
 **Logs**
-Run with `USAGE_DEBUG=1 python3 main.py` and paste any warnings here.
+Run with `AGENTDECK_DEBUG=1 python3 main.py` and paste any warnings here.
 
 > ⚠️ **Privacy**: usage reads files under `~/.claude/` and `~/.codex/`. **Do not paste**:
-> - the contents of `~/.claude/usage-status.json` or any `tt-status.json` / `usag-status.json`
+> - the contents of `~/.claude/agentdeck-status.json` or any `tt-status.json` / `usag-status.json`
 > - any `~/.codex/sessions/**/*.jsonl` (these may include prompts, project names, and absolute paths)
 > - absolute paths, project / repo names, session IDs, or cost figures
 >

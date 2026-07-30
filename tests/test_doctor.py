@@ -24,13 +24,13 @@ def test_doctor_handles_missing_settings_and_status_file(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.setattr(setup_hook, "CLAUDE_SETTINGS", tmp_path / ".claude" / "settings.json")
-    monkeypatch.setattr(setup_hook, "HOOK_TARGET", tmp_path / ".claude" / "usage-statusline.py")
+    monkeypatch.setattr(setup_hook, "HOOK_TARGET", tmp_path / ".claude" / "agentdeck-statusline.py")
     monkeypatch.setattr(
         setup_hook,
         "FORWARDER_TARGET",
-        tmp_path / ".claude" / "usage-statusline-forwarder.py",
+        tmp_path / ".claude" / "agentdeck-statusline-forwarder.py",
     )
-    monkeypatch.setattr(setup_hook, "STATUS_FILE", tmp_path / ".claude" / "usage-status.json")
+    monkeypatch.setattr(setup_hook, "STATUS_FILE", tmp_path / ".claude" / "agentdeck-status.json")
     monkeypatch.setattr(codex_loader, "SESSIONS_DIR", tmp_path / ".codex" / "sessions")
     monkeypatch.setattr(codex_loader, "LOGS_DB", tmp_path / ".codex" / "logs_2.sqlite")
     monkeypatch.setattr(codex_loader, "STATE_DB", tmp_path / ".codex" / "state_5.sqlite")
@@ -55,7 +55,7 @@ def test_doctor_reports_external_hook_keyword(
         encoding="utf-8",
     )
     monkeypatch.setattr(setup_hook, "CLAUDE_SETTINGS", settings)
-    monkeypatch.setattr(setup_hook, "STATUS_FILE", claude_dir / "usage-status.json")
+    monkeypatch.setattr(setup_hook, "STATUS_FILE", claude_dir / "agentdeck-status.json")
     monkeypatch.setattr(codex_loader, "SESSIONS_DIR", tmp_path / ".codex" / "sessions")
     monkeypatch.setattr(codex_loader, "LOGS_DB", tmp_path / ".codex" / "logs_2.sqlite")
     monkeypatch.setattr(codex_loader, "STATE_DB", tmp_path / ".codex" / "state_5.sqlite")
@@ -80,7 +80,7 @@ def test_doctor_flags_windows_backslash_statusline_command(
                     "type": "command",
                     "command": (
                         r"C:\Python\python.exe "
-                        r"C:\Users\test\.claude\usage-statusline.py"
+                        r"C:\Users\test\.claude\agentdeck-statusline.py"
                     ),
                 }
             }
@@ -122,7 +122,7 @@ def test_doctor_reports_codex_diagnostics(
         )
     state_db.write_text("", encoding="utf-8")
     monkeypatch.setattr(setup_hook, "CLAUDE_SETTINGS", claude_dir / "settings.json")
-    monkeypatch.setattr(setup_hook, "STATUS_FILE", claude_dir / "usage-status.json")
+    monkeypatch.setattr(setup_hook, "STATUS_FILE", claude_dir / "agentdeck-status.json")
     monkeypatch.setattr(codex_loader, "SESSIONS_DIR", sessions_dir)
     monkeypatch.setattr(codex_loader, "LOGS_DB", logs_db)
     monkeypatch.setattr(codex_loader, "STATE_DB", state_db)

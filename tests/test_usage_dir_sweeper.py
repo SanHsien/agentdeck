@@ -130,7 +130,7 @@ def test_debug_mode_logs_file_oserror(
     now = 2_000_000_000.0
     blocked = tmp_path / "tmpBLOCKED.tmp"
     _make_old(blocked, now)
-    monkeypatch.setenv("USAGE_DEBUG", "1")
+    monkeypatch.setenv("AGENTDECK_DEBUG", "1")
 
     def fail_unlink(_path: Path, missing_ok: bool = False) -> None:
         raise OSError

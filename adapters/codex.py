@@ -204,5 +204,5 @@ def _as_optional_int(value: Any) -> int | None:
 
 
 def _debug_file_error(action: str, path: Path, exc: Exception) -> None:
-    if os.environ.get("USAGE_DEBUG") == "1":
+    if os.environ.get("AGENTDECK_DEBUG") == "1":
         print(f"{action} {path}: {exc}", file=sys.stderr)

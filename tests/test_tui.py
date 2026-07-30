@@ -59,7 +59,7 @@ def test_load_i18n_bundle_reads_monkeypatched_path(
 def test_app_view_state_default_language_falls_back_to_en_for_unshipped_lang(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("USAGE_LANG", "ja")
+    monkeypatch.setenv("AGENTDECK_LANG", "ja")
 
     state = tui.AppViewState()
 
@@ -69,7 +69,7 @@ def test_app_view_state_default_language_falls_back_to_en_for_unshipped_lang(
 def test_app_view_state_default_language_folds_simplified_into_traditional(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("USAGE_LANG", "zh-CN")
+    monkeypatch.setenv("AGENTDECK_LANG", "zh-CN")
 
     state = tui.AppViewState()
 

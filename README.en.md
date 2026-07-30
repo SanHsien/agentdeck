@@ -1,14 +1,14 @@
 <p align="center">
-  <img src="docs/readme-logo.png" alt="usage logo" width="128">
+  <img src="docs/readme-logo.png" alt="agentdeck logo" width="128">
 </p>
 
-# usage
+# agentdeck
 
 ### Quota visibility for Claude Code, Codex, and Antigravity, built into the Windows system tray.
 
-Keep Claude Code, Codex, and Antigravity quota in view while you work. `usage` puts session limits, weekly limits, and cost context in the Windows system tray, so you can manage usage before it interrupts a session.
+Keep Claude Code, Codex, and Antigravity quota in view while you work. `agentdeck` puts session limits, weekly limits, and cost context in the Windows system tray, so you can manage usage before it interrupts a session.
 
-[繁體中文](README.md) · English &nbsp;|&nbsp; [Landing page](https://sanhsien.github.io/usage/)
+[繁體中文](README.md) · English &nbsp;|&nbsp; [Landing page](https://sanhsien.github.io/agentdeck/)
 
 [![Python](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](#install)
@@ -23,10 +23,10 @@ Keep Claude Code, Codex, and Antigravity quota in view while you work. `usage` p
 > Other differences: the UI ships in Traditional Chinese and English only; upstream's Discussions and star count belong to that project and are no longer mirrored here. The landing page is served from this repo's `docs/`.
 
 <p align="center">
-  <img src="docs/showcase.en.png" alt="usage — Claude Code, Codex, and Antigravity quota pinned to the Windows system tray" width="820">
+  <img src="docs/showcase.en.png" alt="agentdeck — Claude Code, Codex, and Antigravity quota pinned to the Windows system tray" width="820">
 </p>
 
-`usage` keeps your **Claude Code, Codex, and Antigravity** quota pinned to the system tray, color-coded so warning levels read at a glance. Claude Code and Codex numbers are read passively from local files already on your machine, and reading them **never calls Anthropic or OpenAI's LLM APIs** — so watching your quota never adds to your token usage. Antigravity quota comes from Google's official quota endpoint, using the sign-in the Antigravity CLI already stores locally.
+`agentdeck` keeps your **Claude Code, Codex, and Antigravity** quota pinned to the system tray, color-coded so warning levels read at a glance. Claude Code and Codex numbers are read passively from local files already on your machine, and reading them **never calls Anthropic or OpenAI's LLM APIs** — so watching your quota never adds to your token usage. Antigravity quota comes from Google's official quota endpoint, using the sign-in the Antigravity CLI already stores locally.
 
 ## Why usage?
 
@@ -34,7 +34,7 @@ Running out of quota mid-session is expensive — especially during a long refac
 
 ## Quick Start
 
-Download `usage-windows.zip` from the [latest release](https://github.com/SanHsien/usage/releases/latest), unzip it, and run `usage.exe` — no installer needed.
+Download `usage-windows.zip` from the [latest release](https://github.com/SanHsien/agentdeck/releases/latest), unzip it, and run `usage.exe` — no installer needed.
 
 A quota icon appears in the system tray: left-click for the panel, right-click for the menu. For the full setup flow, see [Install](#install) below.
 
@@ -65,7 +65,7 @@ A quota icon appears in the system tray: left-click for the panel, right-click f
 - **Drag to Reorder:** Grab any quota card and drag it up or down to swap the order — the arrangement is shared across every theme and survives restarts.
 - **AI Talent Market (our own implementation):** Installs ready-made subagent roles into `~/.claude/agents/`. Upstream sourced its roles from a closed binary whose source and distribution repos are both 404 to everyone else and which only shipped for macOS, so nobody cloning the public repo could use the feature. This fork replaced it with an open implementation: role definitions live in [`personas/`](personas/) and can be edited or extended. If you hand-edit an installed role the panel flags it and offers a restore. **If you already have an agent of the same name, installing backs it up first and tells you the backup filename.**
 - **AI Council:** Open a dedicated window and run a multi-round discussion between Claude Code, Codex, and Antigravity — pick participants, models, and a debate style, with a token estimate up front. Steer it between rounds, see who dissents in the consensus tally, and let it stop early once everyone agrees. Seats can reference real files via an optional read-only folder. (Persona assignment needs the AI Talent Market, which is unavailable here.)
-- **AI Update Daily:** Opens an [update digest](https://sanhsien.github.io/usage/ai-updates/) covering Claude Code, Codex, Antigravity and related tools, with the original release text alongside each entry. The page is generated from this repo's `ai_updates.json` by `scripts/build_ai_updates.py`, and the data refreshes with upstream.
+- **AI Update Daily:** Opens an [update digest](https://sanhsien.github.io/agentdeck/ai-updates/) covering Claude Code, Codex, Antigravity and related tools, with the original release text alongside each entry. The page is generated from this repo's `ai_updates.json` by `scripts/build_ai_updates.py`, and the data refreshes with upstream.
 - **Spirit Companions:** A small animated white silhouette lives beside your usage percentages — a phoenix for Claude, a dragon for Codex, a lion for Antigravity. Each accelerates dynamically as its own tool's token burn rate climbs.
 - **Automatic Localization:** UI text is available in Traditional Chinese and English, automatically matching your system settings. Every Chinese locale (Simplified included) resolves to Traditional Chinese; everything else falls back to English.
 
@@ -83,7 +83,7 @@ A quota icon appears in the system tray: left-click for the panel, right-click f
 
 ## Install
 
-1. Download `usage-windows.zip` from the [latest release](https://github.com/SanHsien/usage/releases/latest).
+1. Download `usage-windows.zip` from the [latest release](https://github.com/SanHsien/agentdeck/releases/latest).
 2. Unzip it anywhere and run `usage.exe`. No installer, and nothing written to the registry unless you enable launch at login.
 3. To start with Windows: tick "Launch at Login" in the right-click menu.
 
@@ -105,7 +105,7 @@ uv run --no-sync python main.py --mock     # preview with fake data
 uv run --no-sync python main.py --doctor   # environment and hook diagnostics
 ```
 
-Requires Python 3.13. Full setup notes are in the [development docs](docs/DEVELOPMENT.win.zh-TW.md).
+Requires Python 3.13. Full setup notes are in the [development docs](docs/DEVELOPMENT.zh-TW.md).
 
 ### First Launch: Set Up the Status Line
 
@@ -141,7 +141,7 @@ If the menu bar shows `--`, it's usually not broken — there's just no local da
 | Accidentally hit "Quit" | Process terminated | Run `usage.exe` again. |
 | Status says "N minutes stale" | Claude Code isn't running | Open Claude Code and let it run |
 | Codex section is empty | No Codex history found | Run a Codex conversation to generate logs |
-| Today's cost shows $0.00 | Model pricing missing | Delete `~/.usage/pricing_cache.json` or check `USAGE_DEBUG=1` |
+| Today's cost shows $0.00 | Model pricing missing | Delete `~/.agentdeck/pricing_cache.json` or check `AGENTDECK_DEBUG=1` |
 | Antigravity card is missing | Antigravity CLI not installed or not signed in | Install and sign in to the Antigravity CLI; the card appears automatically once a background quota fetch succeeds |
 
 ## Comparison
@@ -164,7 +164,7 @@ If the menu bar shows `--`, it's usually not broken — there's just no local da
 
 ## Development
 
-Want to run the terminal TUI, configure custom agents, or build it yourself? See the **[development docs](docs/DEVELOPMENT.win.zh-TW.md)**; the method for porting macOS features to Windows is in the **[porting playbook](docs/PORTING.zh-TW.md)**.
+Want to run the terminal TUI, configure custom agents, or build it yourself? See the **[development docs](docs/DEVELOPMENT.zh-TW.md)**; the method for porting macOS features to Windows is in the **[porting playbook](docs/PORTING.zh-TW.md)**.
 
 ## Other Reference Projects
 

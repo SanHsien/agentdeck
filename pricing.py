@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 LITELLM_PRICING_URL = (
     "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
 )
-DEFAULT_CACHE_PATH = Path(os.path.expanduser("~/.usage/pricing_cache.json"))
+DEFAULT_CACHE_PATH = Path(os.path.expanduser("~/.agentdeck/pricing_cache.json"))
 DEFAULT_LEGACY_CACHE_PATH = Path(os.path.expanduser("~/.claude/pricing_cache.json"))
 CACHE_PATH = DEFAULT_CACHE_PATH
 LEGACY_CACHE_PATH = DEFAULT_LEGACY_CACHE_PATH
@@ -201,7 +201,7 @@ def _warm_up_pricing_worker(
         if should_notify and on_ready is not None:
             on_ready()
     except Exception:
-        if os.environ.get("USAGE_DEBUG") == "1":
+        if os.environ.get("AGENTDECK_DEBUG") == "1":
             logger.warning("failed to warm up pricing", exc_info=True)
     finally:
         with _pricing_cache_lock:
@@ -261,7 +261,7 @@ def _read_cache(*, allow_stale: bool = False) -> PricingTable | None:
         try:
             return _normalize_pricing(json.load(file))
         except (UnicodeDecodeError, json.JSONDecodeError):
-            if os.environ.get("USAGE_DEBUG") == "1":
+            if os.environ.get("AGENTDECK_DEBUG") == "1":
                 logger.warning("failed to decode pricing cache %s", path, exc_info=True)
             return None
     return None
@@ -273,7 +273,7 @@ def _fetch_pricing() -> PricingTable | None:
         with urllib.request.urlopen(request, timeout=10) as response:
             payload = json.loads(response.read().decode("utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, TimeoutError):
-        if os.environ.get("USAGE_DEBUG") == "1":
+        if os.environ.get("AGENTDECK_DEBUG") == "1":
             logger.warning("failed to fetch pricing from %s", LITELLM_PRICING_URL, exc_info=True)
         return None
     return _normalize_pricing(payload)

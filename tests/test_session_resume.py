@@ -22,7 +22,7 @@ import usage_session_resume as mod
 def test_detect_lang_uses_windows_system_lang_when_env_is_empty(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    for key in ("USAGE_LANG", "TT_LANG", "LANG"):
+    for key in ("AGENTDECK_LANG", "TT_LANG", "LANG"):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setattr(mod, "_windows_system_lang", lambda: "zh_TW")
 
@@ -32,7 +32,7 @@ def test_detect_lang_uses_windows_system_lang_when_env_is_empty(
 def test_detect_lang_prefers_usage_lang_over_windows_system_lang(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("USAGE_LANG", "en")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     monkeypatch.setattr(mod, "_windows_system_lang", lambda: "zh_TW")
 
     assert mod._detect_lang() == "en"
@@ -105,7 +105,7 @@ def _project_dir(tmp_path: Path) -> Path:
 
 
 def _sidecar(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    sidecar = tmp_path / "usage-resume-prompt.json"
+    sidecar = tmp_path / "agentdeck-resume-prompt.json"
     sidecar.write_text(
         json.dumps(
             {
@@ -160,8 +160,8 @@ def _sidecar(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def _diagnosis_paths(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
-    snapshot = tmp_path / "usage-diagnosis.json"
-    state = tmp_path / "usage-diagnosis-state.json"
+    snapshot = tmp_path / "agentdeck-diagnosis.json"
+    state = tmp_path / "agentdeck-diagnosis-state.json"
     monkeypatch.setattr(mod, "DIAGNOSIS_SNAPSHOT", snapshot)
     monkeypatch.setattr(mod, "DIAGNOSIS_STATE", state)
     return snapshot, state
@@ -225,7 +225,7 @@ def test_clean_request_keeps_structured_text() -> None:
 def test_build_prompt_reads_previous_session(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.delenv("USAGE_LANG", raising=False)
+    monkeypatch.delenv("AGENTDECK_LANG", raising=False)
     monkeypatch.delenv("TT_LANG", raising=False)
     monkeypatch.setenv("LANG", "en_US.UTF-8")
     _sidecar(tmp_path, monkeypatch)
@@ -493,7 +493,7 @@ def test_build_prompt_falls_back_to_default_when_sidecar_missing(
 def test_build_prompt_falls_back_to_detected_language_when_sidecar_missing(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setenv("USAGE_LANG", "zh-TW")
+    monkeypatch.setenv("AGENTDECK_LANG", "zh-TW")
     monkeypatch.setattr(mod, "PROMPT_SIDECAR", tmp_path / "does-not-exist.json")
     project = _project_dir(tmp_path)
     _write_session(
@@ -515,7 +515,7 @@ def test_build_prompt_falls_back_to_detected_language_when_sidecar_missing(
 def test_build_prompt_uses_detected_language(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setenv("USAGE_LANG", "zh-TW")
+    monkeypatch.setenv("AGENTDECK_LANG", "zh-TW")
     _sidecar(tmp_path, monkeypatch)
     project = _project_dir(tmp_path)
     _write_session(

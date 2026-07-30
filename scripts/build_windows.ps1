@@ -3,8 +3,8 @@ Set-StrictMode -Version Latest
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $DistRoot = Join-Path $RepoRoot "dist"
-$OutputDir = Join-Path $DistRoot "usage-windows"
-$PyInstallerOutput = Join-Path $DistRoot "usage"
+$OutputDir = Join-Path $DistRoot "agentdeck-windows"
+$PyInstallerOutput = Join-Path $DistRoot "agentdeck"
 $BuildDir = Join-Path $RepoRoot "build/pyinstaller-windows"
 $SpecDir = Join-Path $RepoRoot "build/pyinstaller-spec"
 
@@ -19,7 +19,7 @@ try {
         --clean `
         --windowed `
         --onedir `
-        --name usage `
+        --name agentdeck `
         --distpath $DistRoot `
         --workpath $BuildDir `
         --specpath $SpecDir `
@@ -56,7 +56,7 @@ try {
     Pop-Location
 }
 
-$Executable = Join-Path $OutputDir "usage.exe"
+$Executable = Join-Path $OutputDir "agentdeck.exe"
 if (-not (Test-Path $Executable -PathType Leaf)) {
     throw "PyInstaller did not produce $Executable"
 }

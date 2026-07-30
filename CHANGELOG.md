@@ -6,7 +6,12 @@ All notable changes to usage are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
-## [Unreleased]
+## [0.31.0] - 2026-07-30
+
+### Changed
+- **Renamed to agentdeck**: "usage" described quota watching, but the app also runs a multi-model council, installs personas, generates reports, and drives terse mode — the name covered half of it. Everything a user touches moves: the executable, the statusLine hook and its status file, the settings key, `~/.agentdeck/`, `~/.agentdeck-reports/`, and the `AGENTDECK_*` environment variables. Internal module filenames stay `usage_*` deliberately; renaming those touches every import for no user-visible gain. There is no compatibility shim, so an existing install must be removed with the old build's `--unsetup` before installing the new one.
+- **The panel's first-run corner follows the taskbar**: it was hard-coded to bottom-right, which is only near the notification area when the taskbar is at the bottom. Dragging and the remembered position are unchanged.
+- **Development docs merged**: the two upstream macOS-oriented `DEVELOPMENT` files still described menu bar mode, `.app` packaging, and LaunchAgent. They are replaced by the accurate Windows pair, 644 lines down to 156.
 
 ### Added
 - **AI Talent Market, reimplemented in the open**: upstream sourced its roles from a closed binary whose source and distribution repos are both 404 to anyone else and which only ever shipped for macOS — so the feature was unreachable from a public clone on either platform. `persona_store` replaces it: role definitions live in `personas/*.json` in this repository, install writes an ordinary Claude Code subagent to `~/.claude/agents/`, and hand-edits are reported as drift with a restore offered. An agent you already own under the same name is backed up before being replaced, and never deleted by uninstall.
@@ -55,7 +60,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ## [0.29.6] - 2026-07-29
 
 ### Fixed
-- **Claude Code panel no longer stays blank forever on Windows**: the installer picked whichever `python`/`py` `shutil.which()` found on `PATH` without checking it actually ran, so on any Windows machine without a real Python install, it silently wired the statusLine hook to Windows' non-functional "App Execution Alias" stub (the placeholder `python.exe`/`python3.exe` that Windows 10/11 ships by default to prompt a Microsoft Store install). The hook then failed silently on every refresh, `usage-status.json` was never written, and the Claude Code panel showed `--` permanently — not a first-run loading state. The installer now actually runs each candidate with `--version` before trusting it, and skips any that don't execute.
+- **Claude Code panel no longer stays blank forever on Windows**: the installer picked whichever `python`/`py` `shutil.which()` found on `PATH` without checking it actually ran, so on any Windows machine without a real Python install, it silently wired the statusLine hook to Windows' non-functional "App Execution Alias" stub (the placeholder `python.exe`/`python3.exe` that Windows 10/11 ships by default to prompt a Microsoft Store install). The hook then failed silently on every refresh, `agentdeck-status.json` was never written, and the Claude Code panel showed `--` permanently — not a first-run loading state. The installer now actually runs each candidate with `--version` before trusting it, and skips any that don't execute.
 
 ## [0.29.5] - 2026-07-27
 
@@ -123,8 +128,8 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ## [0.28.20] - 2026-07-24
 
 ### Fixed
-- **Auto-start 5-hour Session stopped firing at all after its first ping.** 0.28.17 swapped the keeper's elapsed-time throttle for reset-boundary deduplication, which only holds up while the boundary keeps moving — and it doesn't. The ping runs `claude -p` headless, which never triggers Claude Code's statusLine hook, so `usage-status.json` goes on reporting the boundary that was already handled and the keeper wedges permanently. One machine went 23 hours with no auto-opened window while the cooldown-based Antigravity keeper kept working normally. The boundary check stays, since it is what catches a real rollover the moment it happens; a 5h5m cooldown is added alongside it as a second, independent way to re-arm once the payload has gone stale. Every existing gate is untouched, so a live window still never draws a spurious ping.
-- **Orphaned temp files piled up in `~/.usage/`.** Every atomic write unlinks its `mkstemp` file in a `finally` block, and that block never runs when the app is SIGKILLed or crashes mid-write. One install had collected 40 MB of them over twelve days, dominated by the large JSONL caches whose slow writes are the likeliest to be interrupted. Startup now sweeps `~/.usage` and its direct `*.d` children, deleting only regular files that match the `mkstemp` name shape and have gone untouched for 24 hours — long enough that a second usage process cannot lose a temp file it is still writing. Symlinks and directories are skipped no matter how well their name matches.
+- **Auto-start 5-hour Session stopped firing at all after its first ping.** 0.28.17 swapped the keeper's elapsed-time throttle for reset-boundary deduplication, which only holds up while the boundary keeps moving — and it doesn't. The ping runs `claude -p` headless, which never triggers Claude Code's statusLine hook, so `agentdeck-status.json` goes on reporting the boundary that was already handled and the keeper wedges permanently. One machine went 23 hours with no auto-opened window while the cooldown-based Antigravity keeper kept working normally. The boundary check stays, since it is what catches a real rollover the moment it happens; a 5h5m cooldown is added alongside it as a second, independent way to re-arm once the payload has gone stale. Every existing gate is untouched, so a live window still never draws a spurious ping.
+- **Orphaned temp files piled up in `~/.agentdeck/`.** Every atomic write unlinks its `mkstemp` file in a `finally` block, and that block never runs when the app is SIGKILLed or crashes mid-write. One install had collected 40 MB of them over twelve days, dominated by the large JSONL caches whose slow writes are the likeliest to be interrupted. Startup now sweeps `~/.usage` and its direct `*.d` children, deleting only regular files that match the `mkstemp` name shape and have gone untouched for 24 hours — long enough that a second usage process cannot lose a temp file it is still writing. Symlinks and directories are skipped no matter how well their name matches.
 
 ## [0.28.19] - 2026-07-23
 
@@ -183,7 +188,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ## [0.28.9] - 2026-07-17
 
 ### Fixed
-- **The Claude Code statusLine hook now works end-to-end on Windows**: four fixes land together. `setup_hook` now prefers an all-ASCII `python.exe` path (falling back to system PATH when the venv path isn't ASCII), since Claude Code on Windows fails to spawn statusLine commands whose path contains non-ASCII characters; `--setup` migrates existing non-ASCII commands. All five hook scripts now read stdin via `sys.stdin.buffer` and decode UTF-8 explicitly (and the forwarder pins `encoding=utf-8` on its subprocess fan-out), since Windows otherwise decodes the piped session JSON with the locale codepage, turning a cwd like `GitHub專案` into mojibake and silently breaking `usage-status.json` writes. Hooks now fall back to `GetUserDefaultUILanguage` when no `LANG`-style env var is set (the Windows norm), matching the tray's existing language detection. `get_width()` now probes the real console width via `CONOUT$` + `GetConsoleScreenBufferInfo` instead of always falling back to a fixed 116 columns, restoring the `(left)` reset-time suffix on wide terminals. Non-Windows behavior is unchanged.
+- **The Claude Code statusLine hook now works end-to-end on Windows**: four fixes land together. `setup_hook` now prefers an all-ASCII `python.exe` path (falling back to system PATH when the venv path isn't ASCII), since Claude Code on Windows fails to spawn statusLine commands whose path contains non-ASCII characters; `--setup` migrates existing non-ASCII commands. All five hook scripts now read stdin via `sys.stdin.buffer` and decode UTF-8 explicitly (and the forwarder pins `encoding=utf-8` on its subprocess fan-out), since Windows otherwise decodes the piped session JSON with the locale codepage, turning a cwd like `GitHub專案` into mojibake and silently breaking `agentdeck-status.json` writes. Hooks now fall back to `GetUserDefaultUILanguage` when no `LANG`-style env var is set (the Windows norm), matching the tray's existing language detection. `get_width()` now probes the real console width via `CONOUT$` + `GetConsoleScreenBufferInfo` instead of always falling back to a fixed 116 columns, restoring the `(left)` reset-time suffix on wide terminals. Non-Windows behavior is unchanged.
 
 ## [0.28.8] - 2026-07-17
 
@@ -194,7 +199,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ## [0.28.7] - 2026-07-17
 
 ### Fixed
-- **Claude quota now shows on Windows even when the statusLine hook never fires**: a Claude Code regression stops the hook from being invoked on some Windows setups, leaving the Claude quota card permanently blank. `usage_client.py` now falls back to reading `cachedUsageUtilization` straight out of Claude Code's own `~/.claude.json` when no `usage-status.json` exists, so the card still populates.
+- **Claude quota now shows on Windows even when the statusLine hook never fires**: a Claude Code regression stops the hook from being invoked on some Windows setups, leaving the Claude quota card permanently blank. `usage_client.py` now falls back to reading `cachedUsageUtilization` straight out of Claude Code's own `~/.claude.json` when no `agentdeck-status.json` exists, so the card still populates.
 - **Session hooks no longer break on non-ASCII (CJK) project paths on Windows**: the resume, terse-mode, and terse-reminder hook commands could point into the project or app-bundle source path, which failed to execute on Windows when that path contained Chinese/Japanese/Korean characters. Self-heal now normalizes these commands to their canonical `~/.claude/` targets, and the migration is idempotent — it no longer rewrites `settings.json` and appends a duplicate self-heal log entry on every restart once the command is already correct.
 
 ## [0.28.6] - 2026-07-17
@@ -227,7 +232,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
 ### Fixed
 - **Antigravity quota probing now reads the current Windows CLI OAuth credential**: when the legacy token file is missing or unusable, usage falls back read-only to the `gemini:antigravity` Windows Credential Manager entry. The quota request's user agent now also identifies the actual host platform instead of always claiming Darwin/arm64.
-- **Claude Code quota collection now works with Git Bash on Windows**: status-line commands were written with Windows backslashes, but Claude Code runs them through Git Bash when it is installed, where those backslashes escape the path and prevent the Python hook from launching. New commands use portable forward slashes; startup self-heal migrates existing usage-owned commands, and `--doctor` identifies the legacy form and the recovery step.
+- **Claude Code quota collection now works with Git Bash on Windows**: status-line commands were written with Windows backslashes, but Claude Code runs them through Git Bash when it is installed, where those backslashes escape the path and prevent the Python hook from launching. New commands use portable forward slashes; startup self-heal migrates existing agentdeck-owned commands, and `--doctor` identifies the legacy form and the recovery step.
 
 ## [0.28.2] - 2026-07-15
 
@@ -238,7 +243,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ## [0.28.1] - 2026-07-15
 
 ### Added
-- **Windows auto-detects the interface language**: with no `USAGE_LANG`/`TT_LANG`/`LANG` set, language detection only knew how to ask macOS (`NSLocale`) and always fell back to English on Windows. It now maps `GetUserDefaultUILanguage()` through `locale.windows_locale`, so a zh-TW / zh-CN / ja / ko Windows UI gets the matching interface out of the box. Environment variables still take precedence.
+- **Windows auto-detects the interface language**: with no `AGENTDECK_LANG`/`TT_LANG`/`LANG` set, language detection only knew how to ask macOS (`NSLocale`) and always fell back to English on Windows. It now maps `GetUserDefaultUILanguage()` through `locale.windows_locale`, so a zh-TW / zh-CN / ja / ko Windows UI gets the matching interface out of the box. Environment variables still take precedence.
 
 ### Changed
 - **mypy now runs on the Windows CI job too**: the `check-windows` job previously skipped type checking, which is how several Windows-only defects (including the tray-startup crash surface) went unnoticed. The platform-conditional code paths (`termios`/`msvcrt` key readers, `os.getuid`, `time.tzset`, pywebview's `Window | None`) are now typed so that `mypy .` is clean on both macOS and Windows.
@@ -450,7 +455,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
 ### Fixed
 - **Archived Codex sessions could show stale data**: usage counted `~/.codex/archived_sessions/` when computing totals but didn't watch it for changes, so edits there might not refresh the menu bar until an unrelated refresh happened; the archived folder is now included in the same change-detection that drives live updates.
-- **A broken usage-data hook no longer causes constant background rescanning**: when Claude Code's status hook goes stale, usage now caches the "is there recent activity" check briefly instead of rescanning your entire `~/.claude/projects` tree on every poll.
+- **A broken agentdeck-data hook no longer causes constant background rescanning**: when Claude Code's status hook goes stale, usage now caches the "is there recent activity" check briefly instead of rescanning your entire `~/.claude/projects` tree on every poll.
 
 ### Added
 - **A small warning badge appears if local usage history can't be read**: previously, a failed read silently fell back to the last known data with no visible sign anything was wrong; the Project Usage card now shows a brief note (hover for detail) so you can tell "no new data" apart from "something broke."
@@ -505,7 +510,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ## [0.22.6] - 2026-06-23
 
 ### Fixed
-- **Annual Wrapped and the 52-week contribution heatmap no longer lose history when source logs are pruned**: the year view recomputed everything from whatever Claude Code / Codex session logs still existed on disk, so once those logs were rotated away it could only ever show the last ~2 months. usage now persists a daily ledger (`~/.usage/year_ledger.json`) that accumulates over time — each rebuild merges the currently-available days in (overwriting a stored day only when the fresh total is at least as large, so a partially-pruned day can't shrink the record) and trims entries beyond the 53-week window. The heatmap, streaks, active days, and Wrapped totals are all computed from the merged ledger, so coverage fills toward a full year from here on.
+- **Annual Wrapped and the 52-week contribution heatmap no longer lose history when source logs are pruned**: the year view recomputed everything from whatever Claude Code / Codex session logs still existed on disk, so once those logs were rotated away it could only ever show the last ~2 months. usage now persists a daily ledger (`~/.agentdeck/year_ledger.json`) that accumulates over time — each rebuild merges the currently-available days in (overwriting a stored day only when the fresh total is at least as large, so a partially-pruned day can't shrink the record) and trims entries beyond the 53-week window. The heatmap, streaks, active days, and Wrapped totals are all computed from the merged ledger, so coverage fills toward a full year from here on.
 
 ## [0.22.5] - 2026-06-22
 
@@ -587,14 +592,14 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
 ### Changed
 - **Hiding a provider now also hides its percentage from the menu bar** (previously "Hide Codex Section" only hid the popover card). With both providers hidden, the paw icon stays in the menu bar as the click target.
-- **Shorter settings menu**: the "Automatically Check for Updates" row is gone — update checks simply stay on by default (still honored if disabled in `~/.claude/usage-preferences.json`), and the two hide toggles are consolidated into the "Hide Sections ▸" submenu.
+- **Shorter settings menu**: the "Automatically Check for Updates" row is gone — update checks simply stay on by default (still honored if disabled in `~/.claude/agentdeck-preferences.json`), and the two hide toggles are consolidated into the "Hide Sections ▸" submenu.
 
 ## [0.18.0] - 2026-06-11
 
 ### Added
-- **Health-check diagnosis on every new conversation**: usage now runs a background diagnosis engine against your Claude Code session logs and, when it finds meaningful waste, quietly appends a one-line reminder to the Progress Concierge's opening handoff. Say "show me" and the model reads the full snapshot (`~/.claude/usage-diagnosis.json`) and explains findings with specific suggestions. The reminder is suppressed for 7 days once a fingerprint is seen, re-surfaces when the diagnosis changes, and is skipped entirely when the snapshot is stale (>48 h).
+- **Health-check diagnosis on every new conversation**: usage now runs a background diagnosis engine against your Claude Code session logs and, when it finds meaningful waste, quietly appends a one-line reminder to the Progress Concierge's opening handoff. Say "show me" and the model reads the full snapshot (`~/.claude/agentdeck-diagnosis.json`) and explains findings with specific suggestions. The reminder is suppressed for 7 days once a fingerprint is seen, re-surfaces when the diagnosis changes, and is skipped entirely when the snapshot is stale (>48 h).
 - **Five-rule diagnosis engine** (`analyzer/diagnoser.py`): detects repeated file reads, polluter directories (node_modules, .venv, dist, …), anomalous session sizes, noisy Bash output, and repeated Bash commands. Findings are ranked by estimated token waste so the most actionable finding is always surfaced first.
-- **Daily diagnosis snapshot** (`usage_diagnosis_snapshot.py`): the menu-bar app refreshes `~/.claude/usage-diagnosis.json` once per day in the background so the cost estimate is always fresh when you open a new conversation.
+- **Daily diagnosis snapshot** (`usage_diagnosis_snapshot.py`): the menu-bar app refreshes `~/.claude/agentdeck-diagnosis.json` once per day in the background so the cost estimate is always fresh when you open a new conversation.
 
 ### Fixed
 - **Anomaly-session waste estimates are no longer inflated ~9×**: the engine previously counted the entire token total of an anomalous session as waste and priced every token at the full $3/MTok input rate. Long sessions are dominated by cache reads billed at a tenth of that ($0.30/MTok), and the work done in the session isn't waste at all — only the excess over the project baseline is. Cost is now split by token type and scaled to the excess share (real-data result: $254 → $27).
@@ -706,7 +711,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ## [0.15.4] - 2026-06-03
 
 ### Fixed
-- **Panel load failures no longer degrade to a silent grey window**: when the popover's embedded web panel fails to load, it previously fell back to a blank dark window with no explanation. It now shows a native error view with the error detail and a GitHub report link, and logs navigation failures / render timeouts under `USAGE_DEBUG=1` for easier diagnosis.
+- **Panel load failures no longer degrade to a silent grey window**: when the popover's embedded web panel fails to load, it previously fell back to a blank dark window with no explanation. It now shows a native error view with the error detail and a GitHub report link, and logs navigation failures / render timeouts under `AGENTDECK_DEBUG=1` for easier diagnosis.
 
 ## [0.15.3] - 2026-06-02
 
@@ -773,7 +778,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ## [0.12.1] - 2026-05-29
 
 ### Changed
-- **File-level cache for the HTML report loaders**: `adapters/claude.py` and `adapters/codex.py` gain an `mtime`+`size`-keyed LRU cache (matching `history_loader`), so generating a report no longer re-parses every JSONL log on each run; the Codex adapter shares one cache between `load_entries` and `load_rate_limits`. Whole-file `OSError` / `PermissionError` / `sqlite3.Error` are now printed to stderr when `USAGE_DEBUG=1` (per-line `JSONDecodeError` stays silent).
+- **File-level cache for the HTML report loaders**: `adapters/claude.py` and `adapters/codex.py` gain an `mtime`+`size`-keyed LRU cache (matching `history_loader`), so generating a report no longer re-parses every JSONL log on each run; the Codex adapter shares one cache between `load_entries` and `load_rate_limits`. Whole-file `OSError` / `PermissionError` / `sqlite3.Error` are now printed to stderr when `AGENTDECK_DEBUG=1` (per-line `JSONDecodeError` stays silent).
 - **mypy `--strict` now covers the whole codebase**: removed the mypy exclude for `adapters/`, `analyzer/`, `ui/` and `usage_cli.py` (a ~35% type-checking blind spot), added the missing generics and function annotations, and switched `_group_by_agent` to a PEP 695 type parameter. `mypy --strict` now checks all 70 source files.
 - **Three cross-module functions in `adapters/claude.py` are now public API**: `get_claude_dirs`, `extract_project_from_dir`, `parse_jsonl` (previously underscore-private), dropping the matching `# type: ignore[attr-defined]` in `analyzer/reporter.py`.
 
@@ -819,7 +824,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
 ### Fixed
 - **Dashed Claude Code project names now decode correctly**: `history_loader._project_from_path` previously replaced every `-` in the encoded directory name with `/`, so `Desktop-claude-tutorial-video` would become `/Desktop/claude/tutorial/video` — a non-existent path. `resolve_project_name`'s fallback then took the last segment, mis-labeling the project as `"video"` instead of `"claude-tutorial-video"`. The decoder now tries the all-slash candidate first; on miss, it DFS-walks the segments, joining adjacent ones with `-` and preferring whichever variant actually exists on disk. When nothing matches, the encoded name (minus the leading `-`) is kept as-is so dashes round-trip (`plain-project` stays `plain-project`). For most users, the JSONL `cwd` field already overrides the project name, so this primarily fixes older entries that lack `cwd`.
-- **TUI language detection routed through `usage_lang.detect_lang`**: `tui.py` had its own detector that only returned `zh-TW` or `en` (treating simplified Chinese, Japanese, and Korean as English), and ignored `USAGE_LANG` / `TT_LANG` / `LANG` entirely. The menubar already used `usage_lang.detect_lang()`, so the same machine could show Japanese in the menubar and English in the TUI. The TUI now shares the same detector — all five languages render consistently.
+- **TUI language detection routed through `usage_lang.detect_lang`**: `tui.py` had its own detector that only returned `zh-TW` or `en` (treating simplified Chinese, Japanese, and Korean as English), and ignored `AGENTDECK_LANG` / `TT_LANG` / `LANG` entirely. The menubar already used `usage_lang.detect_lang()`, so the same machine could show Japanese in the menubar and English in the TUI. The TUI now shares the same detector — all five languages render consistently.
 
 ### Internal improvements
 - **LRU cap on history / codex loader caches**: `_file_cache` and `_jsonl_cache` were unbounded module-level dicts. As `~/.claude/projects/` and `~/.codex/sessions/` accumulated more jsonl files over time, the menubar's resident memory grew without bound — parsed `UsageEntry` lists never got released. Both caches are now `OrderedDict`s with a 512-entry ceiling: cache hits `move_to_end` to mark MRU, inserts on a full cache `popitem(last=False)` the oldest. The mtime/size invalidation logic and codex_loader's `entry.model` rebind on cache hit are unchanged.
@@ -846,7 +851,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ## [0.11.12] - 2026-05-27
 
 ### Changed
-- **Hook self-heal: broken installs fix themselves, silently**: every startup now runs `setup_hook.self_heal()`, which silently repairs three clearly-safe scenarios: (1) first-run (`is_setup()==False` and no `statusLine` key in settings) → invokes `setup()`; (2) hook script version is out of date (`needs_update()==True`) → `update_hook()`; (3) settings points to a missing hook file with state `us-direct`/`us-forwarder` → re-runs `_copy_hook_script()` + `_copy_forwarder_script()`. When state is `external`/`legacy-tt`, all three skip (no silent override of third-party tools). Each action appends to `settings["usage"]["selfHealLog"]` (FIFO, 20 entries). Failures are swallowed; stderr is printed only when `USAGE_DEBUG=1`.
+- **Hook self-heal: broken installs fix themselves, silently**: every startup now runs `setup_hook.self_heal()`, which silently repairs three clearly-safe scenarios: (1) first-run (`is_setup()==False` and no `statusLine` key in settings) → invokes `setup()`; (2) hook script version is out of date (`needs_update()==True`) → `update_hook()`; (3) settings points to a missing hook file with state `us-direct`/`us-forwarder` → re-runs `_copy_hook_script()` + `_copy_forwarder_script()`. When state is `external`/`legacy-tt`, all three skip (no silent override of third-party tools). Each action appends to `settings["usage"]["selfHealLog"]` (FIFO, 20 entries). Failures are swallowed; stderr is printed only when `AGENTDECK_DEBUG=1`.
 - **Coexistence prompt consolidated**: when an external statusLine tool is detected, usage shows a single NSAlert with two buttons ("Enable Coexistence Mode" / "Keep Current Setup"). Either button sets `settings["usage"]["forwarderModePromptDismissed"]=True` and the prompt never appears again. Replaces the previous three-button repair dialog in `main.py:health_check()`; the "remind me later (24h cooldown)" path is removed. Users who previously chose "Do Not Ask Again" on the old dialog will be re-prompted once (one click resolves it).
 - **`--doctor` hidden CLI flag**: `python3 main.py --doctor` prints a plain-text diagnostic report (English-only for easier GitHub issue searches) covering hook state, version, script file status, status file mtime, external hook detection (recognizes `ccusage` / `lord-kali` keywords), forwarder prompt ack state, last 5 self-heal log entries, and Codex sessions scan count. Hidden from `--help` via `argparse.SUPPRESS` so it doesn't distract typical users. New `doctor.py` renderer module.
 
@@ -874,7 +879,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ## [0.11.7] - 2026-05-27
 
 ### Changed
-- **Pricing cache moved under `~/.usage/`**: the LiteLLM pricing cache now lives at `~/.usage/pricing_cache.json` instead of `~/.claude/pricing_cache.json`, following the principle that usage-owned state belongs in its own directory. The legacy path stays as a read-only fallback for seamless migration. Thanks @ericweichun.
+- **Pricing cache moved under `~/.agentdeck/`**: the LiteLLM pricing cache now lives at `~/.agentdeck/pricing_cache.json` instead of `~/.claude/pricing_cache.json`, following the principle that agentdeck-owned state belongs in its own directory. The legacy path stays as a read-only fallback for seamless migration. Thanks @ericweichun.
 
 ### Fixed
 - **Explicit `usage report --help` and unknown-option handling**: previously the CLI silently ignored unknown report options and `--help` still triggered agent detection. Now `--help` returns the help text immediately and unknown options error out cleanly. Thanks @ericweichun.
@@ -919,7 +924,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ## [0.11.4] - 2026-05-25
 
 ### Added
-- **statusLine shows an "update available" hint**: after every successful update check, menubar writes the result to `~/.claude/usage-preferences.json` under `last_update_check`. statusLine reads this and renders `🆕 vX.Y.Z available` (cyan) on the model line when a newer version is cached, the cache is fresh (<30 days), and the version isn't on the user's skip list. New `update_available_suffix` translation across all 5 languages (zh-TW「可更新」/ zh-CN「可更新」/ en「available」/ ja「更新あり」/ ko「업데이트」).
+- **statusLine shows an "update available" hint**: after every successful update check, menubar writes the result to `~/.claude/agentdeck-preferences.json` under `last_update_check`. statusLine reads this and renders `🆕 vX.Y.Z available` (cyan) on the model line when a newer version is cached, the cache is fresh (<30 days), and the version isn't on the user's skip list. New `update_available_suffix` translation across all 5 languages (zh-TW「可更新」/ zh-CN「可更新」/ en「available」/ ja「更新あり」/ ko「업데이트」).
 
 ### Changed
 - **statusLine context-window label format**: `對話窗(1.0M):[bar]` → `對話窗:[bar] 15% / 1.0M`. The capacity moves from a middle parenthetical to a right-aligned suffix, reading more naturally as "15% of 1M".
@@ -948,7 +953,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 - **Parallel hook forwarding**: `usage_statusline_forwarder` now dispatches all hooks concurrently via `ThreadPoolExecutor`; a single slow or timing-out hook no longer stalls the others. Worst-case latency drops from `n × 5s` to `5s`.
 - **Multi-session write protection**: `usage_statusline.py`'s `save()` now acquires `fcntl.LOCK_EX` before writing, preventing concurrent Claude Code sessions from clobbering each other's data.
 - **Python path resolution**: `setup_hook` now uses `_find_system_python()` when building hook commands — preferring the bundled `.app` Python, then `/usr/bin/python3`, avoiding the broken Xcode stub that `shutil.which("python3")` can resolve to after an Xcode update.
-- **FSEvents-driven UI refresh**: `menubar` now uses a CoreServices `FSEventStream` (via ctypes) to watch `~/.claude/`. Changes to `usage-status.json` trigger `_refresh()` immediately, cutting update latency from up to 60 seconds to milliseconds. `NSTimer` is demoted to a 300-second fallback; silently degrades to timer-only mode if CoreServices is unavailable.
+- **FSEvents-driven UI refresh**: `menubar` now uses a CoreServices `FSEventStream` (via ctypes) to watch `~/.claude/`. Changes to `agentdeck-status.json` trigger `_refresh()` immediately, cutting update latency from up to 60 seconds to milliseconds. `NSTimer` is demoted to a 300-second fallback; silently degrades to timer-only mode if CoreServices is unavailable.
 
 ## [0.11.1] - 2026-05-24
 
@@ -961,7 +966,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 - **`pricing_cache.json` path unified**: `analyzer/cost.py` now caches to `~/.claude/pricing_cache.json` (was repo root), matching `pricing.py`. A stray 1.1 MB orphan cache at repo root was removed.
 - **Panel names go through i18n**: `panels/__init__.py` exposes an `i18n_key` per panel and i18n.json gains the missing keys across all 5 languages. The "Switch Panel" menu no longer mixes Chinese names into en / ja / ko UIs.
 - **Status-file error messages go through i18n**: `usage_client.py`'s "status file not found" and "no quota data yet" hints now route through `_t()`, all 5 languages covered.
-- **Analytics CLI read order matches the main app**: `adapters/rate_limits.py` previously only read `~/.claude/tt-status.json`; it now follows the same `usage-status.json` → `usag-status.json` → `tt-status.json` fallback chain as `usage_client.py`.
+- **Analytics CLI read order matches the main app**: `adapters/rate_limits.py` previously only read `~/.claude/tt-status.json`; it now follows the same `agentdeck-status.json` → `usag-status.json` → `tt-status.json` fallback chain as `usage_client.py`.
 - **README documents the v0.11.0 update check + GitHub Releases as a network exception**: README.md / README.en.md both gain a new "update check" bullet and list the GitHub Releases API as the second of two network exceptions (the first remains the LiteLLM pricing table).
 
 ## [0.11.0] - 2026-05-24
@@ -971,7 +976,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 - **Two new entries in the "Switch panel" menu**:
   - **Automatically Check for Updates** (toggleable): unchecking it disables the launch-time auto check entirely; the manual entry below still works.
   - **Check for Updates Now**: manually triggers a check, bypassing the 24h cooldown and skip-version preference. If you're already up to date, an alert says so; on network error you see "Update check failed".
-- Preferences are stored in the existing `~/.claude/usage-preferences.json`, with three new keys: `auto_update_check` (default true), `update_dismissed_at` (Unix timestamp), `update_skipped_version` (skipped version string).
+- Preferences are stored in the existing `~/.claude/agentdeck-preferences.json`, with three new keys: `auto_update_check` (default true), `update_dismissed_at` (Unix timestamp), `update_skipped_version` (skipped version string).
 
 ### Changed
 - `setup_app.py` now bundles `pyproject.toml` and `update_checker` into the py2app build — so the packaged `.app` can fall back to reading `pyproject.toml` when `importlib.metadata` can't resolve the version.
@@ -1093,7 +1098,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
 ### Added
 - **Multi-language UI (i18n)**: automatically detects the macOS system language and displays the interface in Traditional Chinese, Simplified Chinese, English, Japanese, or Korean. No configuration needed.
-- **`USAGE_LANG` environment variable**: force a specific language (e.g. `USAGE_LANG=ja`) for development and testing.
+- **`AGENTDECK_LANG` environment variable**: force a specific language (e.g. `AGENTDECK_LANG=ja`) for development and testing.
 
 ### Changed
 - **License changed from MIT to AGPL-3.0**: modified versions that are distributed must be open-sourced.
@@ -1173,7 +1178,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ### Fixed
 - `scripts/install-hook.sh`: wrap paths with `shlex.quote()` when generating the statusLine command, matching `setup_hook.py`. Prevents broken hook installs when the user's Python or hook path contains spaces.
 - `pricing.py`: `_pricing_cache` now records its source (cache / fetched / fallback) and timestamp. Fallback results use a short 10-minute TTL so cost estimates no longer stay stuck on stale fallback values after offline startup when the network recovers.
-- `menubar.py` / `codex_loader.py`: silent `except` blocks now emit `logger.warning(exc_info=True)` when `USAGE_DEBUG=1`, otherwise stay quiet. Debug sessions no longer mistake parse failures for "Codex not installed".
+- `menubar.py` / `codex_loader.py`: silent `except` blocks now emit `logger.warning(exc_info=True)` when `AGENTDECK_DEBUG=1`, otherwise stay quiet. Debug sessions no longer mistake parse failures for "Codex not installed".
 
 ### Documentation
 - `README.md` / `README.en.md`: added a sentence to the pricing table section noting that first launch without a cache does a synchronous fetch and may take ~10 seconds on slow networks, so new users don't think the app is hung.

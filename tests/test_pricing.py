@@ -345,7 +345,7 @@ def test_read_cache_logs_bad_json_in_debug_mode(
     cache_path = tmp_path / "pricing_cache.json"
     cache_path.write_text("{bad json", encoding="utf-8")
     monkeypatch.setattr(pricing, "CACHE_PATH", cache_path)
-    monkeypatch.setenv("USAGE_DEBUG", "1")
+    monkeypatch.setenv("AGENTDECK_DEBUG", "1")
 
     with caplog.at_level(logging.WARNING):
         assert pricing._read_cache() is None
@@ -361,7 +361,7 @@ def test_read_cache_logs_bad_utf8_in_debug_mode(
     cache_path = tmp_path / "pricing_cache.json"
     cache_path.write_bytes(b"\xff")
     monkeypatch.setattr(pricing, "CACHE_PATH", cache_path)
-    monkeypatch.setenv("USAGE_DEBUG", "1")
+    monkeypatch.setenv("AGENTDECK_DEBUG", "1")
 
     with caplog.at_level(logging.WARNING):
         assert pricing._read_cache() is None

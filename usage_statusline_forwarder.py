@@ -21,7 +21,7 @@ from typing import Any, cast
 __version__ = "1.0"
 TIMEOUT_SECONDS = 5
 HOOK_DIR = os.path.expanduser("~/.claude")
-SELF_NAME = "usage-statusline-forwarder.py"
+SELF_NAME = "agentdeck-statusline-forwarder.py"
 
 
 def _configure_windows_utf8_output() -> None:

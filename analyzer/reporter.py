@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 AGENT_LOADERS = {"claude-code": claude, "codex": codex, "antigravity": agy}
 AGENT_NAMES = {"claude-code": "Claude Code", "codex": "Codex"}
 _YEAR_WEEKS = 53
-YEAR_CACHE_PATH = Path(os.path.expanduser("~/.usage/year_cache.json"))
+YEAR_CACHE_PATH = Path(os.path.expanduser("~/.agentdeck/year_cache.json"))
 YEAR_LEDGER_PATH = YEAR_CACHE_PATH.with_name("year_ledger.json")
 YEAR_CACHE_TTL_SECONDS = 6 * 3600
 _YEAR_CACHE_SCHEMA = 1
@@ -488,7 +488,7 @@ def _read_year_ledger() -> _YearLedger:
         with YEAR_LEDGER_PATH.open(encoding="utf-8") as file:
             ledger = json.load(file)
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-        if os.environ.get("USAGE_DEBUG") == "1":
+        if os.environ.get("AGENTDECK_DEBUG") == "1":
             logger.warning(
                 "failed to read year ledger %s",
                 YEAR_LEDGER_PATH,
@@ -531,7 +531,7 @@ def _write_year_ledger(ledger: _YearLedger) -> None:
         os.replace(tmp_path, YEAR_LEDGER_PATH)
         tmp_path = None
     except Exception as exc:
-        if os.environ.get("USAGE_DEBUG") == "1":
+        if os.environ.get("AGENTDECK_DEBUG") == "1":
             logger.warning("failed to write year ledger %s: %s", YEAR_LEDGER_PATH, exc)
     finally:
         if tmp_path and os.path.exists(tmp_path):
@@ -738,7 +738,7 @@ def _read_year_cache() -> dict[str, Any] | None:
         with YEAR_CACHE_PATH.open(encoding="utf-8") as file:
             cache = json.load(file)
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-        if os.environ.get("USAGE_DEBUG") == "1":
+        if os.environ.get("AGENTDECK_DEBUG") == "1":
             logger.warning("failed to read year cache %s", YEAR_CACHE_PATH, exc_info=True)
         return None
 
@@ -772,7 +772,7 @@ def _write_year_cache(data: YearReportData) -> None:
         os.replace(tmp_path, YEAR_CACHE_PATH)
         tmp_path = None
     except Exception as exc:
-        if os.environ.get("USAGE_DEBUG") == "1":
+        if os.environ.get("AGENTDECK_DEBUG") == "1":
             logger.warning("failed to write year cache %s: %s", YEAR_CACHE_PATH, exc)
     finally:
         if tmp_path and os.path.exists(tmp_path):

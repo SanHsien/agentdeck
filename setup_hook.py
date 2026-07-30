@@ -8,7 +8,7 @@
 
 Claude Code calls the command configured in ~/.claude/settings.json statusLine
 and sends session JSON on stdin whenever it refreshes the status line. The
-installer copies usage_statusline.py to ~/.claude/usage-statusline.py and points
+installer copies usage_statusline.py to ~/.claude/agentdeck-statusline.py and points
 statusLine at it, so the main app can read a local status file.
 
 The previous statusLine is backed up under settings["usage"]["previousStatusLine"]
@@ -35,11 +35,11 @@ from typing import Any, cast
 from i18n import t as _t
 
 CLAUDE_SETTINGS = Path(os.path.expanduser("~/.claude/settings.json"))
-HOOK_TARGET = Path(os.path.expanduser("~/.claude/usage-statusline.py"))
-FORWARDER_TARGET = Path(os.path.expanduser("~/.claude/usage-statusline-forwarder.py"))
-STATUS_FILE = Path(os.path.expanduser("~/.claude/usage-status.json"))
+HOOK_TARGET = Path(os.path.expanduser("~/.claude/agentdeck-statusline.py"))
+FORWARDER_TARGET = Path(os.path.expanduser("~/.claude/agentdeck-statusline-forwarder.py"))
+STATUS_FILE = Path(os.path.expanduser("~/.claude/agentdeck-status.json"))
 CODEX_CONFIG = Path(os.path.expanduser("~/.codex/config.toml"))
-CODEX_BACKUP = Path(os.path.expanduser("~/.codex/usage-backup.json"))
+CODEX_BACKUP = Path(os.path.expanduser("~/.codex/agentdeck-backup.json"))
 # LEGACY_TT_* / tokenTracker / tt-* below are MIGRATION-ONLY constants for users
 # upgrading from the third-party tool stormzhang/token-tracker. They are NOT links
 # to any in-repo module or external directory. Do not investigate or "go look" for
@@ -198,9 +198,9 @@ def _migrate_windows_statusline_command_if_needed(
     command = sl.get("command")
     if not isinstance(command, str) or ("\\" not in command and command.isascii()):
         return
-    if "usage-statusline-forwarder" in command:
+    if "agentdeck-statusline-forwarder" in command:
         new_command = _forwarder_command()
-    elif "usage-statusline" in command:
+    elif "agentdeck-statusline" in command:
         new_command = _statusline_command()
     else:
         return
@@ -246,13 +246,13 @@ def _migrate_bundled_python_commands_if_needed(
     if isinstance(sl, dict):
         command = sl.get("command")
         if isinstance(command, str) and _uses_bundled_app_python(command):
-            if "usage-statusline-forwarder" in command:
+            if "agentdeck-statusline-forwarder" in command:
                 new_command = _forwarder_command()
                 if command != new_command:
                     sl["command"] = new_command
                     changed = True
                     details.append("statusLine=forwarder")
-            elif "usage-statusline" in command:
+            elif "agentdeck-statusline" in command:
                 new_command = _statusline_command()
                 if command != new_command:
                     sl["command"] = new_command
@@ -269,7 +269,7 @@ def _is_usage_hook(sl: object) -> bool:
     if not isinstance(sl, dict):
         return False
     cmd = sl.get("command")
-    return isinstance(cmd, str) and "usage-statusline" in cmd
+    return isinstance(cmd, str) and "agentdeck-statusline" in cmd
 
 
 def _is_legacy_tt_hook(sl: object) -> bool:
@@ -288,9 +288,9 @@ def _detect_current_state(settings: dict[str, Any] | None = None) -> str:
     cmd = sl.get("command")
     if not isinstance(cmd, str) or not cmd.strip():
         return "none"
-    if "usage-statusline-forwarder" in cmd:
+    if "agentdeck-statusline-forwarder" in cmd:
         return "us-forwarder"
-    if "usage-statusline" in cmd:
+    if "agentdeck-statusline" in cmd:
         return "us-direct"
     if "tt-statusline" in cmd:
         return "legacy-tt"
@@ -332,7 +332,7 @@ def _migrate_from_legacy_usage() -> None:
             if (
                 isinstance(cmd, str)
                 and f"{LEGACY_NAME}-statusline" in cmd
-                and "usage-statusline" not in cmd
+                and "agentdeck-statusline" not in cmd
             ):
                 settings.pop("statusLine", None)
                 changed = True

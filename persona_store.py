@@ -37,7 +37,7 @@ from i18n import packaged_resource_path
 
 PERSONA_DIR = packaged_resource_path("personas", Path(__file__).with_name("personas"))
 AGENTS_DIR = Path(os.path.expanduser("~/.claude/agents"))
-STATE_FILE = Path(os.path.expanduser("~/.usage/persona_state.json"))
+STATE_FILE = Path(os.path.expanduser("~/.agentdeck/persona_state.json"))
 
 # Role and pack ids become filenames under ~/.claude/agents, so they may not
 # contain anything that could escape that directory or collide after

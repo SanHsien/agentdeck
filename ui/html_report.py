@@ -873,10 +873,10 @@ def save_and_open(
         path = Path(os.path.expanduser(out_path))
         display_path = str(path.expanduser())
     else:
-        reports_dir = Path.home() / ".usage-reports"
+        reports_dir = Path.home() / ".agentdeck-reports"
         reports_dir.mkdir(parents=True, exist_ok=True)
-        path = reports_dir / f"usage-report-{datetime.now().strftime('%Y%m%d-%H%M%S')}.html"
-        display_path = f"~/.usage-reports/{path.name}"
+        path = reports_dir / f"agentdeck-report-{datetime.now().strftime('%Y%m%d-%H%M%S')}.html"
+        display_path = f"~/.agentdeck-reports/{path.name}"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(generate_html(data, language=language), encoding="utf-8")
     if out_path is None:

@@ -20,7 +20,7 @@ from analyzer import diagnoser
 def test_refresh_snapshot_writes_payload_with_generated_at_and_fingerprint(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    snapshot = tmp_path / "usage-diagnosis.json"
+    snapshot = tmp_path / "agentdeck-diagnosis.json"
     monkeypatch.setattr(mod, "SNAPSHOT_PATH", snapshot)
     monkeypatch.setattr(
         diagnoser,
@@ -66,7 +66,7 @@ def test_refresh_snapshot_writes_payload_with_generated_at_and_fingerprint(
 def test_refresh_snapshot_skips_when_snapshot_is_younger_than_one_day(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    snapshot = tmp_path / "usage-diagnosis.json"
+    snapshot = tmp_path / "agentdeck-diagnosis.json"
     monkeypatch.setattr(mod, "SNAPSHOT_PATH", snapshot)
     snapshot.write_text(
         json.dumps({"generated_at": "2026-06-11T01:00:00Z", "findings": []}),

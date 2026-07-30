@@ -1,14 +1,14 @@
 <p align="center">
-  <img src="docs/readme-logo.png" alt="usage logo" width="128">
+  <img src="docs/readme-logo.png" alt="agentdeck logo" width="128">
 </p>
 
-# usage
+# agentdeck
 
 ### 把 Claude Code、Codex 與 Antigravity 額度直接放進 Windows 系統匣
 
-讓 Claude Code、Codex 與 Antigravity 的額度在工作時持續可見。`usage` 把 session 限額、每週限額與成本脈絡放進 Windows 系統匣，讓你在工作被打斷前就先掌握用量。
+讓 Claude Code、Codex 與 Antigravity 的額度在工作時持續可見。`agentdeck` 把 session 限額、每週限額與成本脈絡放進 Windows 系統匣，讓你在工作被打斷前就先掌握用量。
 
-繁體中文 · [English](README.en.md) &nbsp;|&nbsp; [介紹頁](https://sanhsien.github.io/usage/)
+繁體中文 · [English](README.en.md) &nbsp;|&nbsp; [介紹頁](https://sanhsien.github.io/agentdeck/)
 
 [![Python](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](#安裝)
@@ -23,18 +23,18 @@
 > 其他差異：介面語言改為繁體中文與英文兩種；上游的 Discussions 與 star 數屬於原專案、本文件不再轉貼。介紹頁由本 repo 的 `docs/` 提供。
 
 <p align="center">
-  <img src="docs/showcase.en.png" alt="usage — 把 Claude Code、Codex 與 Antigravity 的額度釘在 Windows 系統匣" width="820">
+  <img src="docs/showcase.en.png" alt="agentdeck — 把 Claude Code、Codex 與 Antigravity 的額度釘在 Windows 系統匣" width="820">
 </p>
 
-`usage` 把 **Claude Code、Codex 與 Antigravity** 的額度釘在系統匣，用顏色標好警戒級別，掃一眼就懂。Claude Code 與 Codex 的數字是被動讀自你機器上原本就在寫的本機檔案，讀取這些數字**不會呼叫 Anthropic 或 OpenAI 的 LLM API**——所以看額度這件事本身永遠不會增加你的用量。Antigravity 額度則來自 Google 官方額度端點，用的是 Antigravity CLI 本來就存在本機的登入身分。
+`agentdeck` 把 **Claude Code、Codex 與 Antigravity** 的額度釘在系統匣，用顏色標好警戒級別，掃一眼就懂。Claude Code 與 Codex 的數字是被動讀自你機器上原本就在寫的本機檔案，讀取這些數字**不會呼叫 Anthropic 或 OpenAI 的 LLM API**——所以看額度這件事本身永遠不會增加你的用量。Antigravity 額度則來自 Google 官方額度端點，用的是 Antigravity CLI 本來就存在本機的登入身分。
 
 ## 為什麼需要 usage？
 
-長時間重構或除錯若依賴 Claude Code，無預警撞到額度上限代價很高。`usage` 讓你在撞牆前就先看到 5 小時與每週限額，並且全程留在畫面上——不用停下來跑指令、也不用另外開頁面，答案就在你本來就在看的地方。
+長時間重構或除錯若依賴 Claude Code，無預警撞到額度上限代價很高。`agentdeck` 讓你在撞牆前就先看到 5 小時與每週限額，並且全程留在畫面上——不用停下來跑指令、也不用另外開頁面，答案就在你本來就在看的地方。
 
 ## 快速上手
 
-從[最新 Release](https://github.com/SanHsien/usage/releases/latest) 下載 `usage-windows.zip`，解壓後執行 `usage.exe` —— 無須安裝程式。
+從[最新 Release](https://github.com/SanHsien/agentdeck/releases/latest) 下載 `usage-windows.zip`，解壓後執行 `usage.exe` —— 無須安裝程式。
 
 系統匣會出現額度圖示，左鍵開面板、右鍵開選單。完整設定流程見下方 [安裝](#安裝)。
 
@@ -65,7 +65,7 @@
 - **拖曳排序：** 按住任何一張額度卡上下拖曳就能交換順序，排法在所有主題間共用、重開也會記住。
 - **AI 人才市場（自製版）：** 把預先寫好的 subagent 角色安裝進 `~/.claude/agents/`。上游這個功能靠一顆閉源二進位提供角色內容，來源與發佈 repo 對外都是 404、且只有 macOS 版，任何人 clone 公開 repo 都用不到。本 fork 改成**自己寫的開源實作**：角色定義放在 repo 的 [`personas/`](personas/)，可自行編輯與新增；安裝後若你手動改過該檔，面板會標示並提供還原。**若你原本已有同名 agent，安裝會先備份再覆寫，並告知備份檔名。**
 - **AI 圓桌討論：** 開一個獨立視窗，讓 Claude Code、Codex、Antigravity 進行多輪討論——自選參與者、模型與辯論風格，開始前就看得到大約會花多少 token。可以在輪間插話引導方向，共識計票看得出誰不同意，並讓討論在全體同意時提早收尾。可附上唯讀資料夾讓參與者參考真實檔案。（指派專家角色需要 AI 人才市場，本 fork 暫未提供。）
-- **AI 更新日報：** 開啟[更新彙整頁](https://sanhsien.github.io/usage/ai-updates/)，涵蓋 Claude Code、Codex、Antigravity 與相關工具，附官方原文對照。頁面由本 repo 的 `ai_updates.json` 產生（`scripts/build_ai_updates.py`），資料隨上游同步更新。
+- **AI 更新日報：** 開啟[更新彙整頁](https://sanhsien.github.io/agentdeck/ai-updates/)，涵蓋 Claude Code、Codex、Antigravity 與相關工具，附官方原文對照。頁面由本 repo 的 `ai_updates.json` 產生（`scripts/build_ai_updates.py`），資料隨上游同步更新。
 - **神獸夥伴：** 百分比旁常駐一隻小型白色動畫神獸（Claude 是鳳凰，Codex 是飛龍，Antigravity 是獅子），各自跟著自家工具的 token 燃燒率動態加速。
 - **自動多語言 (i18n)：** 介面支援繁體中文與英文，自動跟隨系統語言設定。所有中文語系（含簡體）都會套用繁體中文，其餘語系回退英文。
 
@@ -83,7 +83,7 @@
 
 ## 安裝
 
-1. 到[最新 Release](https://github.com/SanHsien/usage/releases/latest) 下載 `usage-windows.zip`。
+1. 到[最新 Release](https://github.com/SanHsien/agentdeck/releases/latest) 下載 `usage-windows.zip`。
 2. 解壓到任何位置，執行 `usage.exe`。無須安裝程式、不寫登錄檔（除非你開啟「開機自啟」）。
 3. 想開機自動啟動：右鍵選單勾選「開機時啟動」。
 
@@ -105,7 +105,7 @@ uv run --no-sync python main.py --mock     # 假資料預覽
 uv run --no-sync python main.py --doctor   # 環境與 hook 診斷
 ```
 
-需要 Python 3.13。開發環境完整說明見 [開發文件](docs/DEVELOPMENT.win.zh-TW.md)。
+需要 Python 3.13。開發環境完整說明見 [開發文件](docs/DEVELOPMENT.zh-TW.md)。
 
 ### 首次打開：設定狀態列
 
@@ -141,7 +141,7 @@ uv run --no-sync python main.py --doctor   # 環境與 hook 診斷
 | 不小心按到「結束」 | 程式已終止 | 重新執行 `usage.exe`。 |
 | 顯示「N 分鐘未更新」 | Claude Code 未執行 | 打開 Claude Code 跑一下就會更新 |
 | Codex 區塊空白 | 找不到 Codex 紀錄 | 用 Codex 跑一次對話 |
-| 今日花費是 $0.00 | 價格表對不上或抓取失敗 | 刪掉 `~/.usage/pricing_cache.json` 重新抓取 |
+| 今日花費是 $0.00 | 價格表對不上或抓取失敗 | 刪掉 `~/.agentdeck/pricing_cache.json` 重新抓取 |
 | Antigravity 卡片沒出現 | 未安裝或未登入 Antigravity CLI | 安裝並登入 Antigravity CLI，背景額度查詢成功後卡片會自動出現 |
 
 ## 跟其他工具比較
@@ -164,11 +164,11 @@ uv run --no-sync python main.py --doctor   # 環境與 hook 診斷
 
 ## 開發
 
-想跑 TUI、設定 agent 或自己打包？完整說明在 **[Windows 開發文件](docs/DEVELOPMENT.win.zh-TW.md)**；移植 macOS 功能到 Windows 的方法見 **[移植手冊](docs/PORTING.zh-TW.md)**。
+想跑 TUI、設定 agent 或自己打包？完整說明在 **[Windows 開發文件](docs/DEVELOPMENT.zh-TW.md)**；移植 macOS 功能到 Windows 的方法見 **[移植手冊](docs/PORTING.zh-TW.md)**。
 
 ## 其他可參考專案
 
-以下專案只作**概念與流程參考**，不是 `usage` 的執行依賴，也沒有任何原始碼被併入本專案。授權未宣告的專案在法律上等同保留所有權利，無法併入本 AGPL-3.0 repo，因此僅供觀念對照。
+以下專案只作**概念與流程參考**，不是 `agentdeck` 的執行依賴，也沒有任何原始碼被併入本專案。授權未宣告的專案在法律上等同保留所有權利，無法併入本 AGPL-3.0 repo，因此僅供觀念對照。
 
 | 名稱 | 授權 | 可參考點 |
 | --- | --- | --- |

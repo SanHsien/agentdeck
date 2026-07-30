@@ -53,13 +53,13 @@ jobs:
       - name: Zip Windows bundle
         shell: pwsh
         run: |
-          Compress-Archive -Path dist/usage-windows -DestinationPath dist/usage-windows.zip
-          $hash = (Get-FileHash dist/usage-windows.zip -Algorithm SHA256).Hash.ToLower()
-          "$hash  usage-windows.zip" | Out-File -FilePath dist/usage-windows.zip.sha256 -Encoding ascii -NoNewline
+          Compress-Archive -Path dist/agentdeck-windows -DestinationPath dist/agentdeck-windows.zip
+          $hash = (Get-FileHash dist/agentdeck-windows.zip -Algorithm SHA256).Hash.ToLower()
+          "$hash  agentdeck-windows.zip" | Out-File -FilePath dist/agentdeck-windows.zip.sha256 -Encoding ascii -NoNewline
 
       - name: Upload to release
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
-        run: gh release upload "${{ steps.ref.outputs.tag }}" dist/usage-windows.zip dist/usage-windows.zip.sha256 --clobber
+        run: gh release upload "${{ steps.ref.outputs.tag }}" dist/agentdeck-windows.zip dist/agentdeck-windows.zip.sha256 --clobber
 

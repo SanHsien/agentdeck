@@ -24,7 +24,7 @@ def test_load_rate_limits_skips_bad_utf8_status_without_crashing(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    status_path = tmp_path / "usage-status.json"
+    status_path = tmp_path / "agentdeck-status.json"
     status_path.write_bytes(b"\xff\xfe not utf-8\n")
     monkeypatch.setattr(rate_limits, "STATUS_FILE", str(status_path))
     monkeypatch.setattr(rate_limits, "LEGACY_STATUS_FILE", str(tmp_path / "missing-legacy.json"))
@@ -37,7 +37,7 @@ def test_load_rate_limits_accepts_numeric_string_fields(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    status_path = tmp_path / "usage-status.json"
+    status_path = tmp_path / "agentdeck-status.json"
     _write_status(
         status_path,
         {
@@ -68,7 +68,7 @@ def test_load_rate_limits_clears_expired_percentage(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    status_path = tmp_path / "usage-status.json"
+    status_path = tmp_path / "agentdeck-status.json"
     now_ts = datetime.now(UTC).timestamp()
     _write_status(
         status_path,

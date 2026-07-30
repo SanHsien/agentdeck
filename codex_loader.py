@@ -154,7 +154,7 @@ def _sqlite_file_fingerprint(path: Path) -> _SqliteFileFingerprint:
 # Disk cache for JSONL parsing results. Schema version must be bumped when the
 # serialization format or parsing logic changes incompatibly.
 _CODEX_JSONL_CACHE_SCHEMA = 4
-JSONL_CACHE_PATH = Path(os.path.expanduser("~/.usage/codex_jsonl_cache.json"))
+JSONL_CACHE_PATH = Path(os.path.expanduser("~/.agentdeck/codex_jsonl_cache.json"))
 
 # Module-level flag to ensure seed loading happens exactly once.
 _disk_cache_seeded = False
@@ -535,7 +535,7 @@ def _load_sqlite_rate_limits() -> CodexRateLimits | None:
             with closing(sqlite3.connect(_readonly_sqlite_uri(LOGS_DB), uri=True)) as conn:
                 rows = conn.execute(query).fetchall()
         except (OSError, sqlite3.Error):
-            if os.environ.get("USAGE_DEBUG") == "1":
+            if os.environ.get("AGENTDECK_DEBUG") == "1":
                 logger.warning("codex sqlite rate limits load failed", exc_info=True)
             return None
         _sqlite_rate_limits_cache_key = fingerprint
@@ -753,7 +753,7 @@ def _load_thread_metadata() -> dict[str, _ThreadMetadata]:
                 "SELECT id, model, cwd FROM threads",
             ).fetchall()
     except (OSError, sqlite3.Error):
-        if os.environ.get("USAGE_DEBUG") == "1":
+        if os.environ.get("AGENTDECK_DEBUG") == "1":
             logger.warning("codex thread metadata load failed", exc_info=True)
         return {}
     result = {
@@ -799,7 +799,7 @@ def _load_sqlite_log_entries(
             ).fetchall()
             newest = newest_rows[0] if newest_rows else None
     except (OSError, sqlite3.Error):
-        if os.environ.get("USAGE_DEBUG") == "1":
+        if os.environ.get("AGENTDECK_DEBUG") == "1":
             logger.warning("codex sqlite logs load failed", exc_info=True)
         return []
 

@@ -88,7 +88,7 @@ def test_enable_preserves_existing_hooks(
     data = json.loads(settings.read_text(encoding="utf-8"))
     commands = [h["command"] for e in data["hooks"]["SessionStart"] for h in e["hooks"]]
     assert "other" in commands
-    assert any("usage-session-resume" in c for c in commands)
+    assert any("agentdeck-session-resume" in c for c in commands)
     assert data["hooks"]["PreToolUse"][0]["hooks"][0]["command"] == "guard"
 
 

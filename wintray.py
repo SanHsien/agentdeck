@@ -504,7 +504,7 @@ def _save_active_panel_id(panel_id: str) -> None:
 
 def _current_version() -> str:
     try:
-        return metadata.version("usage")
+        return metadata.version("agentdeck")
     except metadata.PackageNotFoundError:
         from i18n import packaged_resource_path
 
@@ -888,7 +888,7 @@ class _WindowsTrayController:
         threading.Thread(target=self._refresh_worker, daemon=True).start()
 
     def _refresh_worker(self) -> None:
-        debug_timing = os.environ.get("USAGE_DEBUG") == "1"
+        debug_timing = os.environ.get("AGENTDECK_DEBUG") == "1"
 
         def measure(stage: str, started_at: float) -> None:
             if debug_timing:
@@ -906,7 +906,7 @@ class _WindowsTrayController:
                 self.inject_state()
                 measure("inject_state", started_at)
         except Exception:
-            if os.environ.get("USAGE_DEBUG") == "1":
+            if os.environ.get("AGENTDECK_DEBUG") == "1":
                 logger.warning("Windows tray refresh failed", exc_info=True)
         finally:
             self.refresh_lock.release()
@@ -1255,7 +1255,7 @@ class _WindowsTrayController:
                 for event in events:
                     self._send_quota_notification(event, state)
         except Exception:
-            if os.environ.get("USAGE_DEBUG") == "1":
+            if os.environ.get("AGENTDECK_DEBUG") == "1":
                 logger.warning("Windows quota notification processing failed", exc_info=True)
 
     def _send_quota_notification(
@@ -1465,11 +1465,18 @@ class _WindowsTrayController:
 
         pystray's MenuItem has no tooltip, so the text upstream shows on hover
         has nowhere to live in the tray menu. Delivering it on enable keeps the
-        explanation rather than dropping it, and matches how window_keeper has
-        always introduced itself on this platform.
+        explanation instead of dropping it.
+
+        A tray balloon, not a MessageBox: this is information the user did not
+        ask for, so it must not block until dismissed. The toggles run on daemon
+        threads, and a modal dialog there waits forever for a click that may
+        never come — which is exactly how it hung the test suite.
         """
+        icon = self.icon
+        if icon is None or not hasattr(icon, "notify"):
+            return
         with contextlib.suppress(Exception):
-            self._message_box(_t(self.language, tooltip_key))
+            icon.notify(_t(self.language, tooltip_key), _t(self.language, "app_name"))
 
     def _report_action_result(
         self, message: str, *, detail: str = "", failed: bool = False
@@ -1492,7 +1499,7 @@ class _WindowsTrayController:
 
         library_name = "windll"
         windll: Any = getattr(ctypes, library_name)
-        return int(windll.user32.MessageBoxW(0, text, "usage", style))
+        return int(windll.user32.MessageBoxW(0, text, "agentdeck", style))
 
     def handle_panel_message(self, message: object) -> list[dict[str, object]] | None:
         payload: object = message
@@ -1800,7 +1807,7 @@ def _show_already_running_notice() -> None:
 
     library_name = "windll"
     windll: Any = getattr(ctypes, library_name)
-    windll.user32.MessageBoxW(0, _t(detect_lang(), "wintray_already_running"), "usage", 0x40)
+    windll.user32.MessageBoxW(0, _t(detect_lang(), "wintray_already_running"), "agentdeck", 0x40)
 
 
 def run_app(mock: bool = False, interval: int = 60) -> None:
@@ -1813,7 +1820,7 @@ def run_app(mock: bool = False, interval: int = 60) -> None:
 
     controller = _WindowsTrayController(mock, interval)
     window = webview.create_window(
-        "usage",
+        "agentdeck",
         html=panel_html(controller.panel_filename()),
         js_api=_JSApi(controller),
         width=PANEL_WIDTH,
@@ -1827,7 +1834,7 @@ def run_app(mock: bool = False, interval: int = 60) -> None:
     if window is None:
         raise RuntimeError("pywebview did not create a window")
     window.events.loaded += controller.on_loaded
-    icon = pystray.Icon("usage", draw_tray_icon(None), "usage", _menu(controller))
+    icon = pystray.Icon("agentdeck", draw_tray_icon(None), "agentdeck", _menu(controller))
     controller.attach(icon, window)
     icon.run_detached()
-    webview.start(gui="edgechromium", debug=os.environ.get("USAGE_DEBUG") == "1")
+    webview.start(gui="edgechromium", debug=os.environ.get("AGENTDECK_DEBUG") == "1")

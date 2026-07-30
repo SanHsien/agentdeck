@@ -189,7 +189,7 @@ def setup_fsevents(delegate: Any) -> Any:
         _cs_lib.FSEventStreamStart(stream)
         return stream
     except Exception:
-        if os.environ.get("USAGE_DEBUG") == "1":
+        if os.environ.get("AGENTDECK_DEBUG") == "1":
             logger.warning("FSEvents setup failed", exc_info=True)
         return None
 

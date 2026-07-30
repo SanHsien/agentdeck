@@ -107,7 +107,7 @@ def _status_command() -> str:
         return "not configured"
     if (
         sys.platform == "win32"
-        and "usage-statusline" in command
+        and "agentdeck-statusline" in command
         and "\\" in command
     ):
         return "Windows Git Bash-incompatible paths; run usage --setup, then restart Claude Code"

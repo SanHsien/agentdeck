@@ -33,7 +33,7 @@ from typing import Any
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
-CACHE_PATH = Path(os.path.expanduser("~/.usage/agy_quota_cache.json"))
+CACHE_PATH = Path(os.path.expanduser("~/.agentdeck/agy_quota_cache.json"))
 # Legacy OAuth token written by older Antigravity CLI versions. Read-only: we
 # never write back here (that is the CLI's home and could corrupt its login).
 _TOKEN_PATH = Path(os.path.expanduser("~/.gemini/antigravity-cli/antigravity-oauth-token"))

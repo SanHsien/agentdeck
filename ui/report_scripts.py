@@ -68,7 +68,7 @@ function closeShareModal() {
 }
 
 function buildShareFilename(ext) {
-  return `usage-report-${new Date().toISOString().slice(0, 10)}.${ext}`;
+  return `agentdeck-report-${new Date().toISOString().slice(0, 10)}.${ext}`;
 }
 
 async function withShareableReport(maskProjects, callback) {

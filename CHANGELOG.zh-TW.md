@@ -5,7 +5,12 @@
 本檔記錄 usage 所有重要變更。格式參考 [Keep a Changelog](https://keepachangelog.com/)，
 版號遵循[語意化版本 2.0.0](https://semver.org/lang/zh-TW/)。
 
-## [Unreleased]
+## [0.31.0] - 2026-07-30
+
+### 變更
+- **改名為 agentdeck**：`usage` 只描述了額度監看，但這個程式還有多模型圓桌討論、角色安裝、報告分析、省 token 模式——名字說不出一半。使用者碰得到的東西全部改名：執行檔、statusLine hook 與狀態檔、settings key、`~/.agentdeck/`、`~/.agentdeck-reports/`、`AGENTDECK_*` 環境變數。內部模組檔名刻意維持 `usage_*`，改它要動到每一個 import 卻沒有使用者價值。**沒有相容層**，既有安裝必須先用舊版的 `--unsetup` 移除，再安裝新版。
+- **面板首次開啟的角落跟著工作列走**：原本寫死在右下角，那只有工作列在底部時才靠近通知區。拖曳與記住位置的行為不變。
+- **開發文件合併**：上游那兩份 macOS 導向的 `DEVELOPMENT` 還在講 menu bar、`.app` 打包與 LaunchAgent，已由準確的 Windows 版取代，644 行縮到 156 行。
 
 ### 新增
 - **AI 人才市場改為自製開源版**：上游的角色內容來自一顆閉源二進位，其原始碼與發佈 repo 對外都是 404、且只有 macOS 版——任何人 clone 公開 repo 在兩個平台上都用不到這個功能。改由 `persona_store` 提供：角色定義放在 repo 的 `personas/*.json`，安裝後成為一般的 Claude Code subagent（寫入 `~/.claude/agents/`），手動改過會標示為 drift 並提供還原。**若你原本已有同名 agent，安裝會先備份再覆寫，且解除安裝絕不刪除不是我們寫的檔案。**
@@ -54,7 +59,7 @@
 ## [0.29.6] - 2026-07-29
 
 ### 修正
-- **Windows 版 Claude Code 面板不再永久卡在 `--`**：安裝程式原本只用 `shutil.which()` 找到 `python`/`py` 就直接採用，沒有驗證它真的能執行——導致沒裝真正 Python 的 Windows 機器上，statusLine hook 會被悄悄接到 Windows 10/11 內建、用來導去微軟商店的「App Execution Alias」空殼 `python.exe`/`python3.exe`。這個空殼每次刷新都靜默失敗，`usage-status.json` 永遠不會被寫出來，面板因此永久顯示 `--`——不是「還在載入」的過渡狀態。安裝程式現在會先實際執行候選路徑的 `--version` 驗證能不能跑，跑不動就跳過換下一個。
+- **Windows 版 Claude Code 面板不再永久卡在 `--`**：安裝程式原本只用 `shutil.which()` 找到 `python`/`py` 就直接採用，沒有驗證它真的能執行——導致沒裝真正 Python 的 Windows 機器上，statusLine hook 會被悄悄接到 Windows 10/11 內建、用來導去微軟商店的「App Execution Alias」空殼 `python.exe`/`python3.exe`。這個空殼每次刷新都靜默失敗，`agentdeck-status.json` 永遠不會被寫出來，面板因此永久顯示 `--`——不是「還在載入」的過渡狀態。安裝程式現在會先實際執行候選路徑的 `--version` 驗證能不能跑，跑不動就跳過換下一個。
 
 ## [0.29.5] - 2026-07-27
 
@@ -122,8 +127,8 @@
 ## [0.28.20] - 2026-07-24
 
 ### 修正
-- **「5 小時自動連線」在第一次 ping 之後就完全不再啟動。** 0.28.17 把原本的「距離上次 ping 滿 5 小時」節流改成「認 reset 邊界去重」，但這個做法只有在邊界會持續更新時才成立——而它不會：自動 ping 打的是 headless 的 `claude -p`，不會觸發 Claude Code 的狀態列 hook，`usage-status.json` 因此一直回報那個已經處理過的邊界，keeper 就此永久卡死。實測有機器連續 23 小時沒有自動開過視窗，同一個開關下走冷卻時間的 Antigravity keeper 卻一切正常。邊界判斷保留（真正換窗時它能立刻反應），另外並行加上 5 小時 5 分的冷卻，作為資料失去更新時的第二條獨立恢復路徑。既有的安全條件一個都沒動，視窗還活著時依然不會誤 ping。
-- **`~/.usage/` 會累積孤兒暫存檔。** 所有原子寫檔都在 `finally` 區塊裡刪掉自己的 `mkstemp` 暫存檔，但 app 被強制結束或寫到一半當掉時，那段根本不會執行。實測有安裝在十二天內累積了 40 MB，主要來自寫入最慢、最容易被中斷的大型 JSONL 快取。現在啟動時會掃過 `~/.usage` 與其下一層 `*.d` 目錄，只刪掉「檔名符合 `mkstemp` 形態」且「24 小時沒有被動過」的普通檔案——這個門檻遠長於任何一次寫入，因此不會刪到另一個 usage 行程正在寫的暫存檔。符號連結與目錄無論檔名多像都不會被碰。
+- **「5 小時自動連線」在第一次 ping 之後就完全不再啟動。** 0.28.17 把原本的「距離上次 ping 滿 5 小時」節流改成「認 reset 邊界去重」，但這個做法只有在邊界會持續更新時才成立——而它不會：自動 ping 打的是 headless 的 `claude -p`，不會觸發 Claude Code 的狀態列 hook，`agentdeck-status.json` 因此一直回報那個已經處理過的邊界，keeper 就此永久卡死。實測有機器連續 23 小時沒有自動開過視窗，同一個開關下走冷卻時間的 Antigravity keeper 卻一切正常。邊界判斷保留（真正換窗時它能立刻反應），另外並行加上 5 小時 5 分的冷卻，作為資料失去更新時的第二條獨立恢復路徑。既有的安全條件一個都沒動，視窗還活著時依然不會誤 ping。
+- **`~/.agentdeck/` 會累積孤兒暫存檔。** 所有原子寫檔都在 `finally` 區塊裡刪掉自己的 `mkstemp` 暫存檔，但 app 被強制結束或寫到一半當掉時，那段根本不會執行。實測有安裝在十二天內累積了 40 MB，主要來自寫入最慢、最容易被中斷的大型 JSONL 快取。現在啟動時會掃過 `~/.usage` 與其下一層 `*.d` 目錄，只刪掉「檔名符合 `mkstemp` 形態」且「24 小時沒有被動過」的普通檔案——這個門檻遠長於任何一次寫入，因此不會刪到另一個 usage 行程正在寫的暫存檔。符號連結與目錄無論檔名多像都不會被碰。
 
 ## [0.28.19] - 2026-07-23
 
@@ -182,7 +187,7 @@
 ## [0.28.9] - 2026-07-17
 
 ### 修正
-- **Claude Code 的狀態列 hook 在 Windows 上終於整套打通**：一次合併四個修正。`setup_hook` 現在優先採用全 ASCII 的 `python.exe` 路徑（若虛擬環境路徑非 ASCII 則退回系統 PATH），因為 Claude Code 在 Windows 上無法啟動路徑含非 ASCII 字元的狀態列指令；`--setup` 會遷移既有的非 ASCII 指令。五個 hook 腳本現在都改用 `sys.stdin.buffer` 讀取標準輸入並明確以 UTF-8 解碼（轉發器的子行程也固定 `encoding=utf-8`），因為 Windows 原本會用系統語言的編碼頁解碼管線傳入的工作階段 JSON，導致像 `GitHub專案` 這種路徑變成亂碼，讓 JSON 解析失敗、`usage-status.json` 悄悄寫不出來。沒有設定 `LANG` 類環境變數時（Windows 常態），hook 現在會改用 `GetUserDefaultUILanguage` 判斷語言，跟系統匣既有的語言偵測邏輯一致。`get_width()` 現在會透過 `CONOUT$` + `GetConsoleScreenBufferInfo` 探測真實主控台寬度，不再固定退回 116 欄，讓寬螢幕終端機恢復顯示重置時間的「(left)」後綴。非 Windows 行為不變。
+- **Claude Code 的狀態列 hook 在 Windows 上終於整套打通**：一次合併四個修正。`setup_hook` 現在優先採用全 ASCII 的 `python.exe` 路徑（若虛擬環境路徑非 ASCII 則退回系統 PATH），因為 Claude Code 在 Windows 上無法啟動路徑含非 ASCII 字元的狀態列指令；`--setup` 會遷移既有的非 ASCII 指令。五個 hook 腳本現在都改用 `sys.stdin.buffer` 讀取標準輸入並明確以 UTF-8 解碼（轉發器的子行程也固定 `encoding=utf-8`），因為 Windows 原本會用系統語言的編碼頁解碼管線傳入的工作階段 JSON，導致像 `GitHub專案` 這種路徑變成亂碼，讓 JSON 解析失敗、`agentdeck-status.json` 悄悄寫不出來。沒有設定 `LANG` 類環境變數時（Windows 常態），hook 現在會改用 `GetUserDefaultUILanguage` 判斷語言，跟系統匣既有的語言偵測邏輯一致。`get_width()` 現在會透過 `CONOUT$` + `GetConsoleScreenBufferInfo` 探測真實主控台寬度，不再固定退回 116 欄，讓寬螢幕終端機恢復顯示重置時間的「(left)」後綴。非 Windows 行為不變。
 
 ## [0.28.8] - 2026-07-17
 
@@ -193,7 +198,7 @@
 ## [0.28.7] - 2026-07-17
 
 ### 修正
-- **即使 statusLine hook 沒觸發，Windows 上也能顯示 Claude 額度**：某些 Windows 環境因 Claude Code 的官方 regression 導致 hook 完全不會被呼叫，Claude 額度卡片因此永遠空白。`usage_client.py` 現在會在找不到 `usage-status.json` 時，改讀 Claude Code 自己寫的 `~/.claude.json` 裡的 `cachedUsageUtilization` 當備援資料源，卡片仍能正常顯示數字。
+- **即使 statusLine hook 沒觸發，Windows 上也能顯示 Claude 額度**：某些 Windows 環境因 Claude Code 的官方 regression 導致 hook 完全不會被呼叫，Claude 額度卡片因此永遠空白。`usage_client.py` 現在會在找不到 `agentdeck-status.json` 時，改讀 Claude Code 自己寫的 `~/.claude.json` 裡的 `cachedUsageUtilization` 當備援資料源，卡片仍能正常顯示數字。
 - **Windows 上含中日韓字元的專案路徑不再讓 session hook 失效**：接續上次進度、省 token 模式與其提醒這幾個 hook 指令過去可能指向專案或 app bundle 的來源路徑，若該路徑含中日韓字元會在 Windows 上執行失敗。自我修復現在會把這些指令正規化成固定的 `~/.claude/` 目標路徑，且這個遷移具備冪等性——指令已經正確時，不會每次重開都重寫 `settings.json` 並多寫一筆重複的自我修復紀錄。
 
 ## [0.28.6] - 2026-07-17
@@ -237,7 +242,7 @@
 ## [0.28.1] - 2026-07-15
 
 ### 新增
-- **Windows 會自動偵測介面語言**：在沒有設定 `USAGE_LANG`／`TT_LANG`／`LANG` 的情況下，語言偵測過去只會詢問 macOS（`NSLocale`），在 Windows 上永遠退回英文。現在會透過 `locale.windows_locale` 對應 `GetUserDefaultUILanguage()`，因此 zh-TW／zh-CN／ja／ko 的 Windows 介面語言開箱即得到對應的介面語言。環境變數仍有較高優先權。
+- **Windows 會自動偵測介面語言**：在沒有設定 `AGENTDECK_LANG`／`TT_LANG`／`LANG` 的情況下，語言偵測過去只會詢問 macOS（`NSLocale`），在 Windows 上永遠退回英文。現在會透過 `locale.windows_locale` 對應 `GetUserDefaultUILanguage()`，因此 zh-TW／zh-CN／ja／ko 的 Windows 介面語言開箱即得到對應的介面語言。環境變數仍有較高優先權。
 
 ### 變更
 - **mypy 現在也會在 Windows CI job 上執行**：`check-windows` job 過去跳過型別檢查，這正是數個 Windows 限定缺陷（包括系統匣啟動崩潰面）沒被發現的原因。平台條件式的程式碼路徑（`termios`／`msvcrt` 按鍵讀取、`os.getuid`、`time.tzset`、pywebview 的 `Window | None`）現在都有正確型別，讓 `mypy .` 在 macOS 與 Windows 上都乾淨通過。
@@ -504,7 +509,7 @@
 ## [0.22.6] - 2026-06-23
 
 ### 修正
-- **年度 Wrapped 與 52 週貢獻熱力圖不再因來源紀錄被清除而丟失歷史**：年度視圖原本每次都從硬碟上現存的 Claude Code／Codex 對話紀錄重新計算，因此一旦那些紀錄被輪替清掉，就只能顯示最近約兩個月。usage 現在會維護一份每日帳本（`~/.usage/year_ledger.json`）持續累積——每次重算會把當下可得的每日資料併入（僅當新算出的當日總量不小於既存值才覆蓋，避免某天紀錄被部分清除而使紀錄縮水），並修剪掉 53 週窗以外的舊資料。熱力圖、連續活躍天數、活躍天數與 Wrapped 數字都改從合併後的帳本計算，往後覆蓋範圍會逐步補滿整年。
+- **年度 Wrapped 與 52 週貢獻熱力圖不再因來源紀錄被清除而丟失歷史**：年度視圖原本每次都從硬碟上現存的 Claude Code／Codex 對話紀錄重新計算，因此一旦那些紀錄被輪替清掉，就只能顯示最近約兩個月。usage 現在會維護一份每日帳本（`~/.agentdeck/year_ledger.json`）持續累積——每次重算會把當下可得的每日資料併入（僅當新算出的當日總量不小於既存值才覆蓋，避免某天紀錄被部分清除而使紀錄縮水），並修剪掉 53 週窗以外的舊資料。熱力圖、連續活躍天數、活躍天數與 Wrapped 數字都改從合併後的帳本計算，往後覆蓋範圍會逐步補滿整年。
 
 ## [0.22.5] - 2026-06-22
 
@@ -586,14 +591,14 @@
 
 ### 變更
 - **隱藏供應商時，選單列上的百分比也會一併消失**（以前「隱藏 Codex 區塊」只藏面板卡片）。兩者都隱藏時，選單列保留小爪子圖示作為點擊入口。
-- **設定選單變短了**：移除「自動檢查更新」這一格——更新檢查預設保持開啟（在 `~/.claude/usage-preferences.json` 關閉仍然有效），兩個隱藏開關也合併進「隱藏區塊 ▸」子選單。
+- **設定選單變短了**：移除「自動檢查更新」這一格——更新檢查預設保持開啟（在 `~/.claude/agentdeck-preferences.json` 關閉仍然有效），兩個隱藏開關也合併進「隱藏區塊 ▸」子選單。
 
 ## [0.18.0] - 2026-06-11
 
 ### 新增
-- **每次開新對話都會附上健檢提醒**：usage 現在會在背景對你的 Claude Code 工作階段紀錄跑一次診斷，發現明顯浪費時，會在進度管家的開場白末尾悄悄補一行提醒。說「看」，模型就會讀完整快照（`~/.claude/usage-diagnosis.json`）並解釋發現的問題與具體建議。同一份診斷看過後 7 天內不重複提醒、診斷有變化時重新出現、快照超過 48 小時則略過。
+- **每次開新對話都會附上健檢提醒**：usage 現在會在背景對你的 Claude Code 工作階段紀錄跑一次診斷，發現明顯浪費時，會在進度管家的開場白末尾悄悄補一行提醒。說「看」，模型就會讀完整快照（`~/.claude/agentdeck-diagnosis.json`）並解釋發現的問題與具體建議。同一份診斷看過後 7 天內不重複提醒、診斷有變化時重新出現、快照超過 48 小時則略過。
 - **五條診斷規則引擎**（`analyzer/diagnoser.py`）：偵測重複讀同一批檔案、掃進污染目錄（node_modules、.venv、dist…）、工作階段異常膨脹、Bash 輸出過大、重複跑同一條 Bash 指令。發現項目依估算浪費 token 數排序，最值得優先處理的一項永遠放在最前面。
-- **每日診斷快照**（`usage_diagnosis_snapshot.py`）：選單列 app 每天在背景更新一次 `~/.claude/usage-diagnosis.json`，確保開新對話時的成本估算永遠是最新的。
+- **每日診斷快照**（`usage_diagnosis_snapshot.py`）：選單列 app 每天在背景更新一次 `~/.claude/agentdeck-diagnosis.json`，確保開新對話時的成本估算永遠是最新的。
 
 ### 修正
 - **工作階段異常膨脹的浪費估算不再誇大約 9 倍**：引擎原本把異常工作階段的全部 token 都算成浪費，而且一律用 $3/MTok 的完整輸入費率換算。但長對話的 token 大部分是快取重讀，費率只有十分之一（$0.30/MTok），而且工作階段裡做出來的成果本身也不算浪費——只有超出該專案基準線的部分才是。現在依 token 類型分開計費、按超額比例計算（實際資料：$254 → $27）。
@@ -705,7 +710,7 @@
 ## [0.15.4] - 2026-06-03
 
 ### 修正
-- **面板載入失敗不再變成一片啞掉的灰視窗**：點開的面板（popover 內嵌網頁）若因故載入不出來，原本只會顯示一片深灰色空視窗、使用者無從得知發生什麼事；現在會改為顯示明確的錯誤訊息與 GitHub 回報連結，並在 debug log（`USAGE_DEBUG=1`）記錄「載入失敗」或「渲染逾時」的線索，方便回報與診斷。
+- **面板載入失敗不再變成一片啞掉的灰視窗**：點開的面板（popover 內嵌網頁）若因故載入不出來，原本只會顯示一片深灰色空視窗、使用者無從得知發生什麼事；現在會改為顯示明確的錯誤訊息與 GitHub 回報連結，並在 debug log（`AGENTDECK_DEBUG=1`）記錄「載入失敗」或「渲染逾時」的線索，方便回報與診斷。
 
 ## [0.15.3] - 2026-06-02
 
@@ -772,7 +777,7 @@
 ## [0.12.1] - 2026-05-29
 
 ### 變更
-- **HTML 報告載入器加上檔案快取**：`adapters/claude.py` 與 `adapters/codex.py` 補上以 `mtime`+`size` 為鍵的 LRU 快取（與 `history_loader` 一致），產生報告時不再每次重新解析整批 JSONL；Codex 端的 `load_entries` 與 `load_rate_limits` 共用同一份快取。整檔級的 `OSError` / `PermissionError` / `sqlite3.Error` 現在會在 `USAGE_DEBUG=1` 時輸出到 stderr（逐行的 `JSONDecodeError` 維持靜默）。
+- **HTML 報告載入器加上檔案快取**：`adapters/claude.py` 與 `adapters/codex.py` 補上以 `mtime`+`size` 為鍵的 LRU 快取（與 `history_loader` 一致），產生報告時不再每次重新解析整批 JSONL；Codex 端的 `load_entries` 與 `load_rate_limits` 共用同一份快取。整檔級的 `OSError` / `PermissionError` / `sqlite3.Error` 現在會在 `AGENTDECK_DEBUG=1` 時輸出到 stderr（逐行的 `JSONDecodeError` 維持靜默）。
 - **mypy `--strict` 全面覆蓋**：移除 `adapters/`、`analyzer/`、`ui/`、`usage_cli.py` 的 mypy 排除設定（約 35% 程式碼的型別盲區），補齊泛型參數與函式型別標註，`_group_by_agent` 改用 PEP 695 型別參數。`mypy --strict` 現涵蓋全部 70 個原始檔。
 - **`adapters/claude.py` 三個跨模組函式改為公開 API**：`get_claude_dirs`、`extract_project_from_dir`、`parse_jsonl`（原為底線私有），並移除 `analyzer/reporter.py` 對應的 `# type: ignore[attr-defined]`。
 
@@ -818,7 +823,7 @@
 
 ### 修正
 - **含 dash 連字號的 Claude Code 專案名解碼修正**：`history_loader._project_from_path` 之前的解碼邏輯把目錄名所有 `-` 全換成 `/`，例如 `Desktop-claude-tutorial-video` 變成 `/Desktop/claude/tutorial/video`，路徑不存在 → `resolve_project_name` 走 fallback 取最後一段 → 專案被誤標為 `"video"` 而不是 `"claude-tutorial-video"`。現在先試「全 slash」候選，不存在則對 path segments 做 DFS 嘗試合併連續段、用 fs 上實際存在的目錄定錨；都找不到時保留原 dash 形式（`plain-project` → `plain-project`）。多數情境下 JSONL 內的 `cwd` 欄位已經會覆寫 project name，這條修正主要保護沒有 `cwd` 欄位的舊 entry。
-- **TUI 語言偵測統一走 `usage_lang.detect_lang`**：先前 `tui.py` 自寫一份偵測，只認 zh / en（簡中、日韓全部被當英文），且完全沒讀 `USAGE_LANG` / `TT_LANG` / `LANG` 環境變數。結果同一台機器 menubar 顯示日文、TUI 顯示英文。現在 TUI 跟 menubar 共用同一個 `detect_lang()`，五國語言一致。
+- **TUI 語言偵測統一走 `usage_lang.detect_lang`**：先前 `tui.py` 自寫一份偵測，只認 zh / en（簡中、日韓全部被當英文），且完全沒讀 `AGENTDECK_LANG` / `TT_LANG` / `LANG` 環境變數。結果同一台機器 menubar 顯示日文、TUI 顯示英文。現在 TUI 跟 menubar 共用同一個 `detect_lang()`，五國語言一致。
 
 ### 內部改進
 - **history / codex loader cache 加 LRU 上限**：`_file_cache` 與 `_jsonl_cache` 之前是無上限的 module-level dict，menubar app 駐留越久、`~/.claude/projects/` 與 `~/.codex/sessions/` 累積越多 jsonl，parsed `UsageEntry` list 全卡在記憶體永遠不釋放。改用 `OrderedDict` + 各自 512 entry 上限；cache hit `move_to_end` 標 LRU、insert 滿了 `popitem(last=False)` evict 最舊。mtime/size 失效邏輯不動、codex_loader 的 `entry.model` rebind 也保留。
@@ -845,7 +850,7 @@
 ## [0.11.12] - 2026-05-27
 
 ### 變更
-- **hook 自癒：壞了自己修，使用者無感**：每次 usage 啟動會跑一輪 `setup_hook.self_heal()`，在三種「明確安全」的情境下默默修復：(1) 首次安裝（`is_setup()==False` 且 settings 沒有 `statusLine` 鍵）→ 呼叫 `setup()`；(2) hook script 版本過舊（`needs_update()==True`）→ `update_hook()`；(3) settings 指向的 hook 檔案不存在但 state 為 `us-direct`/`us-forwarder` → 重新 `_copy_hook_script()` + `_copy_forwarder_script()`。state 為 `external`/`legacy-tt` 時三段都跳過（不會默默覆蓋第三方工具）。每筆動作寫入 `settings["usage"]["selfHealLog"]`（FIFO 20 筆）。失敗全 swallow，僅 `USAGE_DEBUG=1` 時印 stderr。
+- **hook 自癒：壞了自己修，使用者無感**：每次 usage 啟動會跑一輪 `setup_hook.self_heal()`，在三種「明確安全」的情境下默默修復：(1) 首次安裝（`is_setup()==False` 且 settings 沒有 `statusLine` 鍵）→ 呼叫 `setup()`；(2) hook script 版本過舊（`needs_update()==True`）→ `update_hook()`；(3) settings 指向的 hook 檔案不存在但 state 為 `us-direct`/`us-forwarder` → 重新 `_copy_hook_script()` + `_copy_forwarder_script()`。state 為 `external`/`legacy-tt` 時三段都跳過（不會默默覆蓋第三方工具）。每筆動作寫入 `settings["usage"]["selfHealLog"]`（FIFO 20 筆）。失敗全 swallow，僅 `AGENTDECK_DEBUG=1` 時印 stderr。
 - **共存模式提示整合**：偵測到外部 statusLine 工具時跳一次 NSAlert 兩按鈕（「啟用共存模式」/「保留現狀」），按任一鍵後寫 `settings["usage"]["forwarderModePromptDismissed"]=True` 永不再跳。取代原本 `main.py:health_check()` 的三按鈕修復對話框；舊的「稍後 24h 冷卻」機制移除。舊使用者若已選過「不要再問」會被視為未 ack，更新後會再跳一次（按一下即解決）。
 - **`--doctor` 隱藏 CLI 指令**：`python3 main.py --doctor` 印純文字診斷報告（全英文，方便 GitHub issue 搜尋），包含 hook state、版本、script 檔案狀態、status file mtime、外部 hook 偵測（識別 `ccusage` / `lord-kali` 關鍵字）、forwarder prompt ack 狀態、最近 5 筆 self-heal log、Codex sessions 掃描數。`argparse.SUPPRESS` 隱藏於 `--help`，預設不打擾一般使用者。新增 `doctor.py` renderer。
 
@@ -873,7 +878,7 @@
 ## [0.11.7] - 2026-05-27
 
 ### 變更
-- **pricing 快取改放在 `~/.usage/`**：把 LiteLLM 計費快取從 `~/.claude/pricing_cache.json` 搬到 `~/.usage/pricing_cache.json`，符合「usage 自己的狀態走自己的目錄」原則；舊路徑保留唯讀 fallback，遷移無感。感謝 @ericweichun。
+- **pricing 快取改放在 `~/.agentdeck/`**：把 LiteLLM 計費快取從 `~/.claude/pricing_cache.json` 搬到 `~/.agentdeck/pricing_cache.json`，符合「usage 自己的狀態走自己的目錄」原則；舊路徑保留唯讀 fallback，遷移無感。感謝 @ericweichun。
 
 ### 修正
 - **`usage report --help` 與未知參數行為明確化**：先前 CLI 子命令對未知參數沉默忽略、`--help` 仍會跑 agent 偵測；現在 `--help` 直接回幫助文字並結束，未知參數明確報錯。感謝 @ericweichun。
@@ -918,7 +923,7 @@
 ## [0.11.4] - 2026-05-25
 
 ### 新增
-- **statusLine 顯示「可更新」提示**：menubar 跑 update check 後會把結果寫進 `~/.claude/usage-preferences.json` 的 `last_update_check`；statusLine 讀這個檔，發現有新版時在 model 行末顯示 `🆕 vX.Y.Z 可更新`（青色）。尊重「跳過此版本」設定，cache 超過 30 天視為過期不顯示。新增五語言翻譯 `update_available_suffix`（zh-TW「可更新」/ zh-CN「可更新」/ en「available」/ ja「更新あり」/ ko「업데이트」）。
+- **statusLine 顯示「可更新」提示**：menubar 跑 update check 後會把結果寫進 `~/.claude/agentdeck-preferences.json` 的 `last_update_check`；statusLine 讀這個檔，發現有新版時在 model 行末顯示 `🆕 vX.Y.Z 可更新`（青色）。尊重「跳過此版本」設定，cache 超過 30 天視為過期不顯示。新增五語言翻譯 `update_available_suffix`（zh-TW「可更新」/ zh-CN「可更新」/ en「available」/ ja「更新あり」/ ko「업데이트」）。
 
 ### 變更
 - **statusLine 對話窗格式調整**：「對話窗(1.0M):[bar]」改為「對話窗:[bar] 15% / 1.0M」—— 容量上限從中間括號移到尾巴跟百分比並排，讀起來更像「15% of 1M」。
@@ -947,7 +952,7 @@
 - **Hook 並行轉發**：`usage_statusline_forwarder` 改用 `ThreadPoolExecutor` 同時執行所有 hook，單一 hook 逾時不再阻塞其他 hook，最壞情況從 `n × 5s` 降為 `5s`。
 - **多 session 寫入保護**：`usage_statusline.py` 的 `save()` 加入 `fcntl.LOCK_EX` 檔案鎖，防止多個 Claude Code session 同時寫入時資料互蓋。
 - **Python 路徑優先順序**：`setup_hook` 安裝 hook 時改用 `_find_system_python()`，優先選 `.app` 內建 Python，其次 `/usr/bin/python3`，避免 Xcode 更新後 `shutil.which("python3")` 指到壞掉的 stub。
-- **FSEvents 事件驅動 UI 更新**：`menubar` 改用 CoreServices `FSEventStream`（ctypes）監聽 `~/.claude/`，`usage-status.json` 一有變動立即觸發 `_refresh()`，更新延遲從最多 60 秒降至毫秒；`NSTimer` 降為 300 秒 fallback，CoreServices 不可用時自動降級。
+- **FSEvents 事件驅動 UI 更新**：`menubar` 改用 CoreServices `FSEventStream`（ctypes）監聽 `~/.claude/`，`agentdeck-status.json` 一有變動立即觸發 `_refresh()`，更新延遲從最多 60 秒降至毫秒；`NSTimer` 降為 300 秒 fallback，CoreServices 不可用時自動降級。
 
 ## [0.11.1] - 2026-05-24
 
@@ -960,7 +965,7 @@
 - **`pricing_cache.json` 路徑統一**：`analyzer/cost.py` 的快取路徑從專案根目錄改為 `~/.claude/pricing_cache.json`，與 `pricing.py` 同步；移除 repo 根目錄一顆 1.1 MB 的孤兒快取檔。
 - **面板名稱走 i18n**：`panels/__init__.py` 九款面板的顯示名稱改用 `i18n_key`，i18n.json 五語言補齊；英 / 日 / 韓系統的「更換面板」選單不再混入中文面板名。
 - **狀態檔錯誤訊息走 i18n**：`usage_client.py` 的「找不到狀態檔」和「狀態檔尚無配額」兩段提示走 `_t()`，五語言齊全。
-- **analytics CLI 讀檔順序對齊主程式**：`adapters/rate_limits.py` 之前只讀 `~/.claude/tt-status.json`，現在改成 `usage-status.json` → `usag-status.json` → `tt-status.json` 三路 fallback，與 `usage_client.py` 一致。
+- **analytics CLI 讀檔順序對齊主程式**：`adapters/rate_limits.py` 之前只讀 `~/.claude/tt-status.json`，現在改成 `agentdeck-status.json` → `usag-status.json` → `tt-status.json` 三路 fallback，與 `usage_client.py` 一致。
 - **README 補 v0.11.0 更新檢查說明 + GitHub Releases 網路例外**：README.md / README.en.md 都加上「更新檢查」段落、把 GitHub Releases API 明列為第二個網路例外（第一個仍是 LiteLLM 價格表）。
 
 ## [0.11.0] - 2026-05-24
@@ -970,7 +975,7 @@
 - **「更換面板」選單新增兩條**：
   - **自動檢查更新**（可勾選）：取消勾選後完全關閉啟動時的自動檢查，只保留手動入口。
   - **立刻檢查更新**：手動觸發一次檢查，忽略 24h cooldown 與「跳過此版本」設定；沒新版也會跳視窗告知「已是最新版本」，網路錯誤時跳「檢查更新失敗」。
-- 偏好設定沿用既有 `~/.claude/usage-preferences.json`，新增三個 key：`auto_update_check`（預設 true）、`update_dismissed_at`（Unix 時間戳）、`update_skipped_version`（被跳過的版本號）。
+- 偏好設定沿用既有 `~/.claude/agentdeck-preferences.json`，新增三個 key：`auto_update_check`（預設 true）、`update_dismissed_at`（Unix 時間戳）、`update_skipped_version`（被跳過的版本號）。
 
 ### 變更
 - `setup_app.py` 把 `pyproject.toml` 與 `update_checker` 一併納入 py2app 打包——讓 .app 版在 `importlib.metadata` 抓不到版本時可 fallback 讀 `pyproject.toml`。
@@ -1092,7 +1097,7 @@
 
 ### 新增
 - **多語言介面（i18n）**：自動偵測 macOS 系統語言，支援繁體中文、簡體中文、英文、日文、韓文。不需任何設定，系統語言是什麼就顯示什麼。
-- **`USAGE_LANG` 環境變數**：可強制指定語言（例如 `USAGE_LANG=ja`），方便開發與測試。
+- **`AGENTDECK_LANG` 環境變數**：可強制指定語言（例如 `AGENTDECK_LANG=ja`），方便開發與測試。
 
 ### 變更
 - **授權從 MIT 改為 AGPL-3.0**：修改後發佈的版本必須開源，保護原作者權益。
@@ -1172,7 +1177,7 @@
 ### 修正
 - `scripts/install-hook.sh`：產生 statusLine command 時改用 `shlex.quote()` 包裹路徑，與 `setup_hook.py` 對齊，避免使用者 Python 路徑或 hook 路徑含空白時 hook 安裝失效。
 - `pricing.py`：`_pricing_cache` 改記錄 source（cache / fetched / fallback）與時間，fallback 結果改成 10 分鐘短 TTL，避免離線啟動後即使網路恢復成本估算也永久卡在舊 fallback。
-- `menubar.py` / `codex_loader.py`：silent except 改成 `USAGE_DEBUG=1` 時印 `logger.warning(exc_info=True)`，未設定時保持靜默；除錯時不會再看似「沒安裝 Codex」實際是解析失敗。
+- `menubar.py` / `codex_loader.py`：silent except 改成 `AGENTDECK_DEBUG=1` 時印 `logger.warning(exc_info=True)`，未設定時保持靜默；除錯時不會再看似「沒安裝 Codex」實際是解析失敗。
 
 ### 文件
 - `README.md` / `README.en.md`：在價格表說明段補一句「首次啟動沒快取會同步抓一次，網路慢時可能等 ~10 秒」，避免新使用者以為當機。

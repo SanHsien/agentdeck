@@ -32,7 +32,7 @@ MONITORING_SETTLED_SECONDS = 4 * 3600
 OBSERVED_STALE_SECONDS = 24 * 3600
 SUPPRESSIBLE_STATUSES = ("degraded_performance",)
 USER_AGENT = "usage/0.9"
-ALERT_STATE_PATH = Path(os.path.expanduser("~/.usage/service_alert_state.json"))
+ALERT_STATE_PATH = Path(os.path.expanduser("~/.agentdeck/service_alert_state.json"))
 
 StatusSource = Literal["fetched", "cache", "stale", "fallback"]
 _SEVERITY = {
@@ -57,7 +57,7 @@ CLAUDE_STATUS = ServiceStatusConfig(
     service_name="Claude",
     status_url="https://status.claude.com/api/v2/summary.json",
     component_names=("Claude Code", "Claude API (api.anthropic.com)"),
-    cache_path=Path(os.path.expanduser("~/.usage/anthropic_status_cache.json")),
+    cache_path=Path(os.path.expanduser("~/.agentdeck/anthropic_status_cache.json")),
 )
 CODEX_STATUS = ServiceStatusConfig(
     service_name="Codex",
@@ -65,7 +65,7 @@ CODEX_STATUS = ServiceStatusConfig(
     # Do not include shared OpenAI API components (for example Responses): they
     # affect all API users and do not necessarily affect the Codex CLI.
     component_names=("Codex API",),
-    cache_path=Path(os.path.expanduser("~/.usage/openai_status_cache.json")),
+    cache_path=Path(os.path.expanduser("~/.agentdeck/openai_status_cache.json")),
 )
 
 

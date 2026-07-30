@@ -30,7 +30,7 @@ AGY_SESSIONS_DIR = Path(os.path.expanduser("~/.gemini/antigravity-cli/conversati
 # permanent full SQLite/protobuf reparse on every load (LRU thrashing).
 _FILE_CACHE_MAXSIZE = 4096
 _AGY_DB_CACHE_SCHEMA = 1
-AGY_CACHE_PATH = Path(os.path.expanduser("~/.usage/agy_db_cache.json"))
+AGY_CACHE_PATH = Path(os.path.expanduser("~/.agentdeck/agy_db_cache.json"))
 _disk_cache_seeded = False
 _DISK_CACHE_FLUSH_INTERVAL_S = 300.0
 

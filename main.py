@@ -62,7 +62,7 @@ def _import_module_with_oserror_retry(name: str) -> Any:
 
 
 def _setup_logging() -> None:
-    level = logging.DEBUG if os.environ.get("USAGE_DEBUG") == "1" else logging.WARNING
+    level = logging.DEBUG if os.environ.get("AGENTDECK_DEBUG") == "1" else logging.WARNING
     logging.basicConfig(
         level=level,
         format="%(asctime)s %(name)s %(levelname)s: %(message)s",
@@ -111,7 +111,7 @@ def _is_our_hook_in_settings() -> bool:
 
         return setup_hook._detect_current_state() in {"us-direct", "us-forwarder"}
     except Exception:
-        if os.environ.get("USAGE_DEBUG") == "1":
+        if os.environ.get("AGENTDECK_DEBUG") == "1":
             logger.warning("hook health check failed", exc_info=True)
         return False
 
@@ -181,7 +181,7 @@ def _self_heal() -> None:
 
         session_hooks.self_heal()
     except Exception:
-        if os.environ.get("USAGE_DEBUG") == "1":
+        if os.environ.get("AGENTDECK_DEBUG") == "1":
             logger.warning("self-heal failed", exc_info=True)
 
     try:
@@ -189,7 +189,7 @@ def _self_heal() -> None:
 
         sweep_stale_temp_files()
     except Exception:
-        if os.environ.get("USAGE_DEBUG") == "1":
+        if os.environ.get("AGENTDECK_DEBUG") == "1":
             logger.warning("stale temp file sweep failed", exc_info=True)
 
 

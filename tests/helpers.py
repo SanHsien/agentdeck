@@ -110,9 +110,9 @@ def patch_setup_hook_paths(
 ) -> SetupHookPaths:
     claude_dir = tmp_path / ".claude"
     settings = claude_dir / "settings.json"
-    hook_target = claude_dir / "usage-statusline.py"
-    forwarder_target = claude_dir / "usage-statusline-forwarder.py"
-    status_file = claude_dir / "usage-status.json"
+    hook_target = claude_dir / "agentdeck-statusline.py"
+    forwarder_target = claude_dir / "agentdeck-statusline-forwarder.py"
+    status_file = claude_dir / "agentdeck-status.json"
     hook_source = tmp_path / hook_source_name
     forwarder_source = tmp_path / forwarder_source_name
     hook_source.write_text(hook_source_text, encoding="utf-8")
@@ -125,7 +125,7 @@ def patch_setup_hook_paths(
     monkeypatch.setattr(setup_hook, "FORWARDER_TARGET", forwarder_target)
     monkeypatch.setattr(setup_hook, "STATUS_FILE", status_file)
     monkeypatch.setattr(setup_hook, "CODEX_CONFIG", tmp_path / ".codex" / "config.toml")
-    monkeypatch.setattr(setup_hook, "CODEX_BACKUP", tmp_path / ".codex" / "usage-backup.json")
+    monkeypatch.setattr(setup_hook, "CODEX_BACKUP", tmp_path / ".codex" / "agentdeck-backup.json")
     monkeypatch.setattr(setup_hook, "_resolve_hook_source", lambda: hook_source)
     monkeypatch.setattr(setup_hook, "_resolve_forwarder_source", lambda: forwarder_source)
     monkeypatch.setattr(shutil, "which", lambda _: "/usr/bin/python3")
@@ -168,8 +168,8 @@ def patch_resume_hook_paths(
     claude_dir = tmp_path / ".claude"
     claude_dir.mkdir()
     settings = claude_dir / "settings.json"
-    resume_target = claude_dir / "usage-session-resume.py"
-    sidecar = claude_dir / "usage-resume-prompt.json"
+    resume_target = claude_dir / "agentdeck-session-resume.py"
+    sidecar = claude_dir / "agentdeck-resume-prompt.json"
     source = tmp_path / source_name
     source.write_text(source_text, encoding="utf-8")
     monkeypatch.setattr(setup_hook, "CLAUDE_SETTINGS", settings)
@@ -210,14 +210,14 @@ def patch_terse_hook_paths(
     claude_dir = tmp_path / ".claude"
     claude_dir.mkdir(exist_ok=True)
     settings = claude_dir / "settings.json"
-    terse_target = claude_dir / "usage-terse-mode.py"
-    terse_reminder_target = claude_dir / "usage-terse-reminder.py"
-    sidecar = claude_dir / "usage-terse-prompt.json"
+    terse_target = claude_dir / "agentdeck-terse-mode.py"
+    terse_reminder_target = claude_dir / "agentdeck-terse-reminder.py"
+    sidecar = claude_dir / "agentdeck-terse-prompt.json"
     codex_dir = tmp_path / ".codex"
     codex_dir.mkdir(exist_ok=True)
     codex_config = codex_dir / "config.toml"
     codex_hooks_json = codex_dir / "hooks.json"
-    codex_terse_target = codex_dir / "usage-terse-mode.py"
+    codex_terse_target = codex_dir / "agentdeck-terse-mode.py"
     source = tmp_path / source_name
     source.write_text(source_text, encoding="utf-8")
     reminder_source = tmp_path / reminder_source_name

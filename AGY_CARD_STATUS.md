@@ -25,7 +25,7 @@
 - GUI App 找不到 `agy`：加入 `~/.local/bin`、Homebrew 常見位置的執行檔備援。
 - 子行程缺少工具路徑：探測環境補入 `agy` 所在目錄與常見安裝位置。
 - 啟動探測期間卡片消失：只要已安裝 `agy`，初始狀態就先保留卡片，背景結果完成後再填入額度。
-- 真實 PTY `/quota` 輸出解析成功，正式刷新回傳 `hide_agy=False`，並寫入 `~/.usage/agy_quota_cache.json`。
+- 真實 PTY `/quota` 輸出解析成功，正式刷新回傳 `hide_agy=False`，並寫入 `~/.agentdeck/agy_quota_cache.json`。
 - 重建並啟動 `dist/usage.app` 後，classic 面板已顯示 Antigravity 額度。
 
 ## 驗證

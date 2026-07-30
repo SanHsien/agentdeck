@@ -19,7 +19,7 @@ import usage_terse_mode as mod
 def test_detect_lang_uses_windows_system_lang_when_env_is_empty(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    for key in ("USAGE_LANG", "TT_LANG", "LANG"):
+    for key in ("AGENTDECK_LANG", "TT_LANG", "LANG"):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setattr(mod, "_windows_system_lang", lambda: "zh_TW")
 
@@ -29,7 +29,7 @@ def test_detect_lang_uses_windows_system_lang_when_env_is_empty(
 def test_detect_lang_prefers_usage_lang_over_windows_system_lang(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("USAGE_LANG", "en")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     monkeypatch.setattr(mod, "_windows_system_lang", lambda: "zh_TW")
 
     assert mod._detect_lang() == "en"
@@ -42,7 +42,7 @@ def test_windows_system_lang_is_empty_off_windows(monkeypatch: pytest.MonkeyPatc
 
 
 def _sidecar(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    sidecar = tmp_path / "usage-terse-prompt.json"
+    sidecar = tmp_path / "agentdeck-terse-prompt.json"
     sidecar.write_text(
         json.dumps(
             {
@@ -92,7 +92,7 @@ def test_main_falls_back_to_default_when_sidecar_missing(
 def test_main_uses_detected_language(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    monkeypatch.setenv("USAGE_LANG", "zh-TW")
+    monkeypatch.setenv("AGENTDECK_LANG", "zh-TW")
     _sidecar(tmp_path, monkeypatch)
     monkeypatch.setattr("sys.stdin", _FakeStdin(json.dumps({"cwd": "/tmp/demo"})))
 

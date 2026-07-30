@@ -66,9 +66,9 @@ def _read_stdin_utf8() -> str:
     return cast(bytes, buffer.read()).decode("utf-8", "replace")
 
 
-PROMPT_SIDECAR = Path(os.path.expanduser("~/.claude/usage-resume-prompt.json"))
-DIAGNOSIS_SNAPSHOT = Path(os.path.expanduser("~/.claude/usage-diagnosis.json"))
-DIAGNOSIS_STATE = Path(os.path.expanduser("~/.claude/usage-diagnosis-state.json"))
+PROMPT_SIDECAR = Path(os.path.expanduser("~/.claude/agentdeck-resume-prompt.json"))
+DIAGNOSIS_SNAPSHOT = Path(os.path.expanduser("~/.claude/agentdeck-diagnosis.json"))
+DIAGNOSIS_STATE = Path(os.path.expanduser("~/.claude/agentdeck-diagnosis-state.json"))
 
 # Only a heredoc that feeds git's commit message — `-F -` / `--file -` or `-m "$(cat`.
 # Anchoring on these keeps an unrelated heredoc in the same command (e.g. a python
@@ -716,7 +716,7 @@ def _windows_system_lang() -> str:
 
 
 def _detect_lang() -> str:
-    for key in ("USAGE_LANG", "TT_LANG", "LANG"):
+    for key in ("AGENTDECK_LANG", "TT_LANG", "LANG"):
         value = os.environ.get(key, "").strip()
         if value:
             return _normalize_lang(value)

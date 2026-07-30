@@ -17,7 +17,7 @@ Stdlib-only and 3.9-safe — same constraint as ``usage_statusline.py`` and
 ``usage_terse_mode.py``: it may run under macOS's bundled ``/usr/bin/python3``
 (3.9), so no third-party imports, no ``datetime.UTC``, no runtime ``X | Y``
 types. The reminder wording lives in the same sidecar written by ``setup_hook``
-(``~/.claude/usage-terse-prompt.json``, the ``reminder`` field per language); if
+(``~/.claude/agentdeck-terse-prompt.json``, the ``reminder`` field per language); if
 that file or field is missing, this script falls back to embedded defaults. Any
 failure exits 0 with no output.
 """
@@ -40,7 +40,7 @@ def _read_stdin_utf8() -> str:
     return cast(bytes, buffer.read()).decode("utf-8", "replace")
 
 
-PROMPT_SIDECAR = Path(os.path.expanduser("~/.claude/usage-terse-prompt.json"))
+PROMPT_SIDECAR = Path(os.path.expanduser("~/.claude/agentdeck-terse-prompt.json"))
 
 _DEFAULT_REMINDER: dict[str, str] = {
     "zh-TW": (
@@ -72,7 +72,7 @@ def _windows_system_lang() -> str:
 
 
 def _detect_lang() -> str:
-    for key in ("USAGE_LANG", "TT_LANG", "LANG"):
+    for key in ("AGENTDECK_LANG", "TT_LANG", "LANG"):
         value = os.environ.get(key, "").strip()
         if value:
             return _normalize_lang(value)

@@ -12,7 +12,7 @@ from typing import Any
 
 from .types import RateLimits
 
-STATUS_FILE = os.path.expanduser("~/.claude/usage-status.json")
+STATUS_FILE = os.path.expanduser("~/.claude/agentdeck-status.json")
 LEGACY_STATUS_FILE = os.path.expanduser("~/.claude/usag-status.json")
 TT_STATUS_FILE = os.path.expanduser("~/.claude/tt-status.json")
 

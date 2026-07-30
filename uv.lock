@@ -573,8 +573,8 @@ wheels = [
 ]
 
 [[package]]
-name = "usage"
-version = "0.30.0"
+name = "agentdeck"
+version = "0.31.0"
 source = { editable = "." }
 dependencies = [
     { name = "pyobjc-framework-cocoa", marker = "sys_platform != 'linux' and sys_platform != 'win32'" },

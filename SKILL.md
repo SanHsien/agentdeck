@@ -1,15 +1,15 @@
 ---
-name: usage
-description: 在 macOS menu bar / Windows system tray / 終端機 TUI 顯示 Claude Code 與 Codex 的配額用量。數字全部讀本機檔案（statusLine hook 寫的 JSON、Codex sessions JSONL），不呼叫任何用量 API。此 skill 用於維護 SanHsien/usage。
+name: agentdeck
+description: 在 macOS menu bar / Windows system tray / 終端機 TUI 顯示 Claude Code 與 Codex 的配額用量。數字全部讀本機檔案（statusLine hook 寫的 JSON、Codex sessions JSONL），不呼叫任何用量 API。此 skill 用於維護 SanHsien/agentdeck。
 ---
 
-# usage
+# agentdeck
 
 ## 何時使用
 
 - 要看／解讀 Claude Code 或 Codex 的 5 小時、7 天配額用量與燃燒率。
-- 要維護 `SanHsien/usage`：修 bug、補測試、調 Windows 相容性、選擇性撿上游更新。
-- 要安裝或排除 statusLine hook（`~/.claude/usage-status.json` 沒更新之類）的問題。
+- 要維護 `SanHsien/agentdeck`：修 bug、補測試、調 Windows 相容性、選擇性撿上游更新。
+- 要安裝或排除 statusLine hook（`~/.claude/agentdeck-status.json` 沒更新之類）的問題。
 
 不適合的任務：
 

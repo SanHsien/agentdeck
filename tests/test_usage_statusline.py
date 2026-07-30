@@ -81,7 +81,7 @@ def test_get_width_does_not_probe_conout_off_windows(
 def test_statusline_detect_lang_uses_windows_system_lang_when_env_is_empty(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    for key in ("USAGE_LANG", "TT_LANG", "LANG"):
+    for key in ("AGENTDECK_LANG", "TT_LANG", "LANG"):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setattr(usage_statusline, "_windows_system_lang", lambda: "zh_TW")
 
@@ -94,7 +94,7 @@ def test_statusline_detect_lang_prefers_usage_lang_over_windows_system_lang(
 ) -> None:
     monkeypatch.setattr(usage_statusline, "_windows_system_lang", lambda: "zh_TW")
 
-    assert usage_statusline._statusline_detect_lang({"USAGE_LANG": "en"}) == "en"
+    assert usage_statusline._statusline_detect_lang({"AGENTDECK_LANG": "en"}) == "en"
 
 
 def test_statusline_windows_system_lang_is_empty_off_windows(
@@ -141,7 +141,7 @@ def _isolate_context_burn_file(
     monkeypatch.setattr(
         usage_statusline,
         "CONTEXT_BURN_FILE",
-        str(tmp_path / "usage-context-burn.json"),
+        str(tmp_path / "agentdeck-context-burn.json"),
     )
 
 
@@ -149,7 +149,7 @@ def test_save_writes_status_json_with_received_metadata(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    status_file = tmp_path / "usage-status.json"
+    status_file = tmp_path / "agentdeck-status.json"
     now = datetime(2026, 1, 1, 12, 30, tzinfo=UTC)
     monkeypatch.setattr(usage_statusline, "STATUS_FILE", str(status_file))
 
@@ -165,9 +165,9 @@ def test_save_works_without_fcntl_or_msvcrt(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    status_file = tmp_path / "usage-status.json"
+    status_file = tmp_path / "agentdeck-status.json"
     monkeypatch.setattr(usage_statusline, "STATUS_FILE", str(status_file))
-    monkeypatch.setattr(usage_statusline, "LOCK_FILE", str(tmp_path / "usage-status.lock"))
+    monkeypatch.setattr(usage_statusline, "LOCK_FILE", str(tmp_path / "agentdeck-status.lock"))
     monkeypatch.setattr(usage_statusline, "fcntl", None)
     monkeypatch.setattr(usage_statusline, "msvcrt", None)
 
@@ -246,7 +246,7 @@ def test_save_preserves_existing_complete_rate_limits_when_new_data_is_incomplet
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    status_file = tmp_path / "usage-status.json"
+    status_file = tmp_path / "agentdeck-status.json"
     status_file.write_text(json.dumps({
         "rate_limits": {
             "five_hour": {"used_percentage": 11},
@@ -281,7 +281,7 @@ def test_save_overwrites_existing_rate_limits_when_new_data_is_complete(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    status_file = tmp_path / "usage-status.json"
+    status_file = tmp_path / "agentdeck-status.json"
     status_file.write_text(json.dumps({
         "rate_limits": {
             "five_hour": {"used_percentage": 11},
@@ -315,7 +315,7 @@ def test_read_update_hint_returns_latest_when_fresh_and_newer(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    prefs_file = tmp_path / "usage-preferences.json"
+    prefs_file = tmp_path / "agentdeck-preferences.json"
     _write_prefs(prefs_file, {
         "last_update_check": {
             "checked_at": 1000.0,
@@ -333,7 +333,7 @@ def test_read_update_hint_returns_none_when_same_version(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    prefs_file = tmp_path / "usage-preferences.json"
+    prefs_file = tmp_path / "agentdeck-preferences.json"
     _write_prefs(prefs_file, {
         "last_update_check": {
             "checked_at": 1000.0,
@@ -351,7 +351,7 @@ def test_read_update_hint_respects_skipped_version(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    prefs_file = tmp_path / "usage-preferences.json"
+    prefs_file = tmp_path / "agentdeck-preferences.json"
     _write_prefs(prefs_file, {
         "update_skipped_version": "0.12.0",
         "last_update_check": {
@@ -370,7 +370,7 @@ def test_read_update_hint_returns_none_when_stale(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    prefs_file = tmp_path / "usage-preferences.json"
+    prefs_file = tmp_path / "agentdeck-preferences.json"
     _write_prefs(prefs_file, {
         "last_update_check": {
             "checked_at": 1000.0,
@@ -399,7 +399,7 @@ def test_read_update_hint_handles_malformed_json(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    prefs_file = tmp_path / "usage-preferences.json"
+    prefs_file = tmp_path / "agentdeck-preferences.json"
     prefs_file.write_text("not json", encoding="utf-8")
     monkeypatch.setattr(usage_statusline, "PREFERENCES_FILE", str(prefs_file))
 
@@ -410,7 +410,7 @@ def test_render_skips_bad_utf8_update_preferences_without_fallback(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    prefs_file = tmp_path / "usage-preferences.json"
+    prefs_file = tmp_path / "agentdeck-preferences.json"
     prefs_file.write_bytes(b"\xff\xfe{")
     monkeypatch.setattr(usage_statusline, "PREFERENCES_FILE", str(prefs_file))
     monkeypatch.setenv("TT_LANG", "en")
@@ -439,7 +439,7 @@ def test_save_cleans_temp_file_when_atomic_replace_fails(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    status_file = tmp_path / "usage-status.json"
+    status_file = tmp_path / "agentdeck-status.json"
     monkeypatch.setattr(usage_statusline, "STATUS_FILE", str(status_file))
 
     def fail_replace(src: str, dst: str) -> None:
@@ -462,7 +462,7 @@ def test_main_ignores_invalid_or_empty_stdin(
     stdin_text: str,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    status_file = tmp_path / "usage-status.json"
+    status_file = tmp_path / "agentdeck-status.json"
     monkeypatch.setattr(usage_statusline, "STATUS_FILE", str(status_file))
     monkeypatch.setattr(sys, "stdin", io.StringIO(stdin_text))
 
@@ -481,7 +481,7 @@ def test_main_writes_valid_json_object(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    status_file = tmp_path / "usage-status.json"
+    status_file = tmp_path / "agentdeck-status.json"
     monkeypatch.setattr(usage_statusline, "STATUS_FILE", str(status_file))
     monkeypatch.setattr(sys, "stdin", io.StringIO('{"rate_limits": {"status": "ok"}}'))
 
@@ -499,13 +499,13 @@ def test_main_reads_utf8_bytes_when_stdin_uses_cp950(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    status_file = tmp_path / "usage-status.json"
+    status_file = tmp_path / "agentdeck-status.json"
     payload = {"cwd": r"C:\\Users\\USER\\Desktop\\GitHub專案\\usage"}
     stdin = io.TextIOWrapper(
         io.BytesIO(json.dumps(payload, ensure_ascii=False).encode("utf-8")), encoding="cp950"
     )
     monkeypatch.setattr(usage_statusline, "STATUS_FILE", str(status_file))
-    monkeypatch.setattr(usage_statusline, "LOCK_FILE", str(tmp_path / "usage-status.lock"))
+    monkeypatch.setattr(usage_statusline, "LOCK_FILE", str(tmp_path / "agentdeck-status.lock"))
     monkeypatch.setattr(sys, "stdin", stdin)
 
     usage_statusline.main()
@@ -523,7 +523,7 @@ def test_main_returns_when_stdin_read_raises(
         def read(self) -> str:
             raise RuntimeError("read failed")
 
-    status_file = tmp_path / "usage-status.json"
+    status_file = tmp_path / "agentdeck-status.json"
     monkeypatch.setattr(usage_statusline, "STATUS_FILE", str(status_file))
     monkeypatch.setattr(sys, "stdin", BrokenStdin())
 
@@ -538,10 +538,10 @@ def test_main_logs_invalid_json_in_debug_mode(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    status_file = tmp_path / "usage-status.json"
+    status_file = tmp_path / "agentdeck-status.json"
     monkeypatch.setattr(usage_statusline, "STATUS_FILE", str(status_file))
     monkeypatch.setattr(sys, "stdin", io.StringIO("{bad json"))
-    monkeypatch.setenv("USAGE_DEBUG", "1")
+    monkeypatch.setenv("AGENTDECK_DEBUG", "1")
 
     usage_statusline.main()
 
@@ -687,7 +687,7 @@ def test_render_clear_nudge_triggers_early_when_context_burn_is_fast(
 ) -> None:
     monkeypatch.setenv("TT_LANG", "en")
     monkeypatch.setattr(usage_statusline, "get_width", lambda: 116)
-    burn_file = tmp_path / "usage-context-burn.json"
+    burn_file = tmp_path / "agentdeck-context-burn.json"
     monkeypatch.setattr(usage_statusline, "CONTEXT_BURN_FILE", str(burn_file))
     now = datetime(2026, 1, 1, 12, 1, tzinfo=UTC)
     burn_file.write_text(
@@ -713,7 +713,7 @@ def test_render_clear_nudge_keeps_default_threshold_when_context_burn_is_slow(
 ) -> None:
     monkeypatch.setenv("TT_LANG", "en")
     monkeypatch.setattr(usage_statusline, "get_width", lambda: 116)
-    burn_file = tmp_path / "usage-context-burn.json"
+    burn_file = tmp_path / "agentdeck-context-burn.json"
     monkeypatch.setattr(usage_statusline, "CONTEXT_BURN_FILE", str(burn_file))
     now = datetime(2026, 1, 1, 12, 1, tzinfo=UTC)
     burn_file.write_text(
@@ -753,7 +753,7 @@ def test_render_clear_nudge_resets_to_default_threshold_after_large_context_drop
 ) -> None:
     monkeypatch.setenv("TT_LANG", "en")
     monkeypatch.setattr(usage_statusline, "get_width", lambda: 116)
-    burn_file = tmp_path / "usage-context-burn.json"
+    burn_file = tmp_path / "agentdeck-context-burn.json"
     monkeypatch.setattr(usage_statusline, "CONTEXT_BURN_FILE", str(burn_file))
     now = datetime(2026, 1, 1, 12, 1, tzinfo=UTC)
     burn_file.write_text(
@@ -779,7 +779,7 @@ def test_render_clear_nudge_ignores_malformed_context_burn_file(
 ) -> None:
     monkeypatch.setenv("TT_LANG", "en")
     monkeypatch.setattr(usage_statusline, "get_width", lambda: 116)
-    burn_file = tmp_path / "usage-context-burn.json"
+    burn_file = tmp_path / "agentdeck-context-burn.json"
     monkeypatch.setattr(usage_statusline, "CONTEXT_BURN_FILE", str(burn_file))
     burn_file.write_text("not json", encoding="utf-8")
     payload = {
@@ -817,7 +817,7 @@ def test_main_prints_fallback_when_render_fails(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    status_file = tmp_path / "usage-status.json"
+    status_file = tmp_path / "agentdeck-status.json"
     monkeypatch.setattr(usage_statusline, "STATUS_FILE", str(status_file))
     monkeypatch.setattr(sys, "stdin", io.StringIO('{"model": {"display_name": "Sonnet"}}'))
 

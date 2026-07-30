@@ -51,12 +51,12 @@ def test_detect_lang_unshipped_language_falls_back_to_en(code: str) -> None:
 
 
 def test_detect_lang_prefers_usage_lang_over_tt_lang() -> None:
-    assert detect_lang({"USAGE_LANG": "zh-TW", "TT_LANG": "en"}) == "zh-TW"
-    assert detect_lang({"USAGE_LANG": "en", "TT_LANG": "zh-TW"}) == "en"
+    assert detect_lang({"AGENTDECK_LANG": "zh-TW", "TT_LANG": "en"}) == "zh-TW"
+    assert detect_lang({"AGENTDECK_LANG": "en", "TT_LANG": "zh-TW"}) == "en"
 
 
 def test_detect_lang_prefers_usage_lang_over_tt_lang_and_lang() -> None:
-    env = {"USAGE_LANG": "en", "TT_LANG": "zh-TW", "LANG": "zh_TW.UTF-8"}
+    env = {"AGENTDECK_LANG": "en", "TT_LANG": "zh-TW", "LANG": "zh_TW.UTF-8"}
     assert detect_lang(env) == "en"
 
 
@@ -97,7 +97,7 @@ def test_detect_windows_lang_without_windll_falls_back_to_en(
 def test_detect_lang_uses_windows_ui_language_without_env(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    for key in ("USAGE_LANG", "TT_LANG", "LANG"):
+    for key in ("AGENTDECK_LANG", "TT_LANG", "LANG"):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setattr(sys, "platform", "win32")
     _fake_windll(monkeypatch, 1028)
@@ -108,7 +108,7 @@ def test_detect_lang_uses_windows_ui_language_without_env(
 def test_detect_lang_env_var_beats_windows_ui_language(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("USAGE_LANG", "en")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     monkeypatch.setattr(sys, "platform", "win32")
     _fake_windll(monkeypatch, 1028)  # system says zh-TW
 

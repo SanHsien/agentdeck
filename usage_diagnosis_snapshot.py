@@ -20,7 +20,7 @@ from typing import Any
 from analyzer import diagnoser, reporter
 from time_utils import parse_optional_iso8601_utc
 
-SNAPSHOT_PATH = Path(os.path.expanduser("~/.claude/usage-diagnosis.json"))
+SNAPSHOT_PATH = Path(os.path.expanduser("~/.claude/agentdeck-diagnosis.json"))
 _LOOKBACK_DAYS = 7
 _STALE_AFTER = timedelta(hours=24)
 _lock = threading.Lock()

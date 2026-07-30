@@ -10,7 +10,7 @@
 
 Claude Code 每次刷新 statusLine 時會把當前 session 的完整 JSON
 （含 rate_limits.five_hour / seven_day、context_window、cost 等）
-從 stdin 傳給這個 script。我們會落地到 usage-status.json，
+從 stdin 傳給這個 script。我們會落地到 agentdeck-status.json，
 再輸出多行彩色 statusLine 文字供 Claude Code 顯示。
 
 usage 主程式會反向讀這個檔，呈現給 menubar / TUI。
@@ -69,8 +69,8 @@ msvcrt = _msvcrt
 
 __version__ = "1.0"
 
-STATUS_FILE = os.path.expanduser("~/.claude/usage-status.json")
-LOCK_FILE = os.path.expanduser("~/.claude/usage-status.lock")
+STATUS_FILE = os.path.expanduser("~/.claude/agentdeck-status.json")
+LOCK_FILE = os.path.expanduser("~/.claude/agentdeck-status.lock")
 # Windows lock acquisition: poll rather than fail instantly on contention.
 _LOCK_TIMEOUT_S = 10.0
 _LOCK_POLL_INTERVAL_S = 0.001
@@ -79,8 +79,8 @@ _LOCK_POLL_INTERVAL_S = 0.001
 _LOCK_CONTENDED_ERRNOS = frozenset(
     (errno.EACCES, getattr(errno, "EDEADLOCK", errno.EDEADLK), errno.EDEADLK)
 )
-PREFERENCES_FILE = os.path.expanduser("~/.claude/usage-preferences.json")
-CONTEXT_BURN_FILE = os.path.expanduser("~/.claude/usage-context-burn.json")
+PREFERENCES_FILE = os.path.expanduser("~/.claude/agentdeck-preferences.json")
+CONTEXT_BURN_FILE = os.path.expanduser("~/.claude/agentdeck-context-burn.json")
 UPDATE_HINT_STALE_SECONDS = 30 * 86400
 # Context fill at which a /clear or /compact nudge is worth the noise. Set below
 # the default auto-compact line (~80%) so the user can act before the lossy
@@ -173,7 +173,7 @@ def _windows_system_lang() -> str:
 def _statusline_detect_lang(env: Optional[Dict[str, str]] = None) -> str:
     source = os.environ if env is None else env
     raw = ""
-    for key in ("USAGE_LANG", "TT_LANG", "LANG"):
+    for key in ("AGENTDECK_LANG", "TT_LANG", "LANG"):
         value = source.get(key, "").strip()
         if value:
             raw = value
@@ -322,7 +322,7 @@ def save(data: Dict[str, Any], now: datetime) -> None:
 
 
 def _debug(message: str, exc: Optional[Exception] = None) -> None:
-    if os.environ.get("USAGE_DEBUG") != "1":
+    if os.environ.get("AGENTDECK_DEBUG") != "1":
         return
     if exc is None:
         print(f"usage_statusline: {message}", file=sys.stderr)

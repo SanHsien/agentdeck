@@ -39,7 +39,7 @@ CANDIDATE_DIRECTORIES = (
     Path("/usr/local/bin"),
     Path("~/.local/bin"),
 )
-NEUTRAL_DISCUSSION_CWD = Path("~/.usage/discussion-cwd")
+NEUTRAL_DISCUSSION_CWD = Path("~/.agentdeck/discussion-cwd")
 NEUTRAL_CONFIG_NAMES = frozenset(
     {
         ".agents",

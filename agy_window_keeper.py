@@ -25,7 +25,7 @@ from menubar_prefs import _agy_window_keeper_enabled
 logger = logging.getLogger(__name__)
 
 AGY_WINDOW_KEEPER_STATE_PATH = Path(
-    os.path.expanduser("~/.usage/agy_window_keeper.json")
+    os.path.expanduser("~/.agentdeck/agy_window_keeper.json")
 )
 PING_COOLDOWN_SECONDS = 5 * 3600
 PING_TIMEOUT_SECONDS = 180
@@ -181,5 +181,5 @@ def maybe_ping(result: AgyRefreshResult, mock: bool) -> None:
 
 
 def _debug_log(message: str, *, exc_info: bool = False) -> None:
-    if os.environ.get("USAGE_DEBUG") == "1":
+    if os.environ.get("AGENTDECK_DEBUG") == "1":
         logger.warning(message, exc_info=exc_info)

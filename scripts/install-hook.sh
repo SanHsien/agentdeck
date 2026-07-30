@@ -4,14 +4,14 @@
 #   bash <(curl -fsSL https://raw.githubusercontent.com/aqua5230/usage/main/scripts/install-hook.sh)
 #
 # 做的事：
-#   1. 下載 usage_statusline.py 到 ~/.claude/usage-statusline.py
+#   1. 下載 usage_statusline.py 到 ~/.claude/agentdeck-statusline.py
 #   2. 把 ~/.claude/settings.json 的 statusLine 指向它
 #   3. 如果原本有自訂 statusLine，備份到 settings.usage.previousStatusLine
 set -euo pipefail
 
 REPO_RAW="https://raw.githubusercontent.com/aqua5230/usage/main"
 CLAUDE_DIR="${HOME}/.claude"
-HOOK_PATH="${CLAUDE_DIR}/usage-statusline.py"
+HOOK_PATH="${CLAUDE_DIR}/agentdeck-statusline.py"
 SETTINGS_PATH="${CLAUDE_DIR}/settings.json"
 
 mkdir -p "${CLAUDE_DIR}"
@@ -39,7 +39,7 @@ if not isinstance(data, dict):
     raise SystemExit(f"❌ {settings_path} 不是 JSON object，請手動處理")
 
 existing = data.get("statusLine")
-if isinstance(existing, dict) and "usage-statusline" not in str(existing.get("command", "")):
+if isinstance(existing, dict) and "agentdeck-statusline" not in str(existing.get("command", "")):
     data.setdefault("usage", {})["previousStatusLine"] = existing
     print(f"ℹ 已備份原 statusLine 到 settings.usage.previousStatusLine")
 

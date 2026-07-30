@@ -33,7 +33,7 @@ from i18n import _load_i18n_bundle, packaged_resource_path
 from panels.payload import _data_uri
 from usage_lang import detect_lang
 
-ATTACHMENTS_DIR = Path(os.path.expanduser("~/.usage/discussion_attachments"))
+ATTACHMENTS_DIR = Path(os.path.expanduser("~/.agentdeck/discussion_attachments"))
 ATTACHMENT_MAX_FILES = 50
 ATTACHMENT_SUFFIXES = (".png", ".jpg", ".jpeg", ".gif", ".webp")
 DROP_MAX_BYTES = 20 * 1024 * 1024

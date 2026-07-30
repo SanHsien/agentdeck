@@ -4,7 +4,7 @@
 # Part of "usage". Free software licensed under the GNU Affero General Public
 # License v3.0 only; see the LICENSE file for full terms and the warranty disclaimer.
 
-"""Sweep orphaned ``mkstemp`` remnants out of ``~/.usage/``.
+"""Sweep orphaned ``mkstemp`` remnants out of ``~/.agentdeck/``.
 
 Every atomic write in this project has the same shape: ``mkstemp`` beside the
 target, write, ``os.replace``, and a ``finally`` that unlinks the temp file if
@@ -26,7 +26,7 @@ import time
 from contextlib import suppress
 from pathlib import Path
 
-USAGE_DIR = Path(os.path.expanduser("~/.usage"))
+USAGE_DIR = Path(os.path.expanduser("~/.agentdeck"))
 # Another usage process (for example, the menu bar app and TUI together) may
 # still be writing a large cache. Twenty-four hours is far longer than any
 # single write, so one process cannot remove another process's active temp file.
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 def _debug_warning(message: str, *args: object) -> None:
     with suppress(Exception):
-        if os.environ.get("USAGE_DEBUG") == "1":
+        if os.environ.get("AGENTDECK_DEBUG") == "1":
             logger.warning(message, *args, exc_info=True)
 
 
