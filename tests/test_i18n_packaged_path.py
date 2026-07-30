@@ -119,9 +119,13 @@ def test_a_source_path_that_points_inside_an_archive_is_avoided(
 def test_py2apps_resourcepath_is_no_longer_consulted(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # macOS packaging is gone. A RESOURCEPATH in the environment now belongs to
-    # some other tool, not to a bundle we produced, so following it would read a
-    # stranger's file.
+    # This is a merge guard, not a behavioural one: nothing in this repo reads
+    # RESOURCEPATH any more, so on its own the assertion is nearly a duplicate of
+    # the source-path fallback above. It earns its place because *upstream still
+    # has the branch* — `git show upstream/main:i18n.py | grep RESOURCEPATH`
+    # returns three hits — and this fork merges from upstream on a weekly review
+    # cycle. If a future merge drags the branch back in, this fails loudly instead
+    # of silently restoring a lookup we deliberately removed.
     bundle = tmp_path / "Resources"
     bundle.mkdir()
     (bundle / "i18n.json").write_text("{}", encoding="utf-8")
