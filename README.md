@@ -10,8 +10,11 @@
 
 繁體中文 · [English](README.en.md) &nbsp;|&nbsp; [介紹頁](https://sanhsien.github.io/agentdeck/)
 
+[![Release](https://img.shields.io/github/v/release/SanHsien/agentdeck?sort=semver&color=ff8c42)](https://github.com/SanHsien/agentdeck/releases/latest)
+[![CI](https://github.com/SanHsien/agentdeck/actions/workflows/check.yml/badge.svg)](https://github.com/SanHsien/agentdeck/actions/workflows/check.yml)
 [![Python](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/)
-[![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](#安裝)
+[![Platform](https://img.shields.io/badge/platform-Windows-0078D4.svg?logo=windows11&logoColor=white)](#安裝)
+[![Local-first](https://img.shields.io/badge/architecture-local--first-2E7D32.svg)](#隱私與資料來源)
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 
 > **這個 fork 專注在 Windows。**
@@ -74,6 +77,22 @@
 - Claude Code 與 Codex 的數字**只讀本機紀錄檔**；讀取這些數字**不會呼叫 Anthropic 或 OpenAI 的 LLM API**。
 - Antigravity 額度需要連網，而且只有你真的使用它才會發生：額度是用 Antigravity CLI 登入後存下的 OAuth 憑證，向 Google 官方額度端點查詢——依 CLI 版本不同，在 Windows 上，這個憑證讀自認證管理員或本機 token 檔（依 CLI 版本而定）。`agentdeck` 只讀取這個憑證而不寫回，任何刷新後的 access token 也只留在記憶體中；這個呼叫本身只讀額度資訊，絕不消耗你的模型額度。
 - 背景連網範圍：上述 Antigravity 額度／token 端點、用來標示故障的 Claude 與 Codex 公開狀態頁、估算成本用的公開價格表（斷網會用內建預設），以及偶爾檢查 GitHub 版本更新。Claude Code 與 Codex 的紀錄檔內容不會被上傳。
+
+## 檔案位置
+
+`agentdeck` 是本機優先的工具，所有狀態都在你自己的磁碟上。它動到的東西只有這些：
+
+| 路徑 | 用途 | 誰寫的 |
+|---|---|---|
+| `~/.claude/agentdeck-statusline.py` | 安裝進 Claude Code 的 statusLine hook | `--setup` |
+| `~/.claude/agentdeck-status.json` | hook 每次刷新寫入的額度快照，UI 讀它 | hook |
+| `~/.claude/agentdeck-preferences.json` | 主題、面板、開機自啟等偏好 | app |
+| `~/.claude/settings.json` | 只改 `statusLine` 一欄；原值備份在 `settings["agentdeck"]["previousStatusLine"]` | `--setup` |
+| `~/.agentdeck/` | 價格表、服務狀態、歷史紀錄等快取，加上圓桌討論與角色安裝狀態 | app |
+| `~/.agentdeck-reports/` | 你按下「產生報告」時輸出的 HTML | app |
+| `~/.claude/projects/`、`~/.codex/sessions/` | 用量來源 | **唯讀，不會寫入** |
+
+`--unsetup` 會移除 hook 並還原 `settings.json` 的原值。快取目錄可以隨時整個刪掉，下次啟動會重建。
 
 ## 環境需求
 
@@ -161,6 +180,18 @@ uv run --no-sync python main.py --doctor   # 環境與 hook 診斷
 | Token 浪費健檢 | ✅ | — | — |
 | 讀取額度時不呼叫 LLM API | ✅ | ✅ | ✅ |
 | 開源授權 | AGPL-3.0 | MIT | — |
+
+## 文件
+
+| 文件 | 內容 |
+|---|---|
+| [Windows 開發文件](docs/DEVELOPMENT.zh-TW.md) | 建環境、四道閘門、打包、容易踩的地方 |
+| [移植手冊](docs/PORTING.zh-TW.md) | 把上游的 macOS 功能搬到 Windows 的方法，含三個實際踩過的稽核錯誤 |
+| [決策紀錄](docs/DECISIONS.md) | 為什麼這樣做、以及當初否決了什麼 |
+| [上游追蹤](docs/UPSTREAM.md) | 已審視／已合併的上游 commit，與不採用的理由 |
+| [fork 說明](docs/FORK.zh-TW.md) | 本 fork 專屬檔案與同步流程 |
+| [Repo Review](REPO_REVIEW.md) | 當前健康狀態與未解問題 |
+| [變更紀錄](CHANGELOG.zh-TW.md) | 逐版變更 |
 
 ## 開發
 

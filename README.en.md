@@ -10,8 +10,11 @@ Keep Claude Code, Codex, and Antigravity quota in view while you work. `agentdec
 
 [繁體中文](README.md) · English &nbsp;|&nbsp; [Landing page](https://sanhsien.github.io/agentdeck/)
 
+[![Release](https://img.shields.io/github/v/release/SanHsien/agentdeck?sort=semver&color=ff8c42)](https://github.com/SanHsien/agentdeck/releases/latest)
+[![CI](https://github.com/SanHsien/agentdeck/actions/workflows/check.yml/badge.svg)](https://github.com/SanHsien/agentdeck/actions/workflows/check.yml)
 [![Python](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/)
-[![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](#install)
+[![Platform](https://img.shields.io/badge/platform-Windows-0078D4.svg?logo=windows11&logoColor=white)](#install)
+[![Local-first](https://img.shields.io/badge/architecture-local--first-2E7D32.svg)](#privacy--data-sources)
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 
 > **This fork focuses on Windows.**
@@ -74,6 +77,22 @@ A quota icon appears in the system tray: left-click for the panel, right-click f
 - Claude Code and Codex numbers are read **only from local log files** on your machine; reading them **never calls Anthropic or OpenAI's LLM APIs**.
 - Antigravity quota requires network access, and only if you use it: quota is fetched from Google's official quota endpoint using the OAuth credential the Antigravity CLI already stored after sign-in — on Windows that credential is read from Credential Manager or a local token file, depending on CLI version. `agentdeck` reads that credential without writing it back and keeps any refreshed access token in memory only; the call itself only reads quota metadata and never consumes your model quota.
 - Background network activity: the Antigravity quota/token endpoints above, public Claude and Codex status pages to flag outages, a public model-pricing table to estimate cost (falls back to built-in prices offline), and occasionally checking GitHub for a new version. Claude Code and Codex log contents are never uploaded.
+
+## Where agentdeck Writes
+
+Everything this tool knows lives on your own disk. These are the only things it touches:
+
+| Path | Purpose | Written by |
+|---|---|---|
+| `~/.claude/agentdeck-statusline.py` | The statusLine hook installed into Claude Code | `--setup` |
+| `~/.claude/agentdeck-status.json` | Quota snapshot the hook writes on every refresh; the UI reads it | the hook |
+| `~/.claude/agentdeck-preferences.json` | Theme, panel, launch-at-login and other preferences | the app |
+| `~/.claude/settings.json` | Only the `statusLine` field; the previous value is backed up under `settings["agentdeck"]["previousStatusLine"]` | `--setup` |
+| `~/.agentdeck/` | Caches for pricing, service status and history, plus council and persona state | the app |
+| `~/.agentdeck-reports/` | HTML reports you generate | the app |
+| `~/.claude/projects/`, `~/.codex/sessions/` | Usage sources | **read-only, never written** |
+
+`--unsetup` removes the hook and restores the original `settings.json` value. The cache directory can be deleted at any time; it is rebuilt on next launch.
 
 ## Requirements
 
@@ -161,6 +180,18 @@ If the menu bar shows `--`, it's usually not broken — there's just no local da
 | Token-waste Health Check | ✅ | — | — |
 | No LLM API calls to read quota | ✅ | ✅ | ✅ |
 | Open-source license | AGPL-3.0 | MIT | — |
+
+## Documentation
+
+| Document | Contents |
+|---|---|
+| [Windows development guide](docs/DEVELOPMENT.md) | Environment setup, the four gates, packaging, common traps |
+| [Porting playbook](docs/PORTING.zh-TW.md) | How upstream's macOS features get moved to Windows, including three audit mistakes made for real |
+| [Decision log](docs/DECISIONS.md) | Why things are the way they are, and what was rejected |
+| [Upstream tracking](docs/UPSTREAM.md) | Reviewed and merged upstream commits, with reasons for the ones skipped |
+| [Fork notes](docs/FORK.zh-TW.md) | Fork-specific files and the sync process |
+| [Repo review](REPO_REVIEW.md) | Current health and open issues |
+| [Changelog](CHANGELOG.md) | Per-version changes |
 
 ## Development
 
