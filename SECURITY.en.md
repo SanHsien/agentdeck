@@ -4,9 +4,9 @@
 
 ## Reporting a Vulnerability
 
-If you find a security vulnerability in usage, **please do not open a public Issue.** Report it privately instead:
+If you find a security vulnerability in agentdeck, **please do not open a public Issue.** Report it privately instead:
 
-📧 **aqua5230@gmail.com**
+📧 **sanhsien@pm.me**
 
 Please include where you can:
 
@@ -18,8 +18,8 @@ This is a single-maintainer project; I'll do my best to respond and address repo
 
 ## Supported Versions
 
-usage ships on a rolling basis; security fixes target the **latest release only**. Please confirm you're on the [latest release](https://github.com/aqua5230/usage/releases/latest) before reporting.
+agentdeck ships on a rolling basis; security fixes target the **latest release only**. Please confirm you're on the [latest release](https://github.com/SanHsien/agentdeck/releases/latest) before reporting.
 
 ## Security Design
 
-usage **never calls any Anthropic / OpenAI network API.** Every number comes from files already on your local disk (the status file Claude Code writes, and Codex's session logs). It does not upload, track, or phone home with your usage data — that's a core design principle of the project.
+agentdeck **never calls Anthropic or OpenAI usage APIs**: Claude Code and Codex usage numbers come from local status files and session logs, and those records are never uploaded. The app does contact a public pricing table, the public Claude and Codex status pages, the GitHub Releases endpoint, and the signed-in user's Antigravity quota endpoint; see the README privacy section for the complete scope.

@@ -93,7 +93,10 @@ def test_check_latest_release_parses_newer_release(monkeypatch: pytest.MonkeyPat
         body="notes",
     )
     assert captured["timeout"] == 1.5
-    assert captured["request"].headers["User-agent"] == "usage/0.10.1"
+    assert captured["request"].full_url == (
+        "https://api.github.com/repos/SanHsien/agentdeck/releases/latest"
+    )
+    assert captured["request"].headers["User-agent"] == "agentdeck/0.10.1"
 
 
 def test_check_latest_release_returns_none_when_remote_is_not_newer(

@@ -7,12 +7,15 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
 
 import discussion_window_win as win
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 class _FakeWindow:
@@ -138,6 +141,19 @@ def test_drain_limit_and_shared_serializer() -> None:
     events = discussion_assets.serialize_event_batch([], {})
 
     assert isinstance(events, str)
+
+
+def test_participant_controls_reflow_before_the_setup_grid_collapses() -> None:
+    html = (ROOT / "assets" / "windows" / "discussion.html").read_text(encoding="utf-8")
+
+    responsive = html.split("@media (max-width: 1050px)", maxsplit=1)[1].split(
+        "@media (max-width: 720px)",
+        maxsplit=1,
+    )[0]
+
+    assert "grid-template-columns: auto minmax(0, 1fr) auto;" in responsive
+    assert ".participant-model" in responsive
+    assert "grid-row: 2;" in responsive
     assert win.EVENT_DRAIN_LIMIT == 50
 
 

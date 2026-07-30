@@ -4,29 +4,27 @@
 
 Issues, PRs are welcome. This document only spells out hard requirements; it does not dictate process.
 
-This project is maintained by a single maintainer ([@aqua5230](https://github.com/aqua5230)) under a benevolent-dictator model: every PR is reviewed and merged at the maintainer's discretion. Discussion is welcome, but the final call rests with the maintainer.
+This fork is independently maintained by [@SanHsien](https://github.com/SanHsien) under a benevolent-dictator model: every PR is reviewed and merged at the maintainer's discretion. Discussion is welcome, but the final call rests with the maintainer.
 
 ## Opening an Issue
 
-- **Bug report**: use the `.github/ISSUE_TEMPLATE/bug_report.md` template. Please include macOS version, Python version, `git rev-parse --short HEAD`, and which mode you were running (menu bar / TUI / mock).
+- **Bug report**: use the `.github/ISSUE_TEMPLATE/bug_report.md` template. Include the Windows version, Python version, `git rev-parse --short HEAD`, and the mode you were running (system tray / TUI / mock / doctor).
 - **Feature request**: use the `.github/ISSUE_TEMPLATE/feature_request.md` template.
 
 ## Required checks before opening a PR
 
-```bash
-source .venv/bin/activate
-uv run ruff check
-uv run mypy .
-uv run pytest -v
+```powershell
+uv sync --frozen --group dev --extra windows
+pwsh tools/dev_check.ps1
 ```
 
-All three must be green to merge. CI runs the same three (`.github/workflows/check.yml`).
+The full gate must be green to merge. It covers lock freshness, ruff, mypy, bilingual docs, the AI updates page, and pytest; CI runs the same checks (`.github/workflows/check.yml`).
 
 ## Code change guidelines
 
 - **When changing prod modules, add tests alongside.** Pick the closest existing file under `tests/` as a style reference. Tests must never touch real `~/.claude/` or `~/.codex/` — use `monkeypatch` to redirect path constants.
-- **Keep internal and public naming unified as `usage`.** File paths, settings keys, binary names, environment variables, and the LaunchAgent label all use the `usage` prefix.
-- **Be deliberate with `menubar.py` UI constants** (`CARD_HEIGHT`, `CARD_RADIUS`, `SECTION_GAP`, etc.); they are part of the popover's visual design.
+- **Use `agentdeck` for public names.** The binary, settings keys, on-disk names, and environment variables use `agentdeck` / `AGENTDECK_*`. Internal module names such as `usage_client.py` are deliberately retained historical names.
+- **Keep Windows UI logic out of `wintray.py`.** Put new decisions in independently testable leaf modules and keep `wintray.py` as a thin UI shell.
 
 ## CHANGELOG and releases
 
@@ -41,5 +39,5 @@ Match the existing `git log`: imperative subject line; add a body explaining *wh
 Fix AttributeError: drop stale tracker.sample() call
 
 072a088 removed UsageRateTracker.sample() but missed the lone caller in
-menubar.py:435...
+wintray.py:435...
 ```

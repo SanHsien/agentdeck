@@ -84,7 +84,7 @@ uv run --no-sync ruff check
 uv run --no-sync mypy .
 uv run --no-sync pytest -q
 uv run --no-sync pytest tests/test_usage_client.py::test_name -v   # 單一測試
-pwsh tools/dev_check.ps1                        # 一次跑完四道閘門
+pwsh tools/dev_check.ps1                        # 一次跑完六道閘門
 ```
 
 跑程式：

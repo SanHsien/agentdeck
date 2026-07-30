@@ -1,6 +1,6 @@
 ---
 name: agentdeck
-description: 在 macOS menu bar / Windows system tray / 終端機 TUI 顯示 Claude Code 與 Codex 的配額用量。數字全部讀本機檔案（statusLine hook 寫的 JSON、Codex sessions JSONL），不呼叫任何用量 API。此 skill 用於維護 SanHsien/agentdeck。
+description: 在 Windows system tray / 終端機 TUI 顯示 Claude Code、Codex 與 Antigravity 的配額用量，並維護 AI Council、人才市場與報告功能。Claude Code 與 Codex 數字讀本機檔案，不呼叫它們的用量 API。此 skill 用於維護 SanHsien/agentdeck。
 ---
 
 # agentdeck
@@ -14,7 +14,7 @@ description: 在 macOS menu bar / Windows system tray / 終端機 TUI 顯示 Cla
 不適合的任務：
 
 - 想「接 API 拿更準的用量」——本專案的核心不變式就是不呼叫任何 LLM 用量 API，這條不能破。
-- macOS 專屬的 menu bar / `.app` 打包工作——開發機是 Windows 11，只能改 code 不能驗收，需要在 macOS 上實測。
+- macOS 專屬的 menu bar / `.app` 工作——本 fork 已移除 macOS 支援；要比對行為請讀 `reference/upstream-macos/`，不要把 macOS 程式碼接回建置。
 
 ## 前置
 

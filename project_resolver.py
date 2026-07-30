@@ -32,9 +32,8 @@ def _resolve_project_name(normalized_cwd: str) -> str:
             capture_output=True,
             check=False,
             text=True,
-            # Force UTF-8 instead of the locale default: a .app launched via
-            # LaunchServices has no LANG set, so text=True would decode git's
-            # output as ASCII and crash on non-ASCII (e.g. Chinese) repo paths.
+            # Force UTF-8 instead of the locale default: GUI processes may have
+            # no LANG set, so text=True could misdecode non-ASCII repo paths.
             encoding="utf-8",
             errors="replace",
             timeout=3,

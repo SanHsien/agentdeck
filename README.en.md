@@ -61,14 +61,14 @@ A quota icon appears in the system tray: left-click for the panel, right-click f
 ### Reporting & Insight
 
 - **Deep HTML Reports:** Shareable HTML reports of daily and weekly token trends, project rankings, and cost — including a Year in Review with a contribution heatmap and "Wrapped" summary. Export as .html, .csv, or .png, fully offline, with optional project-name masking.
-- **TUI & CLI:** Prefer the terminal? Run the rich TUI dashboard with `python3 main.py --tui`, or generate deep analytics with `python3 usage_cli.py report`.
+- **TUI & CLI:** Prefer the terminal? Run the rich TUI dashboard with `uv run --no-sync python main.py --tui`, or generate deep analytics with `uv run --no-sync python usage_cli.py report`.
 
 ### Experience & Customization
 
 - **10 Visual Themes:** Switch between panel styles including Classic, Matrix, Windows 95, Newspaper, Cloud Observation, Midnight Aquarium, Prism Arcade, Black Hole, World Cup 2026, and Lepidoptera (blueprint).
 - **Drag to Reorder:** Grab any quota card and drag it up or down to swap the order — the arrangement is shared across every theme and survives restarts.
 - **AI Talent Market (our own implementation):** Installs ready-made subagent roles into `~/.claude/agents/`. Upstream sourced its roles from a closed binary whose source and distribution repos are both 404 to everyone else and which only shipped for macOS, so nobody cloning the public repo could use the feature. This fork replaced it with an open implementation: role definitions live in [`personas/`](personas/) and can be edited or extended. If you hand-edit an installed role the panel flags it and offers a restore. **If you already have an agent of the same name, installing backs it up first and tells you the backup filename.**
-- **AI Council:** Open a dedicated window and run a multi-round discussion between Claude Code, Codex, and Antigravity — pick participants, models, and a debate style, with a token estimate up front. Steer it between rounds, see who dissents in the consensus tally, and let it stop early once everyone agrees. Seats can reference real files via an optional read-only folder. (Persona assignment needs the AI Talent Market, which is unavailable here.)
+- **AI Council:** Open a dedicated window and run a multi-round discussion between Claude Code, Codex, and Antigravity — pick participants, models, AI Talent Market personas, and a debate style, with a token estimate up front. Steer it between rounds, see who dissents in the consensus tally, and let it stop early once everyone agrees. Seats can reference real files via an optional read-only folder.
 - **AI Update Daily:** Opens an [update digest](https://sanhsien.github.io/agentdeck/ai-updates/) covering Claude Code, Codex, Antigravity and related tools, with the original release text alongside each entry. The page is generated from this repo's `ai_updates.json` by `scripts/build_ai_updates.py`, and the data refreshes with upstream.
 - **Spirit Companions:** A small animated white silhouette lives beside your usage percentages — a phoenix for Claude, a dragon for Codex, a lion for Antigravity. Each accelerates dynamically as its own tool's token burn rate climbs.
 - **Automatic Localization:** UI text is available in Traditional Chinese and English, automatically matching your system settings. Every Chinese locale (Simplified included) resolves to Traditional Chinese; everything else falls back to English.
@@ -153,20 +153,20 @@ Switch between **10 visual themes** directly from the UI:
 
 ## Troubleshooting
 
-If the menu bar shows `--`, it's usually not broken — there's just no local data yet.
+If the system tray icon shows `--`, it's usually not broken — there's just no local data yet.
 
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
-| Menu bar shows `--` | No data yet, or Claude Code hook not refreshed | Run one Codex conversation. For Claude Code, click "Set Up Status Line" or run `python3 main.py --setup` |
+| System tray icon shows `--` | No data yet, or Claude Code hook not refreshed | Run one Codex conversation. For Claude Code, click "Set Up Status Line" or run `uv run --no-sync python main.py --setup` |
 | Accidentally hit "Quit" | Process terminated | Run `agentdeck.exe` again. |
 | Status says "N minutes stale" | Claude Code isn't running | Open Claude Code and let it run |
 | Codex section is empty | No Codex history found | Run a Codex conversation to generate logs |
-| Today's cost shows $0.00 | Model pricing missing | Delete `~/.agentdeck/pricing_cache.json` or check `AGENTDECK_DEBUG=1` |
+| Today's cost shows $0.00 | Model pricing missing | Delete `~/.agentdeck/pricing_cache.json` or run with `$env:AGENTDECK_DEBUG=1` |
 | Antigravity card is missing | Antigravity CLI not installed or not signed in | Install and sign in to the Antigravity CLI; the card appears automatically once a background quota fetch succeeds |
 
 ## Comparison
 
-| Feature | usage | ccusage | TokenTracker |
+| Feature | agentdeck | ccusage | TokenTracker |
 |---------|:-----:|:-------:|:------------:|
 | Always on screen | ✅ | — | ✅ |
 | Windows system tray | ✅ | — | — |
@@ -186,7 +186,7 @@ If the menu bar shows `--`, it's usually not broken — there's just no local da
 
 | Document | Contents |
 |---|---|
-| [Windows development guide](docs/DEVELOPMENT.md) | Environment setup, the four gates, packaging, common traps |
+| [Windows development guide](docs/DEVELOPMENT.md) | Environment setup, the six gates, packaging, common traps |
 | [Porting playbook](docs/PORTING.zh-TW.md) | How upstream's macOS features get moved to Windows, including three audit mistakes made for real |
 | [Decision log](docs/DECISIONS.md) | Why things are the way they are, and what was rejected |
 | [Upstream tracking](docs/UPSTREAM.md) | Reviewed and merged upstream commits, with reasons for the ones skipped |

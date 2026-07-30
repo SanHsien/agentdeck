@@ -20,7 +20,7 @@
 
 ---
 
-## D-02：README 改為繁體中文預設，刪除簡中／日／韓版本
+## D-02：README 改為繁體中文預設，刪除簡中／日／韓版本（已被 D-11 部分取代）
 
 **日期**：2026-07-29
 
@@ -38,7 +38,7 @@
 
 ---
 
-## D-03：不在 Windows 上重新產生 `uv.lock`
+## D-03：不在 Windows 上重新產生 `uv.lock`（已被 D-12 取代）
 
 **日期**：2026-07-29
 
@@ -170,3 +170,31 @@
 **啟用前必須先修的東西**：`.clusterfuzzlite/project.yaml` 仍寫著上游的 `homepage`、`main_repo` 與**原作者的聯絡信箱**；容器也還把原始碼解到 `$SRC/usage`，而 `build.sh` 用「macOS-only 相依」替自己的 `PYTHONPATH` 辯護——那些相依早在移除 macOS 支援時就刪光了。**繼承來的設定會沉默地繼續指向上游**，啟用它等於用上游的身分對外運作。
 
 **教訓**：「workflow 檔案存在」不等於「workflow 有在跑」，「workflow 有在跑」也不等於「它跑的是你的專案」。兩件都要實測。
+
+---
+
+## D-11：面向讀者的預設文件與 app UI 都採繁中／英文雙語
+
+**日期**：2026-07-30
+
+**取代範圍**：D-02 中「CONTRIBUTING／SECURITY 維持英文預設」與「app UI 五語不動」兩項。
+
+**決定**：`README.md`、`CONTRIBUTING.md`、`SECURITY.md` 都以繁體中文為預設，英文放在對應的 `*.en.md`；CHANGELOG 與 `docs/DEVELOPMENT` 維持原本後綴規則。app UI 只出貨 `zh-TW` 與 `en`，所有中文語系落到 `zh-TW`，其餘落到 `en`。
+
+**為什麼**：GitHub community tab 會直接打開無後綴檔案，這正是讓主要讀者先看到繁中的理由，不是保留英文的理由。UI 也採同一組兩語契約，避免五套手動翻譯逐漸漂移。
+
+**後果**：README、CONTRIBUTING、SECURITY、CHANGELOG、DEVELOPMENT 的中英配對都由 `scripts/check_doc_parity.py` 檢查；UI key 由 `tests/test_i18n_key_parity.py` 檢查。
+
+---
+
+## D-12：Windows 可更新 lock；本 repo 是 uv virtual root，不是 wheel package
+
+**日期**：2026-07-31
+
+**取代範圍**：D-03 全部。
+
+**決定**：`pyproject.toml` 以 `[tool.uv] package = false` 把本 repo 定義為 flat application／virtual root；正式發佈走 PyInstaller，不發佈 wheel 或 PyPI 套件。`[tool.uv] environments` 只包含 Windows 與 Linux，因此在 Windows 上可以於相依或專案模式變更時執行 `uv lock`。單純改版號仍照 AGENTS.md 手動同步 root package 版號，避免無意義重解析。
+
+**為什麼**：macOS、PyObjC 與 `.app` 建置已全部移除，D-03 防止 Windows lock 弄丟 darwin 相依的前提不再存在。舊 setuptools 清單還漏掉多個現行模組並指向已刪除的 `discussion_window.py`；它會產出表面成功、實際缺模組與資源的 wheel。應明確宣告「這不是 wheel package」，而非繼續維護一條不發佈的錯誤路徑。
+
+**後果**：本機與 CI 先跑 `uv lock --check`，後續 gate 全部使用 `uv run --no-sync`；release workflow 也先拒絕陳舊 lock，再以 frozen environment 執行 PyInstaller。

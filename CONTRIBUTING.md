@@ -4,29 +4,27 @@
 
 歡迎開 issue / PR。這份文件只描述硬性要求，不規定流程。
 
-本專案目前由 maintainer（[@aqua5230](https://github.com/aqua5230)）維護，採仁慈獨裁模式：所有 PR 由 maintainer 審查後決定是否合併，歡迎討論，最終決定權在 maintainer。
+本 fork 由 maintainer（[@SanHsien](https://github.com/SanHsien)）獨立維護，採仁慈獨裁模式：所有 PR 由 maintainer 審查後決定是否合併，歡迎討論，最終決定權在 maintainer。
 
 ## 開 Issue
 
-- **Bug report**：用 `.github/ISSUE_TEMPLATE/bug_report.md` 模板。請附 macOS 版本、Python 版本、`git rev-parse --short HEAD`、跑哪個模式（menu bar / TUI / mock）。
+- **Bug report**：用 `.github/ISSUE_TEMPLATE/bug_report.md` 模板。請附 Windows 版本、Python 版本、`git rev-parse --short HEAD`、跑哪個模式（系統匣 / TUI / mock / doctor）。
 - **Feature request**：用 `.github/ISSUE_TEMPLATE/feature_request.md` 模板。
 
 ## 開 PR 前的必跑檢查
 
-```bash
-source .venv/bin/activate
-uv run ruff check
-uv run mypy .
-uv run pytest -v
+```powershell
+uv sync --frozen --group dev --extra windows
+pwsh tools/dev_check.ps1
 ```
 
-三項都要綠才能 merge。CI 也會跑這三項（`.github/workflows/check.yml`）。
+完整閘門要綠才能 merge；內容包含 lock freshness、ruff、mypy、雙語文件、AI 更新頁與 pytest，CI 會執行同一組檢查（`.github/workflows/check.yml`）。
 
 ## 改 code 的方針
 
 - **改 prod 模組請順手補測試**：`tests/` 底下挑風格最接近的檔案模仿。新增測試禁止碰 `~/.claude/` 跟 `~/.codex/` 真實檔案，請用 `monkeypatch` 改路徑常數。
-- **內外名稱統一為 `usage`**：檔案路徑、設定 key、binary、env var、LaunchAgent label 都使用 `usage` 前綴。
-- **menubar.py 的 UI 常數**（`CARD_HEIGHT`、`CARD_RADIUS`、`SECTION_GAP` 等）動之前先想清楚，那是 popover 視覺設計的一部分。
+- **公開名稱使用 `agentdeck`**：binary、設定 key、落地檔名與環境變數使用 `agentdeck` / `AGENTDECK_*`。`usage_*.py` 等內部模組名稱是刻意保留的歷史名稱。
+- **Windows UI 邏輯不要塞回 `wintray.py`**：新判斷放在可獨立測試的 leaf module，`wintray.py` 只保留薄 UI 外殼。
 
 ## CHANGELOG 與發版
 
@@ -41,5 +39,5 @@ uv run pytest -v
 Fix AttributeError: drop stale tracker.sample() call
 
 072a088 removed UsageRateTracker.sample() but missed the lone caller in
-menubar.py:435...
+wintray.py:435...
 ```

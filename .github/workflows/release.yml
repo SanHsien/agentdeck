@@ -41,6 +41,9 @@ jobs:
 
       - run: uv python install 3.13
 
+      - name: Check lockfile freshness
+        run: uv lock --check
+
       - name: Install Windows build dependencies
         run: |
           uv sync --frozen --group dev --extra windows
@@ -62,4 +65,3 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: gh release upload "${{ steps.ref.outputs.tag }}" dist/agentdeck-windows.zip dist/agentdeck-windows.zip.sha256 --clobber
-

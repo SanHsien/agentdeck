@@ -13,7 +13,7 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any
 
-GITHUB_RELEASES_API = "https://api.github.com/repos/aqua5230/usage/releases/latest"
+GITHUB_RELEASES_API = "https://api.github.com/repos/SanHsien/agentdeck/releases/latest"
 
 
 @dataclass(frozen=True, slots=True)
@@ -103,7 +103,7 @@ def check_latest_release_result(
         GITHUB_RELEASES_API,
         headers={
             "Accept": "application/vnd.github+json",
-            "User-Agent": f"usage/{current_version}",
+            "User-Agent": f"agentdeck/{current_version}",
         },
     )
     try:

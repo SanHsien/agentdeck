@@ -6,6 +6,20 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
+## Unreleased
+
+### Fixed
+- **Update checks now follow this fork**: the tray still queried `aqua5230/usage`, so agentdeck releases newer than the upstream version were invisible. The endpoint and user agent now identify `SanHsien/agentdeck`, with a regression test for both.
+- **Fork ownership and Windows guidance**: project metadata, contribution/security policies, issue templates, architecture notes, and troubleshooting still mixed the old product name, upstream maintainer, macOS menu bar, or removed module names into current instructions. They now consistently describe agentdeck's Windows workflow and actual network scope.
+- **Local, CI, and release dependency gates now match**: CI skipped bilingual document parity and AI Update Daily freshness, and its `uv run` commands could resync after the frozen install. The shared six-gate contract now checks lock freshness first and runs every later command with `--no-sync`; release builds also reject a stale lock.
+- **AI Council participant controls fit the default window**: the name, moderator button, and two fixed-width selectors were forced into one five-column row, clipping names and creating a horizontal scrollbar at 900×640. Narrow setup columns now place model and persona controls on a second row before the whole page collapses to one column.
+
+### Changed
+- **uv treats the repository as a flat application**: this project is released through PyInstaller, not as a wheel. `[tool.uv] package = false` replaces a stale setuptools module list that omitted current modules and named a deleted macOS host.
+
+### Removed
+- **Dead macOS-only artifacts**: removed the curl installer that downloaded upstream code and told users to quit a removed `.app`, plus a superseded root-level Antigravity implementation status note.
+
 ## [0.31.1] - 2026-07-30
 
 ### Fixed

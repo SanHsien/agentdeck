@@ -16,15 +16,15 @@ labels: bug
 <!-- What you expected to happen instead. -->
 
 **Environment**
-- macOS version:
-- Python version (`python3 --version`):
-- usage commit (`git -C path/to/usage rev-parse --short HEAD`):
-- Mode: [menu bar / TUI / mock]
+- Windows version:
+- Python version (`uv run --no-sync python --version`):
+- agentdeck commit (`git rev-parse --short HEAD`):
+- Mode: [system tray / TUI / mock / doctor]
 
 **Logs**
-Run with `AGENTDECK_DEBUG=1 python3 main.py` and paste any warnings here.
+Run `$env:AGENTDECK_DEBUG=1; uv run --no-sync python main.py` and paste any warnings here.
 
-> ⚠️ **Privacy**: usage reads files under `~/.claude/` and `~/.codex/`. **Do not paste**:
+> ⚠️ **Privacy**: agentdeck reads files under `~/.claude/` and `~/.codex/`. **Do not paste**:
 > - the contents of `~/.claude/agentdeck-status.json` or any `tt-status.json` / `usag-status.json`
 > - any `~/.codex/sessions/**/*.jsonl` (these may include prompts, project names, and absolute paths)
 > - absolute paths, project / repo names, session IDs, or cost figures

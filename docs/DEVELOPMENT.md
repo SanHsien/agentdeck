@@ -34,12 +34,14 @@ You end up with `.venv\` (Python 3.13, gitignored).
 pwsh tools/dev_check.ps1
 ```
 
-Runs all four CI checks in one go: `ruff check`, `mypy .`, bilingual doc parity, and `pytest`. All green before you commit. Separately:
+Runs six checks in one go: lock freshness, `ruff check`, `mypy .`, bilingual doc parity, AI updates page freshness, and `pytest`. All green before you commit. Separately:
 
 ```powershell
+uv lock --check
 uv run --no-sync ruff check
 uv run --no-sync mypy .
 uv run --no-sync python scripts/check_doc_parity.py
+uv run --no-sync python scripts/build_ai_updates.py --check
 uv run --no-sync pytest -q
 ```
 
@@ -57,6 +59,8 @@ $env:AGENTDECK_DEBUG=1; uv run --no-sync python main.py   # surface swallowed ex
 ```
 
 ## Packaging
+
+This is a flat application distributed with PyInstaller, not as a wheel or PyPI package; `[tool.uv] package = false` is intentional. Do not use `uv build` as the release check.
 
 ```powershell
 uv pip install pyinstaller          # not in uv.lock; CI installs it separately too

@@ -34,12 +34,14 @@ uv sync --frozen --group dev --extra windows
 pwsh tools/dev_check.ps1
 ```
 
-一次跑完 CI 的四項：`ruff check`、`mypy .`、雙語文件對稱性、`pytest`。全綠才能 commit。分開跑：
+一次跑完六項：lock freshness、`ruff check`、`mypy .`、雙語文件對稱性、AI 更新頁同步檢查、`pytest`。全綠才能 commit。分開跑：
 
 ```powershell
+uv lock --check
 uv run --no-sync ruff check
 uv run --no-sync mypy .
 uv run --no-sync python scripts/check_doc_parity.py
+uv run --no-sync python scripts/build_ai_updates.py --check
 uv run --no-sync pytest -q
 ```
 
@@ -57,6 +59,8 @@ $env:AGENTDECK_DEBUG=1; uv run --no-sync python main.py   # 讓被吞掉的例�
 ```
 
 ## 打包
+
+這是以 PyInstaller 發佈的 flat application，不發佈 wheel／PyPI 套件；`[tool.uv] package = false` 是刻意設定。請勿用 `uv build` 當作 release 驗證。
 
 ```powershell
 uv pip install pyinstaller          # 不在 uv.lock 裡，CI 也是這樣單獨裝

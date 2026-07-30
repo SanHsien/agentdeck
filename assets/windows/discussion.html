@@ -1219,6 +1219,39 @@
       font-size: 14px;
     }
 
+    @media (max-width: 1050px) {
+      .participant-head {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+      }
+
+      .participant-badge {
+        grid-column: 1;
+        grid-row: 1 / span 2;
+        align-self: center;
+      }
+
+      .participant-info {
+        grid-column: 2;
+        grid-row: 1;
+      }
+
+      .moderator-toggle {
+        grid-column: 3;
+        grid-row: 1;
+      }
+
+      .participant-model {
+        grid-column: 2;
+        grid-row: 2;
+        width: 100%;
+      }
+
+      .participant-persona {
+        grid-column: 3;
+        grid-row: 2;
+      }
+    }
+
     @media (max-width: 720px) {
       .setup {
         grid-template-columns: 1fr;

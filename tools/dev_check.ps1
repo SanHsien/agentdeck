@@ -5,7 +5,7 @@
 # License v3.0 only; see the LICENSE file for full terms and the warranty disclaimer.
 <#
 .SYNOPSIS
-    跑本專案的 CI gate：ruff check、mypy .、雙語文件對稱性、pytest。
+    跑本專案的 CI gate：lock、ruff、mypy、雙語文件、AI 更新頁、pytest。
 
 .DESCRIPTION
     等同 .github/workflows/check.yml。全綠才能 commit。
@@ -14,7 +14,7 @@
     唯一的例外是符號連結權限，那是本機權限限制、CI 上不存在（見下方 pytest 段落）。
 
 .PARAMETER SkipTests
-    只跑 ruff 與 mypy，跳過比較慢的 pytest（約 3.5 分鐘）。
+    跑 pytest 以外的五道閘門，跳過比較慢的 pytest（約 3.5 分鐘）。
 
 .EXAMPLE
     pwsh tools/dev_check.ps1
@@ -77,6 +77,7 @@ function Invoke-Gate {
     }
 }
 
+Invoke-Gate 'lock' @('lock', '--check')
 Invoke-Gate 'ruff' @('run', '--no-sync', 'ruff', 'check')
 Invoke-Gate 'mypy' @('run', '--no-sync', 'mypy', '.')
 # CI 把雙語文件對稱性當獨立一步跑（.github/workflows/check.yml），這裡跟上，

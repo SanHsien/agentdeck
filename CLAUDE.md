@@ -4,27 +4,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-`usage` is a Windows system tray (and TUI) app that pins Claude Code + Codex quota usage to the screen. Python 3.13, pystray + pywebview (WebView2) for the tray UI, `rich` for the TUI. **No Anthropic/OpenAI APIs are ever called** — all numbers come from files on disk (a statusLine hook Claude Code writes, and Codex's `~/.codex/sessions/*.jsonl` logs).
+`agentdeck` is a Windows system tray (and TUI) app that pins Claude Code, Codex, and Antigravity quota usage to the screen and also provides AI Council, persona installation, and local usage reports. Python 3.13, pystray + pywebview (WebView2) for the tray UI, `rich` for the TUI. **No Anthropic/OpenAI usage APIs are ever called** — Claude Code and Codex numbers come from files on disk (a statusLine hook Claude Code writes, and Codex's `~/.codex/sessions/*.jsonl` logs).
 
 ## Commands
 
-Environment is managed with `uv` in CI and a plain `.venv` locally (both work; `uv.lock` is the source of truth).
+Environment is managed with `uv`; `uv.lock` is the source of truth. This is a flat application bundled with PyInstaller, not a wheel/PyPI package, so `[tool.uv] package = false` is intentional.
 
-```bash
+```powershell
 # Setup (one-time)
 uv sync --frozen --group dev --extra windows
 
 # Run (system tray mode, default)
-python3 main.py
-python3 main.py --mock                  # preview with fake data
-python3 main.py --tui                   # terminal TUI mode
-python3 main.py --setup / --unsetup     # (un)install Claude Code statusLine hook
-AGENTDECK_DEBUG=1 python3 main.py           # surface swallowed exceptions
+uv run --no-sync python main.py
+uv run --no-sync python main.py --mock        # preview with fake data
+uv run --no-sync python main.py --tui         # terminal TUI mode
+uv run --no-sync python main.py --setup       # install Claude Code statusLine hook
+uv run --no-sync python main.py --unsetup     # uninstall Claude Code statusLine hook
+$env:AGENTDECK_DEBUG=1; uv run --no-sync python main.py
 
-# Pre-PR checks — all three must pass (CI runs identical commands)
-uv run ruff check
-uv run mypy .
-uv run pytest -v
+# Pre-PR checks — runs the same six gates as CI
+pwsh tools/dev_check.ps1
 
 # Single test
 uv run pytest tests/test_usage_client.py::test_name -v
@@ -33,7 +32,7 @@ uv run pytest tests/test_usage_client.py::test_name -v
 pwsh scripts/build_windows.ps1
 ```
 
-Tests **must not** touch real `~/.claude/` or `~/.codex/` files — patch the path constants with `monkeypatch` (see existing tests for the pattern). All three checks (`ruff`, `mypy --strict`, `pytest`) are gated by `.github/workflows/check.yml`.
+Tests **must not** touch real `~/.claude/` or `~/.codex/` files — patch the path constants with `monkeypatch` (see existing tests for the pattern). CI gates lock freshness, ruff, mypy, bilingual document parity, AI Update Daily freshness, and pytest in `.github/workflows/check.yml`.
 
 ## Architecture
 
@@ -70,10 +69,10 @@ Claude Code ──stdin──> usage_statusline.py (hook) ──write──> ~/.
 | `wintray.py` | pystray tray icon + pywebview (WebView2) panels — the primary UI. Win32 work areas are in physical pixels while pywebview's API is logical; convert with `_monitor_dpi_scale()` / `_to_logical_rect()` or the panel lands off-screen on scaled displays. |
 | `burn_rate.py` | Burn-rate prediction core used by `wintray.py`. |
 | `menubar_state.py` | Pure history/state projections consumed by `wintray.py`. The `menubar_` prefix is historical — these modules are platform-neutral and load-bearing; don't delete them by name. |
-| `discussion_window_win.py` | pywebview host for the AI Council window, a second window on wintray's GUI loop. Shares all neutral logic with `discussion_window.py`. |
+| `discussion_window_win.py` | pywebview host for the AI Council window, a second window on wintray's GUI loop. Neutral parsing/assets live in `discussion_assets.py`; session state lives in `discussion_session.py`. |
 | `tui.py`, `tui_sprite.py` | `rich`-based terminal renderer. |
-| `usage_cli.py` | Standalone terminal analytics CLI (`python3 usage_cli.py report`) — drives the `adapters/analyzer/ui` report subsystem without the tray UI. |
-| `doctor.py` | Renders the `python3 main.py --doctor` environment/hook-state diagnostic report. |
+| `usage_cli.py` | Standalone terminal analytics CLI (`uv run --no-sync python usage_cli.py report`) — drives the `adapters/analyzer/ui` report subsystem without the tray UI. |
+| `doctor.py` | Renders the `uv run --no-sync python main.py --doctor` environment/hook-state diagnostic report. |
 | `usage_lang.py` | Detects `AGENTDECK_LANG` / system locale. |
 | `setup_hook.py` | Idempotent install/uninstall of the Claude Code statusLine hook, including migration of v0.1.x `usag-*` artifacts. Backs up any pre-existing `statusLine` under `settings["usage"]["previousStatusLine"]`. Also owns the shared low-level settings/TOML editing helpers that `session_hooks.py` builds on. |
 | `session_hooks.py` | Install/enable/disable/self-heal for the session companion hooks (session resume, terse mode, terse reminder, Codex terse) — split out of `setup_hook.py`. Depends one-way on `setup_hook.py`; never the reverse. |
@@ -85,7 +84,7 @@ Claude Code ──stdin──> usage_statusline.py (hook) ──write──> ~/.
 
 ### Naming invariant
 
-Everything user-facing and on-disk uses the `usage` prefix: hook filename, status filename, settings backup key, `~/.agentdeck/` cache directory, `USAGE_*` env vars. The `usag-*` form is **legacy v0.1.x only** — kept as a read-fallback for migration, never written. Don't reintroduce it.
+Everything user-facing and newly written on disk uses `agentdeck` / `AGENTDECK_*`: the executable, hook filename, status filename, settings key, and `~/.agentdeck/` cache directory. Internal Python module names such as `usage_client.py` remain historical and deliberately unchanged. The `usage-*` and `usag-*` on-disk forms are migration-only read fallbacks; never write new data under them.
 
 ### i18n rule
 
@@ -99,7 +98,7 @@ All user-visible strings in panels and UI **must** be looked up from `i18n.json`
   - **README, CONTRIBUTING, SECURITY**: Traditional Chinese is the default (`README.md`, `CONTRIBUTING.md`, `SECURITY.md`); English lives at `*.en.md`. These three are what a reader lands on first — GitHub links `CONTRIBUTING.md` and `SECURITY.md` from its own community and security tabs and never `*.en.md` — so the maintainer's language is the default there. The upstream `README.zh-CN.md` / `README.ja.md` / `README.ko.md` variants have been **removed** — do not reintroduce them. The app UI was reduced to the same two languages; see the i18n rule above.
   - **CHANGELOG and `docs/DEVELOPMENT`** keep the upstream convention: the suffix-less `.md` is **English** and Traditional Chinese lives alongside as `.zh-TW.md`.
   - `scripts/check_doc_parity.py` gates all of the above in CI by comparing `##` heading counts; its `DOC_PAIRS` tuple already reflects the inverted README pair (`README.en.md` ↔ `README.md`).
-- Version is bumped in `pyproject.toml`; CI builds `usage.app.zip` and attaches it on `v*` tags (`.github/workflows/release.yml`).
+- Version is bumped in `pyproject.toml`; CI builds `agentdeck-windows.zip` and attaches it on `v*` tags (`.github/workflows/release.yml`).
 
 ### Versioning — Semantic Versioning 2.0.0 (required)
 

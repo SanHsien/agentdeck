@@ -15,7 +15,7 @@ supported-markers = [
 [[package]]
 name = "agentdeck"
 version = "0.31.1"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "rich" },
 ]
