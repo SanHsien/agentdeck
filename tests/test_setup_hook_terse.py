@@ -143,8 +143,8 @@ def test_self_heal_restores_missing_script_when_enabled(terse_paths: TerseHookPa
     assert terse_paths.sidecar.exists()
 
     data = json.loads(terse_paths.settings.read_text(encoding="utf-8"))
-    assert data["usage"]["selfHealLog"][-1]["action"] == "restore_terse_hook"
-    assert data["usage"]["selfHealLog"][-1]["detail"] == "missing=script,sidecar"
+    assert data["agentdeck"]["selfHealLog"][-1]["action"] == "restore_terse_hook"
+    assert data["agentdeck"]["selfHealLog"][-1]["detail"] == "missing=script,sidecar"
 
 
 def test_self_heal_updates_old_version(terse_paths: TerseHookPaths) -> None:
@@ -154,8 +154,8 @@ def test_self_heal_updates_old_version(terse_paths: TerseHookPaths) -> None:
     session_hooks._self_heal_terse_mode()
 
     data = json.loads(terse_paths.settings.read_text(encoding="utf-8"))
-    assert data["usage"]["selfHealLog"][-1]["action"] == "update_terse_hook"
-    assert data["usage"]["selfHealLog"][-1]["detail"] == "0.1 -> 1.0"
+    assert data["agentdeck"]["selfHealLog"][-1]["action"] == "update_terse_hook"
+    assert data["agentdeck"]["selfHealLog"][-1]["detail"] == "0.1 -> 1.0"
 
 
 def test_self_heal_noop_when_disabled(terse_paths: TerseHookPaths) -> None:
@@ -253,8 +253,8 @@ def test_self_heal_restores_missing_codex_script(terse_paths: TerseHookPaths) ->
 
     assert terse_paths.codex_terse_target.exists()
     data = json.loads(terse_paths.settings.read_text(encoding="utf-8"))
-    assert data["usage"]["selfHealLog"][-1]["action"] == "restore_terse_hook_codex"
-    assert data["usage"]["selfHealLog"][-1]["detail"] == "missing=script"
+    assert data["agentdeck"]["selfHealLog"][-1]["action"] == "restore_terse_hook_codex"
+    assert data["agentdeck"]["selfHealLog"][-1]["detail"] == "missing=script"
 
 
 def test_self_heal_restores_missing_codex_hooks_entry(terse_paths: TerseHookPaths) -> None:
@@ -267,8 +267,8 @@ def test_self_heal_restores_missing_codex_hooks_entry(terse_paths: TerseHookPath
 
     assert len(_codex_terse_entries(terse_paths.codex_hooks_json)) == 1
     data = json.loads(terse_paths.settings.read_text(encoding="utf-8"))
-    assert data["usage"]["selfHealLog"][-1]["action"] == "restore_terse_hook_codex"
-    assert data["usage"]["selfHealLog"][-1]["detail"] == "missing=hooks_entry"
+    assert data["agentdeck"]["selfHealLog"][-1]["action"] == "restore_terse_hook_codex"
+    assert data["agentdeck"]["selfHealLog"][-1]["detail"] == "missing=hooks_entry"
 
 
 def test_enable_registers_reminder_hook(terse_paths: TerseHookPaths) -> None:
@@ -339,8 +339,8 @@ def test_self_heal_backfills_reminder_for_legacy_user(terse_paths: TerseHookPath
     assert terse_paths.terse_reminder_target.exists()
     assert len(_reminder_entries(terse_paths.settings)) == 1
     heal = json.loads(terse_paths.settings.read_text(encoding="utf-8"))
-    assert heal["usage"]["selfHealLog"][-1]["action"] == "restore_terse_reminder_hook"
-    assert heal["usage"]["selfHealLog"][-1]["detail"] == "missing=script,entry"
+    assert heal["agentdeck"]["selfHealLog"][-1]["action"] == "restore_terse_reminder_hook"
+    assert heal["agentdeck"]["selfHealLog"][-1]["detail"] == "missing=script,entry"
 
 
 def test_self_heal_reminder_noop_when_disabled(terse_paths: TerseHookPaths) -> None:

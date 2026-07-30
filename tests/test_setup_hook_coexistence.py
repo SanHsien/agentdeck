@@ -62,7 +62,7 @@ def test_install_when_tt_statusline_exists(
     data = json.loads(settings.read_text(encoding="utf-8"))
 
     assert data["statusLine"]["command"] == expected_statusline_command(forwarder_target)
-    assert data["usage"]["previousStatusLine"] == external
+    assert data["agentdeck"]["previousStatusLine"] == external
     assert hook_target.exists()
     assert forwarder_target.exists()
 

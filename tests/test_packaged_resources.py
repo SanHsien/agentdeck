@@ -21,6 +21,8 @@ from __future__ import annotations
 
 import ast
 import re
+import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -148,3 +150,29 @@ def test_dynamic_resource_sources_exist_in_the_tree(name: str) -> None:
     # The map above is hand-maintained; if a sprite is renamed, fail here rather
     # than let the bundle check pass against a stale list.
     assert (ROOT / "assets" / name).is_file(), f"assets/{name} is missing"
+
+
+@pytest.mark.skipif(shutil.which("pwsh") is None, reason="needs PowerShell 7 to parse")
+def test_the_build_script_actually_parses() -> None:
+    """The build script must be syntactically valid PowerShell.
+
+    The checks above read the script as text, so they happily pass on a file
+    PowerShell cannot run — which is exactly what happened: a comment placed
+    inside a backtick-continued command broke the invocation, every --add-data
+    assertion still passed, and the break only surfaced when a release build was
+    attempted. Parsing costs a second and closes that gap.
+    """
+    script = (
+        "$e=$null; "
+        f"$null=[System.Management.Automation.Language.Parser]::ParseFile('{BUILD_SCRIPT}',"
+        "[ref]$null,[ref]$e); "
+        "if ($e) { $e | ForEach-Object { $_.Message }; exit 1 } else { exit 0 }"
+    )
+    result = subprocess.run(  # noqa: S603 - fixed executable, generated argument
+        ["pwsh", "-NoProfile", "-Command", script],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+
+    assert result.returncode == 0, f"build_windows.ps1 has syntax errors:\n{result.stdout}"

@@ -221,7 +221,7 @@ def test_panel_position_is_clamped_and_persisted_on_hide(
 ) -> None:
     preferences_path = tmp_path / "agentdeck-preferences.json"
     preferences_path.write_text(
-        json.dumps({"usage.windowPosition": {"x": 5000, "y": -100}}), encoding="utf-8"
+        json.dumps({"agentdeck.windowPosition": {"x": 5000, "y": -100}}), encoding="utf-8"
     )
     monkeypatch.setattr(prefs, "PREFERENCES_FILE", preferences_path)
     moves: list[tuple[int, int]] = []
@@ -243,7 +243,7 @@ def test_panel_position_is_clamped_and_persisted_on_hide(
     assert moves == [(608, 12)]
     window.x, window.y = 123, 234
     controller.show_panel()
-    assert prefs._load_preferences()["usage.windowPosition"] == {"x": 123, "y": 234}
+    assert prefs._load_preferences()["agentdeck.windowPosition"] == {"x": 123, "y": 234}
 
 
 def test_reset_panel_position_clears_preference_and_repositions_visible_window(
@@ -251,7 +251,7 @@ def test_reset_panel_position_clears_preference_and_repositions_visible_window(
 ) -> None:
     preferences_path = tmp_path / "agentdeck-preferences.json"
     preferences_path.write_text(
-        json.dumps({"usage.windowPosition": {"x": 123, "y": 234}}), encoding="utf-8"
+        json.dumps({"agentdeck.windowPosition": {"x": 123, "y": 234}}), encoding="utf-8"
     )
     monkeypatch.setattr(prefs, "PREFERENCES_FILE", preferences_path)
     controller = wintray._WindowsTrayController(mock=True, interval=60)

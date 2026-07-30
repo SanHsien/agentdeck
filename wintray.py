@@ -492,13 +492,13 @@ def panel_html(filename: str) -> str:
 
 def _active_panel_id() -> str:
     panel_ids = {panel[0] for panel in available_panels()}
-    value = _load_preferences().get("usage.activePanelId", "classic")
+    value = _load_preferences().get("agentdeck.activePanelId", "classic")
     return str(value) if value in panel_ids else "classic"
 
 
 def _save_active_panel_id(panel_id: str) -> None:
     preferences = _load_preferences()
-    preferences["usage.activePanelId"] = panel_id
+    preferences["agentdeck.activePanelId"] = panel_id
     _save_preferences(preferences)
 
 
@@ -767,7 +767,7 @@ class _WindowsTrayController:
         return self._working_area()
 
     def _saved_window_position(self) -> tuple[int, int] | None:
-        value = _load_preferences().get("usage.windowPosition")
+        value = _load_preferences().get("agentdeck.windowPosition")
         if not isinstance(value, dict):
             return None
         x, y = value.get("x"), value.get("y")
@@ -865,12 +865,12 @@ class _WindowsTrayController:
         if position is None:
             return
         preferences = _load_preferences()
-        preferences["usage.windowPosition"] = {"x": position[0], "y": position[1]}
+        preferences["agentdeck.windowPosition"] = {"x": position[0], "y": position[1]}
         _save_preferences(preferences)
 
     def reset_panel_position(self, _icon: Any = None, _item: Any = None) -> None:
         preferences = _load_preferences()
-        preferences.pop("usage.windowPosition", None)
+        preferences.pop("agentdeck.windowPosition", None)
         _save_preferences(preferences)
         if self.visible:
             self._place_window(force_default=True)

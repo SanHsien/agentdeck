@@ -76,7 +76,7 @@ def test_setup_backs_up_existing_statusline_and_is_idempotent(
     assert data["statusLine"]["command"] == expected_statusline_command(
         setup_hook.FORWARDER_TARGET
     )
-    assert data["usage"]["previousStatusLine"] == original
+    assert data["agentdeck"]["previousStatusLine"] == original
     assert hook_target.exists()
     assert setup_hook.FORWARDER_TARGET.exists()
 
@@ -90,7 +90,7 @@ def test_unsetup_restores_backup_and_removes_hook_files(setup_paths: SetupHookPa
         json.dumps(
             {
                 "statusLine": {"type": "command", "command": f"/usr/bin/python3 {hook_target}"},
-                "usage": {"previousStatusLine": previous},
+                "agentdeck": {"previousStatusLine": previous},
             }
         ),
         encoding="utf-8",
@@ -147,7 +147,7 @@ def test_migration_removes_legacy_files_and_moves_backup(setup_paths: SetupHookP
     assert not legacy_status.exists()
     assert "statusLine" not in data
     assert LEGACY_NAME not in data
-    assert data["usage"]["previousStatusLine"] == previous
+    assert data["agentdeck"]["previousStatusLine"] == previous
 
 
 def test_migrate_legacy_usage_skips_bad_utf8_settings(setup_paths: SetupHookPaths) -> None:
@@ -314,7 +314,7 @@ def test_windows_statusline_migration_rewrites_legacy_backslash_paths(
 
     data = json.loads(setup_paths.settings.read_text(encoding="utf-8"))
     assert data["statusLine"]["command"] == expected_statusline_command(setup_paths.hook_target)
-    assert data["usage"]["selfHealLog"][-1]["action"] == "migrate_windows_statusline"
+    assert data["agentdeck"]["selfHealLog"][-1]["action"] == "migrate_windows_statusline"
 
 
 def test_windows_statusline_migration_rewrites_non_ascii_interpreter(
@@ -424,7 +424,7 @@ def test_setup_preserves_initial_backup_on_reinstall(
     assert setup_hook.setup() == 0
 
     reinstalled = json.loads(settings.read_text(encoding="utf-8"))
-    assert reinstalled["usage"]["previousStatusLine"] == original
+    assert reinstalled["agentdeck"]["previousStatusLine"] == original
 
 
 def test_unsetup_codex_removes_only_tui_status_line_without_backup(
@@ -539,7 +539,7 @@ def test_self_heal_installs_when_no_statusline(setup_paths: SetupHookPaths) -> N
     data = json.loads(settings.read_text(encoding="utf-8"))
 
     assert data["statusLine"]["command"] == expected_statusline_command(hook_target)
-    assert data["usage"]["selfHealLog"][-1]["action"] == "install_hook"
+    assert data["agentdeck"]["selfHealLog"][-1]["action"] == "install_hook"
 
 
 def test_self_heal_skips_external_statusline(setup_paths: SetupHookPaths) -> None:
@@ -576,7 +576,7 @@ def test_self_heal_updates_owned_hook(
     data = json.loads(settings.read_text(encoding="utf-8"))
 
     assert hook_target.read_text(encoding="utf-8") == '__version__ = "1.0"\n'
-    assert data["usage"]["selfHealLog"][-1]["action"] == "update_hook"
+    assert data["agentdeck"]["selfHealLog"][-1]["action"] == "update_hook"
 
 
 def test_self_heal_migrates_bundled_python_commands(
@@ -627,7 +627,7 @@ def test_self_heal_migrates_bundled_python_commands(
     assert hooks[0]["command"] == expected_statusline_command(resume_target)
     migrate_entries = [
         entry
-        for entry in data["usage"]["selfHealLog"]
+        for entry in data["agentdeck"]["selfHealLog"]
         if entry["action"] == "migrate_bundled_python"
     ]
     assert migrate_entries

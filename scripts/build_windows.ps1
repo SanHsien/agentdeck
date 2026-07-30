@@ -12,6 +12,9 @@ Remove-Item $OutputDir -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item $PyInstallerOutput -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item $BuildDir -Recurse -Force -ErrorAction SilentlyContinue
 
+# packaged_resource_path asks for "windows/...", "critters/..." and "personas"
+# without an assets/ prefix, so those subtrees are declared under those names as
+# well as under assets/ — see tests/test_packaged_resources.py.
 Push-Location $RepoRoot
 try {
     uv run --no-sync python -m PyInstaller `
@@ -26,11 +29,8 @@ try {
         --add-data "$(Join-Path $RepoRoot 'i18n.json');." `
         --add-data "$(Join-Path $RepoRoot 'pyproject.toml');." `
         --add-data "$(Join-Path $RepoRoot 'assets');assets" `
-        `# packaged_resource_path asks for "windows/..." and "critters/..." without
-        `# an assets/ prefix, so those subtrees are declared under those names too.
         --add-data "$(Join-Path $RepoRoot 'assets/windows');windows" `
         --add-data "$(Join-Path $RepoRoot 'assets/critters');critters" `
-        `# persona_store reads role definitions from personas/ at runtime.
         --add-data "$(Join-Path $RepoRoot 'personas');personas" `
         --add-data "$(Join-Path $RepoRoot 'usage_statusline.py');." `
         --add-data "$(Join-Path $RepoRoot 'usage_statusline_forwarder.py');." `

@@ -138,8 +138,8 @@ def test_self_heal_restores_missing_script_when_enabled(
     assert sidecar.exists()
 
     data = json.loads(_settings.read_text(encoding="utf-8"))
-    detail = data["usage"]["selfHealLog"][-1]["detail"]
-    assert data["usage"]["selfHealLog"][-1]["action"] == "restore_resume_hook"
+    detail = data["agentdeck"]["selfHealLog"][-1]["detail"]
+    assert data["agentdeck"]["selfHealLog"][-1]["action"] == "restore_resume_hook"
     assert "missing=script,sidecar" in detail
     assert "registered=target" in detail
     assert "recent_claude_entries=" in detail
@@ -194,7 +194,7 @@ def test_self_heal_normalizes_existing_target_command(
     # The stale "1.2" target also triggers a version update in the same pass, so the
     # migrate entry is no longer necessarily last — find it by action.
     migrate_entries = [
-        e for e in data["usage"]["selfHealLog"] if e["action"] == "migrate_resume_command"
+        e for e in data["agentdeck"]["selfHealLog"] if e["action"] == "migrate_resume_command"
     ]
     assert migrate_entries
     log_entry = migrate_entries[-1]
@@ -210,7 +210,7 @@ def test_self_heal_does_not_repeat_resume_command_migration(
     session_hooks.enable_session_resume()
     sidecar.write_text("{}", encoding="utf-8")
     data = json.loads(settings.read_text(encoding="utf-8"))
-    data["usage"] = {
+    data["agentdeck"] = {
         "selfHealLog": [
             {
                 "timestamp": "2026-01-01T00:00:00Z",
@@ -226,7 +226,7 @@ def test_self_heal_does_not_repeat_resume_command_migration(
     after = json.loads(settings.read_text(encoding="utf-8"))
     migrate_entries = [
         entry
-        for entry in after["usage"]["selfHealLog"]
+        for entry in after["agentdeck"]["selfHealLog"]
         if entry["action"] == "migrate_resume_command"
     ]
     assert len(migrate_entries) == 1

@@ -38,7 +38,7 @@ def test_doctor_handles_missing_settings_and_status_file(
 
     output = doctor.render()
 
-    assert "usage v" in output
+    assert "agentdeck v" in output
     assert "hook state:        none" in output
     assert "status file:" in output
     assert "self-heal log (last 5):\n  none" in output

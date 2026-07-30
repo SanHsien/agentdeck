@@ -24,7 +24,7 @@ SEPARATOR = "-" * 29
 
 def render() -> str:
     lines = [
-        f"usage v{_field(_current_version)}",
+        f"agentdeck v{_field(_current_version)}",
         SEPARATOR,
         f"hook state:        {_field(_hook_state)}",
         f"hook version:      {_field(_hook_version)}",
@@ -54,7 +54,7 @@ def _field(func: Callable[[], str]) -> str:
 
 def _current_version() -> str:
     try:
-        return metadata.version("usage")
+        return metadata.version("agentdeck")
     except metadata.PackageNotFoundError:
         pyproject = packaged_resource_path(
             "pyproject.toml", Path(__file__).with_name("pyproject.toml")
