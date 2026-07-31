@@ -8,19 +8,10 @@
 ## Unreleased
 
 ### 新增
-- **Codex 定期 repo 審查報告**：`REVIEW_Codex.md` 記錄 2026-07-31 全 repo 的範圍、發現、修正、驗證證據與兩項非阻擋追蹤；`REPO_REVIEW.md` 繼續維持 latest-only 營運摘要。
+- **產品路線圖**：新增中英文 `ROADMAP.md`／`ROADMAP.en.md`，以 v0.31.2 為基準，定義 v0.31.x 至 v1.0 的產品優先序、里程碑、完成條件、衡量方式與明確不做的範圍；D-13 記錄「先建立信任合約，再擴張 provider 與功能」的取捨，雙語 parity gate 也開始檢查這組文件。
 
 ### 修正
-- **版本更新改為追蹤本 fork**：系統匣原本仍查詢 `aqua5230/usage`，agentdeck 即使有較新的 release 也不會被看見。端點與 user agent 已改為 `SanHsien/agentdeck`，並用回歸測試守住兩者。
-- **fork 所有權與 Windows 指引**：專案中繼資料、貢獻／安全政策、issue 模板、架構說明與疑難排解，仍混有舊產品名、上游維護者、macOS menu bar 或已刪模組。現已統一為 agentdeck 的 Windows 工作流程與實際連網範圍。
-- **本機、CI 與 release 相依閘門一致**：CI 原本漏掉雙語文件與 AI 更新頁檢查，且 frozen 安裝後的 `uv run` 仍可能再次同步。現在統一為六道閘門：先驗 lock freshness，後續指令一律 `--no-sync`；release 建置也會拒絕陳舊 lock。
-- **AI 圓桌參與者控制項能放進預設視窗**：名稱、主持按鈕與兩個固定寬度選擇器原本被塞在同一列五欄，900×640 下會裁掉名稱並出現水平捲軸。現在在設定欄較窄時，模型與角色會先換到第二列，再由整頁斷點切成單欄。
-
-### 變更
-- **uv 將本 repo 視為 flat application**：本專案透過 PyInstaller 發佈，不發佈 wheel。以 `[tool.uv] package = false` 取代陳舊的 setuptools 模組清單；舊清單漏掉現行模組，還指向已刪除的 macOS host。
-
-### 移除
-- **失效的 macOS 專用產物**：移除會下載上游程式碼、並叫使用者結束已不存在 `.app` 的 curl 安裝器，以及已被其他文件取代的根目錄 Antigravity 實作狀態筆記。
+- **文件現況漂移**：移除已發布至 v0.31.2、卻仍重複留在 `Unreleased` 的舊內容；README 比較表也改為如實標示本 fork 已提供 AI 人才市場。
 
 ## [0.31.2] - 2026-07-31
 

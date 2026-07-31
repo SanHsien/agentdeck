@@ -174,7 +174,7 @@ uv run --no-sync python main.py --doctor   # 環境與 hook 診斷
 | Antigravity（Gemini）支援 | ✅ | — | — |
 | Claude Code 與 Codex 服務狀態警示 | ✅ | — | — |
 | HTML 深度報告與 UI 面板 | ✅ | ✅ | — |
-| AI 人才市場 | 未提供 | — | — |
+| AI 人才市場 | ✅ | — | — |
 | AI 圓桌討論 | ✅ | — | — |
 | AI 更新日報 | ✅ | — | — |
 | 進度管家與省 token 模式 | ✅ | — | — |
@@ -186,6 +186,7 @@ uv run --no-sync python main.py --doctor   # 環境與 hook 診斷
 
 | 文件 | 內容 |
 |---|---|
+| [產品路線圖](ROADMAP.md) | 產品定位、版本里程碑、完成條件與明確不做的範圍 |
 | [Windows 開發文件](docs/DEVELOPMENT.zh-TW.md) | 建環境、六道閘門、打包、容易踩的地方 |
 | [移植手冊](docs/PORTING.zh-TW.md) | 把上游的 macOS 功能搬到 Windows 的方法，含三個實際踩過的稽核錯誤 |
 | [決策紀錄](docs/DECISIONS.md) | 為什麼這樣做、以及當初否決了什麼 |

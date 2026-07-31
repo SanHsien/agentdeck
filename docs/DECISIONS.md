@@ -185,6 +185,8 @@
 
 **後果**：README、CONTRIBUTING、SECURITY、CHANGELOG、DEVELOPMENT 的中英配對都由 `scripts/check_doc_parity.py` 檢查；UI key 由 `tests/test_i18n_key_parity.py` 檢查。
 
+**2026-07-31 補充**：新增產品路線圖後，`ROADMAP.md`／`ROADMAP.en.md` 也納入同一道雙語 parity gate。
+
 ---
 
 ## D-12：Windows 可更新 lock；本 repo 是 uv virtual root，不是 wheel package
@@ -198,3 +200,17 @@
 **為什麼**：macOS、PyObjC 與 `.app` 建置已全部移除，D-03 防止 Windows lock 弄丟 darwin 相依的前提不再存在。舊 setuptools 清單還漏掉多個現行模組並指向已刪除的 `discussion_window.py`；它會產出表面成功、實際缺模組與資源的 wheel。應明確宣告「這不是 wheel package」，而非繼續維護一條不發佈的錯誤路徑。
 
 **後果**：本機與 CI 先跑 `uv lock --check`，後續 gate 全部使用 `uv run --no-sync`；release workflow 也先拒絕陳舊 lock，再以 frozen environment 執行 PyInstaller。
+
+---
+
+## D-13：產品先建立信任合約，再擴張 provider 與功能
+
+**日期**：2026-07-31
+
+**決定**：[`ROADMAP.md`](../ROADMAP.md) 的優先序固定為「發版與資料正確性 → 錯誤可見與可修復 → 可腳本化 → AI 圓桌工作產物 → 新 provider／主題」。進入 `1.0.0` 的條件由版本、資料來源、升級、隱私與實機驗收是否可信決定，不以功能數量決定。
+
+**考慮過的替代方案**：優先加入更多 AI provider、主題、雲端同步、團隊後台或自動帳號切換，以功能數量擴大受眾。
+
+**為什麼**：v0.31.2 已有三個 provider、十款主題、報告、persona 與 AI 圓桌，功能廣度不是目前瓶頸；同時仍有 P5 的實機裁切與 P6 的本機錯版號 artifact。繼續加功能會放大維護面，卻不會解決「使用者能不能相信畫面與 release」這個核心問題。Windows-first、local-first 與從監控到行動，才是本 fork 相對同類工具的清楚位置。
+
+**後果**：新 provider 必須先證明有可靠、合法、可測的 Windows 資料來源；新 UI 不得插隊於已知可信度缺口；roadmap 項目只有在自動化與實機證據齊全時才算完成。若日後要改成雲端或帳號路由產品，必須另立決策推翻本條，而不是在單一功能中偷偷擴張。

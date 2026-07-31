@@ -94,10 +94,11 @@ All user-visible strings in panels and UI **must** be looked up from `i18n.json`
 
 ### Release / changelog
 
-- This project is **bilingual (Traditional Chinese + English)**, and every doc must be updated in both languages together. **This fork diverges from upstream on the README specifically:**
-  - **README, CONTRIBUTING, SECURITY**: Traditional Chinese is the default (`README.md`, `CONTRIBUTING.md`, `SECURITY.md`); English lives at `*.en.md`. These three are what a reader lands on first — GitHub links `CONTRIBUTING.md` and `SECURITY.md` from its own community and security tabs and never `*.en.md` — so the maintainer's language is the default there. The upstream `README.zh-CN.md` / `README.ja.md` / `README.ko.md` variants have been **removed** — do not reintroduce them. The app UI was reduced to the same two languages; see the i18n rule above.
+- This project is **bilingual (Traditional Chinese + English)**, and every doc must be updated in both languages together. **Reader-facing document conventions in this fork:**
+  - **README and ROADMAP**: Traditional Chinese is the default (`README.md`, `ROADMAP.md`); English lives at `*.en.md`.
+  - **CONTRIBUTING and SECURITY**: Traditional Chinese is the default (`CONTRIBUTING.md`, `SECURITY.md`); English lives at `*.en.md`. GitHub links the suffix-less files from its own community and security tabs, so the maintainer's language is the useful default there. The upstream `README.zh-CN.md` / `README.ja.md` / `README.ko.md` variants have been **removed** — do not reintroduce them. The app UI was reduced to the same two languages; see the i18n rule above.
   - **CHANGELOG and `docs/DEVELOPMENT`** keep the upstream convention: the suffix-less `.md` is **English** and Traditional Chinese lives alongside as `.zh-TW.md`.
-  - `scripts/check_doc_parity.py` gates all of the above in CI by comparing `##` heading counts; its `DOC_PAIRS` tuple already reflects the inverted README pair (`README.en.md` ↔ `README.md`).
+  - `scripts/check_doc_parity.py` gates all of the above in CI by comparing `##` heading counts; its `DOC_PAIRS` tuple reflects the inverted README and ROADMAP pairs.
 - Version is bumped in `pyproject.toml`; CI builds `agentdeck-windows.zip` and attaches it on `v*` tags (`.github/workflows/release.yml`).
 
 ### Versioning — Semantic Versioning 2.0.0 (required)

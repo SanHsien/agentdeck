@@ -57,12 +57,14 @@ macOS 專屬的 commit 一律不採用，但仍要進 Skipped 表，理由寫「
 | 項目 | 上游 | 本 fork |
 |---|---|---|
 | README 預設語言 | 英文（`README.md`） | **繁體中文**（`README.md`）；英文在 `README.en.md` |
+| 產品路線圖 | 無 | **繁體中文**（`ROADMAP.md`）；英文在 `ROADMAP.en.md` |
 | README 其他語言 | 另有 `zh-CN` / `ja` / `ko` 三版 | **已刪除**，不要重新加回 |
-| `scripts/check_doc_parity.py` | `DOC_PAIRS` 比對 `README.md` ↔ `README.zh-TW.md` | 改為 `README.en.md` ↔ `README.md` |
-| 其他文件（CONTRIBUTING / SECURITY / CHANGELOG / docs/DEVELOPMENT） | 英文為預設 `.md`，中文為 `.zh-TW.md` | **維持不變** |
+| `scripts/check_doc_parity.py` | `DOC_PAIRS` 比對 `README.md` ↔ `README.zh-TW.md` | README 改為 `README.en.md` ↔ `README.md`，另納入 ROADMAP、CONTRIBUTING、SECURITY、CHANGELOG、DEVELOPMENT |
+| CONTRIBUTING / SECURITY | 英文為預設 `.md` | **繁體中文為預設 `.md`**，英文在 `*.en.md` |
+| CHANGELOG / docs/DEVELOPMENT | 英文為預設 `.md`，中文為 `.zh-TW.md` | **維持上游慣例不變** |
 | 產品名稱與落地檔名 | `usage` / `~/.usage/` / `usage-statusline.py` | **`agentdeck`** / `~/.agentdeck/` / `agentdeck-statusline.py`（見 `docs/DECISIONS.md` D-09） |
 
-新增檔案（上游沒有）：`AGENTS.md`、`SKILL.md`、`NOTICE.md`、`REVIEW_Claude.md`、`persona_store.py`、`personas/`、`discussion_window_win.py`、`discussion_assets.py`、`docs/FORK.zh-TW.md`、`docs/DECISIONS.md`、`docs/DEVELOPMENT.zh-TW.md`、`docs/PORTING.zh-TW.md`、`docs/UPSTREAM.md`、`tools/`、`reference/`、`.pre-commit-config.yaml`、`.claude/settings.json`。
+新增檔案（上游沒有）：`AGENTS.md`、`SKILL.md`、`NOTICE.md`、`ROADMAP.md`、`ROADMAP.en.md`、`REVIEW_Claude.md`、`REVIEW_Codex.md`、`persona_store.py`、`personas/`、`discussion_window_win.py`、`discussion_assets.py`、`docs/FORK.zh-TW.md`、`docs/DECISIONS.md`、`docs/DEVELOPMENT.zh-TW.md`、`docs/PORTING.zh-TW.md`、`docs/UPSTREAM.md`、`tools/`、`reference/`、`.pre-commit-config.yaml`、`.claude/settings.json`。
 
 **有取捨的決定寫進 [`docs/DECISIONS.md`](docs/DECISIONS.md)**，不要只留在 commit message 裡——那是為了避免日後重複討論同一個問題。
 

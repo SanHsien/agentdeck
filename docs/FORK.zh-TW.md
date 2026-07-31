@@ -35,14 +35,16 @@ git remote add upstream https://github.com/aqua5230/usage.git
 | 項目 | 上游 | 本 fork |
 |---|---|---|
 | README 預設語言 | 英文（`README.md`） | **繁體中文**（`README.md`），英文在 `README.en.md` |
+| 產品路線圖 | 無 | **繁體中文**（`ROADMAP.md`），英文在 `ROADMAP.en.md` |
 | README 其他語言 | 另有 `README.zh-CN.md` / `README.ja.md` / `README.ko.md` | **已刪除**，不要重新加回 |
-| `scripts/check_doc_parity.py` | `DOC_PAIRS` 比對 `README.md` ↔ `README.zh-TW.md` | 改為 `README.en.md` ↔ `README.md` |
+| `scripts/check_doc_parity.py` | `DOC_PAIRS` 比對 `README.md` ↔ `README.zh-TW.md` | README 改為 `README.en.md` ↔ `README.md`，另納入 ROADMAP、CONTRIBUTING、SECURITY、CHANGELOG、DEVELOPMENT |
 | 產品名稱 | `usage` | **`agentdeck`**（見 `DECISIONS.md` D-09）；內部模組檔名仍是 `usage_*` |
-| 其他文件（CONTRIBUTING / SECURITY / CHANGELOG / docs/DEVELOPMENT） | 英文為預設 `.md`，中文為 `.zh-TW.md` | **維持上游慣例不變** |
+| CONTRIBUTING / SECURITY | 英文為預設 `.md` | **繁體中文為預設 `.md`**，英文在 `*.en.md` |
+| CHANGELOG / docs/DEVELOPMENT | 英文為預設 `.md`，中文為 `.zh-TW.md` | **維持上游慣例不變** |
 
-新增檔案（上游沒有，不會有衝突）：`AGENTS.md`、`SKILL.md`、`NOTICE.md`、`REVIEW_Claude.md`、`docs/FORK.zh-TW.md`、`docs/DECISIONS.md`、`docs/DEVELOPMENT.zh-TW.md`、`tools/`、`.pre-commit-config.yaml`、`.claude/settings.json`。
+新增檔案（上游沒有，不會有衝突）：`AGENTS.md`、`SKILL.md`、`NOTICE.md`、`ROADMAP.md`、`ROADMAP.en.md`、`REVIEW_Claude.md`、`REVIEW_Codex.md`、`persona_store.py`、`personas/`、`discussion_window_win.py`、`discussion_assets.py`、`docs/FORK.zh-TW.md`、`docs/DECISIONS.md`、`docs/DEVELOPMENT.zh-TW.md`、`docs/PORTING.zh-TW.md`、`docs/UPSTREAM.md`、`tools/`、`reference/`、`.pre-commit-config.yaml`、`.claude/settings.json`。
 
-分叉背後的取捨記在 [`DECISIONS.md`](DECISIONS.md)（D-01 獨立維護、D-02 README 語言結構、D-03 不在 Windows 重 lock、D-04 測試環境失敗的處理層級）。
+分叉背後的取捨記在 [`DECISIONS.md`](DECISIONS.md)，包含 D-01 獨立維護、D-11 雙語文件契約、D-12 uv virtual root，以及 D-13 先建立產品信任合約再擴張。
 
 ## Tag 政策
 

@@ -9,19 +9,10 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ## Unreleased
 
 ### Added
-- **Dated Codex repository audit**: `REVIEW_Codex.md` records the 2026-07-31 full-repo scope, findings, fixes, verification evidence, and two non-blocking follow-ups; `REPO_REVIEW.md` remains the latest-only operational summary.
+- **Product roadmap**: added bilingual `ROADMAP.md` and `ROADMAP.en.md`, using v0.31.2 as the baseline to define priorities, milestones, exit criteria, measurements, and explicit non-goals from v0.31.x through v1.0. D-13 records the choice to establish a trust contract before expanding providers and features, and the bilingual parity gate now checks this pair too.
 
 ### Fixed
-- **Update checks now follow this fork**: the tray still queried `aqua5230/usage`, so agentdeck releases newer than the upstream version were invisible. The endpoint and user agent now identify `SanHsien/agentdeck`, with a regression test for both.
-- **Fork ownership and Windows guidance**: project metadata, contribution/security policies, issue templates, architecture notes, and troubleshooting still mixed the old product name, upstream maintainer, macOS menu bar, or removed module names into current instructions. They now consistently describe agentdeck's Windows workflow and actual network scope.
-- **Local, CI, and release dependency gates now match**: CI skipped bilingual document parity and AI Update Daily freshness, and its `uv run` commands could resync after the frozen install. The shared six-gate contract now checks lock freshness first and runs every later command with `--no-sync`; release builds also reject a stale lock.
-- **AI Council participant controls fit the default window**: the name, moderator button, and two fixed-width selectors were forced into one five-column row, clipping names and creating a horizontal scrollbar at 900×640. Narrow setup columns now place model and persona controls on a second row before the whole page collapses to one column.
-
-### Changed
-- **uv treats the repository as a flat application**: this project is released through PyInstaller, not as a wheel. `[tool.uv] package = false` replaces a stale setuptools module list that omitted current modules and named a deleted macOS host.
-
-### Removed
-- **Dead macOS-only artifacts**: removed the curl installer that downloaded upstream code and told users to quit a removed `.app`, plus a superseded root-level Antigravity implementation status note.
+- **Documentation state drift**: removed already-released v0.31.2 content that was still duplicated under `Unreleased`, and corrected the README comparison table to show that this fork does provide the AI Talent Market.
 
 ## [0.31.2] - 2026-07-31
 

@@ -174,7 +174,7 @@ If the system tray icon shows `--`, it's usually not broken — there's just no 
 | Antigravity (Gemini) usage | ✅ | — | — |
 | Claude Code & Codex service-status alerts | ✅ | — | — |
 | HTML deep reports & UI | ✅ | ✅ | — |
-| AI Talent Market | Unavailable | — | — |
+| AI Talent Market | ✅ | — | — |
 | AI Council | ✅ | — | — |
 | AI Update Daily | ✅ | — | — |
 | Progress Concierge & Token Saver | ✅ | — | — |
@@ -186,6 +186,7 @@ If the system tray icon shows `--`, it's usually not broken — there's just no 
 
 | Document | Contents |
 |---|---|
+| [Product roadmap](ROADMAP.en.md) | Product position, release milestones, exit criteria, and explicit non-goals |
 | [Windows development guide](docs/DEVELOPMENT.md) | Environment setup, the six gates, packaging, common traps |
 | [Porting playbook](docs/PORTING.zh-TW.md) | How upstream's macOS features get moved to Windows, including three audit mistakes made for real |
 | [Decision log](docs/DECISIONS.md) | Why things are the way they are, and what was rejected |
