@@ -1,6 +1,6 @@
 # Repo Review — Claude
 
-覆核日期：2026-07-31 · 版本：v0.31.2+ · 分支：`main`
+覆核日期：2026-07-31 · 版本：v0.33.0 · 分支：`main`
 
 **這是 Claude 的覆核紀錄。Codex 的覆核寫在 [`REVIEW_Codex.md`](REVIEW_Codex.md)，兩份各自維護、不互相改寫。** 對彼此改動的意見寫在自己這份裡（見「對 Codex 改動的覆核」），這樣兩邊的判斷都留得住，也看得出哪些是被獨立驗證過的。
 
@@ -8,10 +8,10 @@
 
 ## 結論
 
-- 六道閘門全綠：lock freshness / `ruff` / `mypy`（155 個檔案）/ 雙語文件對稱性 / AI 更新頁 / `pytest`（1215 passed、7 skipped、1 個本機權限排除）。實跑複驗，非引用他人回報。
+- 六道閘門全綠：lock freshness / `ruff` / `mypy`（161 個檔案）/ 雙語文件對稱性 / 檔案大小上限 / `pytest`（1227 passed、7 skipped、1 個本機權限排除）。實跑複驗，非引用他人回報。
 - 已完成從 macOS 優先的上游轉為 **Windows 專用**，並改名為 **agentdeck**。
 - 2026-07-31 Codex 於 `772f7d9` 修正了更新檢查仍指向上游、CI／release／本機 gate 漂移、wheel 設定、fork 身分文件，以及 AI 圓桌參與者列裁切。**已逐項獨立驗證：三項確認有效、一項為部分修正、一項發現新缺陷**（見下節）。
-- **未解問題：1 項**——只剩本機符號連結權限（P4），是環境限制、不是程式缺陷。
+- **未解問題：1 項**——P4，且已縮到只剩 CPython 契約層：本專案邏輯的三種輸入本機全覆蓋得到。
 - P5（AI 圓桌版面）與 P6（發版版號）已修並實測關閉；證據見 [`docs/release-evidence/`](docs/release-evidence/)。
 
 ## 環境
@@ -26,14 +26,31 @@
 
 ## 未解問題
 
-### P4：`test_keeps_matching_symlink` 需要符號連結權限
+### P4：真實符號連結只能在有權限的機器上建（本專案邏輯已全覆蓋）
 
-`tests/test_usage_dir_sweeper.py` 的這一條呼叫 `Path.symlink_to()`，在未開啟開發人員模式、也非系統管理員的 Windows 上丟 `OSError: [WinError 1314]`。
+`tests/test_usage_dir_sweeper.py::test_keeps_matching_symlink` 呼叫 `Path.symlink_to()`，在未提升的 Windows 上丟 `OSError: [WinError 1314]`。
 
-- **這是環境限制，不是 code bug。** CI 的 windows-latest 有權限，在那裡照跑。
-- **影響已縮到最小。** 原本一條測試同時涵蓋目錄與符號連結，沒權限就整條消失。現已拆成三條：`test_keeps_matching_directory`、`test_keeps_matching_junction`（junction 是一般使用者就能建的 Windows reparse point，實測免權限、`lstat` 報 `S_ISDIR`）、`test_keeps_matching_symlink`。前兩條在本機照跑，所以「名稱吻合但不是一般檔案就不刪」這個行為本機仍然覆蓋得到，只有符號連結那個變體會缺。
-- 處置：`tools/dev_check.ps1` 先實測本機能不能建連結，不能才 `--deselect` 那一條並印出說明。刻意不在測試裡加 `skipif`——那會讓覆蓋在本機靜默消失（理由見 `docs/DECISIONS.md` D-04）。
-- 要連符號連結那條也在本機跑：開啟 Windows 開發人員模式（設定 → 系統 → 開發人員專用），或以系統管理員身分執行 pytest。這是系統設定，由維護者自行決定。
+**實查過三件事，確認不是「沒去啟用權限」而已**：
+
+| 檢查 | 結果 |
+|---|---|
+| Token 內有 `SeCreateSymbolicLinkPrivilege` 嗎 | **完全沒有**——不是「有但停用」，所以 `AdjustTokenPrivileges` 這條路不存在 |
+| 使用者在 Administrators 群組 | 是，但行程未提升（UAC 過濾 token） |
+| 開發人員模式 | 關閉（`AllowDevelopmentWithoutDevLicense` 登錄值不存在） |
+
+剩下的兩條路——開啟開發人員模式、或以系統管理員身分執行——**都是系統設定變更，由維護者自行決定**，不由工具代勞。
+
+**但覆蓋率的缺口已經補起來了。** 被測分支的契約是「`lstat().st_mode` 不是一般檔案就跳過」，符號連結只是其中一種 mode。現在本機跑得到三種輸入：
+
+- `test_keeps_matching_directory` — 目錄
+- `test_keeps_matching_junction` — junction（一般使用者就能建的 reparse point）
+- `test_a_symlink_mode_is_skipped_without_needing_the_privilege` — 讓 `lstat` 對一個**真實、過期、名稱吻合**的檔案回報 `S_IFLNK`，走完同一條分支
+
+第三條配一個控制組（`test_the_same_file_without_the_disguise_is_swept`）：同一個檔案沒偽裝就被刪。唯一變數是 mode，所以不是空轉。
+
+**本機唯一測不到的**：Windows 對真實符號連結是否回報 `S_IFLNK`——那是 CPython 的契約，不是本專案的邏輯，且 CI 上照跑。
+
+**寫這條測試時踩到的坑**（值得記）：第一版忘了 `import stat`，而 `sweep_stale_temp_files` 最外層有 `except Exception` 會吞掉 `NameError` 並回傳 0——**於是兩個斷言都以錯誤的理由成立，測試是綠的**。現在測試會先斷言偽裝確實生效，再檢查行為。**在一個吞例外的函式上寫測試，一定要先證明前置條件成立。**
 
 ## 對 Codex 改動的覆核（`772f7d9`、`e575768`）
 
@@ -58,8 +75,8 @@
 - **更新檢查屬於本 fork**：`update_checker.py` 查詢 `SanHsien/agentdeck` 的 latest release，user agent 也是 `agentdeck/<version>`；單元測試同時鎖住 URL 與 header（`772f7d9`）。
 - **AGPL-3.0 合規**：`LICENSE` 與各檔 SPDX 標頭完好；`NOTICE.md` 有 §5a 要求的修改聲明與日期；建置腳本會把 `LICENSE`／`NOTICE.md`／`README.md` 放進發佈產出，缺任一個就讓建置失敗（§4）。
 - **發佈模型與打包資源**：本 repo 是 uv virtual root／flat application，不發佈 wheel；正式產物由 PyInstaller 建置。`tests/test_packaged_resources.py` 守著「程式碼透過 `packaged_resource_path()` 要求的資源，都有用 `--add-data` 宣告給 PyInstaller」。
-- **上游追蹤**：`docs/UPSTREAM.md` 的 `last_reviewed` 為 `e94cd4d`、`last_merged` 為 `5fbf0ba`；每週 workflow 會回報更新並開 issue。
-- **CI 實際涵蓋範圍**：`CI`、`CodeQL`、`上游更新檢查`、`Release` 為啟用狀態並有成功紀錄；`ClusterFuzzLite batch` 已啟用並實測跑完（build 與 30 分鐘 fuzzing 全綠、無 crash）。`ClusterFuzzLite PR` 保留但只在 PR 時觸發，`Scorecard` 刻意維持停用——理由見 `docs/DECISIONS.md` D-10。
+- **上游追蹤**：`docs/UPSTREAM.md` 的 `last_reviewed` 為 `ec24f50`、`last_merged` 為 `8d26748`；**每日** workflow 會分流後回報，只有需要人看的才開 issue。
+- **CI 實際涵蓋範圍**：`CI`、`CodeQL`、`上游更新檢查`、`Release` 為啟用狀態並有成功紀錄；`ClusterFuzzLite batch` 已啟用並實測跑完（build 與 30 分鐘 fuzzing 全綠、無 crash）。`ClusterFuzzLite PR` 保留但只在 PR 時觸發。`Scorecard` **現為 active 並執行成功**——D-10 當時記的是停用，實際狀態已改變（推 tag 後由 GitHub 啟用，非本專案主動開啟）；產出的分數沒有掛徽章，但跑著不花成本也無害，故不刻意關回去。
 
 ## Windows 平台落差：已全數處理
 
@@ -80,10 +97,11 @@
 
 ## 教訓（會重複踩的那幾種）
 
-- **「環境問題」不是結案理由，是待查標籤。** 分辨方法不是「拿掉觸發條件會不會過」——那必然會過——而是問**被觸發的行為本身合理嗎**。塗銷邏輯遇到單字元的值就把整段輸出打碎，不合理，是 bug；`symlink_to()` 在沒有權限時丟 `WinError 1314`，合理，是環境限制。
+- **「環境問題」不是結案理由，是待查標籤。** 分辨方法不是「拿掉觸發條件會不會過」——那必然會過——而是問**被觸發的行為本身合理嗎**。塗銷邏輯遇到單字元的值就把整段輸出打碎，不合理，是 bug；`symlink_to()` 沒權限時丟 `WinError 1314`，合理，是環境限制。**但「環境限制」只解釋了為什麼跑不了，不等於覆蓋率的缺口不用補**——P4 被歸類正確，卻在那個標籤下閒置了好幾輪，直到有人追問才發現同一條分支可以用 junction 與偽造 mode 補上。
 - **盤點有保存期限。** 落差寫進待辦後，動手前要再確認上游現在怎麼想——D-07 那條在盤點時是真的，兩個上游 commit 之後就不是了。
 - **`git log main..branch` 說「領先 N 個 commit」不代表改動沒進去。** 上游可能 squash 或重新實作過；判斷要比對**當前檔案內容**（D-06）。
 - **刪掉一個測試前，先想清楚它在擋什麼。** `test_packaged_resources` 被刪過一次，改寫回來後立刻抓到 `--add-data` 與資源名稱不一致。
 - **稽核用的 grep 會騙人。** 比對 i18n key 時漏了單引號與跨行呼叫，產出的落差清單有三項是假的。正確做法見移植手冊第一節。
 - **改名／去品牌時，「連出去的網址」是獨立一類。** 掃字串會抓到顯示文字，抓不到 `update_checker.py` 的 API URL 或 `install-hook.sh` 的下載來源——那兩處都還指著上游，而且都不會讓測試變紅。
 - **UI 修正只讀 CSS 判定不了成敗。** P5 的換列在 CSS 上完全正確，實機開窗才看得到裁切只是從水平換成垂直。版面問題一律要開窗看。
+- **在會吞例外的函式上寫測試，先證明前置條件成立。** `sweep_stale_temp_files` 最外層 `except Exception` 會把測試輔助程式的 `NameError` 變成「回傳 0」，而「回傳 0」正是測試要斷言的事——測試因此以錯誤的理由變綠。先斷言偽裝生效，再斷言行為。

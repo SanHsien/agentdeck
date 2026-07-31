@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import stat
 from pathlib import Path
 
 import pytest
@@ -196,3 +197,59 @@ def test_main_self_heal_swallows_sweeper_failure(
     monkeypatch.setattr(usage_dir_sweeper, "sweep_stale_temp_files", fail)
 
     main._self_heal()
+
+
+def test_a_symlink_mode_is_skipped_without_needing_the_privilege(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Cover the symlink flavour on a machine that cannot create symlinks.
+
+    Creating one needs SeCreateSymbolicLinkPrivilege, which an unelevated
+    Windows session does not hold, so `test_keeps_matching_symlink` is
+    deselected there and that input shape went untested locally.
+
+    The branch under test reads `lstat().st_mode` and skips anything that is not
+    a regular file, so reporting `S_IFLNK` for a real file exercises exactly
+    that check. The file is genuinely stale and genuinely name-matching, so it
+    *would* be deleted -- only the mode saves it, which is the behaviour being
+    proven. What this cannot prove is that Windows reports `S_IFLNK` for a real
+    symlink; that is CPython's contract, and `test_keeps_matching_symlink`
+    covers it wherever the privilege exists.
+    """
+    now = 2_000_000_000.0
+    disguised = tmp_path / "tmpLINK.tmp"
+    _make_old(disguised, now)
+    real_lstat = Path.lstat
+
+    def lstat_as_symlink(self: Path, **kwargs: object) -> os.stat_result:
+        result = real_lstat(self)
+        if self.name != disguised.name:
+            return result
+        fields = list(result)
+        fields[0] = (result.st_mode & ~stat.S_IFMT(result.st_mode)) | stat.S_IFLNK
+        return os.stat_result(fields)
+
+    monkeypatch.setattr(Path, "lstat", lstat_as_symlink)
+
+    # sweep_stale_temp_files swallows every exception and returns 0, so a broken
+    # helper would make the assertions below pass without exercising anything.
+    # Check the disguise took effect first -- this test was green for that exact
+    # wrong reason before `stat` was imported.
+    assert stat.S_ISLNK(disguised.lstat().st_mode)
+
+    assert sweep_stale_temp_files(tmp_path, now=now) == 0
+    assert disguised.exists()
+
+
+def test_the_same_file_without_the_disguise_is_swept(tmp_path: Path) -> None:
+    """The control for the test above: without the mode change it is deleted.
+
+    Without this, the symlink test would pass just as happily if the sweeper
+    had stopped deleting anything at all.
+    """
+    now = 2_000_000_000.0
+    ordinary = tmp_path / "tmpLINK.tmp"
+    _make_old(ordinary, now)
+
+    assert sweep_stale_temp_files(tmp_path, now=now) == 1
+    assert not ordinary.exists()

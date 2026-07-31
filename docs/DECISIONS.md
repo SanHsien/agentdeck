@@ -165,7 +165,7 @@
 | `codeql.yml` | **啟用** | 真實的安全掃描，成本低。已實測跑綠並掛上徽章 |
 | `cflite_batch.yml` | **啟用** | fuzz 目標是本 repo 真實存在的 `fuzz/fuzz_codex_loader.py`、`fuzz_history_loader.py`，打的正是解析磁碟上 JSONL 的程式碼——那是最容易被畸形輸入弄壞的地方。實測 build 與 30 分鐘 fuzzing 全綠 |
 | `cflite_pr.yml` | **保留但預期不會觸發** | 只在 PR 時跑，而目前的工作流程是直接推 main，所以它幾乎不會啟動。**這不是缺陷，不要當成死設定清掉**：它是 `mode: code-change`、只跑 5 分鐘，休眠時成本為零；本 repo 是公開的且 `CONTRIBUTING.md` 邀請外部 PR，而外部貢獻正是最需要在合併前 fuzz 的場景。batch 顧「推 main」這條路徑，PR 模式顧「外部貢獻」那條，兩條都有守 |
-| `scorecard.yml` | **維持停用** | 它的產出是 OpenSSF Scorecard 分數，而本 repo 已刻意移除 OpenSSF 徽章。開了只會產生沒人看的分數 |
+| `scorecard.yml` | **當時維持停用；2026-07-31 起實際為 active** | 決策當下的理由是「產出的 OpenSSF 分數沒有徽章要掛」。後續推 tag 時由 GitHub 自行啟用並執行成功——本專案未主動開啟。跑著不花成本、也提供供應鏈掃描，故不關回去；此處保留原始理由與後續實況，因為**決策紀錄的價值在於記下當時怎麼想，不是假裝從沒改變過** |
 
 **啟用前必須先修的東西**：`.clusterfuzzlite/project.yaml` 仍寫著上游的 `homepage`、`main_repo` 與**原作者的聯絡信箱**；容器也還把原始碼解到 `$SRC/usage`，而 `build.sh` 用「macOS-only 相依」替自己的 `PYTHONPATH` 辯護——那些相依早在移除 macOS 支援時就刪光了。**繼承來的設定會沉默地繼續指向上游**，啟用它等於用上游的身分對外運作。
 
