@@ -2,7 +2,7 @@
 
 上游 [`aqua5230/usage`](https://github.com/aqua5230/usage) 仍在活躍開發，所以本 fork 需要定期評估「上游有什麼新東西、要不要吃進來」。這份文件是那個評估的**單一真相源**。
 
-機制：`.github/workflows/upstream-check.yml` 每週跑 `tools/check_upstream_updates.py`，比對下方標記區塊的 `last_reviewed` 與上游 `main` 的 tip。有比 `last_reviewed` 新的 commit 就開／更新一個「上游更新檢查」issue。
+機制：`.github/workflows/upstream-check.yml` **每天 02:00 UTC** 跑 `tools/check_upstream_updates.py`，比對下方標記區塊的 `last_reviewed` 與上游 `main` 的 tip。有比 `last_reviewed` 新的 commit 就開／更新一個「上游更新檢查」issue。
 
 ## 兩個標記的分工
 
@@ -39,6 +39,23 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
 }
 ```
 <!-- sync-points:end -->
+
+## 自動分流：哪些 commit 不需要人看
+
+上游幾乎每天 commit，而且多數與本 fork 無關——`chore: sync AI updates` 只動 `ai_updates.json`（本 fork 已移除該功能），macOS 專屬修正只動 `menubar.py`、`panel_window_state.py` 之類本 fork 沒有的檔案。若全部照列，真正該看的 commit 會被埋掉，而**一份沒人看的報告等於沒有報告**。
+
+檢查器會逐筆查該 commit 動到哪些檔案，並依這條規則分流：
+
+> **改動的每一個檔案在本 fork 都不存在，而且沒有任何一個是新增的** → 歸為「不影響本 fork」。
+
+- **為什麼「新增」永遠不自動略過**：新增的檔案在本 fork 同樣不存在，但那正是「上游長出新功能」的樣子。本 fork 的目的是把功能搬過來、不是接受落差，所以新增一律要人看。
+- **查詢失敗時一律當成要人看**。網路或 API 出問題不能靜默升級成「可忽略」。
+- **超過 40 個未審視 commit 就整批交給人**。落後那麼多本來就該人工處理，不值得為此打幾百次 API。
+- 判定用的是**檔案是否存在於本 fork**，不是寫死的路徑清單——清單會過期，這個規則會自己跟著 repo 變。
+
+被歸為「不影響」的 commit 仍會列在報告的摺疊區塊裡，附上它動到的路徑，並給出可直接推進的 `last_reviewed` SHA。**不是隱藏，是分流**：推進標記還是人來做，只是不必為每一筆寫理由。
+
+只有「需要人工審視」那一組非空時，workflow 才會開／更新 issue。
 
 ## Skipped（審視後未採用）
 

@@ -2,9 +2,12 @@ name: 上游更新檢查
 
 on:
   schedule:
-    # 每週一 02:00 UTC 檢查 aqua5230/usage main 是否有比 docs/UPSTREAM.md 的
-    # last_reviewed 更新的 commit。上游活躍，一週一次夠即時、也不會變成雜訊。
-    - cron: '0 2 * * 1'
+    # 每天 02:00 UTC 檢查 aqua5230/usage main 是否有比 docs/UPSTREAM.md 的
+    # last_reviewed 更新的 commit。上游幾乎每天 commit（多半是 chore: sync AI
+    # updates，只動本 fork 已移除的 ai_updates.json），但檢查器會先判斷每個
+    # commit 有沒有動到本 fork 真的擁有的檔案——全部都不影響時不開 issue。
+    # 過濾器就位之後，每天跑只換來更短的延遲，不會製造雜訊。
+    - cron: '0 2 * * *'
   workflow_dispatch:
 
 permissions:

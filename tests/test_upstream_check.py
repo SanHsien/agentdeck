@@ -139,3 +139,105 @@ def test_long_commit_lists_are_truncated_with_a_count(monkeypatch: pytest.Monkey
     report = check.render_markdown(results, "owner/repo")
 
     assert "另有 5 筆未列出" in report
+
+
+def test_a_change_to_a_file_this_fork_lacks_cannot_reach_us(tmp_path: Path) -> None:
+    """Upstream commits its AI digest most days, touching a file we deleted.
+
+    Left unfiltered those bury the commits that matter, and a report nobody
+    reads is the same as no report.
+    """
+    assert check.cannot_affect_fork(
+        [{"filename": "ai_updates.json", "status": "modified"}], root=tmp_path
+    )
+    assert check.cannot_affect_fork(
+        [
+            {"filename": "menubar.py", "status": "modified"},
+            {"filename": "tests/test_menubar.py", "status": "removed"},
+        ],
+        root=tmp_path,
+    )
+
+
+def test_a_file_we_do_have_always_needs_review(tmp_path: Path) -> None:
+    (tmp_path / "wintray.py").write_text("", encoding="utf-8")
+
+    assert not check.cannot_affect_fork(
+        [
+            {"filename": "menubar.py", "status": "modified"},
+            {"filename": "wintray.py", "status": "modified"},
+        ],
+        root=tmp_path,
+    )
+
+
+def test_an_added_file_is_never_auto_skipped(tmp_path: Path) -> None:
+    """A new upstream file is absent here for the same reason a deleted one is,
+    but it is what an arriving feature looks like -- and porting features is
+    this fork's entire premise."""
+    assert not check.cannot_affect_fork(
+        [{"filename": "brand_new_feature.py", "status": "added"}], root=tmp_path
+    )
+
+
+def test_an_empty_file_list_is_never_auto_skipped(tmp_path: Path) -> None:
+    """No file list means the lookup told us nothing, not that nothing changed."""
+    assert not check.cannot_affect_fork([], root=tmp_path)
+
+
+def test_a_failed_lookup_leaves_the_commit_for_a_human(monkeypatch: pytest.MonkeyPatch) -> None:
+    def boom(*args: object, **kwargs: object) -> list[dict[str, str]]:
+        raise check.UpstreamCheckError("rate limited")
+
+    monkeypatch.setattr(check, "fetch_commit_files", boom)
+    commits = [{"sha": "abc1234", "title": "something", "url": ""}]
+
+    check.classify_commits("owner/repo", commits)
+
+    assert commits[0]["relevance"] == "unknown"
+    assert check.needs_review(commits) == commits
+
+
+def test_too_many_commits_falls_back_to_reviewing_everything(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A fork this far behind needs a person, not a few hundred API calls."""
+    calls = 0
+
+    def counted(*args: object, **kwargs: object) -> list[dict[str, str]]:
+        nonlocal calls
+        calls += 1
+        return []
+
+    monkeypatch.setattr(check, "fetch_commit_files", counted)
+    commits = [
+        {"sha": f"{i:07d}", "title": "x", "url": ""}
+        for i in range(check.MAX_COMMITS_CLASSIFIED + 1)
+    ]
+
+    check.classify_commits("owner/repo", commits)
+
+    assert calls == 0
+    assert all(commit["relevance"] == "unknown" for commit in commits)
+
+
+def test_a_run_of_ignorable_commits_does_not_raise_an_issue() -> None:
+    """has_updates must mean "a person has something to do"."""
+    commits: list[dict[str, str]] = [
+        {"sha": "1", "title": "chore: sync AI updates", "relevance": "ignorable"},
+        {"sha": "2", "title": "chore: sync AI updates", "relevance": "ignorable"},
+    ]
+    results: list[dict[str, Any]] = [
+        {
+            "branch": "main",
+            "last_reviewed": "aaa",
+            "last_merged": "aaa",
+            "error": None,
+            "commits": commits,
+        }
+    ]
+
+    assert not check.has_updates(results)
+
+    commits.append({"sha": "3", "title": "feat: something", "relevance": "review"})
+    assert check.has_updates(results)

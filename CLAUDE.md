@@ -97,7 +97,8 @@ All user-visible strings in panels and UI **must** be looked up from `i18n.json`
 - This project is **bilingual (Traditional Chinese + English)**, and every doc must be updated in both languages together. **Reader-facing document conventions in this fork:**
   - **README and ROADMAP**: Traditional Chinese is the default (`README.md`, `ROADMAP.md`); English lives at `*.en.md`.
   - **CONTRIBUTING and SECURITY**: Traditional Chinese is the default (`CONTRIBUTING.md`, `SECURITY.md`); English lives at `*.en.md`. GitHub links the suffix-less files from its own community and security tabs, so the maintainer's language is the useful default there. The upstream `README.zh-CN.md` / `README.ja.md` / `README.ko.md` variants have been **removed** — do not reintroduce them. The app UI was reduced to the same two languages; see the i18n rule above.
-  - **CHANGELOG and `docs/DEVELOPMENT`** keep the upstream convention: the suffix-less `.md` is **English** and Traditional Chinese lives alongside as `.zh-TW.md`.
+  - **CHANGELOG**: Traditional Chinese is the default (`CHANGELOG.md`); English lives at `CHANGELOG.en.md`. The tray menu's Changelog item opens it, so the maintainer's language is the useful default here too.
+  - **`docs/DEVELOPMENT`** is the only doc that keeps the upstream convention — suffix-less `.md` is **English**, Traditional Chinese is `.zh-TW.md`. It is written for contributors rather than users.
   - `scripts/check_doc_parity.py` gates all of the above in CI by comparing `##` heading counts; its `DOC_PAIRS` tuple reflects the inverted README and ROADMAP pairs.
 - Version is bumped in `pyproject.toml`; CI builds `agentdeck-windows.zip` and attaches it on `v*` tags (`.github/workflows/release.yml`).
 
@@ -118,5 +119,5 @@ Post-1.0 the first row moves to MAJOR. Nothing else changes.
 Rules that hold regardless:
 
 - **`pyproject.toml`'s `version` is the single source of truth.** A `vX.Y.Z` tag must point at a commit whose `pyproject.toml` says exactly `X.Y.Z` — a tag whose code doesn't match its number is worse than no tag.
-- Accumulate changes under `## [Unreleased]` in **both** `CHANGELOG.md` and `CHANGELOG.zh-TW.md`; at release time rename that heading to `## [X.Y.Z] - YYYY-MM-DD` in both. `scripts/check_doc_parity.py` compares the newest version heading across the two files and fails CI if they disagree.
+- Accumulate changes under `## [Unreleased]` in **both** `CHANGELOG.en.md` and `CHANGELOG.md`; at release time rename that heading to `## [X.Y.Z] - YYYY-MM-DD` in both. `scripts/check_doc_parity.py` compares the newest version heading across the two files and fails CI if they disagree.
 - One version number per release, applied everywhere at once: `pyproject.toml`, both changelogs, the tag.

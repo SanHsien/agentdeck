@@ -1,1405 +1,1408 @@
-# Changelog
+# 變更紀錄 (Changelog)
 
-[繁體中文](CHANGELOG.zh-TW.md) · English
+繁體中文 · [English](CHANGELOG.en.md)
 
-All notable changes to agentdeck are documented here.
-Format follows [Keep a Changelog](https://keepachangelog.com/);
-versions follow [Semantic Versioning 2.0.0](https://semver.org/).
+本檔記錄 agentdeck 所有重要變更。格式參考 [Keep a Changelog](https://keepachangelog.com/)，
+版號遵循[語意化版本 2.0.0](https://semver.org/lang/zh-TW/)。
 
 ## Unreleased
 
-### Added
-- **Product roadmap**: added bilingual `ROADMAP.md` and `ROADMAP.en.md`, using v0.31.2 as the baseline to define priorities, milestones, exit criteria, measurements, and explicit non-goals from v0.31.x through v1.0. D-13 records the choice to establish a trust contract before expanding providers and features, and the bilingual parity gate now checks this pair too.
+### 新增
+- **產品路線圖**：新增中英文 `ROADMAP.md`／`ROADMAP.en.md`，以 v0.31.2 為基準，定義 v0.31.x 至 v1.0 的產品優先序、里程碑、完成條件、衡量方式與明確不做的範圍；D-13 記錄「先建立信任合約，再擴張 provider 與功能」的取捨，雙語 parity gate 也開始檢查這組文件。
 
-### Fixed
-- **Documentation state drift**: removed already-released v0.31.2 content that was still duplicated under `Unreleased`, and corrected the README comparison table to show that this fork does provide the AI Talent Market.
+### 修正
+- **文件現況漂移**：移除已發布至 v0.31.2、卻仍重複留在 `Unreleased` 的舊內容；README 比較表也改為如實標示本 fork 已提供 AI 人才市場。
 
 ## [Unreleased]
 
-### Removed
-- **Removed AI Update Daily; the menu now opens the changelog**: three quarters of that page was third-party tool news (Claude Code, Codex, Antigravity, GitHub CLI) curated by upstream in a **repository we cannot see** — content we could neither write nor fix, for a fork whose whole position is independent maintenance. The remaining quarter was this project's CHANGELOG rendered a second time. The tray menu now opens this project's changelog directly, in the UI language. `ai_updates.json`, `scripts/build_ai_updates.py`, `scripts/sync_ai_updates.py`, `docs/ai-updates/`, the scheduled workflow, and the ai-updates gate in both CI and `dev_check.ps1` are gone (five gates now). Also removed report styles and four i18n keys for a section no code had referenced in some time.
+### 變更
+- **上游追蹤改為每日執行，並自動分流不相關的 commit**：上游幾乎每天 commit，多數是 `chore: sync AI updates`（只動本 fork 已移除的 `ai_updates.json`）或 macOS 專屬修正（只動 `menubar.py` 之類本 fork 沒有的檔案）。檢查器現在會逐筆查該 commit 動到哪些檔案，只有「每個檔案在本 fork 都不存在、且沒有任何新增」才歸為不影響——**新增一律要人看**，那正是上游長出新功能的樣子。只有需要人工審視的那一組非空時才開 issue，所以排程從每週改為每日只換來更短的延遲、不製造雜訊。規則見 `docs/UPSTREAM.md`。
+- **CHANGELOG 改為繁體中文預設**：`CHANGELOG.md` 是繁中，英文移至 `CHANGELOG.en.md`，與 README、ROADMAP、CONTRIBUTING、SECURITY 一致。系統匣的「變更紀錄」選單依介面語言開對應版本。`docs/DEVELOPMENT` 維持英文預設——它寫給貢獻者，不是使用者。
 
-### Added
-- **A shared `ProviderHealth` model**: Claude, Codex, and Antigravity now describe "is this data any good?" in one vocabulary — `ready` / `stale` / `missing` / `misconfigured` / `unavailable` / `error` — and every result carries a reason and a next step. Each provider used to decide for itself and disagree: Codex called data old after 15 minutes and Antigravity after 20, one returned `None` when healthy while another returned a dict, and `--doctor` printed a third set of phrases. `--doctor` is the first consumer; wiring the panels is ROADMAP v0.32.0. Rationale in `docs/DECISIONS.md` D-11.
-- **`tools/verify_discussion_layout.py`**: opens a real WebView2 window and measures DOM geometry, turning "the dropdown is cut off" into a pixel count that can be compared between runs instead of eyeballed in a screenshot.
-- **`scripts/package_windows.ps1`**: local releases and the release workflow now package through one script. CI zipped the directory while the local step zipped its contents, shipping two different layouts under the same filename.
+### 移除
+- **移除「AI 更新日報」，選單改為「變更紀錄」**：該頁面的四分之三是上游在一個**非公開 repo** 裡編寫的第三方工具更新（Claude Code、Codex、Antigravity、GitHub CLI）——我們既寫不出來、壞了也修不了，而這個 fork 的立場是獨立維護。剩下的四分之一則是本專案的 CHANGELOG 再渲染一次。系統匣選單現在直接開啟本專案的變更紀錄，並依介面語言選擇中英文版。一併移除 `ai_updates.json`、`scripts/build_ai_updates.py`、`scripts/sync_ai_updates.py`、`docs/ai-updates/`、排程 workflow，以及本機與 CI 的 ai-updates 閘門（五道閘門）。順帶清掉早已無程式引用的報告區塊樣式與 4 個孤兒 i18n key。
 
-- **`pyinstaller` is now in `uv.lock`**: it used to be installed beside the lock with `uv pip install`, so every `uv sync` deleted it and its six dependencies as extraneous and demanded a reinstall. The build tool's version is now pinned too, keeping CI and local builds on the same one. Rationale in `docs/DECISIONS.md` D-12.
-- **The development guide covers checkouts inside a OneDrive folder**: use `UV_PROJECT_ENVIRONMENT` to keep the virtualenv out of the cloud-placeholder tree; `tools/dev_check.ps1` honours the variable.
-### Fixed
-- **Release version guard (P6)**: `build_windows.ps1` clears leftover `*.egg-info` before building and checks `agentdeck.exe --doctor` against `pyproject.toml` afterwards, failing the build on a mismatch; the release workflow additionally checks the tag. A stale egg-info makes `importlib.metadata` resolve first and shadow the pyproject fallback, which really did produce a `0.31.2` tree stamped `0.31.1`. A fresh CI checkout has no egg-info, so this only ever went wrong on the machine cutting releases.
-- **AI Council participant cards clipped vertically (P5)**: once the controls wrapped to a second row the cards got taller, but `.controls-scroll` still had `min-height: 0`, so at 900×640 the model and persona dropdowns sat 24px below the fold. The scroller now reserves room for the section heading plus one whole card, and `.setup` gets more height. Verified on a real-hardware matrix of three DPI settings by two window sizes; evidence in `docs/release-evidence/2026-07-31-discussion-layout.md`.
+### 新增
+- **`ProviderHealth` 共用狀態模型**：Claude、Codex 與 Antigravity 改用同一套語彙描述「資料還能不能用」——`ready` / `stale` / `missing` / `misconfigured` / `unavailable` / `error`，每個結果都帶原因與下一步。先前三者各自判斷且互不一致（Codex 15 分鐘算舊、Antigravity 20 分鐘算舊；健康時一個回 `None`、一個回 dict），`--doctor` 又印第三套措辭。`--doctor` 是第一個消費者；面板接線見 ROADMAP v0.32.0。設計理由見 `docs/DECISIONS.md` D-11。
+- **`tools/verify_discussion_layout.py`**：在真實 WebView2 開窗並量測 DOM 幾何，把「下拉選單被切掉」變成可比對的像素數，取代肉眼看截圖。
+- **`scripts/package_windows.ps1`**：本機與 release workflow 共用同一支打包腳本。先前 CI 壓縮目錄、本機壓縮內容，同一個檔名下發出兩種不同結構。
+
+- **`pyinstaller` 納入 `uv.lock`**：先前它在 lock 之外用 `uv pip install` 另裝，導致每次 `uv sync` 都把它與六個相依當成多餘套件刪掉再重裝。建置工具版本現在也被釘住，CI 與本機一致。理由見 `docs/DECISIONS.md` D-12。
+- **開發文件補上 OneDrive 內 checkout 的處理方式**：用 `UV_PROJECT_ENVIRONMENT` 把虛擬環境移出雲端佔位目錄樹；`tools/dev_check.ps1` 已改為尊重該變數。
+### 修正
+- **發版版號防護（P6）**：`build_windows.ps1` 建置前清除殘留的 `*.egg-info`，建置後以 `agentdeck.exe --doctor` 比對 `pyproject.toml`，不符就讓建置失敗；release workflow 另外比對 tag。舊 egg-info 會讓 `importlib.metadata` 先命中並蓋掉 pyproject fallback，曾實際建出標著 `0.31.1` 的 `0.31.2` 產物。CI 全新 checkout 沒有 egg-info，所以這個缺陷只在發版的那台機器上出現。
+- **AI 圓桌參與者卡垂直裁切（P5）**：換列讓卡片變兩列高之後，`.controls-scroll` 仍是 `min-height: 0`，900×640 下模型與 persona 下拉選單被容器切掉 24px。已改為保留區段標題加一張完整卡片的高度，並放寬 `.setup` 的 `max-height`。以 3 種 DPI × 2 種尺寸的實機矩陣驗證，證據見 `docs/release-evidence/2026-07-31-discussion-layout.md`。
 
 ## [0.31.2] - 2026-07-31
 
-### Fixed
-- **The update check now looks at this fork**: `update_checker.py` queried upstream `aqua5230/usage` for the latest release, so it would have told users to update to a different project's version. The User-Agent is now `agentdeck/<version>`, and unit tests pin both the URL and the header.
-- **Removed an install script that downloaded upstream code**: `scripts/install-hook.sh` fetched `usage_statusline.py` from upstream's raw URL into the user's `~/.claude/`. It was a bash script for macOS `.app` users — unreachable on this Windows-only fork, and it would have installed upstream's code on a user's machine.
-- **AI Council participant cards were clipped at the default window width**: `participant-head` packed the badge, name, moderator toggle, and two fixed 128px controls into a single row, which squeezed the model name out at 900×640. The controls now wrap to a second row when the setup column is narrow. **Re-verified on real hardware and only partly fixed** — the name is readable and the horizontal scrollbar is gone, but the taller two-row card now clips the dropdowns vertically; see P5 in `REVIEW_Claude.md`.
-- **A misplaced test assertion**: adding the reflow test moved `test_drain_limit_and_shared_serializer`'s `EVENT_DRAIN_LIMIT` assertion onto the end of the new CSS test. Both still passed, so no gate could catch it; the assertion is back where it belongs.
+### 修正
+- **更新檢查查的是本 fork 的版本**：`update_checker.py` 原本查詢上游 `aqua5230/usage` 的最新 release，等於會通知使用者去更新到別的專案的版本；User-Agent 也改為 `agentdeck/<version>`。單元測試同時鎖住 URL 與 header。
+- **移除會下載上游程式碼的安裝腳本**：`scripts/install-hook.sh` 會從上游的 raw URL 抓 `usage_statusline.py` 裝進使用者的 `~/.claude/`。它是給 macOS `.app` 使用者的 bash 腳本，在這個 Windows 專用 fork 既跑不到、又會把上游程式碼裝到使用者機器上。
+- **AI 圓桌參與者卡在預設視窗寬度下裁切**：`participant-head` 原本把 badge、名稱、主持按鈕與兩個固定 128px 控制項塞進單列，900×640 下模型名稱被擠掉。設定欄較窄時改為換列。**實機重驗結果為部分修正**——名稱可讀、水平捲軸消失，但卡片變兩列高後下拉選單改被垂直切掉，詳見 `REVIEW_Claude.md` P5。
+- **測試斷言錯位**：新增參與者換列測試時，`test_drain_limit_and_shared_serializer` 的 `EVENT_DRAIN_LIMIT` 斷言被併進了新的 CSS 測試尾端。兩者都仍會通過，所以閘門抓不到；已歸位。
 
-### Changed
-- **CI now matches the local gate**: `check.yml` gained the bilingual document parity and AI Update Daily freshness checks that previously ran only in `dev_check.ps1`, and both CI and release run `uv lock --check`. The local gate goes from four steps to six.
-- **Switched to a uv virtual root instead of declaring a wheel build**: dropped the stale `[build-system]` and `[tool.setuptools]` py-modules list (which still named renamed modules) in favour of `package = false`. Release artifacts are built by PyInstaller. The version now comes from the existing `pyproject.toml` fallback path, verified.
-- **`REPO_REVIEW.md` is now `REVIEW_Claude.md`**: Claude and Codex each keep their own review (`REVIEW_Codex.md`), and record their opinion of the other's changes in their own file.
+### 變更
+- **CI 與本機閘門一致化**：`check.yml` 補上雙語文件對稱性與 AI 更新頁兩道檢查（先前只在本機 `dev_check.ps1` 跑），CI 與 release 都加上 `uv lock --check`。本機閘門由四道變六道。
+- **改為 uv virtual root、不再宣告 wheel 建置**：移除過時的 `[build-system]` 與 `[tool.setuptools]` py-modules 清單（其中仍列著已更名的模組），改為 `package = false`。正式產物一律由 PyInstaller 建置。版號改由 `pyproject.toml` 讀取的既有 fallback 路徑供應，已實測。
+- **`REPO_REVIEW.md` 改名為 `REVIEW_Claude.md`**：Claude 與 Codex 的覆核各自維護一份（`REVIEW_Codex.md`），對彼此改動的意見寫在自己那份裡。
 
 ## [0.31.1] - 2026-07-30
 
-### Fixed
-- **Platform and product name across the landing page and READMEs**: titles, taglines, the nav brand, install cards, and feature cards still said "usage" and "macOS menu bar". The "5-language interface" card was outright false — this fork ships two. Everything now describes a Windows tray app with two languages; both language tables hold 73 keys and render with no stale terms.
-- **Download filenames**: the READMEs still named `usage-windows.zip` and `usage.exe`, while the build script has been producing `agentdeck-windows.zip` and `agentdeck.exe` — following the instructions found nothing.
-- **Dead footer links**: OpenSSF Best Practices and Buy me a coffee both pointed upstream and had lost their hrefs; removed. Releases now links to this repository.
+### 修正
+- **介紹頁與 README 的平台與名稱敘述**：標題、標語、導覽列品牌、安裝卡與功能卡仍寫著「usage」與「macOS menu bar」，其中「5 語言介面」那張卡在本 fork 已縮成兩語，屬於不實描述。全部改為 Windows 系統匣與雙語，兩份語言表各 73 個 key、實際渲染後零殘留。
+- **下載指示的檔名**：README 仍寫 `usage-windows.zip` 與 `usage.exe`，但建置腳本早已產出 `agentdeck-windows.zip` 與 `agentdeck.exe`——照著做會找不到檔案。
+- **頁尾失效連結**：OpenSSF Best Practices 與 Buy me a coffee 兩個連結指向上游、且已無 href，直接移除；Releases 補上本 repo 的連結。
 
-### Changed
-- **Artwork de-branded**: `docs/hero.png` drops the original author's app icon and restates the lockup as agentdeck / Windows Tray App, with the backdrop rebuilt by harmonic inpainting so no patch seam remains. `docs/readme-logo.png` is a new original mark — a fanned deck of cards with a terminal prompt, drawn by `tools/make_logo.py` — and the favicon points at it; og:image and twitter:image point at the hero. Upstream's butler-cat scene art stays, used under AGPL-3.0 and credited in `NOTICE.md`.
-- **Removed `docs/showcase.{en,zh-TW}.png`**: MacBook photos, unreferenced once the READMEs moved to the hero banner.
+### 變更
+- **美術資產去除上游品牌**：`docs/hero.png` 移除原作者的應用程式圖示，字標與副標改為 agentdeck／Windows Tray App（背景以調和修補重建，無補丁接縫）。`docs/readme-logo.png` 換成本專案原創標記（一疊卡片＋終端提示符，由 `tools/make_logo.py` 產生），favicon 指向它；og:image／twitter:image 改指 hero。上游的管家貓場景插畫依 AGPL-3.0 保留使用，來源已記於 `NOTICE.md`。
+- **移除 `docs/showcase.{en,zh-TW}.png`**：macOS 實機照，README 改用 hero 橫幅後已無引用。
 
-### Tests
-- **`test_keeps_matching_directory_and_symlink` split three ways**: one test covered both a directory and a symlink, so a machine without symlink privilege lost both. The new junction case is a reparse point an ordinary Windows user can create (verified: no elevation needed, `lstat` reports `S_ISDIR`) and exercises the same "not a regular file, leave it alone" branch, so that behaviour stays covered locally; only the symlink variant is deselected by `tools/dev_check.ps1`.
-- **AI Council window verified on real hardware for the first time**: `REPO_REVIEW.md` claimed this had been done, but nothing in the suite starts a GUI loop. Opening it confirmed the window builds, renders all four panes, and closes cleanly — and surfaced a clipped participant row at 900×640, now filed as P5.
+### 測試
+- **`test_keeps_matching_directory_and_symlink` 拆成三條**：原本一條測試同時涵蓋目錄與符號連結，沒有符號連結權限的機器會整條失去覆蓋。新增的 junction 案例是一般 Windows 使用者就能建立的 reparse point（實測免權限、`lstat` 報 `S_ISDIR`），走同一條「非一般檔案不刪」分支，因此本機仍覆蓋得到該行為，只有符號連結變體會被 `tools/dev_check.ps1` 排除。
+- **AI 圓桌視窗首次實機開窗驗證**：`REPO_REVIEW.md` 原本聲稱已實機驗證，但測試套件不會啟動 GUI loop。實際開窗確認視窗建立、四個區塊完整渲染、關閉乾淨；同時發現參與者列在 900×640 下被裁切，已記為 P5。
 
 ## [0.31.0] - 2026-07-30
 
-### Changed
-- **Renamed to agentdeck**: "usage" described quota watching, but the app also runs a multi-model council, installs personas, generates reports, and drives terse mode — the name covered half of it. Everything a user touches moves: the executable, the statusLine hook and its status file, the settings key, `~/.agentdeck/`, `~/.agentdeck-reports/`, and the `AGENTDECK_*` environment variables. Internal module filenames stay `usage_*` deliberately; renaming those touches every import for no user-visible gain. There is no compatibility shim, so an existing install must be removed with the old build's `--unsetup` before installing the new one.
-- **The panel's first-run corner follows the taskbar**: it was hard-coded to bottom-right, which is only near the notification area when the taskbar is at the bottom. Dragging and the remembered position are unchanged.
-- **Development docs merged**: the two upstream macOS-oriented `DEVELOPMENT` files still described menu bar mode, `.app` packaging, and LaunchAgent. They are replaced by the accurate Windows pair, 644 lines down to 156.
+### 變更
+- **改名為 agentdeck**：`usage` 只描述了額度監看，但這個程式還有多模型圓桌討論、角色安裝、報告分析、省 token 模式——名字說不出一半。使用者碰得到的東西全部改名：執行檔、statusLine hook 與狀態檔、settings key、`~/.agentdeck/`、`~/.agentdeck-reports/`、`AGENTDECK_*` 環境變數。內部模組檔名刻意維持 `usage_*`，改它要動到每一個 import 卻沒有使用者價值。**沒有相容層**，既有安裝必須先用舊版的 `--unsetup` 移除，再安裝新版。
+- **面板首次開啟的角落跟著工作列走**：原本寫死在右下角，那只有工作列在底部時才靠近通知區。拖曳與記住位置的行為不變。
+- **開發文件合併**：上游那兩份 macOS 導向的 `DEVELOPMENT` 還在講 menu bar、`.app` 打包與 LaunchAgent，已由準確的 Windows 版取代，644 行縮到 156 行。
 
-### Added
-- **AI Talent Market, reimplemented in the open**: upstream sourced its roles from a closed binary whose source and distribution repos are both 404 to anyone else and which only ever shipped for macOS — so the feature was unreachable from a public clone on either platform. `persona_store` replaces it: role definitions live in `personas/*.json` in this repository, install writes an ordinary Claude Code subagent to `~/.claude/agents/`, and hand-edits are reported as drift with a restore offered. An agent you already own under the same name is backed up before being replaced, and never deleted by uninstall.
-- **Weekly upstream review**: upstream is still active, so a scheduled workflow reports commits newer than the `last_reviewed` marker in `docs/UPSTREAM.md` and opens one tracking issue. Adopting a commit advances both markers; skipping one advances `last_reviewed` and owes a row in the Skipped table, because a marker without a reason loses the answer to "why did we skip that?".
+### 新增
+- **AI 人才市場改為自製開源版**：上游的角色內容來自一顆閉源二進位，其原始碼與發佈 repo 對外都是 404、且只有 macOS 版——任何人 clone 公開 repo 在兩個平台上都用不到這個功能。改由 `persona_store` 提供：角色定義放在 repo 的 `personas/*.json`，安裝後成為一般的 Claude Code subagent（寫入 `~/.claude/agents/`），手動改過會標示為 drift 並提供還原。**若你原本已有同名 agent，安裝會先備份再覆寫，且解除安裝絕不刪除不是我們寫的檔案。**
+- **每週上游審視**：上游仍活躍，因此新增排程 workflow，回報比 `docs/UPSTREAM.md` 的 `last_reviewed` 更新的 commit，並開一張追蹤 issue。採用就推進兩個標記；不採用只推進 `last_reviewed`，但必須在 Skipped 表補一列理由——只推進標記卻不記理由，等於把「當初為什麼跳過」丟掉。
 
-### Changed
-- The AI Council window's neutral half moved to `discussion_assets`, leaving `discussion_window_win` as the pywebview host. The macOS host is gone.
+### 變更
+- AI 圓桌討論的平台中立部分移到 `discussion_assets`，`discussion_window_win` 專責 pywebview 外殼。macOS host 已移除。
 
-### Added
-- **Failed actions say so instead of failing silently**: installing the statusLine hook, toggling it, toggling session resume or terse mode, and generating a report all reported nothing when they failed. A failed hook install was the worst of them — the panel just showed `--` forever, which looks identical to having no data yet, so there was no way to tell the difference. Each now reports its outcome, with the underlying error where there is one.
-- **The update prompt can skip a version again**: Windows only ever had a two-button dialog, so "skip this version" had nowhere to go. It is a three-button dialog now. Windows controls the button labels, so the message body spells out which button means what. Escape and the close button both defer rather than skip — suppressing a release because a dialog was dismissed would hide it for good.
-- **Automatic daily update checks**: the README has always said usage checks GitHub at most once a day, but on Windows only the manual menu item existed. The daily check now runs, honouring the auto-check preference, the once-a-day interval, a recent "later" answer, and a skipped version.
-- **Features explain themselves when switched on**: pystray menu items cannot carry tooltips, so the hover text upstream shows for Progress Concierge, Token Saver, and Keep Awake had nowhere to live. Each now explains itself once on enable, the way Keep Awake already did.
+### 新增
+- **動作失敗會說出來，不再靜默**：安裝 statusLine hook、切換 hook、切換 session resume 或省 token 模式、產生報告，這五件事失敗時原本完全沒有回饋。其中最糟的是 hook 安裝失敗——面板會永遠顯示 `--`，而那跟「還沒有資料」長得一模一樣，使用者無從分辨。現在每一項都會回報結果，有錯誤訊息就一併附上。
+- **更新提示可以跳過版本了**：Windows 原本只有兩個按鈕的對話框，「跳過這一版」無處可放。現在是三鈕對話框。按鈕文字由 Windows 決定，因此三個選項的對應寫在訊息內容裡。Escape 與關閉鈕都是「稍後」而非「跳過」——因為對話框被關掉就永久隱藏該版更新，是不可接受的。
+- **自動每日更新檢查**：README 一直寫著「每天最多一次查 GitHub」，但 Windows 上只有手動選單項，這件事從未真的發生。現在每日檢查會執行，並採用自動檢查偏好、一天一次的間隔、近期「稍後」的冷卻，以及已跳過的版本。
+- **功能啟用時會自我說明**：pystray 的選單項無法帶 tooltip，上游為進度管家、省 token 模式、螢幕保持喚醒提供的滑鼠提示文字因此無處安放。現在三者都在啟用時說明一次，比照螢幕保持喚醒原本的做法。
 
-### Changed
-- `update_gate` gained `UPDATE_DISMISS_SECONDS`, `dismissed_recently()`, `should_prompt()`, and `resolve_message_box_choice()`. The dismiss window and its check lived in `menubar.py` until macOS support was removed; putting them in a platform-neutral module means both the gating and the dialog-code mapping are unit-tested rather than only reachable by opening a dialog.
-- Both READMEs now describe a Windows-only app: no Homebrew, no `.app`, no Gatekeeper or `launchctl` troubleshooting, and the AI Update Daily link points at this fork's own page.
+### 變更
+- `update_gate` 新增 `UPDATE_DISMISS_SECONDS`、`dismissed_recently()`、`should_prompt()`、`resolve_message_box_choice()`。冷卻時間與其判斷原本住在 `menubar.py`，隨 macOS 移除而消失；改放中立模組後，閘門判斷與對話框回傳碼映射都有單元測試守著，不再只能靠開對話框手動點。
+- README 兩版都改為描述 Windows 專用的程式：移除 Homebrew、`.app`、Gatekeeper 與 `launchctl` 相關排查，AI 更新日報連結改指向本 fork 自己的頁面。
 
-### Removed
-- **macOS support**: this fork is Windows-only, so the PyObjC menu bar (`menubar.py`), the WKWebView popover (`panels/web_panel.py`), the LaunchAgent login item (`login_item.py`), the py2app build (`setup_app.py` and the shell scripts around it), and the macOS CI jobs are gone, along with the PyObjC dependencies and the macOS locale probe. Nothing was ported in the process — `wintray.py`, `win_login_item.py`, and `scripts/build_windows.ps1` were already the Windows equivalents, so this removes redundancy rather than capability. The platform-neutral modules keep their historical `menubar_*` and `panels.*` names and are still load-bearing.
+### 移除
+- **macOS 支援**：本 fork 專注 Windows，因此移除 PyObjC 選單列（`menubar.py`）、WKWebView 彈出面板（`panels/web_panel.py`）、LaunchAgent 開機項（`login_item.py`）、py2app 打包（`setup_app.py` 與周邊 shell 腳本）與 macOS CI job，連同 PyObjC 相依與 macOS 語系偵測。過程中**沒有任何東西需要移植**——`wintray.py`、`win_login_item.py`、`scripts/build_windows.ps1` 本來就是對應的 Windows 版本，所以這是移除冗餘而非移除能力。平台中立的模組保留原本的 `menubar_*`／`panels.*` 命名，且仍是命脈，不可依檔名誤刪。
 
-### Added
-- **AI Council runs on Windows**: previously macOS-only. Its logic was already platform-neutral, so only the window shell was rewritten — a second pywebview window on the tray's existing GUI loop. Reachable from the tray menu.
+### 新增
+- **AI 圓桌討論支援 Windows**：原本僅 macOS。它的邏輯本來就是平台中立的，因此只重寫了視窗外殼——掛在系統匣既有 GUI 迴圈上的第二個 pywebview 視窗。可從系統匣選單開啟。
 
 ## [0.30.0] - 2026-07-29
 
-### Fixed
-- **The Windows panel opens where you can see it on scaled displays**: pywebview calls `SetProcessDPIAware()`, so every rect Win32 returns — `SPI_GETWORKAREA`, `GetMonitorInfoW` — is in *physical* pixels, while pywebview's own `move()` / `resize()` / `x` / `y` are in *logical* pixels and apply the monitor scale themselves. The tray panel fed the physical work area straight into `move()`, so the coordinate got scaled twice. On a 3840x2160 display at 225% the panel was sent to x=3408 logical, which becomes 7668 physical — far off the right edge of a 3840px screen. The window did open; it just opened where nobody could see it, which also made the tray icon look like it was ignoring clicks (each click was really toggling an invisible window) and made a remembered position come back wrong. Work areas are now converted to logical pixels at the single point where they are read, using the effective DPI of the monitor the panel is headed for.
+### 修正
+- **Windows 面板在縮放螢幕上會開在看得到的位置**：pywebview 會呼叫 `SetProcessDPIAware()`，因此 Win32 回傳的每個矩形（`SPI_GETWORKAREA`、`GetMonitorInfoW`）都是**實體**像素；但 pywebview 自己的 `move()` / `resize()` / `x` / `y` 用的是**邏輯**像素，並且會自行乘上螢幕縮放。系統匣面板把實體工作區直接餵給 `move()`，座標於是被縮放了兩次——3840×2160 螢幕在 225% 下，面板被送到邏輯 x=3408，換算成實體是 7668，遠在 3840 像素螢幕的右邊界之外。視窗其實有開，只是開在沒人看得到的地方；這也讓系統匣圖示看起來像沒反應（每次點擊其實都在切換一個看不見的視窗），並讓記憶的視窗位置還原錯誤。工作區現在會在讀取的單一位置換算成邏輯像素，依據面板即將前往的那個螢幕的有效 DPI。
 
-### Changed
-- **The UI ships in Traditional Chinese and English only**: this fork drops the Simplified Chinese, Japanese, and Korean sections from `i18n.json` and from the four stdlib-only hook scripts that each carry their own copy of the language table. Locale resolution folds *every* Chinese locale — Simplified included — into Traditional Chinese, and everything else falls back to English, so no system ends up without a translation. Maintaining five hand-synced translations for a personal fork was cost without readers; two languages that stay correct beat five that drift. The landing page (`docs/index.html`), which carries its own translation table, was trimmed to match.
+### 變更
+- **介面語言精簡為繁體中文與英文**：本 fork 從 `i18n.json` 以及四個各自帶了一份語言表的 stdlib-only hook 腳本中，移除簡體中文、日文、韓文三個區段。語系判定改為把**所有**中文語系（含簡體）都收斂到繁體中文，其餘一律回退英文，因此不會有任何系統落到沒有翻譯的狀態。以個人 fork 而言，五套需要手動同步的翻譯是只有成本沒有讀者；兩套維持正確，勝過五套逐漸漂移。自帶翻譯表的介紹頁（`docs/index.html`）也一併精簡。
 
-### Fixed
-- **AI Council error messages are no longer shredded by unrelated environment variables**: when a CLI participant fails, its diagnostic text is scanned for the values of environment variables whose *names* look sensitive (`TOKEN`, `KEY`, `SECRET`, `AUTH`, …) and those values are replaced with `[REDACTED]`. The whole inherited environment is scanned, and the substitution had no minimum length — so a harmless flag matched on its name alone, such as Claude Code's own `CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH=1`, rewrote *every* `1` in the message and turned `CLI exited with status 1` into `CLI exited with status [REDACTED]`. Redaction now skips values shorter than 8 characters, which is far below the length of any real credential, so nothing that was actually protected before is exposed now.
+### 修正
+- **AI 圓桌討論的錯誤訊息不再被無關的環境變數打碎**：CLI 參與者失敗時，診斷文字會被掃過一遍，把「*名稱*看起來像機密」的環境變數（`TOKEN`、`KEY`、`SECRET`、`AUTH` 等）的值換成 `[REDACTED]`。掃描範圍是整個繼承下來的環境，而替換又沒有設下最短長度——於是像 Claude Code 自己注入的 `CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH=1` 這種只是名稱撞到的無害旗標，會把訊息裡**每一個** `1` 都換掉，`CLI exited with status 1` 變成 `CLI exited with status [REDACTED]`。現在長度不足 8 個字元的值不再塗銷，這個門檻遠低於任何真實憑證的長度，原本真正受保護的內容不會因此外露。
 
 ## [0.29.8] - 2026-07-29
 
-### Fixed
-- **The Windows panel no longer snaps back to the primary monitor on every panel switch**: dragging the popover onto a second display and then switching panel style (or theme) forced it right back onto the primary monitor. Windows' `SPI_GETWORKAREA` API only ever reports the *primary* monitor's work area, and the window was clamped against that single rectangle on every reposition regardless of which monitor it actually lived on — so a window dragged onto a secondary display got clamped straight back onto the primary one the next time the panel reloaded. Placement now looks up the work area of whichever monitor the window's current (or saved) position falls on via `MonitorFromPoint`/`GetMonitorInfoW`, so a window on a secondary display stays there across panel switches. A related issue on a single monitor is fixed alongside it: switching panels reset the remembered content height to `None`, so the window was briefly clamped against each panel's near-fullscreen placeholder height (`PANEL_HEIGHTS`) before its real height was measured, which could shove a dragged window toward the top of the screen; the previous panel's measured height is now kept as the transitional estimate instead.
+### 修正
+- **Windows 版面板不再每次切換造型就跳回主螢幕**：把面板拖到第二個螢幕後，只要切換面板造型（或主題），視窗就會被強制拉回主螢幕。Windows 的 `SPI_GETWORKAREA` API 固定只回傳「主螢幕」的可用範圍，不管視窗實際在哪個螢幕，每次重新定位都拿這唯一一塊範圍去夾視窗座標——所以拖到第二螢幕的視窗，下次面板重新載入時就被夾回主螢幕。現在改成用視窗目前（或上次存檔）的座標，透過 `MonitorFromPoint`/`GetMonitorInfoW` 查出它實際落在哪個螢幕，再取那個螢幕的可用範圍，拖到第二螢幕的視窗切換面板後會留在原地。順帶修掉單一螢幕上的相關問題：切換面板時原本會把記住的內容高度重設成 `None`，導致新面板真正的高度量出來之前，視窗會先被夾去符合每個面板寫死、接近全螢幕高的估計值（`PANEL_HEIGHTS`），可能把拖曳中的視窗推向螢幕頂端；現在改成保留切換前那個面板的實際量測高度當過渡期估計值。
 
 ## [0.29.7] - 2026-07-29
 
-### Fixed
-- **The panel no longer leaves an empty strip at the bottom**: panel height came from a fixed per-panel constant, so any layout that rendered shorter than the registered value left dead space below the footer. The common trigger is Codex reporting only a weekly window with no 5-hour data, which drops a quota row from the card. The panel now measures its own natural height after each refresh and the window resizes to match, clamped to the usable screen area; the registered constants stay as the pre-measurement default and as the fallback when a measurement is unusable. A panel that deliberately leaves room for a full-window backdrop — World Cup's pitch is the only one — marks that region so it keeps its designed height instead of collapsing while the measurement releases the layout's height constraints.
+### 修正
+- **面板底部不再留一條空白**：面板高度原本取自每個面板寫死的常數，只要實際排版比登記的數值矮，頁尾下方就會空出一塊。最常見的觸發情況是 Codex 只回報週視窗、沒有 5 小時資料，額度卡因此少掉一列。現在面板會在每次更新後量測自己的自然高度，視窗跟著調整並限制在螢幕可用範圍內；登記的常數保留為量測前的預設值，以及量測結果不可用時的後援。刻意留白讓整窗背景透出來的面板——只有世界盃的球場屬於這種——會標記該區域，量測過程放開版面高度限制時不會塌陷，維持設計高度。
 
 ## [0.29.6] - 2026-07-29
 
-### Fixed
-- **Claude Code panel no longer stays blank forever on Windows**: the installer picked whichever `python`/`py` `shutil.which()` found on `PATH` without checking it actually ran, so on any Windows machine without a real Python install, it silently wired the statusLine hook to Windows' non-functional "App Execution Alias" stub (the placeholder `python.exe`/`python3.exe` that Windows 10/11 ships by default to prompt a Microsoft Store install). The hook then failed silently on every refresh, `agentdeck-status.json` was never written, and the Claude Code panel showed `--` permanently — not a first-run loading state. The installer now actually runs each candidate with `--version` before trusting it, and skips any that don't execute.
+### 修正
+- **Windows 版 Claude Code 面板不再永久卡在 `--`**：安裝程式原本只用 `shutil.which()` 找到 `python`/`py` 就直接採用，沒有驗證它真的能執行——導致沒裝真正 Python 的 Windows 機器上，statusLine hook 會被悄悄接到 Windows 10/11 內建、用來導去微軟商店的「App Execution Alias」空殼 `python.exe`/`python3.exe`。這個空殼每次刷新都靜默失敗，`agentdeck-status.json` 永遠不會被寫出來，面板因此永久顯示 `--`——不是「還在載入」的過渡狀態。安裝程式現在會先實際執行候選路徑的 `--version` 驗證能不能跑，跑不動就跳過換下一個。
 
 ## [0.29.5] - 2026-07-27
 
-### Changed
-- **AI Council spends less Claude quota per turn**: `claude -p` calls without an attached project folder used to omit `--tools` entirely, so Claude Code loaded its full built-in toolset — Bash, Edit, Write, and the rest — into every turn's input even though the council prompt already tells participants not to call tools. Calls now pass `--tools ""` when no project folder is attached, and every Claude call adds `--exclude-dynamic-system-prompt-sections` to keep the system prompt prefix byte-stable across turns for a better shot at Anthropic's automatic prompt caching. Codex and Antigravity participants are unaffected.
+### 變更
+- **AI 圓桌討論每輪省下更多 Claude 額度**：沒帶專案資料夾時，`claude -p` 呼叫原本完全不傳 `--tools`，導致 Claude Code 每輪都把完整內建工具集（Bash、Edit、Write 等等）的定義塞進輸入內容，即使圓桌的提示詞早就告訴參與者不要呼叫任何工具。現在沒帶資料夾時會傳 `--tools ""` 關閉工具；每次 Claude 呼叫也都加上 `--exclude-dynamic-system-prompt-sections`，讓 system prompt 前綴在各輪之間保持位元不變，提高命中 Anthropic 自動 prompt 快取的機會。Codex 與 Antigravity 參與者不受影響。
 
 ## [0.29.4] - 2026-07-26
 
-### Added
-- **Steer the council mid-discussion**: an opt-in "guidance between rounds" toggle pauses the session before every round after the first, so you can react to what you just heard — "we're single-host, no cluster" — instead of watching a debate run off in the wrong direction or stopping and restarting from scratch. The pause waits up to 5 minutes and is skipped automatically if left blank; the round then proceeds exactly as it did before.
-- **See who disagreed, not just how many**: the consensus tally under the moderator's summary now lists each participant by name next to their stance, with dissenting and alternative positions colored so they stand out, instead of a bare "2 agree, 1 alternative" that meant scrolling back through the transcript to find out who.
-- **The five debate tones now explain themselves**: a one-line plain-language hint appears under the tone picker — devil's advocate, for instance, now reads "the AIs will deliberately argue the opposite side to test whether a plausible conclusion holds up" — so a first-time user isn't left guessing how "adversarial" differs from "devil's advocate."
+### 新增
+- **圓桌討論中途可以插話**：新增一個預設關閉的「輪次之間讓我補充」開關，開啟後每輪（第二輪起）開始前會先暫停，讓你針對剛聽到的內容補一句——例如「我們只有單機部署，不考慮叢集」——而不必眼睜睜看討論走偏，或整場停掉重跑。暫停最多等 5 分鐘，留白直接略過；補充完之後的流程跟原本完全一樣。
+- **看得出誰不同意，不只是幾票**：主持人總結下方的共識計票，現在會列出每位參與者的真實名字對應各自的立場，反對與替代方案的意見還會用顏色標出來——不再只是一句「2 位同意、1 位提出替代方案」，逼你回頭翻逐字稿才知道是誰。
+- **五種討論基調自己會解釋自己**：基調選單下方多了一行白話說明，例如選到「魔鬼代言人」會顯示「AI 會刻意站到相反立場，測試看似合理的結論能否經得起反駁」，第一次用的人不用再自己猜「對立挑錯」跟「魔鬼代言人」差在哪。
 
 ## [0.29.3] - 2026-07-25
 
-### Fixed
-- **The menu bar critters no longer cost a third of a CPU core**: the phoenix, dragon and lion each drove their own timer, and every single frame re-sent the whole status item title to AppKit — which re-typesets the entire string through CoreText and re-measures the item's width, asking the system for its preferred languages along the way. With all three animating at full speed that came to 60 full relayouts a second, measured at 30–33% of a core with the popover closed; the cost arrived precisely when you were busiest, since the critters only animate while you are burning tokens. They now share a single timer, the fastest frame interval widens from 0.05s to 0.10s (indistinguishable on an 18px sprite), and a tick where no critter advances skips the redraw entirely. The burn-rate lookup that used to sit on the animation path — stat-ing 2,858 history files on the main thread every time its 30-second cache expired — moved to the background refresh, and the menu bar's text and sprite fragments are now cached instead of rebuilt per frame. Same animation, measured 4.2–5.9%.
+### 修正
+- **選單列神獸不再吃掉三分之一顆 CPU**：鳳凰、肥龍、獅子原本各自跑一個計時器，而且每換一格圖都會把整條選單列標題重送給系統重畫——系統收到就會把整串文字重新排版、重新量寬度，過程中還去問一次目前偏好哪國語言。三隻同時全速動的時候，等於每秒重排 60 次，實測在面板關著的狀態下就吃掉 30～33% 的一顆核心；更麻煩的是這筆開銷正好在你最忙的時候出現，因為神獸只有在你正在消耗額度時才會動。現在三隻共用一個計時器，最快的換格間隔從 0.05 秒放寬到 0.10 秒（18 像素的小圖上肉眼分辨不出差別），而且沒有任何一隻該換格的那一輪會直接跳過重畫。原本掛在動畫路徑上的用量速率查詢——每次 30 秒快取過期就在主執行緒上檢查 2,858 個歷史檔案——移到背景更新，選單列的文字與圖示片段也改成快取重用，不再每格重建。動畫效果不變，實測 4.2～5.9%。
 
-### Changed
-- **A service alert the provider forgot to clear no longer sticks around**: a status page can leave a component marked as degraded long after the incident is over, and the panel had no way to tell that apart from a live problem. Two rules now retire such an alert, both limited to the mildest *degraded performance* level so a partial or major outage is never hidden. First, if every unresolved incident on the page has sat in *monitoring* — the provider's own word for "the fix is in, we are watching it" — for more than four hours, the alert is suppressed until something changes. Second, a status observed unchanged for more than 24 hours is treated as residue. The second rule times what usage itself has seen rather than trusting the page's own timestamps: on OpenAI's page all 25 components, the operational ones included, share one timestamp from over two weeks earlier, so that field records when a component was defined, not when its status last moved.
+### 變更
+- **供應商忘記清掉的服務警示不再一直掛著**：狀態頁可能在事故結束後很久，仍把某個元件標記成效能降級，而面板無從分辨這跟真正出問題有什麼不同。現在有兩條規則讓這種警示自動退場，而且都只對最輕微的「效能降級」生效，部分中斷與大規模中斷永遠不會被藏起來。第一條：頁面上所有未解決的事故都停在「監控中」——這是供應商自己用來表示「修復已經上線，正在觀察」的說法——且超過四小時沒有動靜，就先不顯示，直到狀況有變。第二條：同一個異常狀態連續觀察超過 24 小時都沒變，視為殘留。第二條規則計時的是 usage 自己看到的時間，而不是相信對方頁面上的時間戳：OpenAI 那頁全部 25 個元件（連正常的都算在內）共用同一個兩週前的時間戳，可見那個欄位記錄的是元件何時被建立，不是狀態何時變動過。
 
 ## [0.29.2] - 2026-07-25
 
-### Fixed
-- **The council consensus tally no longer drops opinions**: stance labels were only matched at the very start of a turn's first line, so a rebuttal that reached its label a few words in — or ended its first line with one — counted as unparsed and vanished from the count. The whole first line is now scanned, and a turn must name exactly one distinct label to be counted; a turn quoting several stays unparsed instead of having one guessed for it.
-- **Every selected participant shows its check mark**: the "✓" marking a participant as joining the discussion is drawn as a CSS `::after` overlay, which never renders on a replaced element. It therefore appeared only on the seat whose avatar falls back to an inline SVG (Antigravity) and stayed invisible on the seats drawn from an image icon (Claude, Codex), making a fully selected line-up look half-selected. All three now host the overlay on a wrapper element.
+### 修正
+- **圓桌共識計票不再漏算意見**：表態標籤原本只比對發言第一行的最開頭，所以標籤出現在幾個字之後、或落在第一行結尾的互評，會被當成沒表態、整票從計數裡消失。現在改為掃過整個第一行，而且必須恰好出現一種標籤才計入；一則同時引用好幾種標籤的發言維持「未表態」，不會被替它猜一個。
+- **每位被選中的參與者都會顯示打勾**：標示「這位已加入討論」的打勾是用 CSS `::after` 疊在頭像上，而這種疊加在替換元素（`<img>`）上不會被畫出來。結果只有頭像走內嵌 SVG 後援的那位（Antigravity）看得到勾，用圖片圖示的兩位（Claude、Codex）看不到，明明全選卻像只選了一個。現在三位都改用容器元素承載這個疊加。
 
-### Changed
-- **The disabled *start discussion* button says why it is disabled**: a line under the button now names what is missing — no topic, no participant selected, or a discussion already running — instead of leaving a greyed-out button and no explanation. The reason is tied to the button with `aria-describedby` and lives in a status region, so keyboard and screen-reader users get it too, not only whoever hovers.
-- **The moderator star is tellable apart**: all three stars carried the same accessible name, so a screen reader could not say which seat was moderating. Each star now exposes its pressed state, and its tooltip reads *current moderator* or *set as moderator* to match.
-- **Agreeing in a council rebuttal requires reasons**: a participant opening with the agreement stance must state what it reviewed, why it agrees, and what concerns remain, so consensus cannot be reached by rubber-stamping.
-- Bumped `setuptools` to 83.0.0.
+### 變更
+- **「開始討論」按鈕變灰時會說明原因**：按鈕下方會直接寫出缺什麼——還沒輸入討論問題、還沒選參與者，或討論正在進行中——不再只留一顆灰按鈕讓人猜。這行說明用 `aria-describedby` 綁在按鈕上，並放在狀態區塊裡，所以鍵盤與螢幕閱讀器使用者也拿得到，不只有滑鼠停留的人看得到。
+- **主持人星號分得出誰是現任**：三顆星原本的無障礙名稱一模一樣，螢幕閱讀器說不出哪個位子在主持。現在每顆星會表達自己的按下狀態，提示文字也跟著顯示「目前主持人」或「設為主持人」。
+- **圓桌互評表示同意時必須給理由**：以同意立場開頭的參與者，必須說明自己檢視了什麼、為何同意、還有哪些顧慮，避免用蓋橡皮章的方式達成共識。
+- `setuptools` 升到 83.0.0。
 
 ## [0.29.1] - 2026-07-25
 
-### Added
-- **Council participants can wear a persona from the AI Talent Market**: every seat now has a role picker next to its model picker, listing the specialists from your installed talent packs (contract review, front-end, security audit, and the rest). The role's expertise is injected as a prompt prefix, so the same CLI can sit in two seats wearing two different hats. Roles are grouped by talent pack in a collapsible picker — collapsed it shows only the pack names, so a 50-role list no longer scrolls off the screen. Role text is fetched from the talent-market CLI at runtime and is never bundled into usage itself.
-- **Five debate styles for a council**: pick the tone every participant takes from the second round on — constructive consensus-seeking, adversarial fault-finding, collaborative gap-filling, Socratic questioning of assumptions, or devil's advocate. The stance label each participant must open with is preserved under every style.
-- **Council consensus is counted, and can end the discussion early**: the stance labels participants open their rebuttals with are now tallied and shown above the summary. Turn on *end on consensus* and a discussion stops as soon as every participant in a round agrees, instead of burning through the rounds you budgeted for. A round where anyone failed to finish never counts as consensus.
+### 新增
+- **圓桌參與者可以戴上 AI 人才市場的角色**：每個位子的模型選單旁多了角色選單，列出你人才市場裡的專家（合約審閱、前端、資安稽核等等）。角色的專業會以提示詞前綴注入，所以同一個 CLI 可以坐兩個位子、戴兩張不同的面具。角色依團隊包分組，收合起來只看得到團隊包名稱，五十幾個角色不再拉成一長條。角色內容是執行時向人才市場的 CLI 取得，不會打包進 usage。
+- **圓桌新增五種辯論風格**：決定第二輪起所有參與者的討論基調——建設性找共識、對立挑錯、協作補充、蘇格拉底式追問底層假設，或魔鬼代言人。不論選哪種風格，參與者開頭必須表態的規則都保留。
+- **圓桌會統計共識，也可以提早結束**：參與者互評時開頭的表態標籤現在會計票，顯示在總結上方。打開「達成共識就提早結束」，只要某一輪全體同意就直接收尾，不必把預設的輪數燒完。該輪若有人沒能完成發言，就不算達成共識。
 
-### Changed
-- **The moderator no longer sees who said what**: the transcript handed to the moderator is anonymized, so it cannot favor the answers its own CLI wrote. Participant names are restored before the summary reaches your screen and the exported Markdown, so you still read "Claude argued…" rather than "Participant A argued…". Participants' own words are passed through untouched — a discussion *about* Claude or Codex stays readable.
+### 變更
+- **主持人看不到誰說了哪句話**：交給主持人的逐字稿改為匿名，它無法偏袒自己那個 CLI 寫的答案。總結送到你眼前和匯出的 Markdown 之前會還原真名，所以你讀到的仍然是「Claude 主張……」而不是「參與者 A 主張……」。參與者自己的發言則原封不動送出——討論主題本身就是 Claude 或 Codex 時，內容不會被改壞。
 
 ## [0.29.0] - 2026-07-25
 
-### Added
-- **AI Council**: a new menu-bar window that runs a multi-round discussion between Claude Code, Codex, and Antigravity (agy) on a topic you give it. Pick which CLIs join and which model each one uses (Opus / Sonnet / Haiku for Claude, Terra / Luna / Sol for Codex, a choice of Gemini models for Antigravity), set 1–5 rounds, and optionally have one participant write a closing summary as moderator. The setup panel collapses into a status bar once a discussion starts, so the transcript and summary panes get the full window height.
-- **Council cost stays visible before you commit to it**: the estimate shown before starting now includes a token total, not just a CLI-call count, and turns amber with a plain multiple-of-two-rounds comparison once 3+ rounds are selected — every extra round costs more than the last, since each participant re-reads the whole transcript so far.
-- **Council supports image attachments and an optional read-only project folder**: drag-and-drop or paste (Cmd+V) images into the topic box, and each participating CLI gets read access to them; a working directory can be attached so participants can reference real project files without write access.
+### 新增
+- **AI 圓桌討論**：新增選單列視窗，讓 Claude Code、Codex、Antigravity（agy）針對你給的題目進行多輪討論。可選擇哪些 CLI 加入、各自用哪個模型（Claude 選 Opus／Sonnet／Haiku，Codex 選 Terra／Luna／Sol，Antigravity 可選多款 Gemini 模型），設定 1～5 輪，也可以指定其中一位參與者在結尾寫總結當主持人。討論一開始，設定面板會收合成一條狀態列，把整個視窗高度讓給討論歷程與總結。
+- **開始前就看得到圓桌的花費**：開始前的預估區現在會顯示大約會花多少 token，不只是 CLI 呼叫次數；選到 3 輪以上時會變成琥珀色，並用「約 2 輪的幾倍」直接比給你看——每多一輪都比上一輪貴，因為每位參與者每輪都要重讀前面所有發言。
+- **圓桌支援圖片附件與唯讀的專案資料夾**：可直接拖曳或貼上（Cmd+V）圖片到題目欄，每位參與的 CLI 都會拿到讀取權限；也可以附上一個工作資料夾，讓參與者能參考真實的專案檔案，但不能寫入。
 
 ## [0.28.21] - 2026-07-24
 
-### Added
-- **Service-status banners for Claude Code, Claude API, and Codex API incidents.** `usage` reads the public Claude and Codex Statuspage.io status pages and shows an orange-red warning banner at the bottom of a panel only when an affected service has an outage or degraded performance. It never calls an LLM usage API.
-- **Service-status banners work across every panel with a footer.** Each panel uses warning colors matched to its own theme, and a banner for a tool is not shown when that tool's card is hidden.
-- **Service-status banner text is available in all five UI languages.** Antigravity is not supported because it has no usable public status page.
+### 新增
+- **新增 Claude Code、Claude API 與 Codex API 異常的服務狀態橫幅。** `usage` 讀取 Claude 與 Codex 官方公開的 Statuspage.io 服務狀態頁；只有受影響服務發生故障或效能降級時，才會在面板底部顯示橘紅警示橫幅。絕不呼叫 LLM 用量 API。
+- **所有有底部欄的面板都支援服務狀態橫幅。** 各面板的警示色會配合自身主題；使用者隱藏某個工具卡時，也不會顯示該工具的橫幅。
+- **服務狀態橫幅文字已涵蓋全部五種介面語言。** Antigravity 因沒有可用的公開狀態頁，暫不支援。
 
-### Changed
-- **Rate and status information now sit side by side in the footers of all eight themed panels.** They now match the default panel instead of being stacked vertically.
+### 變更
+- **八個主題面板底部的速率與狀態資訊改為左右並排。** 現在與預設面板一致，不再上下堆疊。
 
-### Fixed
-- **Live usage-rate categories can distinguish heavy use again.** Heavy users previously remained permanently in Heavy because burn rate counted `cache_read`—a near-free prompt-cache reread that reflects conversation length rather than usage intensity—in its numerator. It now excludes `cache_read`, and the Idle / Normal / Active / Heavy thresholds have been recalibrated from 50 / 250 / 1000 to 500 / 2500 / 6000 tokens per minute.
-- **Popover height now accounts for the service-status banner.** When the banner appears, the panel grows enough to contain it instead of squeezing its content.
+### 修正
+- **即時用量速率分類重新能分辨重度使用。** 過去重度使用者會永遠停在 Heavy，因為 burn rate 把 `cache_read` 也算進分子；這是計價近乎免費、代表對話長度而非用量強度的提示快取重讀。現在排除 `cache_read`，Idle / Normal / Active / Heavy 的門檻也從每分鐘 50 / 250 / 1000 重新校準為 500 / 2500 / 6000 tokens。
+- **popover 面板高度現在會算入服務狀態橫幅。** 橫幅出現時，面板會正確長高容納它，不再擠壓內容。
 
 ## [0.28.20] - 2026-07-24
 
-### Fixed
-- **Auto-start 5-hour Session stopped firing at all after its first ping.** 0.28.17 swapped the keeper's elapsed-time throttle for reset-boundary deduplication, which only holds up while the boundary keeps moving — and it doesn't. The ping runs `claude -p` headless, which never triggers Claude Code's statusLine hook, so `agentdeck-status.json` goes on reporting the boundary that was already handled and the keeper wedges permanently. One machine went 23 hours with no auto-opened window while the cooldown-based Antigravity keeper kept working normally. The boundary check stays, since it is what catches a real rollover the moment it happens; a 5h5m cooldown is added alongside it as a second, independent way to re-arm once the payload has gone stale. Every existing gate is untouched, so a live window still never draws a spurious ping.
-- **Orphaned temp files piled up in `~/.agentdeck/`.** Every atomic write unlinks its `mkstemp` file in a `finally` block, and that block never runs when the app is SIGKILLed or crashes mid-write. One install had collected 40 MB of them over twelve days, dominated by the large JSONL caches whose slow writes are the likeliest to be interrupted. Startup now sweeps `~/.usage` and its direct `*.d` children, deleting only regular files that match the `mkstemp` name shape and have gone untouched for 24 hours — long enough that a second usage process cannot lose a temp file it is still writing. Symlinks and directories are skipped no matter how well their name matches.
+### 修正
+- **「5 小時自動連線」在第一次 ping 之後就完全不再啟動。** 0.28.17 把原本的「距離上次 ping 滿 5 小時」節流改成「認 reset 邊界去重」，但這個做法只有在邊界會持續更新時才成立——而它不會：自動 ping 打的是 headless 的 `claude -p`，不會觸發 Claude Code 的狀態列 hook，`agentdeck-status.json` 因此一直回報那個已經處理過的邊界，keeper 就此永久卡死。實測有機器連續 23 小時沒有自動開過視窗，同一個開關下走冷卻時間的 Antigravity keeper 卻一切正常。邊界判斷保留（真正換窗時它能立刻反應），另外並行加上 5 小時 5 分的冷卻，作為資料失去更新時的第二條獨立恢復路徑。既有的安全條件一個都沒動，視窗還活著時依然不會誤 ping。
+- **`~/.agentdeck/` 會累積孤兒暫存檔。** 所有原子寫檔都在 `finally` 區塊裡刪掉自己的 `mkstemp` 暫存檔，但 app 被強制結束或寫到一半當掉時，那段根本不會執行。實測有安裝在十二天內累積了 40 MB，主要來自寫入最慢、最容易被中斷的大型 JSONL 快取。現在啟動時會掃過 `~/.usage` 與其下一層 `*.d` 目錄，只刪掉「檔名符合 `mkstemp` 形態」且「24 小時沒有被動過」的普通檔案——這個門檻遠長於任何一次寫入，因此不會刪到另一個 usage 行程正在寫的暫存檔。符號連結與目錄無論檔名多像都不會被碰。
 
 ## [0.28.19] - 2026-07-23
 
-### Added
-- **Windows tray now has the same "Auto-start 5-hour session" toggle macOS has had.** Wires the existing `window_keeper` auto-ping logic into `wintray.py`, firing after each refresh; the toggle is in both the tray menu and the HTML panel menu, with Windows-specific enable instructions (Settings → Power & battery) across all five languages. Also adds real-world Windows install-path fallbacks for the `claude`/`agy` binaries.
+### 新增
+- **Windows tray 現在也有跟 macOS 一樣的「5 小時自動連線」開關。** 把既有的 `window_keeper` 自動 ping 邏輯接進 `wintray.py`，每次刷新後觸發；開關同時出現在 tray 選單和 HTML 面板選單，並補上 Windows 版的開啟說明文字（設定 → 電源與電池），五種語言都有。另外也補上 `claude`/`agy` 執行檔在 Windows 上實際安裝路徑的備援位置。
 
 ## [0.28.18] - 2026-07-22
 
-### Fixed
-- **Antigravity quota showed a stuck, wrong percentage since the CLI's 1.1.5 update.** The Antigravity CLI moved its OAuth credential from a plain file on disk into the macOS Keychain (`security` service `gemini`, account `antigravity`, `go-keyring-base64:`-wrapped JSON) and switched its quota backend from `cloudcode-pa.googleapis.com` to `daily-cloudcode-pa.googleapis.com`. The card kept reading the now-abandoned token file, which silently refreshed against a stale grant and returned numbers that no longer matched the CLI's own `/quota` output. It now reads the Keychain entry first (falling back to the legacy file), and posts to the current backend.
+### 修正
+- **自 Antigravity CLI 1.1.5 版更新後，額度卡卡在錯誤的數字不會動。** Antigravity CLI 把 OAuth 憑證從本機的一份純文字檔搬進了 macOS 鑰匙圈（`security` 服務名 `gemini`、帳號 `antigravity`，內容是 `go-keyring-base64:` 包一層的 JSON），配額查詢的後端網域也從 `cloudcode-pa.googleapis.com` 換成 `daily-cloudcode-pa.googleapis.com`。額度卡當時繼續讀那份已被棄用的舊 token 檔，靜默地拿一個過期授權去刷新，回傳的數字因此跟 CLI 自己 `/quota` 顯示的對不上。現在改成優先讀鑰匙圈裡的憑證（讀不到才退回舊檔案），並打新的後端網域。
 
 ## [0.28.17] - 2026-07-21
 
-### Fixed
-- **Classic popover no longer clips the Claude card when the footer status wraps to two lines.** Long status warnings (e.g. hook broken/restart) push the footer status pill onto a second line, adding roughly 30px the fixed popover height never accounted for; flex then squeezed the overflow-hidden Claude card and clipped its weekly reset row.
-- **Auto-start 5-hour Session could silently skip a reset boundary.** The keeper's fixed 5-hour self-throttle was measured from the last ping's own timestamp, which could drift out of sync with the real quota reset boundary and occasionally skip a ping entirely — leaving the next window to start only once you talked to Claude yourself. It now dedupes by the actual reset boundary instead of elapsed time, so drift can no longer cause a miss.
+### 修正
+- **經典彈出視窗footer狀態換到第二行時，不再擠壓 Claude 卡片。** 較長的狀態警告（例如 hook 損壞/需重啟）會把底部狀態小標籤擠到第二行，多出約 30px 的高度，原本固定的彈出視窗高度沒算進去；flex 排版因此擠壓了設為隱藏溢出的 Claude 卡片，切掉了它的每週重置那一行。
+- **自動啟動 5 小時計時可能悄悄漏掉某次重置邊界。** keeper 原本的 5 小時自我節流是從「上次 ping 的時間點」起算，可能跟真實的額度重置邊界對不準時間、導致某次 ping 被整個跳過——變成要等你自己跟 Claude 講話，下一輪 5 小時才會開始算。現在改成用實際重置邊界去重，不再單純比時間，時間對不準也不會再漏掉。
 
 ## [0.28.16] - 2026-07-21
 
-### Improved
-- **Idle CPU and disk I/O cut significantly across the board.** History scanning now uses FSEvents-reported paths to stat only changed files instead of re-walking and stat'ing every Claude/Codex session JSONL (thousands of files) on every refresh tick; a full rescan still runs periodically as a safety net. Startup no longer unconditionally re-downloads the pricing table or checks for updates — both now respect their existing cache freshness windows. Codex rate-limit reads reuse the same file index instead of re-scanning session directories, and SQLite reads (thread metadata, rate limits) are skipped entirely when the underlying database file hasn't changed. The on-disk parse cache is now sharded into 32 buckets so a single active session only rewrites its own shard instead of the whole multi-megabyte cache file.
+### 改善
+- **大幅降低閒置時的 CPU 與磁碟讀寫。** 歷史紀錄掃描現在改用 FSEvents（macOS 檔案變更通知）回報的路徑，只檢查有變更的檔案，不再每次刷新都把 Claude/Codex 上千個 session 記錄檔全部重新列舉並讀取檔案資訊；仍會定期做一次完整掃描當保險。開機不再無條件重新下載價格表或檢查更新——兩者現在都會先看快取夠不夠新鮮才決定要不要連網。Codex 額度讀取改為共用同一份檔案索引，不再重新掃描 session 目錄；SQLite（資料庫）讀取（對話串資訊、額度紀錄）在資料庫檔案沒變時會直接略過、不重新開啟連線。磁碟上的解析快取改成 32 個分桶儲存，單一活躍 session 只會重寫自己那一桶，不是整個數十 MB 的快取檔案。
 
 ## [0.28.15] - 2026-07-19
 
-### Changed
-- **Auto-start is now one shared switch for Claude and Antigravity.** It starts both keepers together; users who previously enabled either individual switch are automatically treated as having both enabled.
+### 變更
+- **自動啟動現在合併為 Claude 與 Antigravity 共用的一個開關。** 開啟後會同時啟動兩個 keeper；先前只開過任一個舊開關的使用者，會自動視為已開啟兩者。
 
-### Fixed
-- **Antigravity auto-start never fired, and the card showed a phantom countdown.** The Antigravity quota API reports a *sliding* reset time (always "in ~5 hours") while a 5-hour window is still untouched at 100% remaining. The 0.28.14 auto-start gate treated any reported countdown as "a window is already running", so it never pinged; it now treats 100% remaining itself as "no active window" (the 5-hour self-throttle still applies). The card likewise stopped rendering that placeholder as a live countdown — at 100% remaining it now shows "Quota full" until a real window starts.
+### 修正
+- **Antigravity 自動啟動從未觸發，卡片還顯示幽靈倒數。** Antigravity 額度 API 在 5 小時視窗完全未使用（剩餘 100%）時，回報的重置時間是會滑動的佔位值（永遠「約 5 小時後」）。0.28.14 的觸發條件把任何倒數都當成「視窗已在跑」，因此從未送出啟動請求；現在改為剩餘 100% 本身即代表「沒有進行中的視窗」（每五小時最多一次的節流不變）。卡片也不再把佔位值畫成即時倒數——剩餘 100% 時改顯示「額度全滿」，直到真正的視窗開始。
 
 ## [0.28.14] - 2026-07-19
 
-### Added
-- **Antigravity can now auto-start its next 5-hour session.** A new opt-in menu toggle watches fresh, non-mock agy quota results and, when the selected model group's session is fully reset with no countdown running, dispatches one background `agy -p ok --model 'Gemini 3.5 Flash (Low)'`. It is off by default, self-throttles for five hours, uses only the local agy CLI, and shows the same Mac sleep warning as the Claude window keeper when enabled.
+### 新增
+- **Antigravity 現在也能自動啟動下一輪 5 小時計時。** 新增預設關閉的選單開關；usage 只在 agy 額度資料新鮮、不是 mock，且選中模型群組的 Session 已回滿又沒有重置倒數時，才於背景送出一次 `agy -p ok --model 'Gemini 3.5 Flash (Low)'`。功能每五小時最多觸發一次、只呼叫本機 agy CLI，開啟時也會顯示與 Claude 版相同的 Mac 睡眠提醒。
 
 ## [0.28.13] - 2026-07-18
 
-### Fixed
-- **Auto-start 5-hour Session now actually fires**: the `claude` CLI resolution list was missing `~/.local/bin/claude` (where the native installer puts it), so inside the `.app` bundle's narrow `PATH` the ping silently found nothing to run and gave up. Also hardened against a false "expired" read: the reset-time check now only trusts the live statusLine hook data source (fallback sources can default a missing `resets_at` to parse time, which the next refresh would misread as already-expired) and requires the expiry to be at least 2 minutes old before firing, filtering out that false positive without meaningfully delaying a real away-from-keyboard ping. Dialog copy from 0.28.12 also simplified — leads with "pauses on sleep, resumes on wake, nothing to manage" and routes the sleep-setting instructions through System Settings search (the exact pane/wording varies by Mac model and macOS version) with a fallback suggestion to ask Claude Code to walk through it.
+### 修正
+- **「自動啟動 5 小時計時」現在真的會送出訊息了**：`claude` 指令的解析清單漏掉了 `~/.local/bin/claude`（原生安裝器的預設路徑），導致在 `.app` 打包後 PATH 很窄的環境下找不到執行檔、靜默放棄。同時加強誤判防護：現在只信任狀態列 hook 的即時資料來源（備援資料源有時會把缺失的到期時間預設成讀取當下，下一輪刷新就會被誤讀成已過期），且到期要超過 2 分鐘的緩衝才觸發，過濾掉這種假陽性，也不會明顯拖延真正離開時的觸發時機。0.28.12 的提醒視窗文案同步簡化——開頭先講「睡著會暫停、醒來自動繼續，平常不用管」，睡眠設定的指引改走系統設定搜尋（實際位置與用詞因機型與 macOS 版本而異），並補一句找不到就請 Claude Code 帶你設。
 
 ## [0.28.12] - 2026-07-18
 
-### Added
-- **New opt-in menu toggle: Auto-start 5-hour Session.** When enabled, usage detects that your Claude 5-hour quota window has just reset and no session is currently running, then fires a single `claude -p ok --model haiku` in the background to immediately start the next window — useful if you're stepping away and want the next 5 hours counting down before you're back. Off by default; sends at most once per 5-hour window (self-throttled), never touches the Anthropic quota API, and silently no-ops if the `claude` CLI can't be found. Enabling it shows a one-time dialog explaining that it needs usage (and the Mac) to stay awake to fire — closing the lid always sleeps the Mac regardless of this setting.
+### 新增
+- **新增選單開關：自動啟動 5 小時計時。** 開啟後，usage 偵測到 Claude 5 小時額度窗剛重置、且目前沒有計時在跑時，會在背景自動執行一次 `claude -p ok --model haiku`，立刻開啟下一輪 5 小時計時——適合離開電腦前先開好，回來時計時已經跑一段。預設關閉；每 5 小時最多只送一次（自我節流），不會打 Anthropic 的額度 API，找不到 `claude` 指令也只會靜默略過不影響 app。開啟當下會跳一次性提醒視窗，說明這需要 usage（連帶 Mac）保持醒著才會觸發——闔上螢幕無論如何都會讓 Mac 睡著，不受此設定影響。
 
 ## [0.28.11] - 2026-07-18
 
-### Changed
-- **The HTML usage report looks less like a template and reads more cleanly**: gold is no longer a blanket accent — it's now reserved for four focal points (headline tail, primary KPI number, the Wrapped kicker badge, the terminal cursor), with the contribution heatmap and donut chart moved to a cohesive teal/mauve palette instead. Fixed three alignment bugs: the KPI card grid now keeps a consistent rhythm across all six cards, the Wrapped section's total-token figure no longer overlaps the phoenix illustration at high digit counts, and the trailing metric card in that section no longer orphans onto its own row. Also cleans up several small "obviously AI-generated" tells: `transition: all` rules now list only the properties that actually animate, card/section borders read at a clearer contrast in both color schemes, disabled/active button states are now styled instead of falling back to defaults, motion respects `prefers-reduced-motion`, and the three share-dialog emoji icons are now matched-stroke SVGs.
+### 變更
+- **HTML 用量報告不再一片黃、質感更乾淨**：金色不再是通用強調色，現在只保留給四個焦點（標題尾端、KPI 主數字、Wrapped 徽章、終端機游標），貢獻熱力圖和圓餅圖改用一致的青綠／灰紫色系。修掉三個對齊問題：KPI 六張卡片的節奏現在一致、Wrapped 區塊的總 token 數字位數多時不再和鳳凰插畫重疊、該區塊最後一張卡片不再落單獨占一行。另外清掉幾個「一看就是 AI 產生」的小毛病：`transition: all` 改成只列會動畫的屬性、卡片與區塊邊框在深色淺色模式下對比都更清楚、按鈕的按下與停用狀態有了樣式而不是套用預設外觀、動畫會尊重「減少動態效果」系統設定，分享對話框的三個表情符號圖示也換成筆觸一致的 SVG。
 
 ## [0.28.10] - 2026-07-18
 
-### Fixed
-- **Switching panels no longer stalls the UI with a beachball**: cold-rebuilding a panel view (evicted from the small LRU cache) reread and reassembled its HTML from disk every time — now the assembled markup is cached per panel and only built once. Selecting a panel no longer forces `NSUserDefaults.synchronize()` on the main thread. Unchanged panel state is no longer redundantly re-serialized and re-injected when a switch triggers two refresh passes back to back. Evicting an old cached panel view from the LRU cache is now deferred off the click's run-loop turn instead of running inline with the new panel's setup.
+### 修正
+- **切換面板不再讓畫面卡出彩虹圈**：面板視圖被小容量 LRU 快取淘汰後需要冷重建時，過去每次都會重新讀檔並在主執行緒組裝 HTML；現在組裝好的內容會依面板快取，只組一次。選面板時不再於主執行緒強制呼叫 `NSUserDefaults.synchronize()`。切換面板若前後觸發兩次刷新，內容沒變時不再重複序列化與注入。從 LRU 快取淘汰舊面板視圖的動作，現在會延到點擊事件結束後才執行，不再跟新面板的建立擠在同一輪。
 
 ## [0.28.9] - 2026-07-17
 
-### Fixed
-- **The Claude Code statusLine hook now works end-to-end on Windows**: four fixes land together. `setup_hook` now prefers an all-ASCII `python.exe` path (falling back to system PATH when the venv path isn't ASCII), since Claude Code on Windows fails to spawn statusLine commands whose path contains non-ASCII characters; `--setup` migrates existing non-ASCII commands. All five hook scripts now read stdin via `sys.stdin.buffer` and decode UTF-8 explicitly (and the forwarder pins `encoding=utf-8` on its subprocess fan-out), since Windows otherwise decodes the piped session JSON with the locale codepage, turning a cwd like `GitHub專案` into mojibake and silently breaking `agentdeck-status.json` writes. Hooks now fall back to `GetUserDefaultUILanguage` when no `LANG`-style env var is set (the Windows norm), matching the tray's existing language detection. `get_width()` now probes the real console width via `CONOUT$` + `GetConsoleScreenBufferInfo` instead of always falling back to a fixed 116 columns, restoring the `(left)` reset-time suffix on wide terminals. Non-Windows behavior is unchanged.
+### 修正
+- **Claude Code 的狀態列 hook 在 Windows 上終於整套打通**：一次合併四個修正。`setup_hook` 現在優先採用全 ASCII 的 `python.exe` 路徑（若虛擬環境路徑非 ASCII 則退回系統 PATH），因為 Claude Code 在 Windows 上無法啟動路徑含非 ASCII 字元的狀態列指令；`--setup` 會遷移既有的非 ASCII 指令。五個 hook 腳本現在都改用 `sys.stdin.buffer` 讀取標準輸入並明確以 UTF-8 解碼（轉發器的子行程也固定 `encoding=utf-8`），因為 Windows 原本會用系統語言的編碼頁解碼管線傳入的工作階段 JSON，導致像 `GitHub專案` 這種路徑變成亂碼，讓 JSON 解析失敗、`agentdeck-status.json` 悄悄寫不出來。沒有設定 `LANG` 類環境變數時（Windows 常態），hook 現在會改用 `GetUserDefaultUILanguage` 判斷語言，跟系統匣既有的語言偵測邏輯一致。`get_width()` 現在會透過 `CONOUT$` + `GetConsoleScreenBufferInfo` 探測真實主控台寬度，不再固定退回 116 欄，讓寬螢幕終端機恢復顯示重置時間的「(left)」後綴。非 Windows 行為不變。
 
 ## [0.28.8] - 2026-07-17
 
-### Fixed
-- **The Windows tray no longer falls back to a stale quota cache when the hook already has live data**: a complete statusLine payload from the hook could still be overridden by the `.claude.json` fallback snapshot whenever its cached timestamp looked newer, even though that cache might describe a different or expired session; the tray now always prefers a complete hook payload, and the "complete" check itself is now stricter — malformed non-numeric percentages in the hook payload no longer count as complete, so a broken payload can't silently blank the quota by skipping the cache.
-- **Windows tray history scanning no longer re-scans every Codex/Claude session log on each refresh tick**: `history_source_scan()` results are now cached for 30 seconds, removing the main source of UI jank in the tray.
+### 修正
+- **Windows 系統匣不再在 hook 已有即時資料時退回舊的配額快取**：即使 hook 已提供完整的即時 statusLine 資料，只要 `.claude.json` 備援快取的時間戳看起來較新，系統匣仍可能被它覆蓋——即使該快取描述的是另一個或已過期的工作階段。現在系統匣一律優先採用完整的 hook 資料；「完整」的判定本身也更嚴謹了——hook payload 裡若混入非數字的損毀百分比，不再被視為完整，避免損毀資料悄悄跳過快取、讓配額顯示空白。
+- **Windows 系統匣的歷史掃描不再每次刷新都重新掃描所有 Codex/Claude 工作階段紀錄**：`history_source_scan()` 的結果現在會快取 30 秒，消除系統匣 UI 卡頓的主要成因。
 
 ## [0.28.7] - 2026-07-17
 
-### Fixed
-- **Claude quota now shows on Windows even when the statusLine hook never fires**: a Claude Code regression stops the hook from being invoked on some Windows setups, leaving the Claude quota card permanently blank. `usage_client.py` now falls back to reading `cachedUsageUtilization` straight out of Claude Code's own `~/.claude.json` when no `agentdeck-status.json` exists, so the card still populates.
-- **Session hooks no longer break on non-ASCII (CJK) project paths on Windows**: the resume, terse-mode, and terse-reminder hook commands could point into the project or app-bundle source path, which failed to execute on Windows when that path contained Chinese/Japanese/Korean characters. Self-heal now normalizes these commands to their canonical `~/.claude/` targets, and the migration is idempotent — it no longer rewrites `settings.json` and appends a duplicate self-heal log entry on every restart once the command is already correct.
+### 修正
+- **即使 statusLine hook 沒觸發，Windows 上也能顯示 Claude 額度**：某些 Windows 環境因 Claude Code 的官方 regression 導致 hook 完全不會被呼叫，Claude 額度卡片因此永遠空白。`usage_client.py` 現在會在找不到 `agentdeck-status.json` 時，改讀 Claude Code 自己寫的 `~/.claude.json` 裡的 `cachedUsageUtilization` 當備援資料源，卡片仍能正常顯示數字。
+- **Windows 上含中日韓字元的專案路徑不再讓 session hook 失效**：接續上次進度、省 token 模式與其提醒這幾個 hook 指令過去可能指向專案或 app bundle 的來源路徑，若該路徑含中日韓字元會在 Windows 上執行失敗。自我修復現在會把這些指令正規化成固定的 `~/.claude/` 目標路徑，且這個遷移具備冪等性——指令已經正確時，不會每次重開都重寫 `settings.json` 並多寫一筆重複的自我修復紀錄。
 
 ## [0.28.6] - 2026-07-17
 
-### Fixed
-- **Windows hook and setup output now uses UTF-8**: statusLine bars keep their intended Unicode glyphs when Claude Code reads a pipe, and `--setup` / `--unsetup` no longer fail in legacy cp950 consoles when localized messages contain characters such as ✓.
-- **Windows panel controls now fit and follow the macOS grouping**: Change Panel and Hide Sections expand in place inside a scrollable menu instead of opening clipped side submenus; the panel menu now ends with only Refresh Now, avoiding duplicate update, position-reset, and quit actions.
-- **Windows quota-card empty areas now drag the panel rather than reorder cards**: the Windows shim temporarily marks only non-interactive card presses as native drag regions, retaining saved card order while buttons and links remain clickable.
+### 修正
+- **Windows hook 與設定訊息現在使用 UTF-8**：Claude Code 從管道讀取 statusLine 時會保留進度條的 Unicode 字元；在傳統 cp950 主控台中，`--setup`／`--unsetup` 遇到 ✓ 等字元的在地化訊息也不再失敗。
+- **Windows 面板控制選單現在能完整顯示，且分組與 macOS 一致**：「更換面板」與「隱藏區塊」會在可捲動選單內就地展開，不再開啟可能被裁切的側邊子選單；面板選單最後只保留「立即更新」，避免重複的更新、位置重設與結束操作。
+- **Windows 額度卡片的空白區域現在會拖曳面板而非重排卡片**：Windows shim 只會暫時把非互動式卡片按壓標記為原生拖曳區，保留已儲存的卡片順序，按鈕與連結仍可正常點擊。
 
-### Added
-- **Windows panel switch buttons now open a focused controls menu**: clicking a panel's built-in Switch Panel button opens a localized HTML overlay for panel, visibility, refresh, notification, and workflow controls; tray-only update, position-reset, and quit actions stay out of the panel menu.
-- **Windows tray panels can now be repositioned**: a subtle top drag handle and quota-card empty areas move frameless panels with grab/grabbing cursors; the position is restored on the next open, clamped to the current work area, and can be reset from the tray menu.
-- **Windows tray menu parity for daily updates and workflow controls**: the Windows system tray now links to AI Update Daily, offers a Hide Sections submenu for Claude, Codex, and Antigravity, supports quota-alert notifications at the same thresholds as macOS, and exposes Resume Last Session and Token Saver toggles. Changes to visible sections are injected into an open panel immediately; quota alerts use native Windows tray notifications. The macOS-only AI Talent Market remains unavailable on Windows.
+### 新增
+- **Windows 面板的更換面板按鈕現在會開啟精簡控制選單**：點擊各主題內建的「更換面板」按鈕，會顯示本地化 HTML 覆蓋層，提供面板、可見區塊、重新整理、通知與工作流程控制；僅系統匣使用的更新、位置重設與結束操作不會出現在面板選單。
+- **Windows 系統匣面板現在可移動**：無邊框面板頂端拖曳把手與額度卡片空白區都可移動視窗，並使用抓取／抓取中游標；位置會在下次開啟時還原並限制於目前工作區，也可從系統匣選單重設。
+- **Windows 系統匣選單補齊每日更新與工作流程控制**：Windows 系統匣現在可開啟 AI 更新日報，並提供 Claude、Codex、Antigravity 的「隱藏區塊」子選單；用量提醒通知沿用與 macOS 相同的跨門檻判斷，也加入「接著上次做」與「省 token 模式」開關。可見區塊的變更會立即注入目前開啟的面板，額度提醒則使用原生 Windows 系統匣通知。僅限 macOS 的 AI 人才市場仍不會在 Windows 出現。
 
 ## [0.28.5] - 2026-07-16
 
-### Fixed
-- **The Claude quota card now explains why it shows no data for desktop-app/headless-only users**: the quota card depends entirely on the statusLine hook, which Claude Code only invokes when rendering an interactive terminal. Users whose usage happens exclusively through the desktop app or other non-TUI surfaces never trigger it, so the card stayed on a generic "status file not found" message even while the hook was correctly installed and Claude Code transcripts kept growing. The card now distinguishes this case — hook installed, transcripts actively updating, status file still missing — and shows a targeted hint that a terminal session needs to run once to sync, instead of the setup-focused message meant for users who never installed the hook at all.
+### 修正
+- **Claude 配額卡片現在會說明為何只用桌面版／背景工作階段的使用者看不到資料**：配額卡片完全依賴 statusLine hook，而 Claude Code 只有在渲染互動式終端機時才會呼叫它。只透過桌面版或其他非終端機介面使用的人永遠不會觸發它，導致卡片即使在 hook 已正確安裝、Claude Code 的對話紀錄持續成長的情況下，仍卡在一句泛用的「找不到狀態檔」訊息。現在卡片會分辨出這種情況——hook 已安裝、對話紀錄持續更新、但狀態檔仍然缺席——並改顯示「需要開一次終端機工作階段來同步」的針對性提示，取代原本只適合「根本沒裝過 hook」使用者看的安裝說明。
 
 ## [0.28.4] - 2026-07-16
 
-### Fixed
-- **Windows panel card order now follows across themes**: reloading a theme after dragging a quota card now rereads the shared saved order before state injection, so every draggable panel opens with the same Claude, Codex, and Antigravity card order.
-- **The tray panel no longer appears as an empty white/dark rectangle at launch**: pywebview's `resize()` and `move()` call `SetWindowPos` with `SWP_SHOWWINDOW`, and the tray placed its still-hidden window as soon as the panel document loaded — dragging the unrendered panel onto the screen on every start. The window is now placed right before it is shown; after a visible panel switch the placement is re-applied as before.
-- **Launching the Windows tray twice no longer leaves a blank white window**: a second instance fought the first over the shared WebView2 user-data directory, so its panel failed to initialize and lingered on screen as a bare white rectangle. The tray now holds a named mutex for its lifetime; a second launch shows an "already running" notice (localized) and exits instead.
-- **The status line no longer drops quota data when two Claude Code instances refresh at once on Windows**: the hook's file lock was blocking on POSIX (`fcntl.flock(LOCK_EX)`) but non-blocking on Windows (`msvcrt.locking(LK_NBLCK)`), and a contended lock raised `OSError` that was swallowed — leaving the `rate_limits` carry-forward read-modify-write in `save()` completely unsynchronized. Windows now polls the lock until it is acquired (10s deadline), matching POSIX semantics; genuinely unsupported locking still falls back to the atomic write alone. Measured over 200 concurrent hook pairs: `rate_limits` were lost 21 times before, 0 times after.
-- **The Claude Code hook no longer crashes on macOS**: a constant introduced by the Windows lock fix above referenced `errno.EDEADLOCK`, which doesn't exist on macOS — importing `usage_statusline.py` failed immediately for every macOS user. Now falls back to `errno.EDEADLK` when `EDEADLOCK` isn't defined.
+### 修正
+- **Windows 面板的卡片排序現在會跨主題同步**：拖曳額度卡後重載其他主題時，會在注入 state 前重新讀取共用的已儲存排序，因此所有支援拖曳的面板都會使用相同的 Claude、Codex 與 Antigravity 卡片順序。
+- **系統匣面板不再於啟動時以空白的白色／深色長方形出現**：pywebview 的 `resize()` 與 `move()` 會以 `SWP_SHOWWINDOW` 旗標呼叫 `SetWindowPos`，而系統匣在面板文件載入完成時就對仍處於隱藏狀態的視窗定位——每次啟動都把尚未渲染的面板硬拉到畫面上。現在改為在顯示視窗前一刻才定位；可見狀態下切換面板後仍會照舊重新定位。
+- **重複啟動 Windows 系統匣不再留下空白的白色視窗**：第二個實例會與第一個爭奪共用的 WebView2 使用者資料目錄，其面板因此初始化失敗，並以一個純白長方形視窗殘留在畫面上。系統匣現在會在存續期間持有具名 mutex；再次啟動時會顯示「已在執行中」的提示（隨介面語言在地化）並直接結束。
+- **Windows 上兩個 Claude Code 同時刷新時，狀態列不再掉失額度資料**：hook 的檔案鎖在 POSIX 上是阻塞式的（`fcntl.flock(LOCK_EX)`），在 Windows 上卻是非阻塞的（`msvcrt.locking(LK_NBLCK)`），而搶鎖失敗拋出的 `OSError` 被吞掉——導致 `save()` 裡 `rate_limits` 的 carry-forward 讀改寫完全沒有同步保護。Windows 現在會輪詢直到取得鎖（10 秒上限），語意與 POSIX 一致；若該檔案系統真的不支援鎖定，仍退回單靠原子寫入。實測 200 組並行 hook：修正前掉失 `rate_limits` 21 次，修正後 0 次。
+- **macOS 上 Claude Code hook 不再直接 crash**：上面那則 Windows 鎖修正引入的常數用到 `errno.EDEADLOCK`，這個屬性在 macOS 上不存在——導致每個 macOS 使用者 import `usage_statusline.py` 就直接失敗。現在改為 `EDEADLOCK` 不存在時退回 `errno.EDEADLK`。
 
 ## [0.28.3] - 2026-07-16
 
-### Fixed
-- **Antigravity quota probing now reads the current Windows CLI OAuth credential**: when the legacy token file is missing or unusable, usage falls back read-only to the `gemini:antigravity` Windows Credential Manager entry. The quota request's user agent now also identifies the actual host platform instead of always claiming Darwin/arm64.
-- **Claude Code quota collection now works with Git Bash on Windows**: status-line commands were written with Windows backslashes, but Claude Code runs them through Git Bash when it is installed, where those backslashes escape the path and prevent the Python hook from launching. New commands use portable forward slashes; startup self-heal migrates existing agentdeck-owned commands, and `--doctor` identifies the legacy form and the recovery step.
+### 修正
+- **Antigravity 額度探測現在會讀取 Windows CLI 目前的 OAuth 憑證**：舊版 token 檔案不存在或不可用時，usage 會唯讀退回 Windows Credential Manager 的 `gemini:antigravity` 項目。額度請求的 user agent 也會識別實際主機平台，不再一律宣稱是 Darwin/arm64。
+- **Windows 搭配 Git Bash 時 Claude Code 額度資料現在可正常收集**：狀態列指令過去寫入 Windows 反斜線路徑；但 Claude Code 偵測到 Git Bash 時會透過它執行指令，反斜線會被當作跳脫字元，導致 Python hook 無法啟動。新指令改用兩種 Windows shell 都可用的正斜線路徑；啟動時的自我修復會遷移既有的 usage 指令，`--doctor` 也會辨識舊格式並提示復原步驟。
 
 ## [0.28.2] - 2026-07-15
 
-### Fixed
-- **Switching panels on Windows no longer risks a blank white window**: the panel-switch action reloaded the document synchronously from inside the pywebview JS-API callback, which could destroy the in-flight JavaScript Promise callback for that call and leave Edge WebView blank. The reload is now deferred until the bridge call has returned to JavaScript, with a pending-switch guard so rapid double-clicks recompute the target panel instead of reusing a stale one. The Windows PyInstaller bundle also now includes the status-line and session-hook source files that the setup and self-heal paths copy at runtime, which it previously omitted.
-- **The Windows tray window no longer flashes white regardless of theme**: pywebview's window background defaults to white, which bled through the frameless window's rounded corners (and any unpainted first frame) even when the active panel's CSS was rendering its dark variant. The window background now reads the system's light/dark theme setting and matches the panel's background color.
+### 修正
+- **Windows 上切換面板不再有變成空白視窗的風險**：切換面板動作過去在 pywebview 的 JS-API 回呼裡同步重新載入文件，可能打斷該次呼叫尚未 resolve 的 JavaScript Promise 回呼，讓 Edge WebView 停在空白畫面。現在會延後到橋接呼叫真正回到 JavaScript 後才重新載入，並加上防重入鎖，快速連點兩下會重新計算目標面板，而不是沿用過期的舊值。Windows 的 PyInstaller 打包現在也會納入 setup 與自我修復流程在執行期會複製的狀態列與 session hook 原始檔，先前遺漏了這些檔案。
+- **Windows 系統匣視窗不再無視主題閃白**：pywebview 視窗背景預設是白色，即使目前面板的 CSS 正在渲染深色版本，這個白色仍會從無邊框視窗的圓角、以及任何尚未繪製完成的首畫面透出來。視窗背景現在會讀取系統的淺色／深色主題設定，並對齊面板實際的背景色。
 
 ## [0.28.1] - 2026-07-15
 
-### Added
-- **Windows auto-detects the interface language**: with no `AGENTDECK_LANG`/`TT_LANG`/`LANG` set, language detection only knew how to ask macOS (`NSLocale`) and always fell back to English on Windows. It now maps `GetUserDefaultUILanguage()` through `locale.windows_locale`, so a zh-TW / zh-CN / ja / ko Windows UI gets the matching interface out of the box. Environment variables still take precedence.
+### 新增
+- **Windows 會自動偵測介面語言**：在沒有設定 `AGENTDECK_LANG`／`TT_LANG`／`LANG` 的情況下，語言偵測過去只會詢問 macOS（`NSLocale`），在 Windows 上永遠退回英文。現在會透過 `locale.windows_locale` 對應 `GetUserDefaultUILanguage()`，因此 zh-TW／zh-CN／ja／ko 的 Windows 介面語言開箱即得到對應的介面語言。環境變數仍有較高優先權。
 
-### Changed
-- **mypy now runs on the Windows CI job too**: the `check-windows` job previously skipped type checking, which is how several Windows-only defects (including the tray-startup crash surface) went unnoticed. The platform-conditional code paths (`termios`/`msvcrt` key readers, `os.getuid`, `time.tzset`, pywebview's `Window | None`) are now typed so that `mypy .` is clean on both macOS and Windows.
+### 變更
+- **mypy 現在也會在 Windows CI job 上執行**：`check-windows` job 過去跳過型別檢查，這正是數個 Windows 限定缺陷（包括系統匣啟動崩潰面）沒被發現的原因。平台條件式的程式碼路徑（`termios`／`msvcrt` 按鍵讀取、`os.getuid`、`time.tzset`、pywebview 的 `Window | None`）現在都有正確型別，讓 `mypy .` 在 macOS 與 Windows 上都乾淨通過。
 
-### Fixed
-- **The Windows tray now actually starts**: importing the tray pulled in the `panels` package, whose `__init__` eagerly imported the PyObjC-backed `panels.web_panel`; on Windows this raised `ModuleNotFoundError: No module named 'objc'`, and because the TUI fallback in `main.py` only recognized a missing `wintray` module, the windowed build exited silently with nothing on screen. The panel registry now imports `web_panel` lazily inside `all_panels()` (macOS behavior unchanged), and the fallback degrades to the TUI whenever any module in the tray's import chain is missing, printing the missing module's name.
-- **The tray menu and JS bridge no longer break at startup**: pystray rejects menu actions whose lambda carries an extra defaulted positional parameter, so building the panel-switch submenu raised `ValueError` before the icon ever appeared; and pywebview serializes every public attribute of the `js_api` object into the JS bridge, so exposing the tray controller on it recursed through the WinForms window graph until the recursion limit. The panel-id binding is now keyword-only, and the bridge holds the controller in a private attribute.
-- **Project names derive correctly from POSIX-style cwds on Windows**: `usage_session_resume._project_from_cwd` and `adapters.claude.project_from_cwd` split paths on `os.sep` only, so a transcript cwd recorded with forward slashes (or a `C:/...`-style path) kept the whole path as the "project" on Windows. Both now normalize separators on Windows before splitting; POSIX behavior is unchanged, since backslashes are legal in POSIX filenames.
-- **The test suite collects and passes on Windows**: the `check-windows` CI job had been red since it was introduced. Five test modules that import PyObjC-backed code at module level are now skipped outside macOS via `collect_ignore`; timezone pinning that relied on `TZ` + `time.tzset()` (unavailable on Windows) now pins the conversion points directly; setup-hook tests no longer hardcode `/usr/bin/python3` or `/bin/sh`; and the Codex adapter/consistency tests now sandbox `ARCHIVED_SESSIONS_DIR` and the JSONL disk cache, which previously leaked real `~/.codex` history on any machine with usage data — regardless of OS.
-- **Encoded project-path decoding now works on Windows**: `project_from_encoded_path` reconstructed a project's real directory from its dash-encoded name by searching from the filesystem root, but a bare Windows `\` has no drive letter and never matches a real path, so decoding always fell back to the raw encoded string. It now anchors at the drive root (e.g. `C:\`) when the encoded name starts with one; POSIX behavior is unchanged.
+### 修正
+- **Windows 系統匣現在真的能啟動了**：載入系統匣會一併載入 `panels` 套件，而其 `__init__` 會立刻 import 依賴 PyObjC 的 `panels.web_panel`；在 Windows 上這會拋出 `ModuleNotFoundError: No module named 'objc'`，且 `main.py` 的 TUI 後備機制只認得 `wintray` 模組本身缺失的情況，導致視窗版建置無聲無息地結束、畫面上什麼都不會出現。面板註冊表現在改為在 `all_panels()` 內惰性 import `web_panel`（macOS 行為不變），且只要系統匣 import 鏈中任一模組缺失，後備機制都會退回 TUI 並印出缺失模組的名稱。
+- **系統匣選單與 JS 橋接不再於啟動時故障**：pystray 會拒絕 lambda 帶有額外預設位置參數的選單動作，因此建立面板切換子選單時會在圖示出現前就拋出 `ValueError`；而 pywebview 會把 `js_api` 物件的所有公開屬性序列化進 JS 橋接，因此把系統匣 controller 掛在上面會沿著 WinForms 視窗物件圖無限遞迴直到達到遞迴上限。面板 id 綁定現在改為 keyword-only，橋接物件也改用私有屬性持有 controller。
+- **Windows 上能正確從 POSIX 風格的 cwd 取出專案名稱**：`usage_session_resume._project_from_cwd` 與 `adapters.claude.project_from_cwd` 過去只用 `os.sep` 切割路徑，因此在 Windows 上讀到以正斜線記錄的 transcript cwd（或 `C:/...` 風格路徑）時，會把整條路徑當成「專案名稱」。兩處現在都會在 Windows 上先統一分隔符再切割；POSIX 行為不變，因為反斜線在 POSIX 檔名中是合法字元。
+- **測試套件在 Windows 上可收集、可通過**：`check-windows` CI job 自新增以來一直是紅的。五個在模組層級 import PyObjC 相關程式碼的測試模組，現在透過 `collect_ignore` 在非 macOS 平台跳過；原本依賴 `TZ` + `time.tzset()`（Windows 沒有）的時區釘選改為直接釘住換算點；setup-hook 測試不再寫死 `/usr/bin/python3` 與 `/bin/sh`；Codex adapter／一致性測試現在會隔離 `ARCHIVED_SESSIONS_DIR` 與 JSONL 磁碟快取——先前不分作業系統，只要機器上有使用紀錄，就會把真實的 `~/.codex` 歷史洩漏進斷言。
+- **編碼過的專案路徑在 Windows 上現在能正確解碼**：`project_from_encoded_path` 過去靠從檔案系統根目錄往下搜尋，把 dash 編碼的名稱還原成真實資料夾，但裸的 Windows `\` 沒有磁碟機代號、永遠比對不到真實路徑，導致解碼一律退回原始編碼字串。現在偵測到編碼名稱以磁碟機代號開頭時會錨定在磁碟根目錄（例如 `C:\`）；POSIX 行為不變。
 
 ## [0.28.0] - 2026-07-15
 
-### Added
-- **Full Windows support**: `usage` now runs natively on Windows, including the TUI, Claude Code status-line hook, and Codex history parsing.
-- **Windows system tray UI**: a dynamic tray icon shows the Claude quota percentage; its tooltip summarizes Claude and Codex windows. Left-click opens the same 11 HTML theme panels used on macOS through WebView2, while the right-click menu offers panel switching, refresh, launch at login, update checks, and quit.
-- **Portable Windows release**: GitHub Releases now include `usage-windows.zip`, containing `usage.exe` for unzip-and-run use. It requires the Microsoft Edge WebView2 Runtime, which is normally already present on Windows 10 and 11.
+### 新增
+- **完整支援 Windows**：`usage` 現在可原生在 Windows 執行，包含 TUI、Claude Code 狀態列 hook 與 Codex 記錄解析。
+- **Windows 系統匣 UI**：動態托盤圖示會顯示 Claude 額度百分比；提示文字摘要 Claude 與 Codex 的各視窗。左鍵透過 WebView2 開啟與 macOS 相同的 11 款 HTML 主題面板，右鍵選單可切換面板、重新整理、設定開機自啟、檢查更新與結束。
+- **免安裝 Windows 發行檔**：GitHub Releases 現在提供 `usage-windows.zip`，內含解壓即可執行的 `usage.exe`。需要 Microsoft Edge WebView2 Runtime；Windows 10 與 11 通常已內建。
 
-### Changed
-- Windows packaging and CI now use PyInstaller and `windows-latest` for both checks and release artifacts. The optional `windows` extra installs pystray, pywebview, and Pillow; macOS-only PyObjC dependencies are guarded by a Darwin platform marker.
-- Status-line hook file locking and generated hook-command quoting are platform-aware, so they work on Windows as well as macOS.
+### 變更
+- Windows 打包與 CI 現在以 PyInstaller 和 `windows-latest` 產生檢查與發行產物。選用的 `windows` extra 安裝 pystray、pywebview、Pillow；僅限 macOS 的 PyObjC 依賴改由 Darwin 平台標記保護。
+- 狀態列 hook 的檔案鎖定與產生的 hook 指令引號已改為平台感知，因此 Windows 與 macOS 都能運作。
 
 ## [0.27.4] - 2026-07-15
 
-### Fixed
-- **Codex card no longer leaves a blank gap (and clips the projects list) on four panels**: the "Cloud Observation", "Aquarium", "Prism Arcade", and "Black Hole" panels pinned every quota card at a fixed two-row height. When Codex reports weekly-only rate limits, the session row correctly hides but these four panels kept the card at its full height while the popover window itself had already shrunk by one row, leaving a blank band inside the Codex card and cutting off the projects card at the bottom. The card now collapses along with the missing row, matching the other five panels; the two-row layout is unchanged when both rows are present.
+### 修正
+- **四款面板的 Codex 卡不再留空白（並害專案清單被裁切）**：「雲霧觀測」「午夜水族箱」「秒鏡街機」「黑洞視界」這四款面板把每張額度卡都釘死在兩列的固定高度。當 Codex 只回報週限額時，Session 那列雖然正確藏起來了，這四款面板的卡片卻沒跟著縮，而彈窗視窗本身已經先扣掉一列的高度，導致 Codex 卡內出現一塊空白、最下面的專案卡被切掉。現在卡片會跟著缺席的列一起收合，跟其餘五款面板行為一致；兩列都在時的版面完全不變。
 
 ## [0.27.3] - 2026-07-15
 
-### Changed
-- **Report generation is much faster, especially on repeat clicks**: generating the "Today"/"Last 7 days" HTML report used to re-open and re-parse every Antigravity conversation database and re-scan Codex's OTel trace log from scratch every time, and recomputed the same entry's local date and working-directory-to-project-name mapping repeatedly within a single report build. All three now cache appropriately (file-level caching for the SQLite sources, in-memory caching scoped to each report build), so a repeat click of the same period is dramatically faster with no change in the numbers shown.
+### 變更
+- **產生使用報告快了不少，尤其是重複點擊時**：以前點「今天」「七日」的 HTML 報告，每次都會把所有 Antigravity 對話資料庫、Codex 追蹤紀錄從頭重新開啟解析一次，而且同一批資料在單次報告產生過程中，本地日期與工作目錄對應的專案名稱也會被重複計算好幾次。現在這三處都補上了對應的快取（SQLite 來源用檔案層級快取、單次報告內的重複運算用當次記憶體快取），同一個期間第二次點擊會快上許多，數字結果不受影響。
 
 ## [0.27.2] - 2026-07-15
 
-### Fixed
-- **Opening the popover no longer stutters**: clicking the menu bar icon used to kick off a data refresh whose UI apply raced the popover's first frame on the main thread, and every open re-injected the full state JSON into the panel even when nothing changed. The refresh now starts only after the popover is fully shown, and state injection is skipped when the payload is identical to the last one (still force-reinjected after a WebKit process reload, so recovery is unaffected).
+### 修正
+- **打開面板不再偶爾卡頓**：原本點選單列圖示的瞬間就觸發資料刷新，刷新結果套回畫面時會跟面板彈出的第一幀搶主執行緒；而且每次打開都把整包狀態 JSON 重新注入面板，即使內容完全沒變。現在刷新改成等面板完全顯示後才開始，狀態內容跟上次相同時直接略過注入（WebKit 行程重載後仍會強制重注，復原不受影響）。
 
 ## [0.27.1] - 2026-07-14
 
-### Fixed
-- **Antigravity card no longer misreads as maxed out**: the card used to show whichever of the two quota groups (Gemini, or Claude/GPT) was most depleted, so an exhausted Claude/GPT five-hour window read as "100% used" even while the Gemini group the account actually runs on still had plenty left. The card now always tracks the Gemini group (falling back to the most-depleted group only if Gemini is ever absent from the API response).
+### 修正
+- **Antigravity 卡不再誤判成額度爆滿**：原本卡片會挑兩個額度群組（Gemini、或 Claude/GPT）中剩最少的那組顯示，導致 Claude/GPT 組的 5 小時額度歸零時，卡片顯示「100% 已用」，即使帳號實際在跑的 Gemini 組明明還剩很多。現在卡片固定追蹤 Gemini 組（只有官方 API 哪天真的沒回傳 Gemini 組時，才退回顯示剩最少的那組）。
 
 ## [0.27.0] - 2026-07-13
 
-### Added
-- **AI Update Daily** — clicking this menu item opens the public [web page](https://aqua5230.github.io/ai-updates/) in your default browser. The page auto-updates every day, covers Claude Code, Codex, and Antigravity, and keeps the full update history; reviewed updates show a plain-language summary in all five UI languages, while unreviewed ones show the official source text.
+### 新增
+- **「AI 更新日報」**——點下這個選單項目會用預設瀏覽器開啟公開[網頁](https://aqua5230.github.io/ai-updates/)。網頁每天自動更新、涵蓋 Claude Code、Codex、Antigravity 三套工具、保留完整更新歷史；已審核的更新顯示五語白話版，未審核的顯示官方原文。
 
-### Changed
-- **HTML report's "AI Tool Update Digest" section removed** — the digest has graduated into its own dedicated web page, so the HTML deep report no longer duplicates it.
+### 變更
+- **HTML 報告移除「AI 工具更新速報」區塊**——該資訊已獨立成上述網頁，HTML 深度報告不再重複刊載。
 
 ## [0.26.1] - 2026-07-13
 
-### Fixed
-- **Codex card no longer shows an untitled "--" row**: mid-day on 2026-07-13, OpenAI's server-side rate-limit payload switched to weekly-only (the 5-hour window vanished with the CLI version unchanged), and the loader — which mapped fields by position — shoved the weekly number into the session slot, leaving a blank row behind. Rate-limit windows are now classified by their duration, a window the server no longer reports is hidden entirely (the card shrinks by one row), and the menu-bar Codex percentage falls back to the weekly value while the 5-hour limit is absent. If OpenAI brings the 5-hour window back, both rows return automatically.
-- **Antigravity reset countdowns tick down live** instead of freezing at the last-fetched value until the next refresh.
+### 修正
+- **Codex 卡不再出現無標題的「--」空列**：2026-07-13 白天起，OpenAI 伺服器端的額度回報改成只剩週限額（5 小時視窗消失、CLI 版本沒變），而讀取器是照「欄位位置」硬對映——週數字被塞進 Session 槽、留下一條空列。現在改按視窗長度歸位，官方不再回報的視窗整列隱藏（卡片跟著縮一列），5 小時限額缺席期間選單列的 Codex 百分比改顯示週值。哪天官方把 5 小時視窗加回來，兩列會自動恢復。
+- **Antigravity 重置倒數即時遞減**，不再凍結在上次抓到的數字等下一輪刷新。
 
-### Changed
-- **Antigravity quota now comes straight from the official quota API**: usage reads the sign-in token the Antigravity CLI already stores on your machine (strictly read-only — the file is never modified) and queries the official quota endpoint directly, replacing the background `/quota` CLI probe. Numbers refresh every ~5 minutes instead of 15, countdowns are exact, no helper process is spawned, and the call reads quota metadata only — it never consumes your model quota. Any fetch failure still falls back to the cached snapshot with the usual stale badge. The data-source description in all five README languages is updated to match.
-- **Less idle disk I/O**: the JSONL scan caches are flushed to disk at most once per 5 minutes (with a final flush on quit), rapid file-event bursts coalesce into a single refresh, and the four per-project ranking windows are aggregated in one pass over history.
-- Antigravity token rows in the HTML report are labeled "Antigravity" instead of "unknown".
+### 變更
+- **Antigravity 額度改為直接向官方額度 API 查詢**：usage 讀取 Antigravity CLI 本來就存在你機器上的登入 token（嚴格唯讀——絕不改寫該檔案），直接查詢官方額度端點，取代原本背景執行 `/quota` 的 CLI 探測。數字約每 5 分鐘刷新（原本 15 分鐘）、倒數精確、不再啟動任何背景程序，且這個呼叫只讀額度資訊——絕不消耗你的模型額度。取用失敗照舊退回快取並掛過期徽章。五種語言 README 的資料來源說明同步更新。
+- **閒置磁碟 I/O 更少**：JSONL 掃描快取最多每 5 分鐘落盤一次（結束時補一次收尾寫入）、密集檔案事件合併成單次刷新、四個專案排行窗口改為一趟歷史掃描算完。
+- HTML 報告中的 Antigravity token 列改標示「Antigravity」，不再是「unknown」。
 
 ## [0.26.0] - 2026-07-13
 
-### Added
-- **Antigravity (Gemini) support** — usage now watches a third AI tool alongside Claude Code and Codex:
-  - **Quota card in every panel**: session + weekly limits appear as a third card in the classic panel and all nine themed quota panels, each styled in its host theme's visual language, with the same stale-data badge and hide toggle as the other two tools.
-  - **Official numbers, no API poking**: quota is read by periodically running the Antigravity CLI's own `/quota` command in the background (15-minute cache) — identical to typing it yourself. No OAuth-token scraping, no internal API calls.
-  - **Menu bar segment**: the Antigravity mark and session percentage join the menu bar, complete with a **lion spirit companion** whose animation speed follows Antigravity's own token burn rate — the phoenix (Claude) and dragon (Codex) finally have a third packmate.
-  - **HTML report integration**: Antigravity token usage from local logs feeds the deep report.
-- **Drag to reorder quota cards**: press and drag the Claude / Codex / Antigravity cards in any panel to swap their order. The arrangement is validated, persisted, shared across all themes, and survives restarts.
+### 新增
+- **Antigravity（Gemini）支援**——usage 在 Claude Code 與 Codex 之外，開始看顧第三套 AI 工具：
+  - **每款面板都有額度卡**：Session 與每週限額以第三張卡片進駐 classic 與其餘九款主題面板，各自融入該主題的視覺語言，並帶著跟另外兩套工具相同的過期警示徽章與隱藏開關。
+  - **官方數字、不碰 API**：額度是背景定期執行 Antigravity CLI 自己的 `/quota` 指令取得（15 分鐘快取）——跟你自己打指令一模一樣。不刮 OAuth token、不打內部 API。
+  - **選單列區段**：Antigravity 標誌與 Session 百分比進駐選單列，還帶著一隻**獅子神獸**——動畫速度跟著 Antigravity 自己的 token 燃燒率跑，鳳凰（Claude）和飛龍（Codex）終於有第三位夥伴。
+  - **HTML 報告整合**：本機紀錄中的 Antigravity token 用量納入深度報告。
+- **額度卡拖曳排序**：在任何面板按住 Claude／Codex／Antigravity 卡片上下拖曳即可交換順序。排法經過驗證後保存，所有主題共用、重開也記得。
 
-### Fixed
-- **Antigravity quota probe hardening**: the probe no longer hangs on Antigravity CLI 1.1.1's new workspace-trust prompt, and the stale-data tooltip now describes the probe behavior accurately.
-- Fuzz harness imports are static so PyInstaller bundles the parser modules (CI fuzzing only; no user-facing impact).
+### 修正
+- **Antigravity 探測強化**：探測不再被 Antigravity CLI 1.1.1 新增的信任資料夾提示卡住；過期資料的提示文字如實描述探測行為。
+- Fuzz 測試改用靜態 import，讓 PyInstaller 能打包解析模組（僅影響 CI fuzzing，與使用者無關）。
 
-### Changed
-- README now ships in five languages (English, Traditional Chinese, Simplified Chinese, Japanese, Korean) with a cleaned-up presentation.
-- AI Tool Update Digest refreshed (Claude Code 2.1.206 / Codex 0.144.1 / Antigravity 1.1.1).
+### 變更
+- README 出貨五種語言（英文、繁中、簡中、日文、韓文），版面同步整理。
+- AI Tool Update Digest 更新（Claude Code 2.1.206／Codex 0.144.1／Antigravity 1.1.1）。
 
 ## [0.25.4] - 2026-07-11
 
-### Changed
-- **AI Talent Market: full role-library refresh** — all 69 role prompts are restructured (XML-tagged sections, explicit tool guidance, contrastive good/bad examples) for noticeably more reliable in-conversation behavior, across the now 22 packs / 69 roles. The library ships inside the .app bundle, so this update is the way to get it.
-- **The menu bar polls less when you're not looking**: the fallback refresh timer stretches from 60s to 300s while the popover is closed, and snaps back (with an immediate refresh) the moment it opens. File-change-driven updates are untouched, so the pinned numbers stay just as live — this only cuts idle CPU wakeups.
-- **HTML report density polish**: tighter stat tiles, table rows, and trend rows.
+### 變更
+- **AI 人才市場：角色庫全面翻新**——69 個角色的提示詞全部重構（XML 標籤分節、明確工具指引、好壞對照範例），對話中的表現明顯更穩定；角色庫現為 22 包 69 角色。角色內容隨 .app 一起出貨，要拿到這批新內容就是更新到本版。
+- **沒在看的時候少輪詢**：選單列彈出面板關閉時，保底刷新計時器從 60 秒放慢到 300 秒，面板一開立即刷新並恢復原節奏。檔案變動驅動的即時更新完全不受影響——釘在選單列的數字一樣即時，省的只是閒置時的 CPU 喚醒。
+- **HTML 報告密度微調**：統計磚、表格列、趨勢列排得更緊湊。
 
 ## [0.25.3] - 2026-07-10
 
-### Added
-- **Token Saver now holds up in long conversations**: enabling it also installs a per-message reminder hook (`usage_terse_reminder.py`, UserPromptSubmit) that re-injects a one-line terse nudge with every message you send. In an A/B test on real Claude sessions the start-of-session instruction alone drifted badly — late-conversation replies grew +84% (603 → 1108 chars) — while the tail reminder held them steady (538 → 674), keeping late replies ~40% shorter. Existing installs pick the new hook up automatically via self-heal. Claude Code only (Codex CLI has no UserPromptSubmit equivalent).
+### 新增
+- **省 token 模式在長對話中不再走鐘**：開啟後會多裝一支逐訊息提醒 hook（`usage_terse_reminder.py`，UserPromptSubmit），你每送一則訊息就自動補一行精簡提醒。真實 Claude 對話的 A/B 實測顯示：只靠對話開頭的指示，講到後段回覆會膨脹 +84%（603 → 1108 字元）；加上尾部提醒後幾乎持平（538 → 674），後段回覆少約 40%。既有使用者升級後由自我修復機制自動補裝。僅 Claude Code（Codex CLI 沒有等價的 UserPromptSubmit hook）。
 
-### Changed
-- **"Terse Mode" is renamed "Token Saver"** in the menu across all five languages — the name now states the benefit instead of the mechanism.
-- **Spirit critters are now always on**: the phoenix/dragon animation lives permanently beside the percentages; the "Summon Spirits / Dismiss Spirits" toggle is gone.
+### 變更
+- **「精簡模式」更名「省 token 模式」**（五語同步）——名字直接講好處，不再講手段。
+- **神獸改為常駐**：鳳凰／飛龍動畫永遠住在百分比旁，「召喚神獸／收回神獸」切換選項移除。
 
 ## [0.25.2] - 2026-07-10
 
-### Fixed
-- **Phoenix menu-bar animation was nearly static in 0.25.1**: that release accidentally replaced all 5 menu-bar animation frames with near-identical high-res art meant only for the Year Wrapped report card, so the animation barely changed between frames. The menu-bar frames are restored to the original animated set, and the Wrapped report card now reads from its own dedicated `wrapped.png` asset per critter so the two no longer share a file.
+### 修正
+- **v0.25.1 選單列鳳凰動畫幾乎靜止不動**：該版誤把選單列 5 幀動畫全部換成本來只想給年度 Wrapped 報告卡片用的高解析度圖，5 幀彼此差異太小，播放起來幾乎沒有動態變化。現已把選單列動畫幀復原成原本能正常播放的那組，Wrapped 報告卡片改讀各神獸專屬的獨立 `wrapped.png` 圖檔，兩邊不再共用同一個檔案。
 
 ## [0.25.1] - 2026-07-10
 
-### Changed
-- **Sharper phoenix critter sprites**: the Claude-side menu-bar critter animation now ships 216×216 source art (up from 54×54) for crisper rendering on Retina displays; the template-image alpha masking is unchanged.
+### 變更
+- **鳳凰神獸圖示畫質提升**：選單列上 Claude 的鳳凰動畫幀原始美術從 54×54 換成 216×216，Retina 螢幕顯示更清晰；template image 的透明遮罩機制不變。
 
 ## [0.25.0] - 2026-07-10
 
-### Added
-- **Save the report as a .png image**: the share dialog gains a third button next to .html/.csv. It renders the report with a vendored html-to-image v1.11.13 (MIT) — fully offline, no network, and it honors the "hide project names" toggle so a masked screenshot is one click.
+### 新增
+- **報告可另存 .png 圖卡**：分享對話框在 .html／.csv 旁多了第三顆按鈕，內嵌 html-to-image v1.11.13（MIT 授權）在本機直接把報告畫成圖片——全程離線不連網，且完整套用「隱藏專案名稱」勾選狀態，一鍵就能拿到打碼截圖。
 
-### Changed
-- **Report visual redesign (warm glassmorphism)**: warm ink background with amber/jade glows, frosted-glass cards over a subtle noise texture, and a gold/jade/coral accent palette replacing the old blue/purple. The contribution heatmap turns gold, the base type scale grows to 17.5px with a clearer size hierarchy, and headings/body adopt Grenette/Styrene font stacks (system-font fallbacks; no font files embedded or fetched).
-- **Share dialog copy is audience-neutral**: the "Send to a colleague / manager" heading is now "Share a copy" across all five locales.
+### 變更
+- **報告視覺全面改版（暖色玻璃擬態）**：暖墨色底配琥珀／翡翠光暈、毛玻璃卡片疊細噪點質感，強調色改為金／翡翠／珊瑚（取代原本的藍紫）；貢獻熱力圖換成金色系，基準字級放大到 17.5px 並整理大小層級，標題與內文改用 Grenette／Styrene 字型堆疊（未安裝時自動用系統字型，不內嵌、不下載任何字型檔）。
+- **分享對話框文案改中性**：「傳給同事 / 主管」五個語系一律改為「分享一份副本」。
 
-### Security
-- CI hardening while closing out this cycle's supply-chain checklist: ClusterFuzzLite + Atheris fuzzing for the JSONL parsers (base image pinned by digest), CodeQL actions bumped to v4, and routine action bumps (setup-python 6.3.0, setup-uv 8.3.2) — all dependabot PRs merged and both OpenSSF Scorecard alerts triaged.
+### 安全性
+- 本輪供應鏈檢查收尾的 CI 強化：為 JSONL 解析器加上 ClusterFuzzLite＋Atheris 模糊測試（基底映像以 digest 釘版）、CodeQL actions 升上 v4、例行 action 升級（setup-python 6.3.0、setup-uv 8.3.2）——dependabot PR 全數合併，兩則 OpenSSF Scorecard 警示已審視處置。
 
 ## [0.24.11] - 2026-07-08
 
-### Fixed
-- **AI Tool Update Digest went blank after upgrading from 0.24.9 or earlier**: the new versions-array schema introduced in 0.24.10 caused `_normalize_payload` to return an empty list (not `None`) when reading a pre-0.24.10 cache file, which `load_ai_updates` then treated as a valid "fresh" empty result instead of refetching from GitHub — hiding the section for up to 24h (the cache TTL) on every machine that had used an older version. Legacy-schema caches now correctly trigger a refetch.
+### 修正
+- **從 0.24.9（含）以前升級後「AI 工具更新速報」整區塊消失**：0.24.10 新增的歷史陣列結構讓 `_normalize_payload` 在讀到升級前的舊格式快取時回傳空陣列（而非 `None`），`load_ai_updates` 誤判成「有效但剛好沒內容」，不會重新向 GitHub 抓取，導致每台裝過舊版的機器都要等快取過期（最長 24 小時）才會恢復顯示。現在讀到舊格式快取會正確判定失效並立即重抓。
 
 ## [0.24.10] - 2026-07-08
 
-### Added
-- **AI Tool Update Digest now keeps history**: previously each refresh of `ai_updates.json` overwrote the prior period, so older updates were lost. The digest now stores every tool's updates as a versions array (newest first) and the report adds a "View update history" collapsible section beneath each card so older periods stay browsable.
+### 新增
+- **「AI 工具更新速報」現在會保留歷史**：以前每次刷新 `ai_updates.json` 都會蓋掉上一期內容，較早的更新就此消失。現在每個工具的更新改存成陣列（新到舊），報告卡片下方新增「查看歷史更新」可展開區塊，較早期別仍然查得到。
 
-### Changed
-- **AI Tool Update Digest content refreshed**: Claude Code 2.1.202, Codex 0.143.0-alpha.38, Antigravity 1.0.16 (covering 2026-07-01~07-08).
+### 變更
+- **「AI 工具更新速報」內容更新**：Claude Code 2.1.202、Codex 0.143.0-alpha.38、Antigravity 1.0.16（涵蓋 2026-07-01~07-08）。
 
 ## [0.24.9] - 2026-07-08
 
-### Fixed
-- **Analysis report occasionally failed with `ZipImportError: bad local file header`**: `analyzer/reporter.py` imported three single-file modules (`persona_loader.py`, `subscription.py`, `ai_updates_loader.py`) that lived outside the package directories py2app already unzips, so they still loaded through `python313.zip` — the same failure mode the earlier adapters/analyzer/ui packaging fix was meant to close. Moved all three under `analyzer/` so the entire report pipeline is now free of zipimport.
+### 修正
+- **分析報告偶爾產生失敗，跳出 `ZipImportError: bad local file header`**：`analyzer/reporter.py` 依賴的三個單一檔案模組（`persona_loader.py`、`subscription.py`、`ai_updates_loader.py`）躺在 py2app 既有解壓套件目錄之外，仍會被打包進 `python313.zip`、走 zipimport 載入——跟先前 adapters/analyzer/ui 打包修復要堵住的是同一種失敗模式。已把三個模組搬進 `analyzer/` 目錄，報告流程現在完全不再經過 zipimport。
 
 ## [0.24.8] - 2026-07-07
 
-### Changed
-- **AI Talent Market catalog expanded**: the bundled `instate-cli` was rebuilt from upstream to add 3 new roles — Technical Writer and UX Researcher (extending the solo-software-studio and solo-product-consultant packs to 4 roles each) and AI Visual Production (extending the content-creator pack to 4 roles) — plus a rename of every role's persona name to a real singer's given name across all five locales for easier recall. No usage code changed; this is a vendored-content refresh.
+### 變更
+- **AI 人才市場角色庫擴充**：內建的 `instate-cli` 已從上游重新編譯，新增 3 個角色——技術文件寫手與 UX 研究員（讓軟體工作室、產品顧問兩包各擴充到 4 個角色）、AI 視覺製作（讓內容創作包擴充到 4 個角色）——並把所有角色的人設名字改成真實歌手的名字（五語言皆同步），方便記憶。usage 本身程式碼沒有變動，純粹是內建內容的更新。
 
 ## [0.24.7] - 2026-07-07
 
-### Fixed
-- **Black hole panel: the black hole was barely visible behind the cards**: card surface opacity (0.28 → 0.14) and backdrop blur (4px → 1.5px) were heavy enough to bury the accretion disk and event horizon drawn on the background canvas. Both were lowered so the black hole stays clearly visible through the cards.
-- **Midnight aquarium panel: fish and jellyfish were hidden behind the cards**: same treatment as the black hole panel — card surface opacity (0.22/0.28 → 0.13/0.17) and backdrop blur (12px → 2.5px) lowered so the aquarium life stays visible while text remains readable.
+### 修正
+- **黑洞面板：黑洞被卡片擋到幾乎看不見**：卡片底色不透明度（0.28 → 0.14）跟毛玻璃模糊（4px → 1.5px）太重，把背景 canvas 畫的吸積盤與事件視界整個蓋掉。兩個值調低後，黑洞現在清楚透在卡片後面。
+- **午夜水族箱面板：魚跟水母被卡片擋住**：跟黑洞面板同一套修法——卡片底色不透明度（0.22/0.28 → 0.13/0.17）與毛玻璃模糊（12px → 2.5px）調低，水族箱生物看得見、文字仍然好讀。
 
-### Docs
-- **README overhauled in both languages**: restructured along conventions surveyed from well-maintained open-source developer tools, with a complete inventory of current features.
+### 文件
+- **README 中英雙語全面翻新**：參考維護良好的開源開發者工具的 README 慣例重新編排，完整盤點現有功能。
 
 ## [0.24.6] - 2026-07-07
 
-### Changed
-- **AI Talent Market code-reviewer role strengthened**: the bundled `instate-cli` was rebuilt from upstream — the code-reviewer role now carries a security/boundary-condition checklist and flags over-engineering, folded into the existing persona rather than added as overlapping new roles. No usage code changed; this is a vendored-content refresh.
+### 變更
+- **AI 人才市場的程式碼審查角色強化**：內建的 `instate-cli` 已從上游重新編譯——程式碼審查角色補上資安／邊界條件檢查清單，並會點出過度設計，直接併入既有角色而不是另開重疊的新角色。usage 本身程式碼沒有變動，純粹是內建內容的更新。
 
 ## [0.24.5] - 2026-07-06
 
-### Changed
-- **AI Talent Market catalog expanded**: the bundled `instate-cli` was rebuilt from upstream to add 4 new role packs (12 new roles) — content creator, event planner, translation/localization, and personal finance advisor. No usage code changed; this is a vendored-content refresh.
+### 變更
+- **AI 人才市場的角色目錄擴充**：內建的 `instate-cli` 已從上游重新編譯，新增 4 個角色包（12 個新角色）——內容創作者、活動企劃、翻譯在地化、個人理財顧問。usage 本身程式碼沒有變動，純粹是內建內容的更新。
 
 ## [0.24.4] - 2026-07-05
 
-### Changed
-- **AI Talent Market catalog expanded**: the bundled `instate-cli` was rebuilt from upstream to add 11 new role packs (33 new roles) — customer support, virtual assistant, ecommerce operator, career coach, data analyst consultant, sales, game studio, HR recruiting, project management, paid media, and product consulting — plus a guardrail line each on the contract-review, tax-filing-prep, and design-proposal-quote roles covering unauthorized-practice and IP-assignment risk. No usage code changed; this is a vendored-content refresh.
+### 變更
+- **AI 人才市場的角色目錄擴充**：內建的 `instate-cli` 已從上游重新編譯，新增 11 個角色包（33 個新角色）——客服、虛擬助理、電商營運、生涯教練、數據分析顧問、業務、遊戲工作室、人資招募、專案管理、付費媒體、產品顧問——另外也在合約審閱、報稅代辦、設計提案報價這三個既有角色各補上一條法遵警語（未經授權執業／智慧財產權歸屬風險）。usage 本身程式碼沒有變動，純粹是內建內容的更新。
 
 ## [0.24.3] - 2026-07-05
 
-### Fixed
-- **AI Talent Market panel always showed pack/role names in Chinese**: `talent_market_bridge.list_state()` called the bundled `instate-cli` without a language argument, so it always fell back to its default locale even though the CLI now supports five-language translations (`zh-TW`/`zh-CN`/`en`/`ja`/`ko`) for pack and role names. usage's already-detected UI language is now passed through, so the panel matches the rest of the app instead of being locked to Chinese.
+### 修正
+- **AI 人才市場面板的角色/團隊名稱永遠顯示中文**：`talent_market_bridge.list_state()` 呼叫內建的 `instate-cli` 時沒帶語言參數，即使 CLI 現在已支援五種語言（`zh-TW`/`zh-CN`/`en`/`ja`/`ko`）的團隊與角色名稱翻譯，還是永遠退回預設語系。現在會把 usage 已經偵測到的介面語言傳進去，面板會跟著整個 App 的語言走，不再固定顯示中文。
 
 ## [0.24.2] - 2026-07-05
 
-### Fixed
-- **Session-resume handoff could surface skill-expansion noise and duplicate the same request**: `usage_session_resume.py`'s `_parse_session` collected every `type: "user"` transcript entry as a candidate "recently working on" request without checking Claude Code's `isMeta` flag, so skill/command expansions injected into the transcript (e.g. a full `SKILL.md` body) could show up as if they were a real request. Dedup also only compared against the immediately preceding request, so the same request separated by one of these injected entries counted twice, wasting handoff slots that are capped at 3. `isMeta: true` entries are now skipped, and dedup checks against every request seen so far, not just the last one. (Reported in #46 by @apple8409.)
+### 修正
+- **重開對話時「接回進度」的清單可能混進技能展開的雜訊、還把同一個請求算兩次**：`usage_session_resume.py` 的 `_parse_session` 之前只要是 `type: "user"` 的逐字稿條目就全部當成候選的「最近在忙的」請求，沒檢查 Claude Code 的 `isMeta` 標記，導致技能／指令展開被寫進逐字稿時（例如整份 `SKILL.md` 內容）會被誤當成一筆真實請求。去重邏輯也只跟前一筆比對，同一個請求中間夾了一筆這種注入內容就會被判定成不同筆、重複算，白白佔掉上限只有 3 筆的交接欄位。現在 `isMeta: true` 的條目會直接跳過，去重也改成跟目前為止看過的所有請求比對，不只比對前一筆。（由 @apple8409 於 #46 回報。）
 
 ## [0.24.1] - 2026-07-05
 
-### Fixed
-- **Menu bar could peg a full CPU core after launch on machines with unpriced models in their history**: `pricing.py`'s model-to-price lookup ran a full linear scan of the entire LiteLLM pricing table for every history entry whose model wasn't in it, with no caching of the "not found" result — so every refresh re-scanned the same unresolvable models (e.g. sessions logged by a non-Anthropic/OpenAI backend) from scratch, thousands of times per refresh on machines with a lot of that history. The lookup is now memoized per pricing-table generation, so a given unresolvable model is only scanned once.
-- **Claude Code history reparsed from scratch on every relaunch**: `history_loader.py`'s per-file JSONL parse cache only lived in memory, unlike the matching Codex-side cache added in 0.24.0, so every app restart — including auto-launch at login — paid the full history reparse again (measured 5+ seconds on a long-lived install). It now persists to disk the same way the Codex loader already does.
+### 修正
+- **裝置的歷史紀錄裡有查不到價格的 model 時，選單列開啟後可能把一整個 CPU 核心燒滿**：`pricing.py` 幫 model 對應價格時，對每一筆查不到價格的紀錄都會把整張 LiteLLM 價目表從頭掃一遍，而且完全沒有快取「查不到」這個結果——每次刷新都要重新掃描一次同樣查不到的 model（例如非 Anthropic／OpenAI 後端留下的紀錄），這類紀錄一多，一次刷新就要重複掃描上千次。現在這個查詢結果會依價目表版本記憶化，同一個查不到的 model 只需要真的掃描一次。
+- **Claude Code 歷史紀錄每次重開機都要重新完整解析**：`history_loader.py` 的單檔解析快取只存在記憶體裡，跟 0.24.0 新增的 Codex 那邊對應快取不一樣，所以每次 app 重啟（包含開機自動啟動）都要重付一次完整解析成本（長期使用的裝置實測要 5 秒以上）。現在跟 Codex 讀取器一樣改成有磁碟持久化。
 
 ## [0.24.0] - 2026-07-05
 
-### Added
-- **AI Talent Market**: a new menu-bar panel for installing curated teams of Claude Code subagent personas — organized by scenario (a one-person law practice, a solo software studio, and more) — straight into `~/.claude/agents/`; once installed, call a persona by name in any Claude Code conversation. Search or browse by team, drill into a role for a full write-up and one-click launch into a new Terminal session, and pick which folder each launch targets instead of it being guessed for you. Runs fully local through a bundled companion CLI — no account, no network call.
+### 新增
+- **AI 人才市場**：新增選單列面板，能依情境把一整套 Claude Code 角色人設檔（律師事務所、軟體工作室等）一次安裝進 `~/.claude/agents/`，裝好後在任何 Claude Code 對話裡點名角色就能用。可搜尋或依團隊瀏覽，點進角色可看到完整角色說明與常用任務，並一鍵在新 Terminal 視窗啟動；啟動要用哪個資料夾自己選，不會被悄悄代選。完全本機執行，內建一支小型 CLI，免帳號、不連網。
 
-### Fixed
-- **Menu bar refresh could take 17+ seconds on long-running installs**: the Claude Code / Codex history loaders cached parsed JSONL files behind a 512-entry LRU, too small once a machine has accumulated more sessions than that — every refresh evicted and fully re-parsed files that had just been cached the tick before. Both loaders now parse incrementally from the last confirmed byte offset instead of re-reading whole files, the cache is sized to hold a real working set, and a redundant title update that forced a full relayout on every critter-animation frame has been removed too.
+### 修正
+- **長期使用的裝置，選單列刷新可能要花 17 秒以上**：Claude Code／Codex 的歷史紀錄讀取器把解析過的 JSONL 檔案快取在只有 512 筆上限的 LRU 裡，用久了 session 數一旦超過這個上限，每次刷新都會把上一輪才快取好的檔案整批擠掉、重新完整解析一次。現在兩個讀取器都改成從上次確認的位元組位置開始增量解析，不用整份重讀，快取上限也調高到真的裝得下實際使用量；另外也拿掉小神獸動畫每一格都會觸發整個選單列重新排版的一次多餘標題更新。
 
 ## [0.23.2] - 2026-07-04
 
-### Fixed
-- **Matrix panel's countdown and footer text was too dim to read**: `--muted` opacity was bumped up and a subtle glow (matching the card titles) added to the reset countdown and footer status lines.
-- **Black Hole panel's signature animation was barely visible**: the accretion-disk scene was drawn directly behind the cards, and their 16px frosted-glass blur was smearing it into a faint blob; the blur is now much lighter so the disk, event horizon, and particle stream actually show through.
-- **Newspaper and Win95 panels could clip the last project row**: both panels' outer layout was missing the `flex: none` / `flex: 1` split every other panel uses to absorb variable content height, so with 3 projects showing, the bottom of the list (and sometimes the footer) got silently cut off by `overflow: hidden`. Layout fixed and registered panel heights recalibrated to the real measured minimum for each panel (Win95 800→870, others tightened after also trimming row spacing).
-- **Newspaper panel's row spacing was looser than every other panel**: track height, line-heights, and card padding are now in line with Classic's proportions, so the panel isn't noticeably taller without needing extra clipping-avoidance padding.
+### 修正
+- **駭客任務面板的重置倒數與 footer 文字太暗看不清楚**：`--muted` 透明度調高，並加上跟標題同款的淡綠發光，讓重置倒數與速率/狀態這幾行更清楚。
+- **黑洞面板的招牌動畫幾乎看不到**：吸積盤場景畫在卡片正後方，卡片 16px 的毛玻璃模糊把整個場景糊成一團光暈；模糊值大幅調輕後，吸積盤、事件視界、粒子流都能清楚透出來了。
+- **報紙與 WIN95 面板專案清單最後一列可能被裁掉**：這兩款面板的版面少了其他面板都有的 `flex: none`／`flex: 1` 搭配（用來吸收內容高度變化），顯示 3 個專案時，清單底部（有時連 footer 一起）會被 `overflow: hidden` 悄悄裁掉。已修正版面邏輯，並依實測結果重新校準每款面板的登記高度（WIN95 800→870，其餘兩款在收緊行距後也一併調整）。
+- **報紙面板的行距比其他面板都鬆**：進度條高度、行高、卡片內距都調整到跟 classic 相近的比例，不用靠額外留白防裁切，面板本身也不會明顯偏高。
 
-### Changed
-- **Newspaper panel now leans into the "aged paper" look**: deeper amber tone, a faint compass-rose watermark, ink-shadowed titles, and a double-line decorative border.
+### 變更
+- **報紙面板更有「泛黃古紙」的味道**：底色改成更深的琥珀色、加了一個很淡的羅盤浮水印、標題文字改用墨色陰影，外框也换成雙線裝飾框。
 
-### Added
-- **Terse Mode now covers Codex CLI too**: the same menu-bar toggle installs a matching SessionStart hook for Codex when it's detected on the machine, using Codex's native hooks system (`[features] hooks = true` plus a `~/.codex/hooks.json` entry). No separate switch — one toggle, both tools. Turning it off only removes usage's own hook entry; it leaves the `hooks` feature flag and any other hooks you've installed for Codex untouched.
+### 新增
+- **精簡模式現在也對 Codex CLI 生效**：同一顆選單列開關，偵測到機器上有裝 Codex 就順便幫它裝一份對應的 SessionStart hook，用的是 Codex 原生的 hooks 機制（`[features] hooks = true` 加上 `~/.codex/hooks.json` 裡的一筆條目）。不用另開一顆開關——一顆開關兩邊都生效。關閉時只會拿掉 usage 自己裝的那條 hook，`hooks` 這個 feature flag 跟你自己裝的其他 Codex hook 都不會被動到。
 
 ## [0.23.0] - 2026-07-04
 
-### Added
-- **Terse Mode**: a new menu-bar toggle that asks Claude Code to answer more tersely for the whole session — cutting hedging, filler, and repeated preamble while keeping code, commands, file paths, and error messages byte-exact. Fully local (just a SessionStart hook, no API calls), off by default, and announces itself at the start of your first reply — merged into the Progress Concierge's greeting when both are on, or on its own line otherwise. Like any style instruction, it's a request rather than a hard constraint: on a very long conversation it can gradually fade and drift back to Claude's normal verbosity, at which point a one-line reminder brings it back.
+### 新增
+- **精簡模式**：新的選單列開關，讓 Claude Code 整個對話回答更簡短——去掉客套語、重複鋪陳與不必要的過渡句，但程式碼、指令、檔案路徑、錯誤訊息一個字都不會被縮減。完全本機（只是一個 SessionStart hook，不呼叫任何 API）、預設關閉，開啟後會在第一則回覆開頭提一下——跟「進度管家」的招呼合併成一句，如果只開這個就自己說一行。這是一條「風格請求」而不是硬性限制：對話拉得太長的話還是可能慢慢淡忘、飄回 Claude 原本的講話方式，這時候提醒它一次就會恢復。
 
 ## [0.22.14] - 2026-07-03
 
-### Fixed
-- **Archived Codex sessions could show stale data**: usage counted `~/.codex/archived_sessions/` when computing totals but didn't watch it for changes, so edits there might not refresh the menu bar until an unrelated refresh happened; the archived folder is now included in the same change-detection that drives live updates.
-- **A broken agentdeck-data hook no longer causes constant background rescanning**: when Claude Code's status hook goes stale, usage now caches the "is there recent activity" check briefly instead of rescanning your entire `~/.claude/projects` tree on every poll.
+### 修正
+- **封存的 Codex 對話可能顯示過期資料**：usage 計算總量時已經有把 `~/.codex/archived_sessions/` 算進去，但沒有監看這個資料夾的變動，所以裡面的內容改變時，選單列可能要等到別的原因觸發刷新才會更新；現在這個封存資料夾已經納入跟即時更新同一套變動偵測。
+- **狀態列 hook 失效時不會再一直背景重掃**：當 Claude Code 的狀態列 hook 進入失效（stale）狀態，usage 現在會把「最近有沒有活動」這個檢查短暫快取起來，不再每次輪詢都重新掃一次整個 `~/.claude/projects`。
 
-### Added
-- **A small warning badge appears if local usage history can't be read**: previously, a failed read silently fell back to the last known data with no visible sign anything was wrong; the Project Usage card now shows a brief note (hover for detail) so you can tell "no new data" apart from "something broke."
+### 新增
+- **本機使用紀錄讀不到時，會出現小提醒徽章**：以前讀取失敗會悄悄沿用上次的資料，畫面上完全看不出異狀；現在「專案用量」卡片會顯示一個簡短提示（滑鼠移上去看詳情），讓你分得出「沒有新資料」跟「哪裡壞了」的差別。
 
-### Performance
-- **Faster per-refresh history scans**: each refresh previously walked the Claude/Codex session directories multiple times (once to detect changes, again per data source); it's now scanned once and reused.
+### 效能
+- **每次刷新的歷史掃描變快**：以前每次刷新都會對 Claude/Codex 對話目錄重複走訪好幾次（一次判斷有沒有變、每個資料來源各自再走一次）；現在只掃一次、共用結果。
 
 ## [0.22.13] - 2026-07-02
 
-### Added
-- **HTML report gets an "Avg per Message" KPI card**: a sixth summary card shows total tokens divided by message count, giving a quick read on how much each message burns (this includes cache tokens, so it reflects burn per message rather than literal message length).
+### 新增
+- **HTML 報告新增「平均每則訊息」KPI 卡**：第六張卡顯示總 tokens 除以訊息數，讓你快速看出每則訊息平均燒掉多少量（含 cache tokens，所以反映的是每則訊息的燒耗量，不是字面上的訊息長度）。
 
 ## [0.22.12] - 2026-07-01
 
-### Fixed
-- **New model pricing refreshes as soon as usage sees an unknown model**: fresh cached pricing could hide newly-added models until the 7-day TTL expired, temporarily rendering them as $0.00/unknown. A pricing miss now triggers a debounced background refresh, and Claude Sonnet 5 has an offline fallback price so first-run or offline usage still estimates cost.
+### 修正
+- **看到未知模型時會立即背景更新價格表**：新模型剛上線時，即使上游價格表已更新，本機 7 天快取仍可能讓模型暫時顯示為 $0.00／未知；現在模型價格 miss 會觸發帶 debounce 的背景刷新，並補上 Claude Sonnet 5 的離線 fallback 價格，讓首次啟動或離線狀態仍能估算成本。
 
 ## [0.22.11] - 2026-06-27
 
-### Fixed
-- **Usage charts group days by your local time, not UTC**: the daily/weekly/monthly aggregates bucketed each entry by its UTC calendar day, so usage in the local pre-dawn hours (e.g. 00:00–08:00 at UTC+8) was credited to the previous day; timestamps are now converted to local time before bucketing, matching the HTML report.
-- **Archived Codex sessions are no longer undercounted**: usage now scans `~/.codex/archived_sessions/` alongside `~/.codex/sessions/`, so Codex sessions that have been archived still count toward your totals (no change when that directory doesn't exist).
+### 修正
+- **用量圖表依你的本地時間分天，不再用 UTC**：每日／每週／每月彙總原本依 UTC 日曆天分桶，導致本地清晨時段（例如 UTC+8 的 00:00–08:00）的用量被算到前一天；現在分桶前先把時間轉成本地時間，與 HTML 報告一致。
+- **被封存的 Codex session 不再被漏算**：現在會連同 `~/.codex/archived_sessions/` 一起掃描（原本只掃 `~/.codex/sessions/`），被封存的 Codex session 仍會計入總量（該資料夾不存在時行為不變）。
 
 ## [0.22.10] - 2026-06-24
 
-### Added
-- **The AI tool updates bulletin now ships in five languages**: each bulletin item previously carried only Traditional Chinese and English, so Simplified Chinese, Japanese, and Korean readers fell back to English; every item now includes zh-CN/ja/ko translations that keep each technical term's plain-language gloss and everyday metaphor in the reader's own language. The bulletin content was also refreshed to Claude Code 2.1.187, Codex 0.142.0, and Antigravity 1.0.11.
+### 新增
+- **「AI 工具更新速報」新增三語、共五語**：速報每則原本只有繁中與英文，簡中／日文／韓文讀者只能看到英文退回版；現在每則都補上簡中／日／韓翻譯，並在各語言保留每個術語的白話括號與生活比喻。速報內容也同步更新到 Claude Code 2.1.187、Codex 0.142.0、Antigravity 1.0.11。
 
 ## [0.22.9] - 2026-06-24
 
-### Added
-- **World Cup panel: each team's squad size now reflects its usage**: a side using more of its session quota fields more players (5–8) and presses its formation toward midfield, sharing the same session-percent signal that already drives the ball drift.
+### 新增
+- **世界盃面板：每隊球員人數會反映用量**：用掉越多 session 額度的一方，場上球員越多（5~8 人）、陣型越往中線壓，與既有的「球往用量高方漂移」吃同一個 session 百分比訊號。
 
-### Fixed
-- **Models with no pricing data show "—" instead of a misleading $0.00**: the cost column rendered unknown models as $0.00, which reads as free rather than unknown; unavailable costs now render as "—" in both the HTML report and the CSV export.
-- **Codex quota rows are labelled by window length**: the free-plan 30-day window no longer shows as "Session" — each row's label now comes from the window length Codex reports (≈ Session / Weekly / Monthly).
-- **World Cup quota bars now fill their whole half**: the duel bars used auto-margins that bunched both fills against the centre line, leaving the outer ends blank so a 100% side never reached the track edge; each fill is now anchored to the centre and extended outward.
+### 修正
+- **查無定價的模型顯示「—」而非誤導的 $0.00**：成本欄原本把查不到價格的模型印成 $0.00,看起來像免費而非「未知」;現在 HTML 報告與 CSV 匯出都改顯示「—」。
+- **Codex 額度列依時間窗長度標示**：免費方案的 30 天窗不再誤顯示為「Session」——每列標籤改由 Codex 回報的時間窗長度決定（≈ Session／Weekly／Monthly）。
+- **世界盃額度進度條完整填滿半邊**：對戰進度條原本用自動邊距把兩隊色條都擠在中線、外端留白,導致 100% 也填不到軌道盡頭;現在每條色條以中線為起點往外撐滿。
 
-### Performance
-- **Faster Codex log parsing**: unchanged session files are no longer re-read on every poll, and a versioned on-disk cache lets a fresh launch reuse prior parse results instead of re-scanning all history cold.
+### 效能
+- **Codex 紀錄解析更快**：未變動的 session 檔不再每次輪詢都重讀,且新增帶版本號的磁碟快取,讓程式冷啟動能重用上次解析結果,不必把所有歷史重新冷掃一遍。
 
 ## [0.22.8] - 2026-06-23
 
-### Fixed
-- **A panel that fails to load is no longer pinned to its error screen until restart**: the panel caching added in 0.22.7 stored whatever `build_view` returned — including the `ErrorPanelView` fallback shown when a panel's HTML can't be read — so once a load failed, switching back kept showing the error even after the file was available again. usage now caches only successfully-built web views; a failed build is shown but left uncached and rebuilt on the next switch, so a transient read failure recovers on its own.
+### 修正
+- **載入失敗的面板不再被卡在錯誤畫面直到重啟**：0.22.7 新增的面板快取會把 `build_view` 回傳的東西原封存起來——包含面板 HTML 讀不到時顯示的 `ErrorPanelView` 錯誤畫面。一旦某次載入失敗被快取住,即使檔案之後恢復,切回該面板仍只會看到錯誤畫面。usage 現在只快取成功建立的網頁視圖;載入失敗的面板照樣顯示錯誤畫面,但不會被快取,下次切換會重新建立,因此一次性的讀取失敗能自行恢復。
 
 ## [0.22.7] - 2026-06-23
 
-### Fixed
-- **Switching panels no longer flickers**: every switch tore down the WKWebView and reloaded its HTML, exposing the dark backing layer until the load finished — a visible flicker, plus the popover closed and reopened. usage now caches each panel's web view (lazily, capped at 6 with LRU eviction) inside a container view and switches by toggling visibility and re-injecting the latest state, so a previously-opened panel reappears instantly with no reload. The first build of a panel fades in from a same-color overlay that is removed on the first successful paint (or after a 1.5s safety timeout). The popover no longer closes and reopens on switch.
+### 修正
+- **切換面板不再閃爍**：原本每次切換都會把網頁視圖（WKWebView）整個丟掉並重載 HTML，在載入完成前露出底層深色背景——看得到的閃爍，且 popover 還會先關再開。usage 現在把每款面板的網頁視圖快取在一個容器視圖裡（用到才建、上限 6 並依最久未用淘汰），切換時只切換顯示／隱藏並重新注入最新狀態，因此先前開過的面板會瞬間重現、不再重載。某面板第一次建立時，會從同色遮罩淡入（首次成功繪製後移除，或 1.5 秒保險逾時後移除）。切換面板時 popover 不再關閉重開。
 
 ## [0.22.6] - 2026-06-23
 
-### Fixed
-- **Annual Wrapped and the 52-week contribution heatmap no longer lose history when source logs are pruned**: the year view recomputed everything from whatever Claude Code / Codex session logs still existed on disk, so once those logs were rotated away it could only ever show the last ~2 months. usage now persists a daily ledger (`~/.agentdeck/year_ledger.json`) that accumulates over time — each rebuild merges the currently-available days in (overwriting a stored day only when the fresh total is at least as large, so a partially-pruned day can't shrink the record) and trims entries beyond the 53-week window. The heatmap, streaks, active days, and Wrapped totals are all computed from the merged ledger, so coverage fills toward a full year from here on.
+### 修正
+- **年度 Wrapped 與 52 週貢獻熱力圖不再因來源紀錄被清除而丟失歷史**：年度視圖原本每次都從硬碟上現存的 Claude Code／Codex 對話紀錄重新計算，因此一旦那些紀錄被輪替清掉，就只能顯示最近約兩個月。usage 現在會維護一份每日帳本（`~/.agentdeck/year_ledger.json`）持續累積——每次重算會把當下可得的每日資料併入（僅當新算出的當日總量不小於既存值才覆蓋，避免某天紀錄被部分清除而使紀錄縮水），並修剪掉 53 週窗以外的舊資料。熱力圖、連續活躍天數、活躍天數與 Wrapped 數字都改從合併後的帳本計算，往後覆蓋範圍會逐步補滿整年。
 
 ## [0.22.5] - 2026-06-22
 
-### Fixed
-- **Panel no longer goes permanently blank after a context-menu "Reload"**: the popover panel loads its HTML via `loadHTMLString` with no base URL, so the WKWebView system context-menu Reload reloaded `about:blank` and left the panel blank with no obvious way to recover (#42). usage now strips navigation items (Reload/back/forward/open/download) from the panel's context menu, and internal reloads re-inject the original HTML instead of calling `reload()` — which also fixes panel recovery after the web-content process is terminated.
+### 修正
+- **面板不再因右鍵選單的「Reload」而永久空白**：彈出面板的 HTML 是以 `loadHTMLString`、不帶 base URL 的方式載入，因此 WKWebView 系統右鍵選單的 Reload 會重新載入 `about:blank`，使面板變空白且沒有明顯的恢復方式（#42）。usage 現在會從面板右鍵選單移除導航類項目（Reload／上一頁／下一頁／開啟／下載），且內部重載改為重新注入原始 HTML 而非呼叫 `reload()`——這也順帶修好面板在網頁內容程序被終止後的恢復。
 
 ## [0.22.4] - 2026-06-22
 
-### Fixed
-- **Analysis report no longer crashes with "bad local file header" inside the packaged .app**: the report modules (`analyzer`/`adapters`/`ui`) were compiled into the bundle's `python313.zip` and loaded lazily via `zipimport`, so a single corrupt zip entry surfaced as a `ZipImportError` the moment a report was generated. They are now unzipped into the bundle as real directories (py2app `packages`), bypassing `zipimport` entirely. The bundle's `python313.zip` also no longer ships CPython's test suite, pytest, or setuptools, shrinking it from 1665 to 819 entries and cutting the surface for a corrupt entry. This deepens the packaged-report fix from 0.22.2.
+### 修正
+- **打包後的 .app 產生分析報告不再以「bad local file header」崩潰**：報告相關模組（`analyzer`/`adapters`/`ui`）原本被壓進 app 內的 `python313.zip`、在按下分析報告時才透過 `zipimport` 延遲載入，於是壓縮包裡只要有一個損壞的項目，就會在產生報告當下拋出 `ZipImportError`。現在改讓它們解壓成 app 裡的實體資料夾（py2app `packages`），完全不走 `zipimport`。同時 `python313.zip` 不再夾帶 CPython 測試套件、pytest、setuptools，項目數從 1665 降到 819，也縮小了損壞項目的風險面。此版是 0.22.2 打包報告修復的延伸根治。
 
 ## [0.22.3] - 2026-06-22
 
-### Added
-- **Warns when the status line stops updating while you're still working**: the menu bar percentage comes only from the file the status line hook writes, so if that hook gets unwired (another tool rewrites `settings.json`) or stops firing, the pinned number would silently freeze. usage now detects this — when the status file hasn't updated for 30 minutes but your `~/.claude/projects` logs show recent activity — and shows an actionable warning telling you to re-run `--setup` or restart Claude Code. The last known percentage is kept, never fabricated, and there is still no network call.
+### 新增
+- **狀態列停止更新時主動警告**：選單列的百分比只來自狀態列 hook 寫的檔，萬一那個 hook 被解除（別的工具改寫了 `settings.json`）或停止運作，釘在螢幕上的數字會默默卡住。usage 現在能偵測這情況——當狀態檔超過 30 分鐘沒更新、但你的 `~/.claude/projects` 紀錄顯示近期仍有活動時——跳出可行動的警告，提示你重跑 `--setup` 或重開 Claude Code。最後已知的百分比會保留、絕不偽造，一樣不連任何網路。
 
 ## [0.22.2] - 2026-06-21
 
-### Fixed
-- **HTML report no longer fails inside the packaged .app**: the year-in-review spirit images (phoenix/dragon) were resolved with a source-tree path that doesn't exist in the py2app bundle, so generating any report raised `FileNotFoundError`. They are now resolved through the bundle's resource path, with the source-tree path kept as a fallback for source/CLI runs.
+### 修正
+- **打包成 .app 後產生報告不再失敗**：年度回顧的神獸圖（鳳凰／肥龍）原本用原始碼樹的路徑解析，在 py2app bundle 內並不存在，導致產生任何報告都丟 `FileNotFoundError`。現在改用 bundle 的資源路徑解析，並保留原始碼樹路徑作為原始碼／CLI 執行時的後備。
 
 ## [0.22.1] - 2026-06-21
 
-### Fixed
-- **Idle menu-bar refreshes no longer react to unrelated agent state writes**: FSEvents now watches Claude and Codex usage-history directories instead of their entire data roots, and unchanged status titles no longer trigger redundant AppKit layout work.
+### 修正
+- **選單列閒置刷新不再被無關的 agent 狀態寫入觸發**：FSEvents 現在只監看 Claude 與 Codex 的用量歷史目錄，不再監看完整資料根目錄；相同的狀態列標題也不會重複觸發 AppKit 排版。
 
 ## [0.22.0] - 2026-06-21
 
-### Added
-- **Year in review in the HTML report**: two new sections that turn a year of local usage into one glance. A GitHub-style 52-week contribution heatmap shades each day by how many tokens you burned, with your current and longest active streaks and your busiest day called out beside it. A "Wrapped" card sums up the year — total tokens, cost, active days, longest streak, and your most-used model and project — and crowns you with the spirit you leaned on most: a phoenix if you ran more Claude, a dragon if you ran more Codex. All computed from local files, no network.
-- **Reports stay fast on huge histories**: the year of data behind those sections is cached to disk and served instantly on repeat opens, only recomputed once it goes stale — so the report opens quickly even when your logs are enormous.
+### 新增
+- **HTML 報告新增「年度回顧」**：兩個一眼看懂的新區塊，把一整年的本機用量濃縮起來。一張 GitHub 風格的 52 週貢獻熱力圖，依每天燒掉的 token 量深淺著色，旁邊標出你目前與最長的連續活躍天數、以及最忙的一天。再加一張「年度回顧」卡，總結你這一年——總 token、花費、活躍天數、最長連續、最常用的模型與專案——並以你最依賴的神獸為你加冕：Claude 用得多是鳳凰、Codex 用得多是肥龍。全部由本機檔案算出，不連網。
+- **歷史再龐大，報告依然秒開**：這兩個區塊背後那一整年的資料會快取到磁碟，重複開啟時直接秒回，只有過期時才重算一次——就算你的紀錄極大，報告也開得很快。
 
 ## [0.21.1] - 2026-06-20
 
-### Added
-- **AI Tool Update Digest in the HTML report**: a new section that sums up recent updates to the AI coding tools you use — Claude Code, Codex, and Antigravity — rewritten in plain, layperson-friendly language as one-idea cards, each keeping the official changelog verbatim underneath. The content is fetched from a small JSON file on GitHub, so it stays current without an app update and makes no other network calls.
+### 新增
+- **HTML 報告新增「AI 工具更新速報」**：報告多一個區塊，把你在用的 AI 工具（Claude Code、Codex、Antigravity）近期更新，用外行也讀得懂的白話整理成一張張卡片（一卡一重點，每張底下保留官方英文原文）。內容從 GitHub 上一個小 JSON 檔抓取，不必更新 app 就會跟著新，也不額外連任何網路。
 
 ## [0.21.0] - 2026-06-20
 
-### Added
-- **Summon Spirits — an animated companion in your menu bar**: a new "Summon Spirits" menu item toggles a small white silhouette that runs next to your usage percentages — a phoenix for Claude, a dragon for Codex. It animates faster the harder you burn tokens (idle -> paused, heavy -> sprinting), driven entirely by your local burn rate. Off by default; the on/off state is remembered. No network, like everything else.
-- **`usage export` command**: dump your usage totals to CSV straight from the terminal.
-- **CSV download in the HTML report**: the report's share dialog can now export the project/model breakdown as a CSV file (replacing the old copy-file-path action).
+### 新增
+- **召喚神獸 — 選單列裡會動的夥伴**：新增「召喚神獸」選單項，在用量百分比旁邊跑一隻白色剪影——Claude 配鳳凰、Codex 配肥龍。token 燒越兇牠跑越快（閒置→暫停、爆量→狂奔），完全由本機燃燒率驅動。預設關閉，開關狀態會記住。一樣不連網。
+- **`usage export` 指令**：在終端機直接把用量總計輸出成 CSV。
+- **HTML 報告可下載 CSV**：報告的分享對話框現在能把專案／模型分布匯出成 CSV 檔（取代舊的「複製檔案路徑」）。
 
 ## [0.20.3] - 2026-06-18
 
-### Fixed
-- **Forked Codex conversations no longer replay parent history as new usage**: Codex can embed a timestamp-rewritten copy of the parent conversation in a fork JSONL. The loader now matches and excludes that replay while retaining both the original parent usage and new post-fork usage. (#40, by @ericweichun)
-- **Codex reasoning tokens are no longer charged twice**: `reasoning_output_tokens` is already included in Codex's `output_tokens`, so JSONL and SQLite usage readers now price the output total once. (#40, by @ericweichun)
+### 修正
+- **Fork 後的 Codex 對話不再把父對話歷史重播算成新用量**：Codex 可能在 fork JSONL 內嵌一份 timestamp 被重寫的父對話副本。讀取器現在會比對並排除這段重播，同時保留父對話原始用量與 fork 後真正新增的用量。（#40，@ericweichun 貢獻）
+- **Codex reasoning token 不再重複計價**：`reasoning_output_tokens` 已包含於 Codex 的 `output_tokens`，JSONL 與 SQLite 用量讀取器現在只會計算一次輸出總量。（#40，@ericweichun 貢獻）
 
 ## [0.20.2] - 2026-06-16
 
-### Fixed
-- **Codex model attribution now falls back to turn context**: newer Codex sessions can store the model in `turn_context.payload.model`, while `state_5.sqlite` may not have a matching thread row yet. The reader still prefers SQLite when available, but now uses the turn context as a fallback so cost estimates and model distribution no longer collapse to unknown or $0. (#38, by @ericweichun)
-- **Animated quota rows no longer restart on every panel refresh**: panels with animated quota tracks, including Prism Arcade, Black Hole, and Aquarium, now mount each quota row once and update it in place instead of rebuilding the markup on every status update. This prevents the CSS animation flicker during normal refreshes. (#39, by @ericweichun)
+### 修正
+- **Codex model 歸屬現在會退回讀取 turn context**：新版 Codex 工作階段可能把 model 記在 `turn_context.payload.model`，但 `state_5.sqlite` 還沒有對應 thread 列。讀取器仍會優先採用 SQLite；沒有資料時，現在會改用 turn context 作為後備，避免成本估算掉成 `unknown` 或 $0，也讓 model 分布保持完整。（#38，@ericweichun 貢獻）
+- **有動畫的額度列不再每次面板更新都重跑動畫**：Prism Arcade、Black Hole、Aquarium 等有動畫額度軌道的面板，現在每列只掛載一次，之後就地更新內容，不再每次狀態更新都重建 markup。這會避免正常刷新時 CSS 動畫閃爍。（#39，@ericweichun 貢獻）
 
 ## [0.20.1] - 2026-06-14
 
-### Changed
-- **Context-window nudge reframed around quality, and fires earlier (≥70%)**: the status line reminder added in 0.20.0 was framed around cost, but Claude Code (and Codex) auto-compact at ~80% and prompt caching makes resent context cheap — so the cost angle added little. What actually degrades as a conversation grows is quality: models lose the middle of long inputs well before the window fills. The nudge now triggers at 70% — ahead of the lossy automatic compaction — and suggests taking control yourself: `/clear` when switching tasks, or `/compact` to keep the focus you choose. The dollar figure was dropped.
+### 變更
+- **脈絡視窗（context）提醒改以「品質」為核心，並提早觸發（≥70%）**：0.20.0 加的這行提醒原本以「省錢／省額度」為訴求，但 Claude Code（與 Codex）在約 80% 都會自動壓縮、加上提示快取讓重送脈絡很便宜，成本訴求其實意義不大。對話變長真正受損的是「品質」——模型在脈絡填滿之前就會開始漏記長內容的中段。提醒因此改在 70% 觸發（趕在有損的自動壓縮之前），並建議由你自己主導：切換任務用 `/clear`，要續做用 `/compact` 保留你選的重點。金額顯示已移除。
 
 ## [0.20.0] - 2026-06-13
 
-### Added
-- **Status line nudges `/clear` when the context window goes heavy (≥80%)**: once a Claude Code conversation fills its context window past the red zone, the status line appends a one-line reminder. Past that point every turn resends a heavy context — pricier turns and a faster rate-limit burn, both of which `/clear` resets. The nudge shows the context % and, when available, the session cost, in all five languages.
+### 新增
+- **狀態列在脈絡視窗（context）吃重（≥80%）時提示 /clear**：當 Claude Code 對話把脈絡視窗塞過紅區，狀態列會補上一行提醒。過了這個點，每一輪都會把沉重的脈絡重送一次，讓每輪更貴、額度燒得更快，而這兩者 `/clear` 都能重置。提示會顯示脈絡百分比，以及（有的話）本次對話花費，五種語言都支援。
 
-### Fixed
-- **Codex 5h quota no longer goes stale on long-lived sessions**: the rate-limit reader scanned Codex session files newest-date-directory first and stopped at a scan limit, which could skip the file that was *actually* modified most recently when a long session keeps appending to an older creation-date directory. It now sorts all visible session files by modification time, so the menu bar always reflects the newest snapshot. (#37, by @ericweichun)
+### 修正
+- **長時間 Codex 對話的 5 小時額度不再顯示過期數字**：額度讀取原本照「日期資料夾由新到舊」掃描、掃到上限就停，但長壽對話會持續往「較舊建立日期」的資料夾追加內容，導致真正最近被修改的檔案被跳過。現在改為把所有可見的工作階段檔案照修改時間排序，選單列永遠反映最新的快照。（#37，@ericweichun 貢獻）
 
 ## [0.19.1] - 2026-06-12
 
-### Fixed
-- **Hidden Claude Code section no longer leaks a setup error**: Codex-only users who hid the Claude Code section still saw a "status file not found — run `python3 main.py --setup`" message in the popover footer, plus an "Install Hook" button. Both are Claude Code-specific and are now suppressed while the section is hidden; the footer falls back to a neutral synced status. (#36, reported by @ilss0902)
+### 修正
+- **隱藏 Claude Code 區塊後不再冒出設定錯誤**：只用 Codex、把 Claude Code 區塊藏起來的使用者，原本彈窗底部仍會顯示「找不到狀態檔，請執行 `python3 main.py --setup`」，還會跳出「安裝 Hook」按鈕。這兩者都是 Claude Code 專屬的，現在區塊隱藏時會一併隱藏，底部狀態改為中性的「已同步」。（#36，@ilss0902 回報）
 
 ## [0.19.0] - 2026-06-11
 
-### Added
-- **Hide Claude Code section**: a new "Hide Sections ▸" submenu in the Switch Panel menu lets you hide Claude Code and Codex independently, so Codex-only users can hide the Claude Code card from every panel theme and the Claude Code percentage from the menu bar (Codex then leads the readout). Every panel keeps its "Switch Panel" button reachable — when the Claude Code card is hidden, the button moves to the next visible card. (#35, requested by @ilss0902)
+### 新增
+- **隱藏 Claude Code 區塊**：「更換面板」選單新增「隱藏區塊 ▸」子選單，可分別勾選要隱藏 Claude Code 或 Codex——只用 Codex 的使用者現在可以把所有面板主題裡的 Claude Code 卡片、以及選單列上的 Claude Code 百分比一併藏起來（選單列改以 Codex 領頭）。每個面板的「更換面板」按鈕都保證找得到——Claude Code 卡片被隱藏時，按鈕會自動搬到下一張可見的卡片上。（#35，@ilss0902 提出）
 
-### Changed
-- **Hiding a provider now also hides its percentage from the menu bar** (previously "Hide Codex Section" only hid the popover card). With both providers hidden, the paw icon stays in the menu bar as the click target.
-- **Shorter settings menu**: the "Automatically Check for Updates" row is gone — update checks simply stay on by default (still honored if disabled in `~/.claude/agentdeck-preferences.json`), and the two hide toggles are consolidated into the "Hide Sections ▸" submenu.
+### 變更
+- **隱藏供應商時，選單列上的百分比也會一併消失**（以前「隱藏 Codex 區塊」只藏面板卡片）。兩者都隱藏時，選單列保留小爪子圖示作為點擊入口。
+- **設定選單變短了**：移除「自動檢查更新」這一格——更新檢查預設保持開啟（在 `~/.claude/agentdeck-preferences.json` 關閉仍然有效），兩個隱藏開關也合併進「隱藏區塊 ▸」子選單。
 
 ## [0.18.0] - 2026-06-11
 
-### Added
-- **Health-check diagnosis on every new conversation**: usage now runs a background diagnosis engine against your Claude Code session logs and, when it finds meaningful waste, quietly appends a one-line reminder to the Progress Concierge's opening handoff. Say "show me" and the model reads the full snapshot (`~/.claude/agentdeck-diagnosis.json`) and explains findings with specific suggestions. The reminder is suppressed for 7 days once a fingerprint is seen, re-surfaces when the diagnosis changes, and is skipped entirely when the snapshot is stale (>48 h).
-- **Five-rule diagnosis engine** (`analyzer/diagnoser.py`): detects repeated file reads, polluter directories (node_modules, .venv, dist, …), anomalous session sizes, noisy Bash output, and repeated Bash commands. Findings are ranked by estimated token waste so the most actionable finding is always surfaced first.
-- **Daily diagnosis snapshot** (`usage_diagnosis_snapshot.py`): the menu-bar app refreshes `~/.claude/agentdeck-diagnosis.json` once per day in the background so the cost estimate is always fresh when you open a new conversation.
+### 新增
+- **每次開新對話都會附上健檢提醒**：usage 現在會在背景對你的 Claude Code 工作階段紀錄跑一次診斷，發現明顯浪費時，會在進度管家的開場白末尾悄悄補一行提醒。說「看」，模型就會讀完整快照（`~/.claude/agentdeck-diagnosis.json`）並解釋發現的問題與具體建議。同一份診斷看過後 7 天內不重複提醒、診斷有變化時重新出現、快照超過 48 小時則略過。
+- **五條診斷規則引擎**（`analyzer/diagnoser.py`）：偵測重複讀同一批檔案、掃進污染目錄（node_modules、.venv、dist…）、工作階段異常膨脹、Bash 輸出過大、重複跑同一條 Bash 指令。發現項目依估算浪費 token 數排序，最值得優先處理的一項永遠放在最前面。
+- **每日診斷快照**（`usage_diagnosis_snapshot.py`）：選單列 app 每天在背景更新一次 `~/.claude/agentdeck-diagnosis.json`，確保開新對話時的成本估算永遠是最新的。
 
-### Fixed
-- **Anomaly-session waste estimates are no longer inflated ~9×**: the engine previously counted the entire token total of an anomalous session as waste and priced every token at the full $3/MTok input rate. Long sessions are dominated by cache reads billed at a tenth of that ($0.30/MTok), and the work done in the session isn't waste at all — only the excess over the project baseline is. Cost is now split by token type and scaled to the excess share (real-data result: $254 → $27).
+### 修正
+- **工作階段異常膨脹的浪費估算不再誇大約 9 倍**：引擎原本把異常工作階段的全部 token 都算成浪費，而且一律用 $3/MTok 的完整輸入費率換算。但長對話的 token 大部分是快取重讀，費率只有十分之一（$0.30/MTok），而且工作階段裡做出來的成果本身也不算浪費——只有超出該專案基準線的部分才是。現在依 token 類型分開計費、按超額比例計算（實際資料：$254 → $27）。
 
 ## [0.17.1] - 2026-06-10
 
-### Fixed
-- **Lepidoptera panel no longer shifts when the project list is empty**: the panel was vertically centered, so with no project data the cards floated to the middle of the popover and jumped when projects appeared. It now top-aligns like the other panels, with the project card absorbing the extra height, so the layout stays stable whether or not projects are listed.
+### 修正
+- **蝶類圖鑑面板在無專案時不再跑版**：原本內容垂直置中，沒有專案資料時卡片會飄到彈窗中間、有專案時又跳回去；現在改為頂部對齊（與其他面板一致），由專案卡吸收多餘高度，不論有無專案版面都穩定。
 
 ## [0.17.0] - 2026-06-10
 
-### Added
-- **New "Lepidoptera" panel theme**: a cyanotype blueprint plate inspired by the Fable 5 launch — deep Prussian-blue ground with a cyan engineering grid, the Claude Code and Codex logos mounted in cyan registration frames, monospace engineering readouts, corner crop marks, and white technical line-art butterflies drawn as schematics (construction circles, centerlines, wingspan dimensions) that drift and beat their wings across the panel. Pick it from "Switch Panel". Honors `prefers-reduced-motion`.
+### 新增
+- **新增「蝶類圖鑑」面板主題**：呼應 Fable 5 發表的藍曬工程藍圖風——深普魯士藍底配青色工程方格，Claude Code 與 Codex 標誌嵌進青色定位框，等寬字工程讀數、四角裁切標記，以及白色技術線稿蝴蝶（畫成工程 schematic：構造圓、中軸線、翼展尺寸標註），會在面板上飄移、拍動翅膀。在「更換面板」裡選用。支援 `prefers-reduced-motion`（減少動態）。
 
 ## [0.16.3] - 2026-06-10
 
-### Changed
-- **Cleaner project list on more panels**: removed the redundant row separators on the Matrix, Newspaper, and Windows 95 panels — each already shows a per-project usage bar, so projects are now divided by that bar alone, matching the default panel. (Panels that rely on separators instead of a usage bar are unchanged.)
+### 變更
+- **更多面板的專案清單更俐落**：移除駭客任務、報紙、Windows 95 三個面板上多餘的列分隔線——這些面板每個專案本來就有用量條，現在只靠用量條分隔，與預設面板一致。（只靠分隔線、沒有用量條的面板維持不變。）
 
 ## [0.16.2] - 2026-06-10
 
-### Changed
-- **Homebrew now ships as a cask**: usage is a GUI app, so it's now distributed via Homebrew's cask format — it drops `usage.app` straight into your Applications folder and skips the formula relocation/re-signing pass, which also fully fixes the earlier `usage.app/usage.app` doubled-path `Errno::ENOENT` install failure. Install with `brew install --cask aqua5230/usage/usage`; if you previously installed via the formula, run `brew uninstall usage` first, then reinstall. (Thanks @anatolii-maslennikov-improvado for reporting #34)
-- **Sharper, cleaner default panel**: the default menu-bar panel now renders text with crisper font smoothing and standard font weights, shows project rankings as filled number badges (top project highlighted in green), brightens the active tab, drops the redundant row separators, and fixes the slightly clipped top edge on the project token counts.
+### 變更
+- **Homebrew 安裝改用 cask 發佈**：usage 是圖形介面 App，改以 Homebrew 的 cask（給 GUI 應用程式用的格式）發佈後，會直接把 `usage.app` 放進「應用程式」資料夾，不再經過 formula 的重定位／重簽章流程——這也徹底根治了 `usage.app/usage.app` 雙路徑造成的 `Errno::ENOENT` 安裝失敗。安裝指令改為 `brew install --cask aqua5230/usage/usage`；之前用 formula 裝過的人請先 `brew uninstall usage` 再重裝。（感謝 @anatolii-maslennikov-improvado 回報 #34）
+- **預設面板更清晰、更俐落**：選單列預設面板的文字改用更銳利的字型平滑與標準字重，專案名次改成實心數字徽章（第一名以綠色標示），選中的分頁改為亮綠、移除多餘的列分隔線，並修正專案 token 數字上緣被切到的問題。
 
 ## [0.16.1] - 2026-06-07
 
-### Fixed
-- **Homebrew install no longer fails**: because the release zip had a single top-level `usage.app` directory, Homebrew would auto-`chdir` into it and then fail to find the file to install, raising `Errno::ENOENT ... usage.app`. The formula's install path is fixed — just reinstall. (Thanks @teddy123434 for reporting #32)
-- **Claude Code no longer errors on startup after installing the status-line hook from the .app**: installing from the packaged .app used to write the app's bundled Python — which can't run standalone outside the bundle — into the hook config, so Claude Code threw `Could not find platform independent libraries` on startup and the status line wouldn't show. It now always uses the system `/usr/bin/python3`, and any previously corrupted config is repaired automatically on next launch or re-run of setup. (Thanks @teddy123434 for reporting #32)
+### 修正
+- **用 Homebrew 安裝不再失敗**：`brew install` 時因為壓縮檔頂層只有單一 `usage.app` 目錄，Homebrew 會自動切進該目錄而找不到要安裝的檔案，跳出 `Errno::ENOENT ... usage.app`。已修正 formula 的安裝路徑，重新安裝即可。（感謝 @teddy123434 回報 #32）
+- **從 .app 安裝狀態列 hook 後，Claude Code 啟動不再報錯**：從打包的 .app 安裝時，原本會把 app 內建、離開 app 就無法獨立執行的 Python 寫進 hook 設定，導致 Claude Code 啟動時跳 `Could not find platform independent libraries`、狀態列無法顯示。現在一律改用系統的 `/usr/bin/python3`；先前已經被寫壞的設定，下次啟動或重跑安裝時會自動修正回來。（感謝 @teddy123434 回報 #32）
 
 ## [0.16.0] - 2026-06-07
 
-### Added
-- **Progress Concierge now surfaces last session's uncommitted changes**: the automatic "where you left off" handoff on a new conversation also lists the file changes the previous session hadn't committed yet, so you don't have to recall them.
-- **EMA-smoothed burn-rate forecast**: the "time until empty" estimate now uses an exponential moving average over recent interval rates instead of a single first-to-last slope, making it more responsive to sudden acceleration and steadier against single-point noise.
+### 新增
+- **進度管家交接時會帶出上次未提交的改動**：開新對話時自動交接的「上次做到哪」，現在也會列出上個 session 還沒提交（commit）的檔案改動，不用自己回想。
+- **燃燒率預測改用 EMA（指數移動平均）平滑**：「再過多久用完」的預估，從只看頭尾兩點的斜率改為對近期用量加權平均，對突然加速更靈敏、對單點雜訊更穩，預估更貼近當下節奏。
 
-### Fixed
-- **Packaged .app no longer crashes on a non-terminal launch**: double-clicking the .app or launching it in the background could crash the moment it opened the panel or requested notification permission (`Argument 3 is a block, but no signature available`), because py2app shipped the bare WebKit/UserNotifications modules without their full wrapper metadata. The required block signatures are now registered unconditionally and the wrappers are bundled.
-- **Missing quota data no longer triggers a false "quota empty" alert**: when a quota window temporarily has no reading (e.g. an expired Codex 5-hour window), it was treated as depleted — firing a notification with a broken "back after --" body. Depletion now requires an actual 100%.
-- **A malformed locale string can no longer crash the UI**: if a translated string's placeholder doesn't match the call site's arguments, the lookup now falls back to English, then to the raw key, instead of raising.
+### 修正
+- **打包後的 .app 從非終端機啟動不再閃退**：雙擊 .app 或在背景啟動時，會在開啟面板或請求通知權限的瞬間崩潰（`Argument 3 is a block, but no signature available`）。根因是 py2app 只帶了 WebKit／UserNotifications 的裸模組、漏了完整的 wrapper metadata。現在無條件註冊所需的 block 簽名，並讓打包帶齊 wrapper。
+- **配額暫時沒資料時不再誤報「額度用完」**：某個額度視窗暫時沒有讀數（例如 Codex 的 5 小時視窗過期）時，原本會被當成「用完」而跳通知，並顯示殘缺的「重置 -- 後恢復」。現在只有真的達 100% 才視為用完。
+- **某語系字串格式有誤時不再讓畫面崩潰**：翻譯字串的佔位符若對不上呼叫端的參數，原本會讓該段 UI 崩掉；現在會自動退回英文、再退回原始鍵，不波及其他畫面。
 
-### Changed
-- **Shorter burn-rate warning**: removed the "(N× faster than / under average pace)" suffix that pushed the red warning line past the panel width. The warning now shows only time-to-empty and the reset countdown.
+### 變更
+- **精簡燃燒率警告文字**：移除警告紅字後面「（比均速快 N 倍／省）」的後綴——它讓整行超出面板寬度。警告現在只顯示「多久用完＋重置倒數」。
 
-### Docs
-- **Open-source prep: security policy and license headers**: added a bilingual `SECURITY.md` (vulnerabilities go to a private email, not public Issues), an AGPL-3.0-only header on every Python file, and the maintainer's GitHub handle on the `LICENSE` copyright line.
+### 文件
+- **開源準備：新增安全政策與授權標頭**：新增雙語 `SECURITY.md`（漏洞請走私下 email 回報，不走公開 Issue）、為所有 Python 檔加上 AGPL-3.0-only 授權標頭、`LICENSE` 版權行標明維護者的 GitHub 帳號。
 
 ## [0.15.14] - 2026-06-07
 
-### Fixed
-- **Claude Code quota no longer briefly drops to "--" when entering a new folder**: on the first status-line refresh of a new session, the data Claude Code sends may not yet include rate limits; the hook used to overwrite the status file wholesale with this incomplete data, wiping out the previously valid quota and briefly showing "--" plus "send a message to sync your quota" until you sent another message. The hook now preserves the existing complete quota when the incoming data is incomplete.
+### 修正
+- **進入新資料夾時 Claude Code 配額不再短暫掉成「--」**：開新對話（新 session）後第一次刷新狀態列時，Claude Code 推來的資料可能還沒包含配額；狀態列 hook 原本會把這份不完整資料整包覆寫，洗掉先前有效的配額，畫面就短暫顯示「--」與「請發送一句訊息以同步配額」，直到再發一句訊息才復原。現在寫入前若新資料的配額不完整，會沿用既有的完整配額，不再被洗白。
 
 ## [0.15.13] - 2026-06-06
 
-### Fixed
-- **Estimated cost now recomputes after a pricing update**: a cost computed with fallback prices was written back and cached onto usage entries, so it was never recomputed once real prices loaded — leaving cost figures persistently off (mainly for entries without a source cost, e.g. Codex). The estimate is no longer written back, so it reflects updated prices immediately.
-- **Web panel no longer reloads endlessly when injection keeps failing**: if state injection failed repeatedly the panel would loop reloading; reloads per payload are now capped (WebContent-process crash recovery is unaffected).
+### 修正
+- **成本估算在價格更新後會正確重算**：先前用 fallback 價格算過的成本會被寫回並快取在用量項目上，等真實價格抓回來也不再重算，導致成本數字長期偏離（主要影響來源未附成本的項目，例如 Codex）。現在估算不再寫回項目，價格更新後會即時反映。
+- **網頁面板注入持續失敗時不再無限重載**：狀態注入若反覆失敗，面板原本會一直 reload 形成循環；現在同一份資料的重載設上限，超過即停手（WebContent 程序真正崩潰時的自動復原不受影響）。
 
 ## [0.15.12] - 2026-06-06
 
-### Fixed
-- **Fixed a file-descriptor leak from Codex SQLite connections not being closed after reads (#30)**: reading Codex's `logs_2.sqlite` / `state_5.sqlite` only ended the transaction without actually closing the connection, accumulating open file descriptors over long runs. Connections are now properly closed after every read.
-- **Codex quota refresh is now applied before the history scan (#31)**: during background refresh, the Codex quota result is now applied to the main view synchronously before the project history scan runs, avoiding a brief display of stale quota.
+### 修正
+- **修正 Codex SQLite 連線在讀取後未關閉造成的檔案描述子洩漏（#30）**：讀取 Codex 的 `logs_2.sqlite`／`state_5.sqlite` 時，連線只結束交易卻未真正關閉，長時間執行會累積開啟的檔案描述子。現在每次讀取後都確實關閉連線。
+- **Codex 配額刷新改在 history 掃描前套用（#31）**：背景刷新時，Codex 配額結果現在會先同步套用到主畫面，再進行專案 history 掃描，避免畫面短暫顯示舊配額。
 
 ## [0.15.11] - 2026-06-06
 
-### Fixed
-- **Web panel now recovers automatically after its render process crashes (#29)**: the WKWebView's web content process can be terminated on its own while the app itself keeps running, leaving the panel blank/grey until the whole app is restarted. The panel now detects content-process termination, reloads, and re-applies the last payload to recover; it also reloads and retries when JavaScript state injection fails.
+### 修正
+- **網頁面板在背景渲染程序崩潰後會自動復原（#29）**：WKWebView 的網頁內容程序有時會被系統單獨中止，而 app 本體仍在執行，面板就只剩空白／灰窗，得重啟整個 app 才會回來。現在偵測到內容程序中止會自動重載面板，並把上一次的資料重新套用回去復原；JavaScript 狀態注入失敗時也會重載重試。
 
 ## [0.15.10] - 2026-06-05
 
-### Added
-- **New "Insights" section in the report**: below the usage cards, a few local-rule highlights that the raw cards don't show — period-over-period change, the single heaviest spike day, a notable shift in model/project share, your pace, and one matching suggestion. At most five lines, with no fact repeated. Computed entirely on-device: no network, no API, no reading of conversation content.
+### 新增
+- **報告新增「洞察」區塊**：在用量卡片下方，用本機規則自動點出幾條「卡片看不出來」的重點——本期 vs 上期的用量增減、最猛的單一尖峰日、模型或專案占比的明顯轉移、使用節奏，以及一條對應建議。固定最多五行、同一件事不重複。完全本機計算，不連網、不打 API、不讀對話內容。
 
 ## [0.15.9] - 2026-06-05
 
-### Fixed
-- **Menu bar / report no longer fail on non-ASCII (e.g. Chinese) project paths**: a .app launched by double-click has no locale set, so resolving project names via `git` decoded its output as ASCII and raised `UnicodeDecodeError` on paths containing Chinese/Japanese/Korean/accented characters. This affected `history_loader`/`codex_loader` (live menu bar) and `persona_loader` (Usage Habits), leaving the report's "Usage Habits" section blank for non-today ranges. `git` output is now always decoded as UTF-8, so paths in any language work.
+### 修正
+- **選單列／報告遇到非英文（中文等）專案路徑時不再讀取失敗**：打包成 app 雙擊啟動時沒有設定系統語系，內部呼叫 `git` 取得專案名稱時會用 ASCII 解讀輸出，碰到含中文／日文／韓文／重音等字元的專案路徑就丟出 `UnicodeDecodeError`。此錯誤影響 `history_loader`／`codex_loader`（即時選單列）與 `persona_loader`（使用習慣），會讓報告的「使用習慣」在「今日」以外的期間空白。現在固定以 UTF-8 解讀 `git` 輸出，任何語言的路徑都正常。
 
 ## [0.15.8] - 2026-06-05
 
-### Fixed
-- **Codex "Session (5h)" quota no longer blanks out when the window expires**: after the 5-hour window resets, the session used to show blank (`--`), inconsistent with the Claude side; it now shows 0% like Claude. The CLI and menu bar now read rate limits from the same source, so their numbers no longer disagree.
+### 修正
+- **Codex「Session（5 小時）」配額過期時不再空白**：5 小時視窗重置後，原本會顯示空白（`--`），與 Claude 端不一致；現在比照 Claude 顯示為 0%。同時讓終端機指令（CLI）與選單列改用同一個額度讀取來源，兩處數字不再對不上。
 
-### Other
-- `doctor` now reports Codex diagnostics: latest session-log age, `logs_2.sqlite` rate-limit row count, `state_5.sqlite` status, and whether 5h / weekly quota data is currently available — making "why isn't it detected" easy to diagnose.
+### 其他
+- `doctor` 新增 Codex 診斷：顯示 session 紀錄最新時間、`logs_2.sqlite` 配額筆數、`state_5.sqlite` 狀態，以及目前 5h／週配額是否有資料，方便排查「抓不到」的原因。
 
 ## [0.15.7] - 2026-06-04
 
-### Fixed
-- **Menu bar no longer blanks out when a refresh fails (#27)**: follow-up to #25. Local project usage / today's stats / the status line are now loaded *before* the remote quota fetch, and preserved when that fetch fails, so the view no longer flashes empty. Alert (NSAlert) creation or icon-setup failures now fall back to a safe no-op instead of interrupting the menu bar update.
-- **Project Usage "30d" report aligns with a rolling 30 days (#28)**: generating a report from the menu bar's "30d" Project Usage range previously mapped to "this month" (1st of the month to today), which didn't match the labeled rolling 30-day range. It now maps to the report pipeline's `last30` (the last 30 days).
+### 修正
+- **選單列刷新失敗時不再整片變空白（#27）**：接續 #25，把本機專案用量／今日統計／狀態列的讀取移到遠端額度抓取「之前」；遠端抓取失敗時改為保留這些已載入好的本機資料，畫面不再閃成空白。另外系統彈窗（NSAlert）建立或設定圖示失敗時改用安全空殼擋住，不再中斷選單列更新。
+- **專案用量「30d」報告對齊滾動 30 天（#28）**：選單列專案用量選「30d」產生報告時，原本會對應到「本月」（每月 1 號至今），與標示的「滾動 30 天」不符；現在正確對應到報告管線的 `last30`（近 30 天）。
 
-### Docs
-- Landing page theme showcase refreshed, feature icons and hero banner updated, and a panel gallery added to the READMEs.
+### 文件
+- 首頁（landing）主題展示圖換新、功能 icon 與英雄橫幅刷新，README 補上面板圖庫。
 
 ## [0.15.6] - 2026-06-03
 
-### Changed
-- **New cyberpunk-cat app icon**: replaces the teal-paw placeholder with the real usage icon (a cyberpunk-style cat). It ships with the `.app` starting this release, so the new icon shows in the Dock / Finder / menu bar after install.
-- **README onboarding improvements**: (1) a top-level Quick Start that lifts the one-line Homebrew install up to where you can copy-paste it without scrolling; (2) a Star History chart at the bottom.
+### 變更
+- **全新賽博龐克貓 app 圖示**：把先前的青色貓掌佔位圖換成正式的 usage 圖示（賽博龐克風格貓咪）。此版起隨 `.app` 出貨，安裝後 Dock／Finder／選單列都會顯示新圖示。
+- **README 改善上手體驗**：(1) 頂部新增「快速上手」段落，把一行 Homebrew 安裝指令提到免捲動就能複製貼上的位置；(2) 文末加上 Star 成長圖表。
 
 ## [0.15.5] - 2026-06-03
 
-### Changed
-- **Color Claude / Codex brand icons in the menu bar**: the menu bar previously marked each service's usage with emoji (🐾 for Claude, 📜 for Codex). It now shows the official Claude and Codex brand icons in color, which read more clearly on both light and dark menu bars.
+### 變更
+- **選單列改用 Claude／Codex 彩色品牌圖示**：原本選單列用 emoji（🐾 代表 Claude、📜 代表 Codex）標示兩家用量，現在換成 Claude 與 Codex 的官方彩色品牌圖示，深色與淺色選單列都更清楚易辨。
 
 ## [0.15.4] - 2026-06-03
 
-### Fixed
-- **Panel load failures no longer degrade to a silent grey window**: when the popover's embedded web panel fails to load, it previously fell back to a blank dark window with no explanation. It now shows a native error view with the error detail and a GitHub report link, and logs navigation failures / render timeouts under `AGENTDECK_DEBUG=1` for easier diagnosis.
+### 修正
+- **面板載入失敗不再變成一片啞掉的灰視窗**：點開的面板（popover 內嵌網頁）若因故載入不出來，原本只會顯示一片深灰色空視窗、使用者無從得知發生什麼事；現在會改為顯示明確的錯誤訊息與 GitHub 回報連結，並在 debug log（`AGENTDECK_DEBUG=1`）記錄「載入失敗」或「渲染逾時」的線索，方便回報與診斷。
 
 ## [0.15.3] - 2026-06-02
 
-### Fixed
-- **Codex quota no longer blanks out on refresh errors (#25)**: follow-up to #24. When the later refresh stage (history parsing) failed, the error state reset the Codex session/weekly rows to blank, overwriting the quota that had already been loaded at the start of the refresh. The error path now preserves those already-loaded Codex rows, so they no longer flash empty.
+### 修正
+- **刷新出錯時 Codex 額度不再閃成空白（#25）**：接續 #24，刷新流程後段（讀取歷史用量）若出錯，原本會把 Codex 的 session／每週兩列重設成空白，蓋掉刷新一開始就已經載入好的額度數字；現在出錯時會保留這些已載入的 Codex 額度，畫面不再閃一下變空。
 
 ## [0.15.2] - 2026-06-02
 
-### Fixed
-- **Steadier background refresh**: file-change–triggered refreshes are now always marshalled to the main thread, and the refresh routine has an outer guard so it can't get stuck in a state where it never refreshes again.
+### 修正
+- **背景刷新更穩定**：檔案變動觸發的刷新一律切回主執行緒處理，並在刷新流程最外層加上保險，避免極少數情況下刷新狀態卡住、之後再也不更新。
 
-### Performance
-- **Lighter refresh when sessions pile up**: history change-detection narrowed from scanning all of `~/.claude` to the `~/.claude/projects` it actually reads; Codex recent-session enumeration now walks the dated folder structure and scans only what's needed (skipping hidden files like `.DS_Store`) instead of rglob-ing the whole tree on every refresh.
-- **No stall on first launch / offline**: the pricing-table download moved to the background; cost calculation always uses the local cache or built-in fallback first and auto-refreshes once the download lands. A long-running app also refreshes pricing in the background after the cache expires.
+### 效能
+- **session 變多時刷新更輕**：歷史用量的變動偵測從掃描整個 `~/.claude` 收斂到實際會讀的 `~/.claude/projects`；Codex 最近 session 的列舉改用日期資料夾結構只掃必要範圍（並自動略過 `.DS_Store` 之類隱藏檔），不再每次刷新都掃整棵目錄樹。
+- **首次啟動／離線時成本不卡頓**：價格表的網路下載移到背景進行，計算成本時一律先用本機快取或內建預設值，下載完成後再自動刷新一次；長時間開著的 app 在快取過期後也會自行在背景更新。
 
 ## [0.15.1] - 2026-06-02
 
-### Fixed
-- **Codex quota shows fresher, more accurate numbers (#24)**: (1) the menu-bar Codex quota now updates at the very start of each refresh instead of waiting for the slower history pass; (2) SQLite and JSONL sources are merged per window (5-hour / weekly) instead of picking one whole source, so a just-hit 100% limit is no longer overwritten by an older 80% snapshot; (3) small usage shows a fractional percentage instead of rounding to 0%; (4) the refresh timer uses the configured interval instead of a hard-coded 300s; (5) FSEvents-triggered refreshes queue instead of being dropped while one is in flight; (6) if the Claude Code read fails mid-refresh, the already-loaded Codex percentage is preserved instead of flickering away.
-- **Stale "🆕 update available" badge no longer lingers after upgrading**: the cache cleanup previously ran only inside the update-check path, so the badge stuck until the app restarted; it now compares the installed version on every timer refresh and clears as soon as you're current.
+### 修正
+- **Codex 額度顯示更即時、更準（#24）**：(1) 選單列的 Codex 額度在每次刷新一開始就先更新，不必等較慢的歷史解析跑完；(2) SQLite 與 JSONL 兩來源改成「逐視窗（5 小時／每週）合併」而非整份二選一，額度剛見底（100%）時不會被舊快照蓋回 80%；(3) 小額用量顯示小數百分比，不再四捨五入成 0%；(4) 刷新間隔改用設定值（原本寫死 300 秒）；(5) FSEvents 觸發的刷新若正忙會排隊而非丟棄；(6) 刷新中途若 Claude Code 端讀取失敗，已先載入的 Codex 百分比會保留，不再閃一下又消失。
+- **升級後選單列的「🆕 可更新」標籤不再殘留**：原本清快取只在更新檢查流程內跑，原地升級後標籤會一直掛到重開 app；改成每次計時器刷新都比對已安裝版本，已是最新即清。
 
 ## [0.15.0] - 2026-06-01
 
-### Added
-- **Quota usage notifications (opt-in, off by default)**: fires a macOS system notification when usage approaches a threshold, runs out, or recovers ("Almost out / Quota is empty / Quota is back"). Covers both session and weekly quotas for Claude Code and Codex; each threshold alerts once and re-arms after the quota resets. Controlled by one menu toggle; notification text is localized across all five languages in `i18n.json`. Triggered from the existing on-disk usage snapshot — **no network, no API calls**. The packaged `.app` now bundles the UserNotifications framework so alerts are delivered.
-- **Pace indicator**: the burn-rate warning line ("at current pace, empty in X") now appends whether you're running some multiple faster than your personal average, or under it — so you can tell at a glance if you're burning hotter than usual.
+### 新增
+- **配額用量通知（opt-in，預設關）**：用量接近門檻、見底、或恢復時，發一則 macOS 系統通知（「快用完囉 / 額度用完啦 / 額度回來了」）。涵蓋 Claude Code 與 Codex 的 session 與每週兩種額度，每個門檻只提醒一次、重置後自動解鎖再提醒。選單一個開關控制；通知文字走 `i18n.json` 五語系。沿用既有的磁碟用量快照觸發，**不連網、不呼叫 API**。打包版（`.app`）已納入 UserNotifications framework 確保通知可送達。
+- **配速指示器**：在「照目前速度，X 後見底」這行燃燒警告後面，補一句你目前比個人均速「快幾倍」或「更省」，一眼看出此刻是不是燒得比平常兇。
 
-### Fixed
-- **Ignore echoed Codex quota queries (#23)**: in some cases Codex echoes a prior quota query verbatim; older versions treated these echoes as new messages and let them flood the window. They're now detected and skipped.
+### 修正
+- **忽略 Codex 回音式的額度查詢（#23）**：某些情況下 Codex 會把先前的額度查詢原樣回拋（echo），舊版會把這些回音也當成新訊息塞進視窗、灌爆顯示。改成辨識並略過回音查詢。
 
 ## [0.14.2] - 2026-06-01
 
-### Changed
-- **HTML report merges "Your subscription" and "By tool" into "Your tools"**: the two panels used to describe the same Claude Code / Codex tools separately. Now there's one card per tool — the plan badge and subscription start date sit alongside the share / tokens / cost stats under a single shared header, dropping the duplicate block.
-- **Top KPI cards rebalanced**: the TOKENS column now gets the widest slot so the full number (e.g. `2,364,752,661`) never truncates or overflows at any window width, with `tabular-nums` for cleaner digit alignment.
+### 變更
+- **HTML 報告「你的訂閱」與「工具用量」合併為「你的工具」**：原本兩塊分開陳述同一組 Claude Code / Codex 工具，現在每個工具一張卡——方案徽章與訂閱起始日，和占比／tokens／花費並列在同一個共用表頭下，少掉一塊重複資訊。
+- **頂部 KPI 卡片重新配比**：TOKENS 欄位拿到最寬，確保完整數字（如 `2,364,752,661`）在任何視窗寬度都不被截斷或溢出；數字改用 `tabular-nums` 對齊更整齊。
 
-### Docs
-- **README overhaul (EN/繁中)**: privacy / requirements and quick start moved to the top, the three install methods presented on equal footing, feature bullets and punctuation trimmed, and the developer guide moved to `docs/DEVELOPMENT`.
+### 文件
+- **README 重整（中英）**：隱私／系統需求與快速上手置頂、安裝方式三選一對等呈現、精簡功能條列與標點，開發者指南移至 `docs/DEVELOPMENT`。
 
 ## [0.14.1] - 2026-06-01
 
-### Fixed
-- **Codex quota stuck on stale values**: `load_rate_limits()` returned as soon as SQLite (`logs_2.sqlite`) had any data, never comparing the newer `rate_limits` in `~/.codex/sessions/*.jsonl`, so the menu bar stayed pinned to the previous day's quota. It now reads both SQLite and JSONL and picks the newest valid entry by `updated_at`, keeping the prior SQLite-preferred behavior when timestamps are equal.
+### 修正
+- **Codex 額度卡在舊值**：`load_rate_limits()` 原本只要 SQLite（`logs_2.sqlite`）撈到資料就直接回傳，不再比對 `~/.codex/sessions/*.jsonl` 裡更新的 `rate_limits`，導致選單列卡在前一天的舊額度。改成同時讀 SQLite 與 JSONL 兩個來源，依 `updated_at` 挑最新有效的那筆；時間相同時維持原本偏好 SQLite 的行為。
 
 ## [0.14.0] - 2026-06-01
 
-### Added
-- **"Usage Habits" section in the HTML report**: fully local, zero API. The analysis report now shows a full-width 24-hour activity histogram of when you work, highlighting your peak hour with a plain-language summary ("You most often work with AI around HH:00 and HH:00"). Data comes from the message timestamps in your local Claude Code logs (user / assistant messages only) — **never the conversation content**. Parsing lives in a standalone `persona_loader.py` with a 300s TTL cache.
-- **"Stale data" hint on the Codex card**: when the local Codex usage snapshot is older than 15 minutes, the classic panel's Codex card shows an "about N minutes ago" tag plus an info (ⓘ) tooltip. Unlike Claude Code, Codex has no live status-line hook, so its usage numbers come from session logs it writes only intermittently and can lag your real account; the tooltip also explains that staying offline is a deliberate choice so it never burns your tokens. Built from the existing `rate_limits.updated_at` — **no network, no API**.
+### 新增
+- **HTML 報告新增「使用習慣」區塊**：純本地、零 API。在分析報告中以滿版 24 小時長條圖呈現你的活躍時段，標出最高峰並附一句白話總結（「你最常在 X 點和 Y 點與 AI 協作」）。資料取自本機 Claude Code 對話紀錄的訊息時間（僅計 user / assistant 訊息），**不讀對話內文**；解析邏輯獨立於 `persona_loader.py`，附 300 秒 TTL 快取。
+- **Codex 卡片「資料過期」提示**：當本機 Codex 用量快照超過 15 分鐘，classic 面板的 Codex 卡會顯示「約 N 分鐘前」標籤與一個 ⓘ 說明氣泡。Codex 不像 Claude Code 有即時回報的狀態列 hook，其用量來自偶爾才寫入的 session 紀錄、可能落後實際帳號；氣泡同時說明「維持離線是為了不多耗你的 token」。資料取自既有 `rate_limits.updated_at`，**不連網、不呼叫 API**。
 
 ## [0.13.0] - 2026-05-31
 
-### Added
-- **"Progress Concierge" feature** (menu label: "Resume Last Session"): fully local, zero API. When you open a new Claude Code session (`startup` / `/clear`), it automatically hands your last progress to the AI — no need to re-explain. A single menu toggle (off by default, opt-in) installs a Claude Code SessionStart hook (`usage_session_resume.py`, stdlib-only so it runs under macOS's bundled Python 3.9) that reads the project's previous session for **your last request + the commits made + any unfinished todos (if TodoWrite was used)**, assembles a resume prompt, injects it at the start of the new session, and asks Claude to open with "🐾 Picked up where you left off — let's keep going!" so you know it took effect. Wording lives in `i18n.json` (written to a sidecar at install time so the hook stays single-sourced); `setup_hook` handles install/remove/backup/self-heal. The menu item carries a tooltip with the full explanation.
-- **Dedicated app icon**: replaces py2app's default rocket; NSAlert dialogs now use the brand icon too (via `setIcon_`).
+### 新增
+- **「進度管家」功能（Progress Concierge）**：純本地、零 API，選單名「接著上次做」。開新 Claude Code 對話（`startup` / `/clear`）時，自動把上次的進度交給 AI——不用再跟它重講一次。選單一個開關（預設關、opt-in），啟用後安裝 Claude Code 的 SessionStart hook（`usage_session_resume.py`，stdlib-only、可於 macOS 內建 Python 3.9 執行）：讀出該專案上一個 session 的「你上次的請求 + 完成的 commit + 未完成待辦（若有用 TodoWrite）」，組成接續提示詞注入新對話開場，並請 Claude 第一句回「🐾 已接回上次進度，繼續吧！」讓你知道已生效。文案走 `i18n.json`（安裝時寫入 sidecar 供 hook 讀，維持單一來源）；`setup_hook` 負責安裝/移除/備份/self-heal。滑鼠停留選單項顯示完整說明。
+- **專屬 App 圖示**：以自製圖示取代 py2app 預設的火箭圖；NSAlert 對話框也改用品牌圖示（透過 `setIcon_`）。
 
-### Changed
-- **Slimmer menu**: the 9 panel themes are collapsed into a "Panel theme" submenu, so the menu is no longer dominated by a long inline list.
+### 變更
+- **選單瘦身**：9 個面板主題收進「面板主題」子選單，選單不再被長長一排佔滿。
 
-### Fixed
-- **Broad robustness hardening**: systematically hardened every entry point that reads user files on disk against bad UTF-8, bad JSON, and type drift (numeric strings, non-dict, non-str fields) — covering `setup_hook`, `codex_loader`, the Codex / Claude / rate-limit adapters, the statusline, the history loader, subscription reads and JWT decoding, and the tips loader.
-- **WebKit panel fallback**: registered the missing `evaluateJavaScript` block signature on the `loadBundle` fallback path.
+### 修正
+- **大規模健壯性硬化**：系統性強化所有「讀使用者磁碟檔」的入口，對抗壞 UTF-8、壞 JSON、型別漂移（數字字串、非 dict、非 str 欄位）——涵蓋 `setup_hook`、`codex_loader`、Codex / Claude / rate-limit adapter、statusline、history loader、subscription 讀取與 JWT 解碼、tips loader。
+- **WebKit 面板 fallback**：修正 `loadBundle` fallback 路徑未註冊 `evaluateJavaScript` block 簽名的問題。
 
 ## [0.12.1] - 2026-05-29
 
-### Changed
-- **File-level cache for the HTML report loaders**: `adapters/claude.py` and `adapters/codex.py` gain an `mtime`+`size`-keyed LRU cache (matching `history_loader`), so generating a report no longer re-parses every JSONL log on each run; the Codex adapter shares one cache between `load_entries` and `load_rate_limits`. Whole-file `OSError` / `PermissionError` / `sqlite3.Error` are now printed to stderr when `AGENTDECK_DEBUG=1` (per-line `JSONDecodeError` stays silent).
-- **mypy `--strict` now covers the whole codebase**: removed the mypy exclude for `adapters/`, `analyzer/`, `ui/` and `usage_cli.py` (a ~35% type-checking blind spot), added the missing generics and function annotations, and switched `_group_by_agent` to a PEP 695 type parameter. `mypy --strict` now checks all 70 source files.
-- **Three cross-module functions in `adapters/claude.py` are now public API**: `get_claude_dirs`, `extract_project_from_dir`, `parse_jsonl` (previously underscore-private), dropping the matching `# type: ignore[attr-defined]` in `analyzer/reporter.py`.
+### 變更
+- **HTML 報告載入器加上檔案快取**：`adapters/claude.py` 與 `adapters/codex.py` 補上以 `mtime`+`size` 為鍵的 LRU 快取（與 `history_loader` 一致），產生報告時不再每次重新解析整批 JSONL；Codex 端的 `load_entries` 與 `load_rate_limits` 共用同一份快取。整檔級的 `OSError` / `PermissionError` / `sqlite3.Error` 現在會在 `AGENTDECK_DEBUG=1` 時輸出到 stderr（逐行的 `JSONDecodeError` 維持靜默）。
+- **mypy `--strict` 全面覆蓋**：移除 `adapters/`、`analyzer/`、`ui/`、`usage_cli.py` 的 mypy 排除設定（約 35% 程式碼的型別盲區），補齊泛型參數與函式型別標註，`_group_by_agent` 改用 PEP 695 型別參數。`mypy --strict` 現涵蓋全部 70 個原始檔。
+- **`adapters/claude.py` 三個跨模組函式改為公開 API**：`get_claude_dirs`、`extract_project_from_dir`、`parse_jsonl`（原為底線私有），並移除 `analyzer/reporter.py` 對應的 `# type: ignore[attr-defined]`。
 
-### Fixed
-- Removing the mypy exclude surfaced and fixed a few latent issues: a redundant `parsed_entries` re-annotation left over from the cache change in `adapters/claude.py`, the `agent` loop variable reused with two different types in `analyzer/reporter.py` (inner accumulator renamed `agent_totals`), and a redundant `cast` in `menubar.py`.
+### 修正
+- 拔除 mypy 排除後抓出並修正數個潛在問題：`adapters/claude.py` 快取改動殘留的 `parsed_entries` 重複標註、`analyzer/reporter.py` 把 `agent` 迴圈變數重用為兩種型別（內層改名 `agent_totals`）、`menubar.py` 一個多餘的 `cast`。
 
-### Tests
-- Added coverage for `_apply_sort` with the `"time"` sort key (which maps to `None` and is handled per-command).
-- Added an i18n key-parity test asserting all five `i18n.json` language sections share the same key set, so a forgotten translation fails CI instead of silently falling back to English.
+### 測試
+- 新增 `_apply_sort` 對 `"time"` 排序鍵（對應 `None`、由各指令自行處理）分支的測試。
+- 新增 i18n key parity 測試：斷言 `i18n.json` 五個語言區塊的 key 集合一致，漏翻譯會在 CI 直接失敗，而非默默回退英文。
 
 ## [0.12.0] - 2026-05-29
 
-### Added
-- **"Your subscription" section in the HTML report**: auto-detects Claude (plan + subscription start date) and Codex (ChatGPT plan + subscription start date) from the local OAuth account files. Only the plan name and start date are read — tokens, emails and other secrets are never touched. When sharing the report, the subscription date is masked together with the "Hide project names" toggle. Adds the `subscription.py` module and its tests.
-- **Project-share donut chart in the HTML report**: pure-SVG (zero external deps) breakdown of token share per project; the top 6 projects get their own colour, the rest fold into "Other", and the centre shows the total.
-- **"Claude vs Codex" comparison section in the HTML report**: surfaces the per-agent usage (tokens / share / cost) that `build_report_data` already computed but never displayed.
+### 新增
+- **HTML 報告「你的訂閱」區塊**：自動從本地 OAuth 帳號檔偵測 Claude（方案＋訂閱起始日）與 Codex（ChatGPT 方案＋訂閱起始日）。只讀取方案名稱與訂閱日期，不觸碰 token、email 等機密欄位。分享報告時，訂閱日會隨「隱藏專案名稱」一併遮罩。新增 `subscription.py` 模組與對應測試。
+- **HTML 報告專案佔比圓環圖**：以純 SVG（零外部依賴）呈現各專案 token 佔比，前 6 大專案分色、其餘併為「其他」，中心顯示總量。
+- **HTML 報告「Claude vs Codex」對比區塊**：把原本已在 `build_report_data` 計算、卻從未顯示的 per-agent 用量（token／占比／成本）實際呈現在報告中。
 
-### Fixed
-- **Double-counted report cost**: `build_report_data` summed cost once over all entries and then recomputed it per entry inside the loop — effectively doubling the work on large datasets. Now accumulated once inside the loop.
-- **Duplicated clipboard code in the report's "copy command" button**: the tip-copy button now reuses the shared `copyText()` helper instead of re-implementing the legacy-browser fallback.
-- **Hard-coded TWD rate**: the USD→TWD estimate in the report is now a named `_USD_TO_TWD` constant with a note that it is a display estimate, not a live FX rate.
+### 修正
+- **報告成本重複計算**：`build_report_data` 原本先全量加總一次成本、迴圈內又逐筆重算，資料量大時形同雙倍計算；改為僅在迴圈內單次累加。
+- **報告「複製指令」按鈕的重複剪貼簿程式碼**：tip 複製鈕改用既有的共用 `copyText()`，移除重抄一份的舊瀏覽器備援邏輯。
+- **台幣匯率硬編碼**：報告中 USD→TWD 的估算匯率抽成具名常數 `_USD_TO_TWD` 並加註說明（僅供顯示估算，非即時匯率）。
 
 ## [0.11.19] - 2026-05-29
 
-### Added
-- **"Hide Codex Section" menu toggle**: the menubar gained a "Hide Codex Section" option that collapses the Codex card across all 9 HTML panels and shrinks popover height per-panel. The preference persists via `NSUserDefaults` so it survives restarts. i18n keys added for all 5 locales. (PR #19, thanks @RayCHWong for the first-time contribution)
+### 新增
+- **「隱藏 Codex 區塊」選單開關**：menubar 多了一個「隱藏 Codex 區塊」選項，可把所有 9 個 HTML 面板裡的 Codex 卡片收起，popover 高度也會依每個面板的設定縮減。設定透過 `NSUserDefaults` 持久保存，重啟後仍有效。五國語言 i18n key 同步補上。（PR #19，感謝 @RayCHWong 第一次貢獻）
 
-### Fixed
-- **`HTMLPanel.codex_card_height` is now a required keyword-only argument with no default**: previously the parameter had a `192.0` default, so a new panel that forgot to set its height in `panels/__init__.py` would silently fall back to the default — the Codex card would render at a height that doesn't match the rest of the panel without raising any error. Now declared as `*, codex_card_height: float` (keyword-only, no default), so any missing call site raises `TypeError` at import. All 9 existing panels already pass it by keyword and are unaffected; added `test_html_panel_requires_explicit_codex_card_height` to lock the contract.
+### 修正
+- **`HTMLPanel.codex_card_height` 改為強制 keyword-only、無預設值**：之前該參數有 `192.0` 預設，新增面板若忘了在 `panels/__init__.py` 設高度，會默默使用預設值；該面板的 Codex 卡片高度跟其他面板對不齊但完全不會報錯。現在改成 `*, codex_card_height: float`（無預設、強制 keyword 傳入），漏設 import 階段就會 `TypeError`。9 個既有面板已全用 `codex_card_height=...` 形式呼叫，不受影響；新增 `test_html_panel_requires_explicit_codex_card_height` 鎖定契約。
 
 ## [0.11.18] - 2026-05-28
 
-### Changed
-- **Statusline progress bar visual refresh**: progress bar characters switched from `█░` to `■□` (filled / hollow squares), and the color palette moved from standard ANSI green/yellow/red (32/33/31) to 256-color teal/orange/dark-red (42/214/160) for stronger contrast around the 50% threshold — safe / warning / danger states are now distinguishable at a glance. Changes confined to `usage_statusline.py` (`progress_bar()` and `color_by_pct()`); HTML reports and the TUI progress bars are unaffected.
+### 變更
+- **狀態列進度條外觀更新**：進度條字符從「█░」改成「■□」（黑底實心方塊／白底空心方塊），顏色從標準 ANSI 綠／黃／紅（32／33／31）換成 256 色青綠（42）／暖橘（214）／暗紅（160），讓 50% 臨界附近的色差更明顯，掃一眼就分得出安全／警告／危險三段。改動侷限在 `usage_statusline.py` 的 `progress_bar()` 與 `color_by_pct()`；HTML 報告與 TUI 進度條不受影響。
 
-### Docs
-- **Traditional Chinese default panel screenshot refreshed**: `docs/繁體中文面板.png` updated to reflect the latest UI (new "Report / Terminal" toggle, per-project cost display, footer attribution).
+### 文件
+- **繁體中文預設面板截圖更新**：`docs/繁體中文面板.png` 換成包含近期 UI 改動的版本（新「報告／終端」切換按鈕、per-project 成本顯示、底部 attribution 等）。
 
 ## [0.11.16] - 2026-05-27
 
-### Fixed
-- **Codex usage panel no longer falls back to `--` after a burst of short sessions**: `codex_loader.load_rate_limits()` only scanned the 5 most recent jsonl files via `_recent_jsonl_files()` to find rate_limits. Codex CLI (observed on 0.134.0) writes `payload.rate_limits == null` for short or interrupted sessions (a quick `codex exec` run, Ctrl-C, etc.); when the latest 5 sessions all fall into that bucket, the genuinely-valid prior session gets evicted from the lookup window and the entire Codex block in the popover / TUI renders as `--`. The scan window is widened from 5 to 30 (covers a typical 1–2 day usage range); the first non-null result still early-returns, and the `primary.used_percent` / `secondary.used_percent` parsing path is unchanged. The new Codex CLI 0.134.0 schema fields (`limit_id`, `limit_name`, `credits`, `plan_type`, `rate_limit_reached_type`) are deliberately not parsed — UI doesn't use them. Three new tests cover the "5 null then 6th valid", "all 30 null returns None", and "pick most recent valid" scenarios.
+### 修正
+- **Codex 用量區塊在連續開短 session 時整段顯示 `--`**：`codex_loader.load_rate_limits()` 透過 `_recent_jsonl_files()` 只取最新 5 個 jsonl 找 rate_limits。Codex CLI（觀察到的版本 0.134.0）在「短 session」或「被中斷的 session」會寫 `payload.rate_limits == null`；只要最近 5 個 session 剛好全是這種情況（連續跑幾個 `codex exec`、Ctrl-C 中斷等），上一個真正有資料的 session 就會被擠出 lookup window，popover / TUI 整段 Codex 用量都顯示 `--`。掃描範圍從 5 提高到 30、覆蓋 1~2 天 typical 使用範圍；找到第一筆非 null 仍 early-return，`primary.used_percent` / `secondary.used_percent` 解析路徑不動。Codex CLI 0.134.0 新增的 `limit_id` / `limit_name` / `credits` / `plan_type` / `rate_limit_reached_type` 欄位刻意不解析（UI 沒用到）。新增 3 個測試覆蓋「前 5 個 null 第 6 個有效」「全 30 個 null 回 None」「挑最新有效」三種 case。
 
-### Fixed
-- **Dashed Claude Code project names now decode correctly**: `history_loader._project_from_path` previously replaced every `-` in the encoded directory name with `/`, so `Desktop-claude-tutorial-video` would become `/Desktop/claude/tutorial/video` — a non-existent path. `resolve_project_name`'s fallback then took the last segment, mis-labeling the project as `"video"` instead of `"claude-tutorial-video"`. The decoder now tries the all-slash candidate first; on miss, it DFS-walks the segments, joining adjacent ones with `-` and preferring whichever variant actually exists on disk. When nothing matches, the encoded name (minus the leading `-`) is kept as-is so dashes round-trip (`plain-project` stays `plain-project`). For most users, the JSONL `cwd` field already overrides the project name, so this primarily fixes older entries that lack `cwd`.
-- **TUI language detection routed through `usage_lang.detect_lang`**: `tui.py` had its own detector that only returned `zh-TW` or `en` (treating simplified Chinese, Japanese, and Korean as English), and ignored `AGENTDECK_LANG` / `TT_LANG` / `LANG` entirely. The menubar already used `usage_lang.detect_lang()`, so the same machine could show Japanese in the menubar and English in the TUI. The TUI now shares the same detector — all five languages render consistently.
+### 修正
+- **含 dash 連字號的 Claude Code 專案名解碼修正**：`history_loader._project_from_path` 之前的解碼邏輯把目錄名所有 `-` 全換成 `/`，例如 `Desktop-claude-tutorial-video` 變成 `/Desktop/claude/tutorial/video`，路徑不存在 → `resolve_project_name` 走 fallback 取最後一段 → 專案被誤標為 `"video"` 而不是 `"claude-tutorial-video"`。現在先試「全 slash」候選，不存在則對 path segments 做 DFS 嘗試合併連續段、用 fs 上實際存在的目錄定錨；都找不到時保留原 dash 形式（`plain-project` → `plain-project`）。多數情境下 JSONL 內的 `cwd` 欄位已經會覆寫 project name，這條修正主要保護沒有 `cwd` 欄位的舊 entry。
+- **TUI 語言偵測統一走 `usage_lang.detect_lang`**：先前 `tui.py` 自寫一份偵測，只認 zh / en（簡中、日韓全部被當英文），且完全沒讀 `AGENTDECK_LANG` / `TT_LANG` / `LANG` 環境變數。結果同一台機器 menubar 顯示日文、TUI 顯示英文。現在 TUI 跟 menubar 共用同一個 `detect_lang()`，五國語言一致。
 
-### Internal improvements
-- **LRU cap on history / codex loader caches**: `_file_cache` and `_jsonl_cache` were unbounded module-level dicts. As `~/.claude/projects/` and `~/.codex/sessions/` accumulated more jsonl files over time, the menubar's resident memory grew without bound — parsed `UsageEntry` lists never got released. Both caches are now `OrderedDict`s with a 512-entry ceiling: cache hits `move_to_end` to mark MRU, inserts on a full cache `popitem(last=False)` the oldest. The mtime/size invalidation logic and codex_loader's `entry.model` rebind on cache hit are unchanged.
+### 內部改進
+- **history / codex loader cache 加 LRU 上限**：`_file_cache` 與 `_jsonl_cache` 之前是無上限的 module-level dict，menubar app 駐留越久、`~/.claude/projects/` 與 `~/.codex/sessions/` 累積越多 jsonl，parsed `UsageEntry` list 全卡在記憶體永遠不釋放。改用 `OrderedDict` + 各自 512 entry 上限；cache hit `move_to_end` 標 LRU、insert 滿了 `popitem(last=False)` evict 最舊。mtime/size 失效邏輯不動、codex_loader 的 `entry.model` rebind 也保留。
 
-### Development
-- **Significantly expanded test coverage**: previously undercovered modules `setup_app` / `ui/tables` / `usage_cli` now have direct unit tests; the suite grew from 234 to 363 tests. No production code was changed.
+### 開發
+- **測試覆蓋大幅擴張**：`setup_app` / `ui/tables` / `usage_cli` 三個原本欠覆蓋的模組補上單元測試，整體測試數從 234 增加到 363。沒有改動 production code。
 
 ## [0.11.14] - 2026-05-27
 
-### Fixed
-- **Stale update badge clears immediately after upgrading**: `usage_statusline.py:_read_update_hint` only compared the cached `current_version` against `latest_version` without consulting the actual running version. The menubar app's 24h dismiss cooldown returned early before refreshing the cache, so a user already on v0.11.13 would keep seeing "v0.11.5 available" until cooldown expired. `_check_update_in_background` now refreshes `current_version` in the cache on startup (even during cooldown), and if the running version has caught up to `latest_version`, both fields are leveled so the badge disappears immediately.
+### 修正
+- **升級後底部狀態列不再殘留舊版本提示**：`usage_statusline.py:_read_update_hint` 只比較快取裡的 `current_version` 與 `latest_version`，沒對照「現在實際在跑的版本」。menubar app 又會在 24 小時冷卻期間直接 return、不更新快取，導致使用者已經升到 v0.11.13 卻一直看到「v0.11.5 可更新」直到冷卻結束。現在 `_check_update_in_background` 啟動就先把目前版本寫回快取，若已追上 `latest_version` 就把它一起拉平，badge 立刻消失。
 
-### Changed (community contributions)
-- **Codex usage bucketed by token_count deltas (@ericweichun, #11)**: `analyzer/reporter.py`'s fast path previously parsed Codex `.jsonl` files to extract a cumulative snapshot keyed by session-start timestamp, which diverged from the popover (which uses `codex_loader.load_entries` with per-event delta logic). The reporter now shares the same loader, so today/week/month reports match the popover exactly. Added a reporter-layer test exercising a cross-day cumulative Codex session to verify only the current-day delta is counted.
-- **All-Time reports tied to the project range selector (@ericweichun, #15)**: v0.11.6's analyze-bridge refactor left out the All-Time period, so clicking All-Time showed 720h cached data instead of true all-time. The bridge now maps `projectRange === "all"` through `_analysis_period_from_project_range("all") → "all"`, and project history loads with `hours_back=0` for true all-time data. All 9 panels gained a `projectRange === "all"` branch; `project_range_all` i18n keys added across all 5 locales.
-- **Manual refresh button queues while busy (@ericweichun, #12)**: previously, pressing refresh while one was already running silently dropped the second request. Now a single follow-up is queued, and the completion `finally` block runs in order: `codex_model = result.get("codex_model", "unknown")`, web language injection, clear the busy flag, then drain one queued refresh.
-- **Setup guidance made agent-neutral (@ericweichun, #16)**: the setup button previously gated on `~/.claude/` existence, hiding it from Codex-only users. The check is now "any status-line target available" (`~/.claude/` or `~/.codex/config.toml`); the existing `setup_hook.setup()` flow already auto-detects which agent to configure. Both README variants (zh-TW + en) reworded to agent-neutral phrasing; ja/ko `hook_not_installed` translations filled in.
+### 變更（社群 contributor 修補）
+- **Codex 用量改用 delta 桶計算（@ericweichun, #11）**：`analyzer/reporter.py` 的 fast path 之前自己 parse Codex `.jsonl` 拿 cumulative snapshot + session-start 時間戳，跟 popover 用的 `codex_loader.load_entries` 走兩條路、結果會分歧。現在 reporter 統一走 shared loader，token_count delta 按 event timestamp 入桶，今日/本週/本月報表跟 popover 完全一致。新增跨日 cumulative session 測試確保只計當日 delta。
+- **All Time 報表跟著 project range 一起切換（@ericweichun, #15）**：v0.11.6 重整 analyze bridge 時漏掉 All Time 這個區段，使用者點 All Time 看到的是 720h 快取資料而非真正全期。現在 `_analysis_period_from_project_range("all") → "all"`，project 資料載入改 `hours_back=0` 真的拉全部。9 個 panel HTML 都加 `projectRange === "all"` 分支；五語 i18n 補齊 `project_range_all`。
+- **手動重整按鈕在 busy 期間改成排隊（@ericweichun, #12）**：之前 refresh 正在跑時再按一次會直接被丟掉。現在改成排隊一次，refresh 完成的 finally block 依序：先 `codex_model = result.get("codex_model", "unknown")`、再注入 web 語言、再清 busy 旗標、再 drain 一筆 queued refresh。
+- **setup 指引改為 agent-neutral（@ericweichun, #16）**：之前 setup 按鈕只看 `~/.claude/` 存不存在當顯示條件，Codex-only 使用者看不到。現在改成「status-line target 任一存在即可」（`~/.claude/` 或 `~/.codex/config.toml`），既有 `setup_hook.setup()` 路徑已會自動偵測 agent。README（繁中 + 英文）同步改成 agent-neutral 措辭；補齊 ja/ko `hook_not_installed` 翻譯。
 
 ## [0.11.13] - 2026-05-27
 
-### Changed
-- **Removed Codex model footer from popover**: the "· model: gpt-5.5" suffix added in v0.11.6 (`menubar.py:868-870`) misled users into thinking the model was being used *right now*, when in fact it reflects the model of the most recent Codex session with rate_limits data — possibly hours old. Without a timestamp context, this information is noise that can't be acted on. TUI model displays (`ui/tables.py:818,857`) are kept since they live inside different contexts (active session block / idle panel). The `model_label` i18n key and `CodexRateLimits.model` field are preserved; only the popover footer concatenation is removed.
+### 變更
+- **拿掉 popover footer 的 Codex 模型顯示**：v0.11.6 加進去的「· 模型: gpt-5.5」拼接（`menubar.py:868-870`）會讓使用者誤以為「現在這一秒正在用 gpt-5.5」，但實際語意是「Codex 最近一個有 rate_limits 紀錄的 session 用的模型」——可能是好幾小時前。在沒有時間戳脈絡的情況下，這個資訊「看得到但不知道怎麼用」，純粹噪音。TUI 那邊的 model 顯示（`ui/tables.py:818,857`）脈絡不同（active session 區塊內 / idle panel），保留不動。`model_label` i18n key 與 `CodexRateLimits.model` 欄位皆保留，僅移除 popover footer 的拼接。
 
 ## [0.11.12] - 2026-05-27
 
-### Changed
-- **Hook self-heal: broken installs fix themselves, silently**: every startup now runs `setup_hook.self_heal()`, which silently repairs three clearly-safe scenarios: (1) first-run (`is_setup()==False` and no `statusLine` key in settings) → invokes `setup()`; (2) hook script version is out of date (`needs_update()==True`) → `update_hook()`; (3) settings points to a missing hook file with state `us-direct`/`us-forwarder` → re-runs `_copy_hook_script()` + `_copy_forwarder_script()`. When state is `external`/`legacy-tt`, all three skip (no silent override of third-party tools). Each action appends to `settings["usage"]["selfHealLog"]` (FIFO, 20 entries). Failures are swallowed; stderr is printed only when `AGENTDECK_DEBUG=1`.
-- **Coexistence prompt consolidated**: when an external statusLine tool is detected, usage shows a single NSAlert with two buttons ("Enable Coexistence Mode" / "Keep Current Setup"). Either button sets `settings["usage"]["forwarderModePromptDismissed"]=True` and the prompt never appears again. Replaces the previous three-button repair dialog in `main.py:health_check()`; the "remind me later (24h cooldown)" path is removed. Users who previously chose "Do Not Ask Again" on the old dialog will be re-prompted once (one click resolves it).
-- **`--doctor` hidden CLI flag**: `python3 main.py --doctor` prints a plain-text diagnostic report (English-only for easier GitHub issue searches) covering hook state, version, script file status, status file mtime, external hook detection (recognizes `ccusage` / `lord-kali` keywords), forwarder prompt ack state, last 5 self-heal log entries, and Codex sessions scan count. Hidden from `--help` via `argparse.SUPPRESS` so it doesn't distract typical users. New `doctor.py` renderer module.
+### 變更
+- **hook 自癒：壞了自己修，使用者無感**：每次 usage 啟動會跑一輪 `setup_hook.self_heal()`，在三種「明確安全」的情境下默默修復：(1) 首次安裝（`is_setup()==False` 且 settings 沒有 `statusLine` 鍵）→ 呼叫 `setup()`；(2) hook script 版本過舊（`needs_update()==True`）→ `update_hook()`；(3) settings 指向的 hook 檔案不存在但 state 為 `us-direct`/`us-forwarder` → 重新 `_copy_hook_script()` + `_copy_forwarder_script()`。state 為 `external`/`legacy-tt` 時三段都跳過（不會默默覆蓋第三方工具）。每筆動作寫入 `settings["usage"]["selfHealLog"]`（FIFO 20 筆）。失敗全 swallow，僅 `AGENTDECK_DEBUG=1` 時印 stderr。
+- **共存模式提示整合**：偵測到外部 statusLine 工具時跳一次 NSAlert 兩按鈕（「啟用共存模式」/「保留現狀」），按任一鍵後寫 `settings["usage"]["forwarderModePromptDismissed"]=True` 永不再跳。取代原本 `main.py:health_check()` 的三按鈕修復對話框；舊的「稍後 24h 冷卻」機制移除。舊使用者若已選過「不要再問」會被視為未 ack，更新後會再跳一次（按一下即解決）。
+- **`--doctor` 隱藏 CLI 指令**：`python3 main.py --doctor` 印純文字診斷報告（全英文，方便 GitHub issue 搜尋），包含 hook state、版本、script 檔案狀態、status file mtime、外部 hook 偵測（識別 `ccusage` / `lord-kali` 關鍵字）、forwarder prompt ack 狀態、最近 5 筆 self-heal log、Codex sessions 掃描數。`argparse.SUPPRESS` 隱藏於 `--help`，預設不打擾一般使用者。新增 `doctor.py` renderer。
 
-### Changed
-- **Weekly burn warning no longer over-reacts to short bursts**: previously the weekly warning extrapolated from the most recent 10-minute sample window, so a single large prompt could trigger a scary "8 hours until empty" warning that vanished once the user took a break. The weekly warning now uses a 30-minute sample window with a 30-minute minimum span, requiring sustained high usage for at least half an hour before triggering. Session warnings keep the 10-minute window (session resets are frequent, can't be too strict). `burn_rate.ROLLING_WINDOW_SECONDS` was raised from 15 to 60 minutes so the longer window has enough history.
-- **Burn warning text now says "at current pace"**: all 5 languages' burn warning strings now explicitly include "按目前速度 / At current pace / 現在のペース / 현재 속도", making it clear that this is a momentary extrapolation rather than a stable prediction.
+### 變更
+- **本週燒率警告不再被瞬間高使用激動**：之前用最近 10 分鐘樣本線性外推到整週剩餘額度，使用者跑一個大 prompt 就會看到「剩 8 小時用完」之類嚇人數字，但其實休息一下警告就消失。本週警告現在改看 30 分鐘窗口、要求至少 30 分鐘樣本跨距，需要使用者**持續高燒率半小時以上**才會觸發；session 警告維持原本 10 分鐘窗口（session reset 較頻繁，不能太嚴）。`burn_rate.ROLLING_WINDOW_SECONDS` 從 15 分鐘拉到 60 分鐘讓樣本能保留更久。
+- **燒率警告文字明說「按目前速度」**：5 國語言的警告文字統一加上「按目前速度 / At current pace / 现在のペース / 현재 속도」，把「這只是瞬間外推、不是穩定預測」的責任明說推給使用者，不再讓人誤以為系統在預言未來。
 
 ## [0.11.10] - 2026-05-27
 
-### Fixed
-- **"Launch at login" toggle now takes effect immediately, no reboot needed**: `login_item.enable()` / `disable()` now invoke `launchctl bootstrap gui/<uid> <plist>` / `launchctl bootout gui/<uid>/<label>` in addition to writing/removing `~/Library/LaunchAgents/com.lollapalooza.usage.plist`, so launchd learns about the change right away. Previously only the plist file was touched, so the toggle did nothing until the next reboot, and disabling left a KeepAlive orphan process behind. `launchctl` "already bootstrapped" (exit 17) and "not bootstrapped" (exit 113) are treated as success; other failures log a warning without affecting the plist operation (signatures stay `() -> None`).
+### 修正
+- **「開機啟動」開關立刻生效，不用重開機**：`login_item.enable()` / `disable()` 現在會在寫/刪 `~/Library/LaunchAgents/com.lollapalooza.usage.plist` 之外，呼叫 `launchctl bootstrap gui/<uid> <plist>` / `launchctl bootout gui/<uid>/<label>`，讓 launchd 當下就知道狀態變了。先前只動 plist 檔，launchd 守護程式不會接到通知，使用者點完開關要等下次重開機才會生效，關掉時還會留下 KeepAlive 孤兒程序清不掉。`launchctl` 的「已 bootstrapped」(exit 17) 與「未 bootstrapped」(exit 113) 視為成功；其他失敗只記 warning，plist 操作結果不受影響（簽名維持 `() -> None`）。
 
 ## [0.11.9] - 2026-05-27
 
-### Fixed
-- **TUI session table no longer crashes on `cost_usd=None`**: widened `ui/tables.py:_fmt_cost` to `float | None` so entries written without a cost (a known path on the Codex side) now render as `--`, matching the popover-side behavior in `panels/web_panel.py`. Previously the `>=` comparison raised `TypeError` and broke the whole table.
-- **Update check now handles pre-release versions**: `update_checker._parse_version` now strips pre-release / build suffixes via regex, so `0.11.0-beta.1` / `0.11.0+build.5` no longer return `None` and no longer make `compare_versions` raise. Beta testers receive update prompts correctly. No new package dependencies were added.
-- **Pricing falls back to a stale cache when offline**: the fallback order in `pricing.py` is now fresh cache → network fetch → stale cache → hardcoded fallback. Previously a >7-day-old cache combined with no network dropped straight to the hardcoded prices, skewing cost estimates; the real (if stale) historical cache is now preferred.
+### 修正
+- **TUI session 表遇 `cost_usd=None` 不再崩潰**：`ui/tables.py` 的 `_fmt_cost` 簽名擴成 `float | None`，Codex 端可能寫入 None 的紀錄現在會顯示 `--`，與 popover 側 `panels/web_panel.py` 行為一致。先前直接 `>=` 比較會丟 `TypeError`，整張表渲染失敗。
+- **更新檢查支援預發布版號**：`update_checker._parse_version` 改用 regex 切預發布後綴，`0.11.0-beta.1` / `0.11.0+build.5` 不再回 `None`、不再讓 `compare_versions` 報錯，beta tester 也能正常收到更新提示。沒有新增任何套件依賴。
+- **離線時退回過期 pricing 快取**：`pricing.py` 的 fallback 順序改成 fresh cache → 線上抓取 → stale cache → 硬編 fallback。先前快取過 7 天又斷網會直接掉到硬編值，導致成本估算大偏移；現在會優先用過期但真實的歷史快取。
 
 ## [0.11.8] - 2026-05-27
 
-### Changed
-- **git worktree entries collapse into the main project**: running Claude Code or Codex inside a worktree (a duplicate working tree of the same repo) no longer splits `usage` and `usage-fix-bug` into two separate rows in the HTML report and TUI ranking. They are now grouped under the main worktree's directory name. A new `project_resolver.py` module (stdlib only, 3-second timeout, falls back to the previous basename behavior when git is unavailable) is shared by `history_loader.py` and `codex_loader.py`. Seeing historical totals merge on first upgrade is the intended behavior.
+### 變更
+- **git worktree 自動合併到主專案**：在 worktree（同一個 repo 的副本資料夾）內跑 Claude Code 或 Codex 時，HTML report 與 TUI 排行不再把 `usage` 與 `usage-fix-bug` 算成兩個專案，而是合併歸到主 worktree 的資料夾名底下。新增 `project_resolver.py` 共用模組（純 stdlib、3 秒 timeout、查不到 git 就退回原本的 basename 行為），`history_loader.py` 與 `codex_loader.py` 統一走它。第一次升級看到歷史排行數字合併屬於預期行為。
 
 ## [0.11.7] - 2026-05-27
 
-### Changed
-- **Pricing cache moved under `~/.agentdeck/`**: the LiteLLM pricing cache now lives at `~/.agentdeck/pricing_cache.json` instead of `~/.claude/pricing_cache.json`, following the principle that agentdeck-owned state belongs in its own directory. The legacy path stays as a read-only fallback for seamless migration. Thanks @ericweichun.
+### 變更
+- **pricing 快取改放在 `~/.agentdeck/`**：把 LiteLLM 計費快取從 `~/.claude/pricing_cache.json` 搬到 `~/.agentdeck/pricing_cache.json`，符合「usage 自己的狀態走自己的目錄」原則；舊路徑保留唯讀 fallback，遷移無感。感謝 @ericweichun。
 
-### Fixed
-- **Explicit `usage report --help` and unknown-option handling**: previously the CLI silently ignored unknown report options and `--help` still triggered agent detection. Now `--help` returns the help text immediately and unknown options error out cleanly. Thanks @ericweichun.
+### 修正
+- **`usage report --help` 與未知參數行為明確化**：先前 CLI 子命令對未知參數沉默忽略、`--help` 仍會跑 agent 偵測；現在 `--help` 直接回幫助文字並結束，未知參數明確報錯。感謝 @ericweichun。
 
 ## [0.11.6] - 2026-05-27
 
-### Added
-- **Codex model shown in the popover footer**: the footer now displays the currently detected Codex model; when no model data is available it falls back to `unknown` instead of leaving the state blank.
+### 新增
+- **Codex 模型顯示在 popover footer**：底部現在會顯示目前偵測到的 Codex 模型；沒有資料時顯示 `unknown`，避免空白狀態讓人誤以為讀取失敗。
 
-### Changed
-- **Analysis report period follows the Project Usage range**: the Report button now switches output periods with the current project range, mapping 1d to today, 7d to week, and 30d to month. No new UI was added; it uses the existing range control.
+### 變更
+- **分析報告期間跟隨 Project Usage 範圍**：「分析報告」按鈕現在會依照 project range 切換輸出區間，1d 對應 today、7d 對應 week、30d 對應 month；不新增 UI，沿用現有範圍控制。
 
-### Fixed
-- **Japanese / Korean Codex model labels completed**: added the missing ja / ko `model_label` translations so footer model information no longer renders blank in Japanese and Korean UIs.
+### 修正
+- **日文 / 韓文 Codex 模型標籤補完**：補上 `model_label` 的 ja / ko 翻譯，讓 footer 的模型資訊在日韓介面不再空白。
 
-### Performance
-- **Codex today / week / month reports now use tail scanning**: users with many sessions no longer wait for a full history scan when opening reports. Today reports drop from roughly 7 seconds to the 0.03-second range, with week / month benefiting from the same path.
+### 效能
+- **Codex today / week / month 報告改走尾端掃描**：session 很多的使用者按報告時不再需要等待完整歷史掃描，today 報告從約 7 秒降到 0.03 秒等級，week / month 也受益於相同路徑。
 
 ## [0.11.5] - 2026-05-26
 
-### Added
-- **Terminal toggle button now changes background when enabled**: previously only the `✓` check mark indicated that the statusLine hook was active; now the button background tints with each panel's accent color too, so the on/off state is obvious at a glance.
+### 新增
+- **「終端」按鈕開啟狀態變色**：之前只有勾勾「終端 ✓」表示 statusLine 開關狀態，現在按鈕底色也會跟著變（每個面板用自己的主色），一眼看出開還是關。
 
-### Changed
-- **Friendlier button labels for non-developers**: "Analyze" → "Report", "CLI" → "Terminal" (with per-language translations: 終端 / ターミナル / 터미널 / 终端). All five languages updated together.
-- **All buttons now have hover feedback**: previously only "Refresh Now" reacted to mouse hover; "Quit", "Switch Panel", "Today", "Report", "Terminal" looked disabled. Hover now produces visual feedback at a graded intensity (primary > secondary > switch).
-- **Classic panel large visual refinement**: pushed towards a "macOS system tool" feel — card corners 18→8, tightened spacing, progress bars gained inset track shadow and outer glow, projects list got a relative-share comparison bar (top-3 ranks emphasized), footer status became chip pills, brand-color accent stripe added on the left, brand icons gained background tint and glow.
-- **Six themed panels adopt the same UX trio** (matrix / win95 / newspaper / aquarium / cloud_observation / prism_arcade / black_hole): comparison bars, Terminal active-state coloring, button hover. Each panel's own theme art is preserved in full (Matrix green / Win95 pixel / newspaper print / aquarium ripple / cloud / prism rainbow / black-hole orange).
-- **Landing page panel gallery expanded from 6 to 9 themes**: added aquarium / prism_arcade / black_hole; classic now uses its own screenshot instead of borrowing `popover.png`.
-- **Refreshed all 9 panel screenshots (zh-TW & en)** in the README and on https://aqua5230.github.io/usage/.
+### 變更
+- **按鈕名稱對非工程師更直觀**：「分析」→「報告」、「CLI」→「終端」/ Terminal / ターミナル / 터미널 / 终端，五國語言同步。
+- **所有按鈕都有 hover 反饋**：原本只有「立即更新」滑鼠移上去會變色，「結束」「更換面板」「今日」「報告」「終端」全沒反應像 disabled。現在 hover 都有對應視覺回饋，強度按 primary > secondary > switch 階層遞減。
+- **classic 面板大幅視覺精修**：往「macOS 系統工具」風格調 —— 卡片圓角 18→8、間距收緊、進度條加 inset 軌道凹陷感與外發光、排行榜加相對佔比比例條（前 3 名比例橫條，第一名強調）、底部狀態變 chip pill、左邊加品牌色細條、brand icon 加底色與光暈。
+- **6 個面板套同樣 UX 三件套**（matrix / win95 / newspaper / aquarium / cloud_observation / prism_arcade / black_hole）：比例條、終端開啟變色、按鈕 hover；各面板完整保留自己原本的主題視覺（駭客綠 / 像素 / 報紙 / 水紋 / 雲 / 彩虹 / 橘漸層）。
+- **landing page panel 展示從 6 個擴成 9 個**：新增 aquarium / prism_arcade / black_hole 三個；classic 改用專屬截圖（之前借用 popover.png）。
+- **更新 9 個面板的中英文截圖**：README 與 https://aqua5230.github.io/usage/ 上的展示截圖全部換成最新版。
 
-### Fixed
-- **Analysis reports now follow the menu bar popover language**: clicking Report (formerly Analyze) now passes the menu bar's current language into HTML report generation instead of redetecting from environment variables only, avoiding English fallback when LaunchAgent does not set `LANG`.
-- **Visible popovers are repositioned when switching panels**: changing the active theme/panel while the popover is open now closes the old popover, rebuilds the content and size, then shows it again to avoid transient indentation or sizing glitches.
-- **Codex project usage and analysis reports now share one counting path**: when the same Codex session appears in multiple JSONL files, usage keeps the newer cumulative token entry; analysis reports now reuse `codex_loader.load_entries()`, and Project Usage includes Codex sessions so the app and report do not disagree for the same local data. Project Usage's Today range now matches the footer's local calendar day, and the footer no longer reloads Codex when the caller already supplied Codex entries.
-- **Project Usage header truncation fixed across all 9 panels**: classic & matrix were patched by @ericweichun (#9); this release completes the remaining six (win95 / newspaper / aquarium / cloud_observation / prism_arcade / black_hole). All now use a 2-row grid (icon + title on top, three buttons evenly distributed below) so English "Project Usage" and longer Japanese/Korean titles no longer clip.
-- **macOS now opens analysis reports with `/usr/bin/open`**: previously `webbrowser.open()` constructed a `file://` URI, which some browsers refused for paths containing spaces or CJK characters. Switching to `/usr/bin/open` with the resolved path is more reliable. Thanks to @ericweichun (#9).
-- **Matrix panel footer clipping**: the ASCII border + raindrop background made the content taller than the default 812 panel height, clipping the "Refresh Now / Quit" buttons. Raised to 880.
-- **win95 / newspaper "Resets in X" text was glued to the card edge**: bumped win95 panel height 768 → 800, newspaper → 850, and added padding-bottom to the Claude/Codex card's `.row:last-child`.
-- **Four grid panels (aquarium / cloud_observation / prism_arcade / black_hole) — Projects row layout rebuilt**: the original row-as-mini-card design (border + radius + background) fundamentally fought with the new column-spanning comparison bar (the bar always glued to the row card's bottom border; padding / margin / grid-template-rows tweaks all failed). Switched to flat rows with border-top dividers (same as classic), preserving each panel's theme color on the rank chip and background. Also removed the comparison bar from these four panels (grid + row-card + spanning bar is fundamentally conflicting; ROI too low). The other four panels (classic / matrix / win95 / newspaper) keep their comparison bars.
+### 修正
+- **分析報告語言跟隨 menu bar 浮窗**：按下「報告」時 HTML 報告改用 menu bar 目前語言，避免 LaunchAgent 未設 `LANG` 時 fallback 成英文。
+- **切換面板時重新定位已開啟的 popover**：popover 開啟狀態下切 theme/panel，先關舊 popover、重建內容尺寸再顯示，避免短暫排版錯亂。
+- **Codex 專案用量與分析報告統一算法**：同一個 Codex session 出現在多個 JSONL 檔時改選較新的 cumulative token entry；分析報告改共用 `codex_loader.load_entries()`，Project Usage 也納入 Codex session。Project Usage 的 Today 與底部 Today 同步用本地日曆日，底部 Today 不會在呼叫端已提供 Codex entries 時重複載入。
+- **9 個面板「專案用量」標題不再被按鈕擠斷**：classic 與 matrix 由 @ericweichun 補上（#9），這次補完剩 6 個面板（win95 / newspaper / aquarium / cloud_observation / prism_arcade / black_hole），全部改成 2 列 grid 版型（icon+標題在上、三顆按鈕等寬排在下），配合英文「Project Usage」與日韓較長字串。
+- **macOS 開啟分析報告改用 `/usr/bin/open`**：以前 `webbrowser.open()` 走 `file://` URI 對含空格或中文字路徑可能失敗，改用 `/usr/bin/open` 更穩。感謝 @ericweichun（#9）。
+- **matrix 面板 footer 被截**：加 ASCII 邊框與雨滴背景後內容變高，預設 panel height 812 裝不下「立即更新 / 結束」按鈕。改成 880。
+- **win95 / newspaper 面板「重置 X天 X小時」貼下邊框**：win95 panel height 768 → 800、newspaper → 850，並對 Claude/Codex 卡的 `.row:last-child` 加 padding-bottom 緩衝。
+- **4 個 grid 面板（aquarium / cloud_observation / prism_arcade / black_hole） Projects row 排版重構**：原 row 是有 border 的小卡片設計跟新加的比例條跨欄行為打架，改為 row 之間用 border-top 分隔（同 classic 風格），保留各面板主題色在 rank chip 與背景。同時拆掉這 4 個面板的比例條（grid + row 卡片化 + bar 跨欄三者本質衝突，ROI 過低），其他 4 個面板（classic / matrix / win95 / newspaper）的比例條保留。
 
 ## [0.11.4] - 2026-05-25
 
-### Added
-- **statusLine shows an "update available" hint**: after every successful update check, menubar writes the result to `~/.claude/agentdeck-preferences.json` under `last_update_check`. statusLine reads this and renders `🆕 vX.Y.Z available` (cyan) on the model line when a newer version is cached, the cache is fresh (<30 days), and the version isn't on the user's skip list. New `update_available_suffix` translation across all 5 languages (zh-TW「可更新」/ zh-CN「可更新」/ en「available」/ ja「更新あり」/ ko「업데이트」).
+### 新增
+- **statusLine 顯示「可更新」提示**：menubar 跑 update check 後會把結果寫進 `~/.claude/agentdeck-preferences.json` 的 `last_update_check`；statusLine 讀這個檔，發現有新版時在 model 行末顯示 `🆕 vX.Y.Z 可更新`（青色）。尊重「跳過此版本」設定，cache 超過 30 天視為過期不顯示。新增五語言翻譯 `update_available_suffix`（zh-TW「可更新」/ zh-CN「可更新」/ en「available」/ ja「更新あり」/ ko「업데이트」）。
 
-### Changed
-- **statusLine context-window label format**: `對話窗(1.0M):[bar]` → `對話窗:[bar] 15% / 1.0M`. The capacity moves from a middle parenthetical to a right-aligned suffix, reading more naturally as "15% of 1M".
-- **statusLine fast-mode display flipped**: previously both states showed a label (`⚡Fast` vs `/nofast`); now only the *on* state shows `⚡Fast`, off renders nothing — like an AC unit's indicator light: the light *being on* is the signal.
-- **statusLine percentages now share the bar color**: previously rendered in neutral gray; now matched to the bar's warning color (yellow / green / red). The number alone tells you the warning level at a glance.
-- **statusLine `(X left)` no longer dimmed**: previously rendered with ANSI dim, hard to read on dark terminal backgrounds. Removed dim; parentheses alone now carry the "supplementary info" semantic.
+### 變更
+- **statusLine 對話窗格式調整**：「對話窗(1.0M):[bar]」改為「對話窗:[bar] 15% / 1.0M」—— 容量上限從中間括號移到尾巴跟百分比並排，讀起來更像「15% of 1M」。
+- **statusLine fast mode 顯示反轉**：以前 on/off 都顯示標籤（`⚡快速` / `/nofast`），改為只有開啟才顯示 `⚡快速`，關閉不顯示 —— 像家裡的冷氣指示燈，亮燈即表示「在運作」。
+- **statusLine 百分比跟進度條同色**：之前百分比都是灰白，現在跟進度條同色（黃 / 綠 / 紅）—— 一眼看數字就知道警示級別。
+- **statusLine 「(剩 X 時間)」亮度提升**：之前用 ANSI dim 在深背景下太暗，現在拿掉 dim 用正常亮度，仍靠括號表達「補充資訊」。
 
 ## [0.11.3] - 2026-05-25
 
-### Fixed
-- **Read-only CLI commands silently mutated user settings**: `usage daily` / `report` / `sessions` / `dashboard` and other read commands unconditionally called `setup()` or `update_hook()`, potentially writing to `~/.claude/settings.json` or `~/.codex/config.toml` on every invocation. Fix: only `setup` / `unsetup` mutate user settings; other commands now show a one-line "Hook not installed. Run: usage setup" hint when the hook isn't installed.
-- **Opus 4.6 / 4.7 cost was underestimated 3× on offline cold start**: `pricing.py`'s fallback table listed Opus as `5e-6 / 25e-6` (input / output per token), but the published Anthropic rate is `15e-6 / 75e-6`. Affected scenario: no pricing cache *and* LiteLLM live fetch fails. Users with network access or a cached price table are unaffected.
-- **`adapters/codex.py` sqlite connection leak**: `_load_thread_models()` wrapped the work in `try / except`, but `conn.close()` ran *after* `execute().fetchall()` — any exception in between left the connection dangling. Now uses `contextlib.closing()` to guarantee release.
-- **Mid-write crash could leave `~/.codex/config.toml` truncated**: `setup_hook.py`'s `_setup_codex` / `_unsetup_codex` used plain `write_text()`, so a crash or kill during setup could corrupt Codex config. Now uses `mkstemp + os.replace` atomic write, sharing a single module-private helper with Claude settings.
+### 修正
+- **CLI 讀取型命令會偷偷改使用者設定**：`usage daily` / `report` / `sessions` / `dashboard` 等只讀命令會無條件呼叫 `setup()` 或 `update_hook()`，每次跑都可能改到 `~/.claude/settings.json` 或 `~/.codex/config.toml`。修正後只有 `setup` / `unsetup` 才會寫使用者設定；其他命令在 hook 未安裝時改顯示一行提示「Hook 尚未安裝。請執行：usage setup」。
+- **Opus 4.6 / 4.7 離線冷啟動成本估算低 3 倍**：`pricing.py` 的 fallback 表把 Opus 寫成 `5e-6 / 25e-6`（input / output per token），Anthropic 官方是 `15e-6 / 75e-6`。受影響條件：沒有 pricing cache 且 LiteLLM 線上 fetch 失敗的離線冷啟動；連線正常或已有 cache 的使用者不受影響。
+- **`adapters/codex.py` sqlite connection 漏關**：`_load_thread_models()` 用 `try / except` 包，但 `conn.close()` 在 `execute().fetchall()` 之後，中間任何例外都會留下未釋放的連線。改用 `contextlib.closing()` 確保必定釋放。
+- **`~/.codex/config.toml` 寫入中斷會留下 truncated TOML**：`setup_hook.py` 的 `_setup_codex` / `_unsetup_codex` 用 `write_text()` 直接覆寫，setup 過程被 crash / kill 會壞掉 Codex 設定檔。改成 `mkstemp + os.replace` atomic write，並與 Claude settings 共用同一個 module-private helper。
 
-### Changed
-- **`analyzer/cost.py` removed**: it was a weakened duplicate of `pricing.py` — bidirectional substring model matching (prone to misclassification), no cache TTL, and an SSL-cert-verification-disabled fallback when fetching the price table (a security concern for cost data). `analyzer/{aggregator,blocks,reporter}` now import `pricing.calculate_cost` directly; the latter accepts a `typing.Protocol` so both `history_loader.UsageEntry` and `adapters.types.UsageEntry` work. Net 76 lines of duplicate cost-calc code removed.
+### 變更
+- **`analyzer/cost.py` 退場**：原本是 `pricing.py` 的劣化複製品 —— 寬鬆雙向子字串模型比對會誤配、無 cache TTL、SSL 憑證錯誤時自動關閉驗證重抓（對成本資料是安全風險）。`analyzer/{aggregator,blocks,reporter}` 改用 `pricing.calculate_cost`；後者改接 `typing.Protocol`，同時支援 `history_loader.UsageEntry` 與 `adapters.types.UsageEntry`。整體淨減 76 行重複實作。
 
 ## [0.11.2] - 2026-05-25
 
-### Fixed
-- **`usage_cli.py` crashed on every first run** (thanks @will30-blockchain — [#7](https://github.com/aqua5230/usage/pull/7)): `setup(auto=True)` passed a non-existent keyword argument to `setup_hook.setup()`, causing a `TypeError` on any fresh install or after `unsetup`. Users who already had the hook installed were unaffected. Fix: drop the stale `auto=True` kwarg.
+### 修正
+- **`usage_cli.py` 第一次執行必 crash**（感謝 @will30-blockchain 的 [#7](https://github.com/aqua5230/usage/pull/7)）：`setup(auto=True)` 傳了不存在的參數給 `setup_hook.setup()`，導致 fresh 安裝或 `unsetup` 後第一次跑 `usage_cli.py` 就噴 `TypeError`。已裝過 hook 的使用者不受影響。修正：拿掉多餘的 `auto=True`。
 
-### Performance
-- **Incremental JSONL parsing**: `history_loader` and `codex_loader` now maintain module-level mtime+size caches and skip re-parsing files whose content hasn't changed, significantly reducing per-refresh disk I/O.
-- **Parallel hook forwarding**: `usage_statusline_forwarder` now dispatches all hooks concurrently via `ThreadPoolExecutor`; a single slow or timing-out hook no longer stalls the others. Worst-case latency drops from `n × 5s` to `5s`.
-- **Multi-session write protection**: `usage_statusline.py`'s `save()` now acquires `fcntl.LOCK_EX` before writing, preventing concurrent Claude Code sessions from clobbering each other's data.
-- **Python path resolution**: `setup_hook` now uses `_find_system_python()` when building hook commands — preferring the bundled `.app` Python, then `/usr/bin/python3`, avoiding the broken Xcode stub that `shutil.which("python3")` can resolve to after an Xcode update.
-- **FSEvents-driven UI refresh**: `menubar` now uses a CoreServices `FSEventStream` (via ctypes) to watch `~/.claude/`. Changes to `agentdeck-status.json` trigger `_refresh()` immediately, cutting update latency from up to 60 seconds to milliseconds. `NSTimer` is demoted to a 300-second fallback; silently degrades to timer-only mode if CoreServices is unavailable.
+### 效能
+- **JSONL 增量解析**：`history_loader` 與 `codex_loader` 新增 module-level mtime+size 快取，僅在檔案內容變動時重新解析，大幅減少每次 UI 刷新的磁碟 I/O。
+- **Hook 並行轉發**：`usage_statusline_forwarder` 改用 `ThreadPoolExecutor` 同時執行所有 hook，單一 hook 逾時不再阻塞其他 hook，最壞情況從 `n × 5s` 降為 `5s`。
+- **多 session 寫入保護**：`usage_statusline.py` 的 `save()` 加入 `fcntl.LOCK_EX` 檔案鎖，防止多個 Claude Code session 同時寫入時資料互蓋。
+- **Python 路徑優先順序**：`setup_hook` 安裝 hook 時改用 `_find_system_python()`，優先選 `.app` 內建 Python，其次 `/usr/bin/python3`，避免 Xcode 更新後 `shutil.which("python3")` 指到壞掉的 stub。
+- **FSEvents 事件驅動 UI 更新**：`menubar` 改用 CoreServices `FSEventStream`（ctypes）監聽 `~/.claude/`，`agentdeck-status.json` 一有變動立即觸發 `_refresh()`，更新延遲從最多 60 秒降至毫秒；`NSTimer` 降為 300 秒 fallback，CoreServices 不可用時自動降級。
 
 ## [0.11.1] - 2026-05-24
 
-### Fixed
-- **[P0] Released `.app` crashes on launch on macOS Sequoia / arm64** (thanks @cmhcm — [#6](https://github.com/aqua5230/usage/pull/6)): all three prior releases (v0.10.0 / v0.10.1 / v0.11.0) are affected. Root cause: in py2app builds `i18n.py` is compiled into `lib/python313.zip` but `i18n.json` lives in `Contents/Resources/`. The old `Path(__file__).with_name("i18n.json")` resolved to a path *through* the zipfile and raised `NotADirectoryError` on first read. Fix: new `i18n.packaged_resource_path()` helper prefers the `RESOURCEPATH` env var that py2app injects at launch (pointing at `Contents/Resources/`) and falls back to the source-adjacent path. All four packaged-resource callsites updated (`i18n.py` / `tui.py` / `main.py` / `menubar.py`). Source-mode runs are unaffected.
+### 修正
+- **[P0] 已發佈 .app 在 macOS Sequoia / arm64 一開就閃退**（感謝 @cmhcm 的 [#6](https://github.com/aqua5230/usage/pull/6)）：v0.10.0 / v0.10.1 / v0.11.0 三個 release 都受影響。Root cause 是 `i18n.py` 在 py2app 打包後會被壓進 `lib/python313.zip`，但 `i18n.json` 是放在 `Contents/Resources/`；舊版用 `Path(__file__).with_name("i18n.json")` 拼路徑，會變成「穿過 zip 檔的無效路徑」，第一次讀就 `NotADirectoryError` 炸掉。修正：新增 `i18n.packaged_resource_path()` helper，優先讀 py2app 啟動時注入的 `RESOURCEPATH` 環境變數（指向 `Contents/Resources/`），找不到再退回原本的 source-mode 路徑。四個讀打包資源的 call site 全部換新（`i18n.py` / `tui.py` / `main.py` / `menubar.py`），原始碼模式跑法完全不受影響。
 
-### Changed
-- **Packaging metadata completed**: `pyproject.toml` `py-modules` adds the previously-missing `burn_rate` / `update_checker` / `tips_loader` / `usage_lang` / `usage_statusline_forwarder`, and `packages.find` `include` adds `panels*`. Non-editable installs now ship the full code.
-- **`.app` license metadata aligned**: `setup_app.py` `NSHumanReadableCopyright` updated from the stale `MIT License` to `Copyright © 2025-2026 lollapalooza. Licensed under AGPL-3.0-only.`, matching what `pyproject.toml` declares.
-- **`pricing_cache.json` path unified**: `analyzer/cost.py` now caches to `~/.claude/pricing_cache.json` (was repo root), matching `pricing.py`. A stray 1.1 MB orphan cache at repo root was removed.
-- **Panel names go through i18n**: `panels/__init__.py` exposes an `i18n_key` per panel and i18n.json gains the missing keys across all 5 languages. The "Switch Panel" menu no longer mixes Chinese names into en / ja / ko UIs.
-- **Status-file error messages go through i18n**: `usage_client.py`'s "status file not found" and "no quota data yet" hints now route through `_t()`, all 5 languages covered.
-- **Analytics CLI read order matches the main app**: `adapters/rate_limits.py` previously only read `~/.claude/tt-status.json`; it now follows the same `agentdeck-status.json` → `usag-status.json` → `tt-status.json` fallback chain as `usage_client.py`.
-- **README documents the v0.11.0 update check + GitHub Releases as a network exception**: README.md / README.en.md both gain a new "update check" bullet and list the GitHub Releases API as the second of two network exceptions (the first remains the LiteLLM pricing table).
+### 變更
+- **打包設定補齊**：`pyproject.toml` 的 `py-modules` 補上之前漏掉的 `burn_rate` / `update_checker` / `tips_loader` / `usage_lang` / `usage_statusline_forwarder`，`packages.find` include 補上 `panels*`；非 editable 安裝才能拿到完整程式碼。
+- **`.app` License metadata 對齊**：`setup_app.py` 的 `NSHumanReadableCopyright` 從舊的 `MIT License` 更新成 `Copyright © 2025-2026 lollapalooza. Licensed under AGPL-3.0-only.`，與 `pyproject.toml` 宣告一致。
+- **`pricing_cache.json` 路徑統一**：`analyzer/cost.py` 的快取路徑從專案根目錄改為 `~/.claude/pricing_cache.json`，與 `pricing.py` 同步；移除 repo 根目錄一顆 1.1 MB 的孤兒快取檔。
+- **面板名稱走 i18n**：`panels/__init__.py` 九款面板的顯示名稱改用 `i18n_key`，i18n.json 五語言補齊；英 / 日 / 韓系統的「更換面板」選單不再混入中文面板名。
+- **狀態檔錯誤訊息走 i18n**：`usage_client.py` 的「找不到狀態檔」和「狀態檔尚無配額」兩段提示走 `_t()`，五語言齊全。
+- **analytics CLI 讀檔順序對齊主程式**：`adapters/rate_limits.py` 之前只讀 `~/.claude/tt-status.json`，現在改成 `agentdeck-status.json` → `usag-status.json` → `tt-status.json` 三路 fallback，與 `usage_client.py` 一致。
+- **README 補 v0.11.0 更新檢查說明 + GitHub Releases 網路例外**：README.md / README.en.md 都加上「更新檢查」段落、把 GitHub Releases API 明列為第二個網路例外（第一個仍是 LiteLLM 價格表）。
 
 ## [0.11.0] - 2026-05-24
 
-### Added
-- **In-app update check (Stage 1)**: On launch, usage pings GitHub Releases for a newer version (rate-limited to once per 24h so you're not nagged every time you open the app). When a newer version is found, an NSAlert shows the version + release notes with three buttons: **Download**, **Later**, **Skip this version**. "Download" opens the Release page in your default browser — manually replace the old `.app` with the new one. (Stage 2 will bring Sparkle-style auto download + replace.)
-- **Two new entries in the "Switch panel" menu**:
-  - **Automatically Check for Updates** (toggleable): unchecking it disables the launch-time auto check entirely; the manual entry below still works.
-  - **Check for Updates Now**: manually triggers a check, bypassing the 24h cooldown and skip-version preference. If you're already up to date, an alert says so; on network error you see "Update check failed".
-- Preferences are stored in the existing `~/.claude/agentdeck-preferences.json`, with three new keys: `auto_update_check` (default true), `update_dismissed_at` (Unix timestamp), `update_skipped_version` (skipped version string).
+### 新增
+- **App 內檢查更新（Stage 1）**：開 app 時自動到 GitHub Releases 查最新版（24 小時最多檢查一次，避免每次開都被打擾）；發現新版會跳出視窗顯示版本號＋ release notes，三顆按鈕「前往下載 / 稍後再說 / 跳過此版本」。「前往下載」會用預設瀏覽器打開 Release 頁，你手動下載新版蓋掉舊版即可（Stage 2 才會做 Sparkle 全自動下載＋替換）。
+- **「更換面板」選單新增兩條**：
+  - **自動檢查更新**（可勾選）：取消勾選後完全關閉啟動時的自動檢查，只保留手動入口。
+  - **立刻檢查更新**：手動觸發一次檢查，忽略 24h cooldown 與「跳過此版本」設定；沒新版也會跳視窗告知「已是最新版本」，網路錯誤時跳「檢查更新失敗」。
+- 偏好設定沿用既有 `~/.claude/agentdeck-preferences.json`，新增三個 key：`auto_update_check`（預設 true）、`update_dismissed_at`（Unix 時間戳）、`update_skipped_version`（被跳過的版本號）。
 
-### Changed
-- `setup_app.py` now bundles `pyproject.toml` and `update_checker` into the py2app build — so the packaged `.app` can fall back to reading `pyproject.toml` when `importlib.metadata` can't resolve the version.
+### 變更
+- `setup_app.py` 把 `pyproject.toml` 與 `update_checker` 一併納入 py2app 打包——讓 .app 版在 `importlib.metadata` 抓不到版本時可 fallback 讀 `pyproject.toml`。
 
 ## [0.10.1] - 2026-05-24
 
-### Fixed
-- **Weekly burn-rate warning false positive**: Extrapolating the last 10 minutes of usage slope onto a 7-day weekly quota was too aggressive (e.g. 56% used → projected 5h50m to exhaustion → "Runs out in 5h50m (resets in 4d6h)" warning), since users don't sustain that rate 24/7. Fix: `_quota_row` gained a `warning_max_seconds` parameter, and the three weekly call sites pass a 24h ceiling — projections beyond 24 hours no longer trigger the warning. Session warnings are unchanged.
+### 修正
+- **Weekly burn-rate 警告誤報**：對 7 天 weekly quota 套用最近 10 分鐘的燒率外推會過度激進（例：56% 已用 → 預測 5h50m 用完 → 顯示「剩 5h50m 用完(重置還要 4d6h)」），實際使用者不會 24/7 維持那速度。修正方式：`_quota_row` 新增 `warning_max_seconds` 參數，weekly 三處呼叫傳入 24h 上限——預測用完時間超過 24 小時就不再警告。session 警告行為完全不變。
 
 ## [0.10.0] - 2026-05-24
 
-### Added
-- **HTML report Share button**: A new Share button in the top-right opens a file-share modal with two actions — "Download .html" and "Copy file path" — so you can send the report via AirDrop / Mail / Slack / iMessage to a colleague or manager. Recipients open it in any browser on mobile or desktop.
-- **"Hide project names" toggle on download**: A checkbox inside the share modal (default ON, privacy-first) swaps every project name to `Project 1 / Project 2 / ...` before the HTML is serialized for download. The on-screen report is unaffected.
-- **HTML report sponsor section reworked**: Two Ko-fi badges now flank the brand slogan `No cloud. No tracking. Just yours.` (kept in English across all five UI languages). The slogan carries a subtle wobble animation to draw the eye, and the GitHub link (github.com/aqua5230/usage) appears below.
+### 新增
+- **HTML 報告「分享」按鈕**：報告右上角新增分享按鈕，點開後可選「另存一份 .html」或「複製檔案路徑」，把報告透過 AirDrop / Mail / Slack / 訊息傳給同事或主管；對方用瀏覽器打開即可閱讀，手機電腦皆支援。
+- **下載時可隱藏專案名稱**：分享 modal 內含「隱藏專案名稱」勾選框（預設打勾，隱私優先），勾選後另存的 HTML 會把所有專案名稱替換成 `Project 1 / Project 2 / ...`，不影響當前螢幕顯示。
+- **HTML 報告 sponsor 區重做**：兩個 Ko-fi 徽章夾住品牌標語 `No cloud. No tracking. Just yours.`（五語言統一不翻譯），標語帶輕微晃動動畫吸引目光；下方新增 GitHub repo 連結（github.com/aqua5230/usage）。
 
-### Changed
-- **statusLine second line removed**: The cumulative token totals / cache / cost line has been dropped to simplify visuals. Key info now lives on line 1 (5h / 7d / Context window) and line 3 (session duration, model).
-- **HTML report KPI card widths rebalanced**: tokens / cost are now wider; sessions / messages / active days narrower (grid ratio 1.5fr 1.4fr 1fr 1fr 1fr), preventing 9-digit token counts from wrapping.
+### 變更
+- **statusLine 第二行（累計問答 / 快取 / 花費）移除**：簡化視覺，主要監控資訊集中在第一行（5h / 7d / Context window）與第三行（會話時長、模型）。
+- **HTML 報告 KPI 卡片寬度調整**：tokens / cost 兩張較寬，sessions / messages / active days 三張較窄（grid 比例 1.5fr 1.4fr 1fr 1fr 1fr），避免 9 位數 token 數字換行。
 
-### Removed
-- HTML report footer line `usage · Local-first analytics · Data stays on device` — replaced by the GitHub link in the sponsor section.
+### 移除
+- HTML 報告底部 `usage · 本機分析 · 資料不離本機` footer 行 —— 由 sponsor 區的 GitHub 連結取代。
 
 ## [0.9.1] - 2026-05-23
 
-### Fixed
-- **TUI polling never updated after first fetch**: a `continue` in `poll_usage` caused every timeout to jump back to the loop head, leaving the UI frozen at the initial state. Changed to `pass` so the polling path is actually reached.
-- **Inconsistent env var name**: `USAG_FORCE_GROUP` (v0.1.x legacy prefix) renamed to `USAGE_FORCE_GROUP` to match all other env vars in the project.
-- **Redundant filesystem scans per refresh**: `_refresh_in_background` was calling `history_loader.load_entries` four times per cycle (24h × 2, 168h × 1, 720h × 1). Now loads the 720h superset once and passes it down, eliminating the duplicate I/O.
+### 修正
+- **TUI 模式輪詢失效**：`poll_usage` 函式內 `continue` 導致每次 timeout 後直接跳回迴圈頂端，狀態永遠停在初始那次 fetch，之後不再更新。改為 `pass` 使輪詢邏輯正常執行。
+- **環境變數名稱不一致**：`USAG_FORCE_GROUP`（v0.1.x 舊前綴）改為 `USAGE_FORCE_GROUP`，與專案其他環境變數統一命名。
+- **每次 refresh 重複掃 filesystem**：`_refresh_in_background` 原本對 `history_loader.load_entries` 呼叫 4 次（24h × 2、168h × 1、720h × 1），現改為一次性讀取 720h 超集並向下傳遞，省去重複 I/O。
 
-### Changed
-- `pricing.py` User-Agent updated from the stale `usage/0.2` to `usage/0.9`.
-- `--setup` no longer prints a "no migration needed" message on clean installs.
+### 變更
+- `pricing.py` User-Agent 從過期的 `usage/0.2` 更新為 `usage/0.9`。
+- `--setup` 執行時不再多印「無需 migration」訊息（全新安裝環境下的無意義輸出）。
 
 ## [0.9.0] - 2026-05-22
 
-### Added
-- **New "World Cup 2026" panel**: FIFA broadcast HUD style. Top-down green pitch with grass stripes, white field markings (halfway line, centre circle, penalty boxes, corner arcs), dark broadcast scoreboard showing Claude / Codex Session percentages as large numerals (38 px), bidirectional duel bar (Claude ← centre line → Codex) replacing the standard progress bar. Canvas animation: a pentagon-pattern football rolling in the lower pitch area, 12 stick-figure players (6 per team) roaming their zones — the nearest player chases the ball at 0.8 px/frame and kicks it on contact (60-frame cooldown per team), directing it toward the opponent's goal. Bottom section shows a MATCH STATS standings board. Triggers a golden GOAL! celebration overlay when either side's usage hits ≥ 85 %.
+### 新增
+- **新增「世界盃 2026」面板**：FIFA 電視轉播 HUD 風格。鮮綠球場俯視圖（草皮條紋＋白色場線、中圈、禁區、角弧），深色廣播記分板顯示 Claude / Codex Session 大號數字（38px），雙向對戰條（Claude←中線→Codex）取代傳統單向進度條，Canvas 動畫：一顆五邊形足球在下半區滾動，兩隊各 6 個棒人球員緩慢跑位，距球最近的球員以 0.8 px/frame 追球並踢球改變方向（各隊冷卻 60 frames），底部 MATCH STATS 積分榜，用量 ≥ 85% 時觸發黃金進球彩蛋。
 
 ## [0.8.0] - 2026-05-22
 
-### Added
-- **New "Prism Arcade" panel**: deep purple-black background, Canvas conic rainbow halo rotating slowly, geometric prism shards (triangles/diamonds) drifting randomly, coloured light particles flickering, cards with holographic gradient borders (CSS background-clip technique), full-spectrum rainbow progress bars with sweep animation.
-- **New "Black Hole" panel**: pure-black space background, Canvas 2D star field (120 stars with twinkling), rotating accretion disk (orange-yellow-white gradient ellipse, Doppler brighter-left/darker-right), photon ring, event horizon with blue-purple glow, orange particles orbiting the ellipse, amber glass cards.
+### 新增
+- **新增「稜鏡街機」面板**：深紫黑底，Canvas conic 彩虹光暈緩慢旋轉，幾何稜鏡碎片（三角形/菱形）隨機漂移，彩色光點粒子閃爍，卡片採全息漸層邊框（CSS background-clip 技巧），進度條全光譜 rainbow gradient + 掃光。
+- **新增「黑洞視界」面板**：純黑宇宙背景，Canvas 2D 繪製星場（120 顆含閃爍星）、旋轉吸積盤（橙黃白漸層橢圓，都卜勒左亮右暗）、光子環、事件視界藍紫光暈，橙色粒子沿橢圓軌道流動，琥珀色玻璃卡片。
 
-### Fixed
-- **Fix extra space at bottom of three panels**: added `flex: 1` to `.projects-card` in Aquarium, Prism Arcade, and Black Hole so content fills the full panel height.
-- **Reduce card opacity in three animated panels**: card background opacity lowered from 0.5–0.75 to 0.14–0.28 in Aquarium, Prism Arcade, and Black Hole so the background animations show through more.
+### 修正
+- **修正三個面板底部多餘空隙**：水族箱、稜鏡街機、黑洞視界的 `.projects-card` 補上 `flex: 1`，內容現在正確撐滿面板高度。
+- **三個動畫面板卡片透明度調低**：水族箱、稜鏡街機、黑洞視界卡片 background opacity 從 0.5–0.75 降至 0.14–0.28，背景動畫透出更多。
 
 ## [0.7.0] - 2026-05-22
 
-### Added
-- **New "Midnight Aquarium" panel**: sixth built-in panel with a deep-sea animation theme — Canvas 2D bubbles rising from the bottom (42 bubbles with random drift), 4 CSS jellyfish (floating up/down with cyan glow), bioluminescent particles in the background. Glass-morphism cards with backdrop-filter blur, progress bars with a sweeping light animation. Adds i18n key `panel_aquarium` (all 5 languages).
-- **Fix .app language detection**: switched to `NSLocale.preferredLanguages()` instead of `currentLocale().localeIdentifier()` so the bundle language is no longer overridden by `CFBundleDevelopmentRegion = English` — Traditional Chinese users now see the correct UI language when launching the .app.
+### 新增
+- **新增「午夜水族箱」面板**：第六款內建面板，深海動畫主題 —— Canvas 2D 氣泡上升（42 顆，隨機漂移）、4 隻 CSS 水母（上下浮動＋青色發光）、生物發光粒子點綴背景。玻璃感卡片搭配 backdrop-filter blur，進度條帶掃光動效。新增 i18n key `panel_aquarium`（5 語齊全）。
+- **修正 .app 語言偵測**：改用 `NSLocale.preferredLanguages()` 取代 `currentLocale().localeIdentifier()`，讓 bundle 內語言不再被 `CFBundleDevelopmentRegion = English` 覆寫，繁中使用者點 .app 後正確顯示中文。
 
 ## [0.6.9] - 2026-05-22
 
-### Added
-- **New "Cloud Observation" panel**: fifth built-in panel with a weather-station visual — light blue sky gradient, white cloud layers (with `feGaussianBlur` soft edges), pale contour lines, and translucent glass cards. Light overall tone, with `backdrop-filter` letting the clouds peek through. Adds i18n key `panel_cloud_observation` (all 5 languages).
+### 新增
+- **新增「雲圖觀測」面板**：第五款內建面板，氣象風視覺 —— 淡藍天空漸層、白色雲層（feGaussianBlur 柔邊）、淡藍等高線、半透明玻璃卡片。整體淺色調，搭配 backdrop-filter 讓雲透出。新增 i18n key `panel_cloud_observation`（5 語齊全）。
 
 ## [0.6.8] - 2026-05-22
 
-### Fixed
-- **Fix .app launch failure when i18n.json is missing**: py2app now includes `i18n.json` in the resource list, and the menu bar / Web panel loaders prefer the `.app` bundle's `Contents/Resources/i18n.json` before falling back to source-tree paths, preventing the `FileNotFoundError` that broke v0.6.0+ launches.
+### 修正
+- **修正 .app 啟動時找不到 i18n.json**：py2app 打包資源清單補上 `i18n.json`，menu bar 與 Web panel 載入多語系檔案時會優先讀取 `.app` bundle 的 `Contents/Resources/i18n.json`，再 fallback 到原始碼路徑，避免 v0.6.0 以上版本啟動即發生 `FileNotFoundError`。
 
 ## [0.6.7] - 2026-05-22
 
-### Fixed
-- **Burn-rate warning false positives**: after v0.6.6 shipped, real-world testing showed the red warning firing at 1% / 14% / 36% used right after restart, because a 2-point slope based on only 2-3 fresh samples is unstable and low-percent forecasts have huge headroom regardless. Fix adds two guardrails: forecasting only runs when the last-10-minute window holds ≥ 5 samples spanning ≥ 5 minutes; the warning only replaces the reset line when the current percent is ≥ 50%. Otherwise the original "Resets in X" text stays.
+### 修正
+- **燃燒速度警告誤判**：v0.6.6 上線後實測發現,在 app 剛重啟、樣本還不夠的情況下,即使百分比只用了 1% / 14% / 36% 也會跳紅色警告。原因是 2 點斜率只用 2-3 個樣本太不穩,而且低百分比時剩餘緩衝大、根本沒有緊迫性。修正方式加兩道安全閥:預估只在「最近 10 分鐘內樣本 ≥ 5 個、跨度 ≥ 5 分鐘」時才生效;警告只在「當下百分比 ≥ 50%」時才替換 reset 文案。其他情況一律維持原本的「重置 X」顯示。
 
 ## [0.6.6] - 2026-05-22
 
-### Added
-- **Burn-rate warning**: when usage projects you'll exhaust a quota before the window resets at your current pace, the normal "Resets in X" line is replaced by a red warning: "⚠ Empty in X (resets in Y)". When you're not burning hot, the panel looks exactly the same as before — no extra noise. Covers Claude Code Session / Weekly and Codex Session / Weekly (all 4 quotas), with theme-matched reds on Classic / Matrix / Newspaper / Win95. Internally it samples percent on a 15-minute rolling buffer and projects from the last-10-minute slope; samples are cleared on quota reset to avoid false alarms.
+### 新增
+- **燃燒速度警告**：當 app 預估你照目前用法會在額度重置前先用完時，原本「重置 X 分鐘」那行會自動換成紅色警告：「⚠ 剩 X 分用完（重置還要 Y 分）」。沒事的時候面板長得跟原本一樣，完全不打擾。覆蓋 Claude Code Session / Weekly 與 Codex Session / Weekly 共 4 個額度，4 款面板（Classic / Matrix / Newspaper / Win95）各自配對應主題的紅色。內部用 15 分鐘滾動樣本 + 最近 10 分鐘斜率推估，重置時自動清掉舊樣本避免誤報。
 
 ## [0.6.5] - 2026-05-22
 
-### Added
-- **Launch at Login toggle**: the panel-switcher menu (opened from the "Switch Panel" button) gains a checkable "Launch at Login" item. Ticking it makes usage start automatically at next login, so you don't have to relaunch it manually. The .app and source builds each generate the matching LaunchAgent plist; unticking only removes the plist — it never quits a running app.
+### 新增
+- **「開機自動啟動」開關**：popover 的「更換面板」選單新增一條可勾選的「開機自動啟動」項目，勾選後 usage 會在你下次登入時自動啟動，不必每次手動開。.app 版與原始碼版會各自產生對應的 LaunchAgent 設定檔；取消勾選只移除設定檔，不會關掉正在執行的 app。
 
-### Changed
-- README "Auto-start on login" section now documents the popover toggle (Traditional Chinese / English).
+### 變更
+- README「開機自動啟動」章節補上 popover 開關說明（繁中 / 英文）。
 
 ## [0.6.4] - 2026-05-22
 
-### Added
-- **Newspaper panel**: a fourth built-in panel recreating a vintage newspaper front page — aged newsprint background, serif ink type, double-rule page border, newspaper-style section headings, hairline row dividers, solid ink progress bars. Card layout and data logic match the Classic panel; only the CSS styling differs.
+### 新增
+- **「復古報紙」面板**：第四款內建面板，重現舊報紙頭版風格 —— 米黃報紙底、明體油墨字、雙線版心框、報紙欄頭式標題、細墨線分隔、暖墨實心進度條。卡片排版與資料邏輯沿用 Classic，差異只在 CSS 樣式。
 
-### Fixed
-- **Traditional Chinese systems detected as Simplified Chinese**: `_detect_language()` read `NSLocale.languageCode`, which returns a bare `"zh"` with no region, so Traditional Chinese systems were normalized to Simplified. It now reads `localeIdentifier` (e.g. `zh_TW`), which keeps the region, so Traditional Chinese systems display Traditional Chinese correctly.
+### 修正
+- **繁體中文系統被誤判為簡體中文**：`_detect_language()` 原本讀 `NSLocale.languageCode`，它只回傳不帶地區的 `"zh"`，繁中系統因此被正規化成簡體。改讀保留地區資訊的 `localeIdentifier`（如 `zh_TW`），繁中系統現在正確顯示繁體中文。
 
-### Changed
-- README panel section updated to show all four panels side-by-side (Traditional Chinese / English).
+### 變更
+- README 面板章節更新為四款面板並列截圖（繁中 / 英文）。
 
 ## [0.6.3] - 2026-05-22
 
-### Added
-- **Windows 95 panel**: a third built-in panel recreating the classic Windows 95 desktop — teal wallpaper, navy gradient title bars, grey 3D outset windows, chunked segmented progress bars, raised plastic buttons, Tahoma type.
-- **Per-panel window size**: `HTMLPanel` gains `width` / `height` parameters so each panel can use a popover size that fits its content (default stays 364×812). The Windows 95 panel is more compact and uses 364×768.
+### 新增
+- **「視窗 95」面板**：第三款內建面板，重現 Windows 95 經典桌面介面 —— teal 桌布、寶藍漸層標題列、灰色 3D outset 視窗、chunked 分格進度條、凸起塑膠按鈕、Tahoma 字體。
+- **面板可指定專屬視窗尺寸**：`HTMLPanel` 新增 `width` / `height` 參數，每款面板能依內容量使用合身的 popover 尺寸（預設仍為 364×812）。視窗 95 內容較精簡，使用 364×768。
 
-### Changed
-- README panel section updated to show all three panels side-by-side (Traditional Chinese / English).
+### 變更
+- README 面板章節更新為三款面板並列截圖（繁中 / 英文）。
 
 ## [0.6.2] - 2026-05-22
 
-### Fixed
-- **Matrix panel "Project Usage" folder icon missing**: each card carried an inline `style="--accent: var(--accent)"` — a self-referential cyclic CSS variable. Per the CSS spec, cyclic var() resolves to invalid-at-computed-value-time and unsets the property, so the inline SVG's `stroke="var(--accent)"` had no color and rendered transparent. Claude / Codex cards use `<img>` so they were unaffected, but the projects card's inline SVG folder icon disappeared. `--accent` is already defined on `:root` and inherits to all descendants, so the per-card overrides were meaningless — removing them restores the icon.
+### 修正
+- **駭客任務面板「專案用量」資料夾圖示消失**：三張卡片 inline `style="--accent: var(--accent)"` 是自我參考的 cyclic CSS variable，依 CSS 規範會被判 invalid 並 unset，導致 inline SVG 的 `stroke="var(--accent)"` 取不到顏色變透明。Claude / Codex 卡用 `<img>` 不受影響，但 projects 卡的 SVG 資料夾圖示因此失蹤。`--accent` 已在 `:root` 定義並會 inherit，三個 cyclic inline style 是無意義的覆寫，移除後圖示正常顯示。
 
 ## [0.6.1] - 2026-05-22
 
-### Added
-- **Matrix panel**: a second built-in panel — black background, neon green type, falling digital rain. Card layout, progress bars, project ranking, and footer all match the Classic panel; only the palette and background differ. Toggle via the `⇄ Switch panel` button in the popover.
-- README now shows Matrix panel screenshots (Traditional Chinese / English) side-by-side with Classic.
+### 新增
+- **駭客任務（Matrix）面板**：黑底螢光綠字 + 數位雨動畫的第二款面板。卡片標題、配額條、專案排行、footer 全部沿用 Classic 排版，差異只在配色與背景。透過 popover 上的「⇄ 更換面板」按鈕切換。
+- README 補上 Matrix 面板截圖（繁中 / 英文），同時對照 Classic 面板。
 
-### Fixed
-- Matrix panel title `line-height: 1` clipped CJK ascenders and the `text-shadow` glow (e.g. `專案用量`, `プロジェクト使用量`) at the card edge; bumped to `1.25` so titles render fully in all five languages and stay vertically aligned with the 30×30 icon.
+### 修正
+- Matrix 面板標題 `line-height: 1` 在 CJK 字符（如「專案用量」「専案使用量」）下方筆畫與 `text-shadow` 光暈會被卡片邊界裁切；改為 `1.25` 後 5 種語系標題完整顯示，與 30×30 圖示維持垂直對齊。
 
 ## [0.6.0] - 2026-05-22
 
-### Added
-- **Multi-language UI (i18n)**: automatically detects the macOS system language and displays the interface in Traditional Chinese, Simplified Chinese, English, Japanese, or Korean. No configuration needed.
-- **`AGENTDECK_LANG` environment variable**: force a specific language (e.g. `AGENTDECK_LANG=ja`) for development and testing.
+### 新增
+- **多語言介面（i18n）**：自動偵測 macOS 系統語言，支援繁體中文、簡體中文、英文、日文、韓文。不需任何設定，系統語言是什麼就顯示什麼。
+- **`AGENTDECK_LANG` 環境變數**：可強制指定語言（例如 `AGENTDECK_LANG=ja`），方便開發與測試。
 
-### Changed
-- **License changed from MIT to AGPL-3.0**: modified versions that are distributed must be open-sourced.
-- **Attribution footer in popover**: `based on usage by lollapalooza` shown at the bottom of the panel.
+### 變更
+- **授權從 MIT 改為 AGPL-3.0**：修改後發佈的版本必須開源，保護原作者權益。
+- **popover 底部加入 attribution 小字**：`based on usage by lollapalooza`。
 
-### Fixed
-- Removed hardcoded Chinese status strings (e.g. `✓ 已同步`) from `usage_client.py`; all status text now goes through the i18n system.
+### 修正
+- 移除 `usage_client.py` 中硬寫的中文狀態字串（「✓ 已同步」），改由 i18n 系統統一處理。
 
 ## [0.5.0] - 2026-05-21
 
-### Added
-- **Monthly range in project usage**: cycle through Today / 7 days / Month to view per-project token usage and cost over the last 30 days.
+### 新增
+- **專案用量新增「月」切換**：「今日 / 7 日 / 月」三段循環，可查看近 30 天各專案的 token 用量與費用。
 
-### Fixed
-- **Project usage cost now calculated correctly**: Claude Code's JSONL does not write a `costUSD` field, so all projects previously showed $0.00. Now uses the same `calculate_cost()` path as the "Today" footer total.
-- **Fallback Opus pricing corrected to $5/M**: the offline fallback price for Opus was $15/M; corrected to $5/M to match LiteLLM's actual value.
+### 修正
+- **專案用量費用正確計算**：之前因為 Claude Code 的 JSONL 沒有寫入 `costUSD` 欄位，所有專案顯示 $0.00；現在改用與「今日費用」相同的 `calculate_cost()` 計算，數字一致。
+- **備援定價 Opus 修正為 $5/M**：離線時備援的 Opus 單價從 $15/M 修正為 $5/M，與 LiteLLM 實際值一致。
 
-### Improved
-- Project usage SVG icon resized to 30×30 to match Claude Code / Codex icons.
+### 改善
+- 專案用量的 SVG 圖示尺寸調整為與 Claude Code / Codex 圖示一致（30×30）。
 
-### Removed
-- Removed Taiwan, Matrix, ECG, Minimal, and Sketch PyObjC native panels. All panels are now HTML/CSS-based; new panel designs are in progress.
-- Removed Antigravity quota tracking (Google OAuth credentials must not be committed to source; feature to be redesigned)
+### 移除
+- 移除 Taiwan、Matrix、ECG、Minimal、Sketch 五個 PyObjC 原生面板，統一改為 HTML/CSS 架構，新面板設計中。
+- 移除 Antigravity 用量追蹤（Google OAuth 憑證不應寫入原始碼；功能待架構調整後重新設計）
 
 ## [0.4.0] - 2026-05-20
 
-### Added
-- **Default panel now renders via WKWebView + HTML/CSS**: the classic default panel moved to a shared HTML/CSS layer, paving the way for a future Windows version; macOS still embeds it in `NSPopover` via `WKWebView`.
-- **Antigravity quota tracking**: the popover now shows three cards for Claude Code, Codex, and Antigravity; the Antigravity card has two rows for current usage (Session) and weekly cap (Weekly).
-- Antigravity buckets with `remainingFraction == 1.0` (unused) now hide reset times, avoiding the API's rolling placeholder from appearing as an endless "reset in ~24h".
+### 新增
+- **預設面板改為 WKWebView + HTML/CSS render**：classic 預設面板改由共用 HTML/CSS 層繪製，為後續 Windows 版本鋪路；macOS 仍透過 `NSPopover` 內嵌 `WKWebView` 呈現。
+- **Antigravity 額度追蹤**：popover 現在顯示 Claude Code / Codex / Antigravity 三張卡；Antigravity 卡含目前用量（Session）與每週上限（Weekly）兩排。
+- Antigravity 桶 `remainingFraction == 1.0`（未使用）時隱藏重置時間，避免 API 滾動 placeholder 顯示成永遠的「重置 ~24h」。
 
-### Changed
-- `antigravity_loader` now splits quota buckets by reset window: shorter windows become Session and longer windows become Weekly. When Google's API exposes a weekly bucket, Weekly fills automatically.
-- WKWebView integration adds a JS bridge (refresh / quit / switch), preload support, and a dark backing layer to remove launch-time white flash; panel switching tears down the web view to break retain cycles.
-- Panel buttons now have pressed-depth and subtle scale feedback on click.
-- New dependencies: `pyobjc-framework-WebKit`, `pyobjc-framework-Quartz`.
+### 變更
+- `antigravity_loader` 依重置視窗自動分流：短窗歸為 Session，長窗歸為 Weekly；Google API 補上週 bucket 時 Weekly 會自動填值。
+- WKWebView 整合加入 JS bridge（refresh / quit / switch）、預先載入與深色 layer，減少開啟時白閃；切換面板時會 teardown 以解除 retain cycle。
+- 面板按鈕加入點擊壓深 + 微縮反饋。
+- 新增依賴：`pyobjc-framework-WebKit`、`pyobjc-framework-Quartz`。
 
-### Removed
-- Removed the CoreGraphics `panels/classic.py` implementation in favor of `HTMLPanel`.
+### 移除
+- 移除 `panels/classic.py` CoreGraphics 版本，改由 `HTMLPanel` 取代。
 
-### Internal
-- Tightened `codex_loader` / `history_loader._as_int` typing with `max(0, int(value))`.
-- Use Quartz `CGColorCreateGenericRGB` to create the `CGColorRef`, eliminating the launch-time `ObjCPointerWarning`.
+### 內部
+- `codex_loader` / `history_loader._as_int` 型別精確化為 `max(0, int(value))`。
+- 改用 Quartz `CGColorCreateGenericRGB` 建立 `CGColorRef`，消除啟動時的 `ObjCPointerWarning`。
 
 ## 0.3.3 — 2026-05-19
 
-### Added
-- **Minimal panel**: dark minimal panel inspired by Linear / Raycast. Near-black background (`#0A0A0C`), rounded cards, accent-coloured progress bars (Claude warm-orange / Codex cyan). Each card has a Session row (26pt number) and a Weekly row (24pt), each with a label, percentage text, 2px progress bar, and reset countdown. Footer card presents rate, status, and today's cost as a two-column label-left / value-right layout with horizontal dividers between rows. Three-button bar (Refresh / Quit / Switch panel) uses accent gradient for primary and translucent bordered fill for secondary.
+### 新增
+- **Minimal 面板**：深色簡約風格，Linear / Raycast 設計語言。近黑底色（`#0A0A0C`）、圓角卡片、accent 色進度條（Claude 暖橘 / Codex 青色）。每張卡各有 Session（大字 26pt）與 Weekly（24pt）兩列，各自含標籤、百分比數字、2px 進度條、重置倒數；頁尾卡片以左標籤（muted）+ 右數值（bright）雙欄呈現速率、狀態、今日花費，列間加分隔線。三顆按鈕（立即更新 / 結束 / 切換面板）沿用 accent 漸層 + 半透明邊框設計。
 
 ## 0.3.2 — 2026-05-19
 
-### Added
-- **ECG panel**: medical-monitor style panel. `ECGView` drives a dual-channel ECG waveform animation via `NSTimer` at 80 ms — LEAD A for Claude Code, LEAD B for Codex. Waveform amplitude scales with quota usage percent; higher burn rate produces more intense rhythms. Text labels and waveform zones are separated into fixed vertical sections so they never overlap.
+### 新增
+- **ECG 心電圖面板**：醫療監視器風格面板。`ECGView` 以 `NSTimer`（80ms）驅動雙通道 ECG 波形動畫，LEAD A 對應 Claude Code、LEAD B 對應 Codex；波形振幅隨 quota 使用率縮放，速率（burn rate）越高波形節奏越激烈。文字標籤與波形區域垂直分區，互不重疊。
 
 ## 0.3.1 — 2026-05-19
 
-### Added
-- **Matrix panel (駭客任務)**: animated digital-rain panel — black background, cascading katakana + digit characters in Matrix green. `MatrixRainView` is driven by an `NSTimer` at 80 ms; each tick draws one bright head glyph and a 10-character fading trail per column. Card areas use a translucent dark-green fill with green borders; all buttons and headers use terminal bracket style (`[ SWITCH ]`, `[ REFRESH ]`, `[ EXIT ]`); rate/status/today labels use uppercase English prefixes.
+### 新增
+- **駭客任務面板（MatrixPanel）**：黑底綠字的 Matrix 數位雨動畫面板。`MatrixRainView` 以 `NSTimer`（80ms）驅動，每幀在每列畫一個頭字元（全亮）＋ 10 格漸暗拖尾，字元池為片假名 + 數字。卡片區改為半透明深綠底 + 綠色邊框，所有按鈕與標題改為終端機方括號風格（`[ SWITCH ]`、`[ REFRESH ]`、`[ EXIT ]`）；rate/status/today 標籤改為大寫英文前綴。
 
 ## 0.3.0 — 2026-05-19
 
-### Added
-- **Panel switching system**: a `⇄ Switch panel` button in the popover top-right opens an `NSMenu` of all registered panels; the selected panel applies immediately and is persisted via `NSUserDefaults` (key `usage.activePanelId`), so the last choice survives restarts.
-- **Classic panel**: the original two-card + footer layout, with the switch button embedded in the Claude card's top-right and a new `ClassicSwitchButton` that stays legible in both light and dark mode.
-- **Taiwan panel**: red-on-white themed panel (a 20-line `ThemeConfig`), with a top header bar containing the TAIWAN flag icon, the "台灣用量監控" title, and the switch button. Popover height grows from 574 → 672 when this panel is active.
-- New `panels/` module: `base.py` provides the `Panel` Protocol, `ThemeConfig` dataclass, generic `ThemedPanel`, and `NSUserDefaults` helpers; `classic.py` / `taiwan.py` are concrete panels; `__init__.py` provides the panel registry (`get_panel(id)`, `all_panels()`, with classic fallback for unknown ids).
-- New `assets/taiwan.png`, registered in `setup_app.py`'s `resources` list so it ships inside the `.app` bundle.
+### 新增
+- **面板切換系統**：popover 右上角新增「⇄ 更換面板」按鈕，點下去出現 NSMenu 列出所有已註冊面板；選擇後立即套用最新狀態並透過 `NSUserDefaults`（key `usage.activePanelId`）持久化，下次啟動記得上次選的面板。
+- **預設面板（ClassicPanel）**：保留原有兩張卡 + 速率/狀態/今日佈局，切換按鈕嵌入 Claude 卡右上角，新增 `ClassicSwitchButton` 在 light/dark 兩種外觀下都清晰可見。
+- **台灣用量監控面板（TaiwanPanel）**：紅底白字主題（純 20 行 `ThemeConfig`），頂部標題列含 TAIWAN 旗 icon、「台灣用量監控」標題、切換按鈕，整體 popover 高度 574 → 672。
+- 新增 `panels/` 模組：`base.py` 提供 `Panel` Protocol、`ThemeConfig` dataclass、`ThemedPanel` 通用實作與 `NSUserDefaults` helper；`classic.py` / `taiwan.py` 為具體面板；`__init__.py` 提供 panel registry（`get_panel(id)`、`all_panels()`、找不到 id 自動 fallback 到 classic）。
+- 新增 `assets/taiwan.png`，並在 `setup_app.py` 的 `resources` 清單登錄，確保 `.app` bundle 內含此資源。
 
-### Refactored
-- `menubar.py` shrunk significantly (1041 → 524 lines): all popover drawing and layout moved into `panels/`; `PopoverViewController` is now a lightweight container that rebuilds its content view from the active `Panel`; `AppDelegate` gains `switchPanel:` / `selectPanel:` and `_set_active_panel_id` to drive panel transitions.
+### 重構
+- `menubar.py` 大幅縮減（1041 → 524 行）：所有 popover 視圖繪製與排版邏輯抽到 `panels/` 模組；`PopoverViewController` 改為輕量 container，依目前選的 `Panel` 動態 rebuild view；`AppDelegate` 新增 `switchPanel:` / `selectPanel:` 與 `_set_active_panel_id` 處理面板切換流程。
 
-### Tests
-- Added `tests/test_panels.py` (11 cases) covering: panel registry contents, each panel's `preferred_size`, `NSUserDefaults` round-trip, unknown-id fallback, `ThemeConfig` application, and `ThemedPanel` height difference with/without a header.
+### 測試
+- 新增 `tests/test_panels.py`（11 個 case）覆蓋：panel registry 內容、各面板 `preferred_size`、`NSUserDefaults` round-trip、找不到 id 的 fallback、`ThemeConfig` 套用、`ThemedPanel` 有無 header 的高度差。
 
 ## 0.2.1 — 2026-05-18
 
-### Fixed
-- `scripts/install-hook.sh`: wrap paths with `shlex.quote()` when generating the statusLine command, matching `setup_hook.py`. Prevents broken hook installs when the user's Python or hook path contains spaces.
-- `pricing.py`: `_pricing_cache` now records its source (cache / fetched / fallback) and timestamp. Fallback results use a short 10-minute TTL so cost estimates no longer stay stuck on stale fallback values after offline startup when the network recovers.
-- `menubar.py` / `codex_loader.py`: silent `except` blocks now emit `logger.warning(exc_info=True)` when `AGENTDECK_DEBUG=1`, otherwise stay quiet. Debug sessions no longer mistake parse failures for "Codex not installed".
+### 修正
+- `scripts/install-hook.sh`：產生 statusLine command 時改用 `shlex.quote()` 包裹路徑，與 `setup_hook.py` 對齊，避免使用者 Python 路徑或 hook 路徑含空白時 hook 安裝失效。
+- `pricing.py`：`_pricing_cache` 改記錄 source（cache / fetched / fallback）與時間，fallback 結果改成 10 分鐘短 TTL，避免離線啟動後即使網路恢復成本估算也永久卡在舊 fallback。
+- `menubar.py` / `codex_loader.py`：silent except 改成 `AGENTDECK_DEBUG=1` 時印 `logger.warning(exc_info=True)`，未設定時保持靜默；除錯時不會再看似「沒安裝 Codex」實際是解析失敗。
 
-### Documentation
-- `README.md` / `README.en.md`: added a sentence to the pricing table section noting that first launch without a cache does a synchronous fetch and may take ~10 seconds on slow networks, so new users don't think the app is hung.
+### 文件
+- `README.md` / `README.en.md`：在價格表說明段補一句「首次啟動沒快取會同步抓一次，網路慢時可能等 ~10 秒」，避免新使用者以為當機。
 
-### Tests
-- New `tests/test_main.py` (9 cases) covering `parse_args` and `_apply_outcome` behaviour.
-- New `tests/test_menubar.py` (14 cases) covering pure helpers: `format_human_time`, `_format_percent`, `_bar_color`, `_quota_row`, `_missing_row`, `_today_title(mock=True)`, `_empty_state`, `_error_state`, `_popover_size`.
-- Added 4 new cases in `tests/test_pricing.py` covering fallback TTL, retry-then-fetched, and no-refetch for fetched / cache sources.
-- Test suite grew from 63 → 90 passed.
+### 測試
+- 新增 `tests/test_main.py`（9 個）覆蓋 `parse_args` 與 `_apply_outcome` 行為。
+- 新增 `tests/test_menubar.py`（14 個）覆蓋純函式：`format_human_time`、`_format_percent`、`_bar_color`、`_quota_row`、`_missing_row`、`_today_title(mock=True)`、`_empty_state`、`_error_state`、`_popover_size`。
+- 新增 `tests/test_pricing.py` 4 個 case 覆蓋 fallback TTL、retry 後 fetched、fetched / cache 不重抓。
+- 全測試從 63 → 90 passed。
 
 ## 0.2.0 — 2026-05-18
 
-### Breaking Changes
-- Internal app identifiers changed from `usag` to `usage`: bundle id, filenames, launchctl label, and `~/.claude/` paths were renamed.
+### 破壞性變更
+- app 內部識別從 `usag` 改成 `usage`：bundle id、檔名、launchctl label、`~/.claude/` 路徑全數改名。
 
-### Added
-- `setup_hook.py` now detects and clears old v0.1.x `usag` leftovers: hook script, settings statusLine, backup key, and status file.
-- `install-launchagent.sh` / `uninstall-launchagent.sh` now clean the old LaunchAgent plist and label automatically.
-- `usage_client.py` now falls back to the old `usag-status.json` path for upgrade compatibility.
+### 新增
+- `setup_hook.py` 自動偵測並清除舊 v0.1.x `usag` 殘留：hook 腳本、settings 內 statusLine、備份 key 與 status 檔。
+- `install-launchagent.sh` / `uninstall-launchagent.sh` 會自動清掉舊 LaunchAgent plist 與 label。
+- `usage_client.py` 讀檔加入舊 `usag-status.json` fallback，提供升級過渡相容。
 
-### Fixed
-- Public app naming and internal bundle identifiers are now consistently `usage`.
+### 修正
+- app 對外名稱與內部 bundle 識別統一為 `usage`。
 
 ## 0.1.11 — 2026-05-18
 
-### Fixed
-- `setup_app.py` now packages `usag_statusline.py` so the `.app` bundle ships the hook source.
-- `setup_hook.py` now resolves the hook source in both source-tree mode and `.app` bundle mode.
+### 修正
+- `setup_app.py` 補打包 `usag_statusline.py`，確保 `.app` 內有 hook 原始檔。
+- `setup_hook.py` 在原始碼模式與 `.app` bundle 模式都能解析 hook 來源路徑。
 
-### UI
-- The popover now shows a one-click "立即安裝 hook" recovery button when the status file is missing.
+### 介面
+- popover 偵測到找不到狀態檔時新增「立即安裝 hook」一鍵救援按鈕。
 
 ## 0.1.10 — 2026-05-18
 
-### UI
-- Progress bars now change colour based on usage level: below 50% keeps the brand colour, 50–80% shifts to amber, ≥ 80% turns red.
+### 介面
+- 進度條顏色依用量動態切換：< 50% 維持品牌色、50–80% 轉琥珀黃、≥ 80% 轉警告紅。
 
-### Fixed
-- `codex_loader.py`: use last token-event timestamp for `hours_back` filtering; per-file fault-tolerant sort.
-- `history_loader.py`: composite dedup key when id fields are absent; reject bool and negative token values.
-- `usage_client.py`: guard `rate_limits` sub-fields against non-dict values.
-- `setup_hook.py`: validate settings before writing; safely rebuild backup field if not a dict.
+### 修正
+- `codex_loader.py`：Codex 用量改用最後一次 token 事件時間做 `hours_back` 過濾；逐檔容錯排序，壞檔不拖垮整批讀取。
+- `history_loader.py`：缺 id 時改用複合 key 去重；排除 bool 與負數 token 值。
+- `usage_client.py`：`rate_limits` 子欄位非 dict 時補防衛。
+- `setup_hook.py`：寫入前驗證 settings 格式；備份欄位非 dict 時安全重建。
 
-### Documentation
-- README: corrected three factual inaccuracies (network claim, Codex data source, cost is an estimate).
-- README: added Quick start table, Download the app section, and Troubleshooting table.
+### 文件
+- README 修正三處事實錯誤：網路聲明、Codex 資料來源描述、今日成本為估算值。
+- README 加入「快速開始」表格、「下載現成 App」段落、「常見問題排查」表格。
 
 ## 0.1.9 — 2026-05-18
 
-### UI
-- Progress bars now change colour based on usage level: below 50% keeps the brand colour (Claude orange / Codex cyan), 50–80% shifts to amber, ≥ 80% turns red.
+### 介面
+- 進度條顏色依用量動態切換：< 50% 維持品牌色（Claude 橘 / Codex 青）、50–80% 轉琥珀黃、≥ 80% 轉警告紅。
 
-### Fixed
-- Sync status label changed from `usag-status` to `usage` to match the public-facing project name.
-- `setup_hook.py`: wrap interpreter and hook paths with `shlex.quote()` so hooks work when the project directory contains spaces (PR #1, thanks @DennisWei9898).
-- `usag_statusline.py`: replace `datetime.UTC` (Python 3.11+) with `timezone.utc` for compatibility with macOS system Python 3.9 (PR #1, thanks @DennisWei9898).
-- `codex_loader.py`: use the last token-event timestamp for `hours_back` filtering so long sessions no longer drop recent tokens; per-file fault-tolerant sort so a single bad file doesn't break the entire session scan.
-- `history_loader.py`: fall back to a composite dedup key when `message_id` / `request_id` is absent; reject bool and negative token values.
-- `usage_client.py`: guard `rate_limits` and its sub-fields against non-dict values.
-- `setup_hook.py`: validate `settings.json` structure before writing; safely rebuild the backup field if it is not a dict.
+### 修正
+- 狀態列「已同步」來源標籤從 `usag-status` 改成 `usage`，跟對外名稱一致。
+- `setup_hook.py`：用 `shlex.quote()` 包 interpreter 與 hook 路徑，修復專案目錄含空格時 hook 永遠不跑的問題（PR #1，感謝 @DennisWei9898）。
+- `usag_statusline.py`：把 `datetime.UTC`（Python 3.11+ 限定）改成 `timezone.utc`，相容 macOS 系統 Python 3.9（PR #1，感謝 @DennisWei9898）。
+- `codex_loader.py`：Codex 用量改用最後一次 token 事件的時間做 `hours_back` 過濾，長 session 的近期 token 不再被誤排除；逐檔容錯排序，壞檔不拖垮整批讀取。
+- `history_loader.py`：缺 `message_id` / `request_id` 時改用複合 key 去重，降低誤刪有效紀錄的機率；token 解析排除 bool 與負數。
+- `usage_client.py`：`rate_limits` 及子欄位非 dict 時補防衛，避免 `.get()` 出錯。
+- `setup_hook.py`：寫入前先驗證 `settings.json` 格式；備份 statusLine 的欄位非 dict 時安全重建。
 
-### Documentation
-- README: replaced mainland Chinese phrasing ("打API", "打網路") with standard Taiwanese usage ("呼叫 API", "連網路").
+### 文件
+- README 把「打 API」「打網路 API」等大陸慣用語改成「呼叫 API」「連網路」。
 
 ## 0.1.8 — 2026-05-18
 
-### UI
-- Popover redesign:
-  - Claude Code / Codex cards now show a branded icon in the header (`claude.webp` / `codex.webp`).
-  - Card surfaces and progress fills switched to gradient (`NSGradient`); accent colours brightened (Claude leans warm orange, Codex leans cyan).
-  - "Refresh now" and "Quit" buttons replaced with a custom `ActionButton` that draws primary / secondary styles (primary uses the accent gradient, secondary uses a translucent bordered fill).
-  - Rate / status / today-cost line wrapped in its own card so the three sections share one visual language.
-  - Spacing, weights, tracking, and muted colours re-tuned for stronger contrast in both Light and Dark Mode.
+### 介面
+- popover 重新設計：
+  - Claude Code / Codex 卡片左上加上品牌 icon（`claude.webp` / `codex.webp`）。
+  - 卡片底色與進度條改為漸層填色（`NSGradient`），accent 配色調亮（Claude 偏暖橘、Codex 偏青）。
+  - 「立即更新」與「結束」按鈕改為自繪的 `ActionButton`，分主／次樣式（主按鈕走 accent 漸層、次按鈕走半透明邊框）。
+  - 速率 / 狀態 / 今日花費收進獨立的第三張卡片，與上方兩張視覺一致。
+  - 各 spacing、字重、字距與 muted 顏色重新校正一輪，提高深色 / 淺色模式下的對比度。
 
-### Packaging
-- `setup_app.py` declares `claude.webp` / `codex.webp` as py2app `resources` so the `.app` bundle ships the icons.
-- `menubar.py` resolves icon paths via `NSBundle.mainBundle().pathForResource_ofType_`, so both the dev deployment (LaunchAgent runs `main.py` directly) and the `.app` bundle find the assets.
+### 打包
+- `setup_app.py` 把 `claude.webp` / `codex.webp` 加入 py2app `resources`，確保 `.app` bundle 帶得上 icon。
+- `menubar.py` 改用 `NSBundle.mainBundle().pathForResource_ofType_` 解析 icon 路徑，dev 模式（launchagent 直接跑 `main.py`）與 `.app` bundle 兩種佈署都找得到資源檔。
 
 ## 0.1.7 — 2026-05-18
 
-### Documentation
-- README now ships 5 badges (CI status, latest release, Python version, platform, license).
-- README's "How it gets the data" section now includes a mermaid diagram visualizing the `Claude Code → hook → JSON file → usage` chain, with `Anthropic API` explicitly drawn as **never called** (dashed broken line).
-- Added bilingual `CONTRIBUTING.md` / `CONTRIBUTING.en.md`: spells out what issues / PRs should include, the three checks required before merge, off-limits technical identifiers and UI constants, the bilingual CHANGELOG rule, and commit message style.
+### 文件
+- README 加上 5 顆 badge（CI 狀態、最新 release、Python 版本、平台、license）。
+- README 「資料來源」段加上一張 mermaid 流程圖，把「Claude Code → hook → JSON 檔 → usage」這條鏈視覺化，並明確標出 `Anthropic API` 是**不會被呼叫**的（虛線斷開）。
+- 新增 `CONTRIBUTING.md` / `CONTRIBUTING.en.md`（雙語）：寫清楚 issue / PR 要附什麼、merge 前必跑哪三項檢查、改 code 不能動的技術短名 / UI 常數、CHANGELOG 雙語規矩、commit message 風格。
 
-### Tests
-- Added three new test files covering the three highest-risk "I/O / parse boundary" modules (previously zero coverage, the same class of code that produced the 0.1.2 → 0.1.3 "change one place, miss another" bug):
-  - `tests/test_usage_client.py`: `_read_status_file` with both paths missing / `USAG_STATUS` bad JSON / fallback to TT_STATUS; `_build_snapshot` missing fields / percent out-of-range clamp; `ClaudeUsageClient` outcomes in mock and real mode.
-  - `tests/test_codex_loader.py`: `load_entries` with missing sessions dir / valid JSONL / `hours_back` cutoff filter / bad JSON line / missing fields / `_parse_timestamp` across three ISO 8601 variants; `load_rate_limits` returns None when file missing / parses primary + secondary windows.
-  - `tests/test_setup_hook.py`: `setup` in a clean env / existing custom statusLine gets backed up / idempotent on repeat; `unsetup` restores backup / behaves cleanly when never installed; `_is_usag_hook` discriminator.
-- All tests use `monkeypatch` to redirect path constants; **real `~/.claude` and `~/.codex` are never touched** (verified by before/after mtime comparison).
-- Test count: 44 → 60. Runtime: 0.04s → 0.08s.
+### 測試
+- 新增三個測試檔，蓋住三個高風險「I/O / parse 邊界」模組（這幾個模組原本零測試，是 0.1.2 → 0.1.3 那種「改一處漏一處」最容易爆的地方）：
+  - `tests/test_usage_client.py`：`_read_status_file` 兩條路徑都不存在 / USAG_STATUS 壞 JSON / fallback；`_build_snapshot` 缺欄位 / 百分比超界 clamp；`ClaudeUsageClient` mock 跟 real mode 的 outcome。
+  - `tests/test_codex_loader.py`：`load_entries` sessions dir 不存在 / valid JSONL / hours_back cutoff filter / 壞 JSON line / 缺欄位 / `_parse_timestamp` 三種 ISO 8601 變體；`load_rate_limits` 沒檔案回 None / 有檔案讀出 5h + weekly 兩段。
+  - `tests/test_setup_hook.py`：`setup` 全新環境 / 已有自訂 statusLine 備份 / 重複 idempotent；`unsetup` 還原備份 / 沒裝過時的行為；`_is_usag_hook` 判斷邏輯。
+- 測試全程用 `monkeypatch` 注入路徑常數，**沒碰真實 `~/.claude` 或 `~/.codex`**（有對 mtime 做 before/after 比對驗證）。
+- 測試總數從 44 → 60，執行時間 0.04s → 0.08s。
 
 ## 0.1.6 — 2026-05-18
 
-### Changed
-- Public-facing name unified from `usag` to `usage`, matching the GitHub repo:
-  - `pyproject.toml`'s `name` changed from `"usag"` to `"usage"` (so PyPI / `pip list` now show `usage`).
-  - `README.md` / `README.en.md` headers and prose now say `usage`.
-  - `.github/ISSUE_TEMPLATE/bug_report.md` updated likewise.
-- **Intentionally unchanged** (to avoid breaking existing installs): all file paths, settings keys, and binary names keep the `usag` prefix — `~/.claude/usag-status.json`, `~/.claude/usag-statusline.py`, `~/Library/Logs/usag/`, `com.lollapalooza.usag` (LaunchAgent label), `usag.app` (bundle), `USAG_DEBUG` (env var), `settings.usag.previousStatusLine` (JSON key) are all untouched. The technical short name is `usag`; the public name is `usage`.
+### 變更
+- 對外名稱統一從 `usag` 改成 `usage`，跟 GitHub repo 名稱對齊：
+  - `pyproject.toml` 的 `name` 從 `"usag"` 改成 `"usage"`（PyPI / `pip list` 看到的就是 `usage`）。
+  - `README.md` / `README.en.md` 標題與 prose 都改成 `usage`。
+  - `.github/ISSUE_TEMPLATE/bug_report.md` 內提到的 commit 命令也對齊。
+- **不變的部分**（避免打到已安裝的使用者）：所有檔案路徑、設定 key 跟 binary 名稱仍保留 `usag` 前綴 —— `~/.claude/usag-status.json`、`~/.claude/usag-statusline.py`、`~/Library/Logs/usag/`、`com.lollapalooza.usag` (LaunchAgent label)、`usag.app` (bundle)、`USAG_DEBUG` (env var)、`settings.usag.previousStatusLine` (JSON key) 完全沒動。技術 contract 短名是 `usag`，對外名稱是 `usage`。
 
 ## 0.1.5 — 2026-05-18
 
 ### CI
-- Bumped `actions/setup-python` from v5 to v6 (v6 runs on Node.js 24). GitHub had been warning that v5 runs on Node.js 20 and the runner will force Node 24 after 2026-09-16; pre-empting the breakage.
+- `actions/setup-python` 從 v5 升到 v6（v6 用 Node.js 24）。GitHub 之前的警告：v5 跑在 Node.js 20，2026-09-16 之後 runner 會強制升 Node 24。先升避免之後 release 流程突然壞掉。
 
-### Documentation
-- `pyproject.toml`'s `description` was rewritten from "在 macOS 終端機顯示 Claude Code 用量的繁中小工具" (terminal-only) to "usage — 在 macOS menu bar 顯示 Claude Code 用量的繁中小工具（也提供終端機 TUI）". The old description misrepresented the project as terminal-only; the new one reflects the menu-bar-first reality and aligns the displayed project name with the repo.
+### 文件
+- `pyproject.toml` 的 `description` 從「在 macOS 終端機顯示 Claude Code 用量的繁中小工具」改成「usage — 在 macOS menu bar 顯示 Claude Code 用量的繁中小工具（也提供終端機 TUI）」。原描述只提終端機，跟現在 menu bar 主導的事實不符，也順手讓 PyPI / GitHub 上看到的專案名稱跟 repo 對齊。
 
 ## 0.1.4 — 2026-05-18
 
 ### CI
-- Release workflow (`.github/workflows/release.yml`) is now self-healing: after a tag is pushed, if the matching GitHub release does not exist yet, the workflow first creates it via `gh release create` (empty notes, target set to the tag's ref) and then uploads `usag.app.zip`. The "workflow assumes release already exists, upload fails" trap hit during 0.1.3 won't recur.
+- Release workflow（`.github/workflows/release.yml`）改成 self-heal：tag 推上去之後，如果對應的 GitHub release 還沒建立，會先用 `gh release create` 補建（空 notes、target 指向 tag 對應的 ref），再上傳 `usag.app.zip`。0.1.3 發版時遇到的「workflow 假設 release 已存在所以上傳失敗」不會再發生。
 
 ### Build
-- Tightened `menubar.py` mypy config from a blanket `# mypy: ignore-errors` to `disable-error-code="import-untyped,misc"`, which only suppresses PyObjC's missing stubs and dynamic base-class errors. Real type errors (the class of bug behind `tracker.sample`'s `AttributeError`) will now be caught.
+- `menubar.py` 的 mypy 設定從整檔 `# mypy: ignore-errors` 收緊成 `disable-error-code="import-untyped,misc"`，只放過 PyObjC 缺 stub 跟動態基底類別這兩類錯。其餘型別錯誤現在會被 mypy 抓到（之前 `tracker.sample` AttributeError 類的事，這層本來就該擋下）。
 
 ## 0.1.3 — 2026-05-18
 
-### Changed
-- Popover redesigned: Claude / Codex sections now sit in subtle inset cards, with refined spacing, font weights, and muted footer text. Card fill adapts to Dark / Light appearance.
-- `docs/popover.png` updated to the new look.
+### 變更
+- Popover 改版：Claude / Codex 兩段改用淡色內嵌卡片包起來，群組感更明確；間距、字重、footer 字色一併重整。卡片填色會跟著系統 Dark / Light 自動切換。
+- `docs/popover.png` 換成新版的截圖。
 
-### Fixed
-- Live data no longer collapses to `--` with `狀態：錯誤 (AttributeError)`. The stale `self.tracker.sample(...)` call in `menubar.py` (left over from 0.1.2's `sample()` removal) raised `AttributeError` on every successful refresh; dropped the call. `tracker.group()` already reads history entries directly.
+### 修正
+- Popover 不再顯示「狀態：錯誤 (AttributeError)」、Claude 兩條 quota 不再卡在 `--`。`menubar.py` 還有一行 `self.tracker.sample(...)` 是 0.1.2 移除 `UsageRateTracker.sample()` 時漏掉的呼叫站，每次成功刷新都會丟 `AttributeError`、被外層 try/except 吞成錯誤狀態；這次拿掉了。`tracker.group()` 本來就會自己讀歷史 entries，不需要被餵 sample。
 
 ## 0.1.2 — 2026-05-17
 
-### Changed
-- `pricing.py`: pricing cache moved from the package directory to `~/.claude/pricing_cache.json` so the read-only `.app` bundle can refresh the cache.
-- Applied `ruff format` across the project (formatting only; no logic changes).
+### 變更
+- `pricing.py`：pricing cache 從套件目錄搬到 `~/.claude/pricing_cache.json`，讓唯讀的 `.app` bundle 也能刷新快取。
+- 全專案套用 `ruff format`（純格式化，沒動邏輯）。
 
-### Removed
-- `UsageRateTracker.sample()` dead code (was a no-op called from `main._apply_outcome`).
+### 移除
+- `UsageRateTracker.sample()` 死碼（原本是空操作，從 `main._apply_outcome` 被呼叫）。
 
 ### Build
-- `.gitignore` now excludes `*.egg-info/` and `.pytest_cache/`.
+- `.gitignore` 新增排除 `*.egg-info/` 跟 `.pytest_cache/`。
 
 ## 0.1.1 — 2026-05-17
 
-### Added
-- py2app `.app` bundle build config (`setup_app.py`, `build_app.sh`) so users can run usag without a terminal.
-- GitHub Actions release workflow (`release.yml`) automatically builds `usag.app.zip` and attaches it to each tagged release.
-- English README (`README.en.md`) and a language switcher at the top of both READMEs.
+### 新增
+- py2app `.app` bundle 打包設定（`setup_app.py`、`build_app.sh`），使用者不用開終端機就能跑 usag。
+- GitHub Actions release workflow（`release.yml`）自動 build `usag.app.zip`，每次 tag release 都會自動掛上去。
+- 英文版 README（`README.en.md`），兩份 README 頂部都加了語言切換。
 
 ## 0.1.0 — 2026-05-17
 
-First public release on GitHub.
+GitHub 首次公開 release。
 
-### Added
-- pytest test suite under `tests/` covering `pricing`, `history_loader`, and `usage_rate` (44 tests, 89% line coverage).
-- CI runs `pytest -v` after ruff and mypy.
-- GitHub Actions CI runs `ruff check` and `mypy` on push to main and pull requests (macos-latest runner, uv-managed deps).
-- `USAG_DEBUG=1` environment variable enables warning-level logger output for the previously silent OSError sites.
-- Issue templates (bug report, feature request) and pull request template under `.github/`.
+### 新增
+- `tests/` 底下的 pytest 測試套件，涵蓋 `pricing`、`history_loader`、`usage_rate`（44 個測試、89% 行覆蓋率）。
+- CI 跑完 ruff 跟 mypy 之後會再跑 `pytest -v`。
+- GitHub Actions CI 會在 push 到 main 或開 PR 時跑 `ruff check` 跟 `mypy`（macos-latest runner、uv 管依賴）。
+- `USAG_DEBUG=1` 環境變數可開 warning level log，原本靜默的 OSError 站點會吐訊息。
+- `.github/` 底下放了 issue templates（bug report、feature request）跟 PR template。
 
-### Changed
-- `menubar.py`: I/O moved off the AppKit main thread (background `threading.Thread` + `performSelectorOnMainThread_withObject_waitUntilDone_`), eliminating the periodic UI freeze on each refresh tick. A `_refresh_in_flight` flag prevents re-entry.
-- `usage_rate.py`: 30-second TTL cache for `group()`; stops re-scanning the last hour of JSONL on every TUI tick.
-- `menubar.py`: divider lines re-centered between provider blocks (first_y=178, second_y=352). "今日" status line returned to 12pt to match the rest of the footer.
-- README: use `python3` instead of `python` (the uv venv only ships the `python3` symlink); documented `USAG_DEBUG`.
+### 變更
+- `menubar.py`：I/O 從 AppKit 主執行緒搬到背景（`threading.Thread` + `performSelectorOnMainThread_withObject_waitUntilDone_`），消掉每次刷新時 UI 會凍一下的問題。`_refresh_in_flight` flag 防止重入。
+- `usage_rate.py`：`group()` 加 30 秒 TTL 快取；不會每次 TUI tick 都重掃過去一小時的 JSONL。
+- `menubar.py`：provider 區塊之間的分隔線重新置中（first_y=178、second_y=352）。「今日」狀態列字級回到 12pt，跟 footer 其他行一致。
+- README：改用 `python3` 而不是 `python`（uv venv 只裝了 `python3` symlink）；補了 `USAG_DEBUG` 的說明。
 
-### Fixed
-- `setup_hook.py` and `pricing.py` use atomic writes (`tempfile.mkstemp` + `os.replace`); a crash mid-write no longer corrupts `~/.claude/settings.json` or `pricing_cache.json`.
-- `install-launchagent.sh` uses `BASH_SOURCE` to resolve the project directory; previously broke when run from anywhere other than the project root.
-- `uninstall-launchagent.sh` removes logs from `~/Library/Logs/usag/` (the actual location), not from the project directory.
-- `pricing_cache.json` expires after 7 days based on mtime, so stale prices don't linger after a model price drop.
-- Seven previously silent `except OSError` sites in `pricing.py`, `codex_loader.py`, and `history_loader.py` now log a warning before swallowing the error.
+### 修正
+- `setup_hook.py` 跟 `pricing.py` 改用 atomic write（`tempfile.mkstemp` + `os.replace`）；寫到一半 crash 不會再弄壞 `~/.claude/settings.json` 或 `pricing_cache.json`。
+- `install-launchagent.sh` 改用 `BASH_SOURCE` 算出專案目錄；之前從非專案根目錄執行會壞掉。
+- `uninstall-launchagent.sh` 改成清 `~/Library/Logs/usag/` 底下的 log（實際位置），不是專案目錄。
+- `pricing_cache.json` 用 mtime 7 天過期，避免模型降價後還在用舊價。
+- `pricing.py`、`codex_loader.py`、`history_loader.py` 裡 7 個原本靜默的 `except OSError` 站點，現在會先 log warning 再吞錯。
 
-### Removed
-- `blocks.py` — unused dead code.
+### 移除
+- `blocks.py` — 未使用的死碼。

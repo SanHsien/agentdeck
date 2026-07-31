@@ -100,6 +100,6 @@ Windows 有對應的 API 或既有機制。例：上游用 `NSAlert` 顯示 hook
 ## 五、收尾必做
 
 - 更新 `README.md` 與 `README.en.md`**兩份**,把不合時宜的敘述改掉（章節數要一致,CI 會擋）。
-- `CHANGELOG.md` 與 `CHANGELOG.zh-TW.md` 兩份都要寫。
+- `CHANGELOG.en.md` 與 `CHANGELOG.md` 兩份都要寫。
 - 把 [`../REVIEW_Claude.md`](../REVIEW_Claude.md) 的「Windows 平台落差移植待辦」對應項目標成完成,或更新受阻原因。
 - 版號依 SemVer（見 [`DECISIONS.md`](DECISIONS.md) D-05）：補功能算新增 → MINOR。

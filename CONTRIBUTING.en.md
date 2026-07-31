@@ -28,7 +28,7 @@ The full gate must be green to merge. It covers lock freshness, ruff, mypy, bili
 
 ## CHANGELOG and releases
 
-- For every change, add an entry to the `## Unreleased` section of `CHANGELOG.md` (English, the default), **and also update the corresponding section in `CHANGELOG.zh-TW.md`** (this project keeps the README, CHANGELOG, and release notes bilingual).
+- For every change, add an entry to the `## Unreleased` section of `CHANGELOG.en.md` (English, the default), **and also update the corresponding section in `CHANGELOG.md`** (this project keeps the README, CHANGELOG, and release notes bilingual).
 - Releases are cut by the maintainer (bump version in `pyproject.toml`, rename `## Unreleased` to `## X.Y.Z — YYYY-MM-DD`, commit `Release vX.Y.Z`, push tag).
 
 ## Commit message style

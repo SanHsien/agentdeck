@@ -126,6 +126,72 @@ def fetch_new_commits(
     return out
 
 
+# Classifying costs one API call per commit. Upstream commits roughly daily, so
+# a weekly check is a handful of calls; a long gap should degrade to "review
+# everything by hand" rather than hammer the API.
+MAX_COMMITS_CLASSIFIED = 40
+
+
+def fetch_commit_files(repo: str, sha: str, *, token: str | None = None) -> list[dict[str, str]]:
+    """The paths one commit touched, with the status of each."""
+    payload = _request(f"{API_ROOT}/repos/{repo}/commits/{sha}", token)
+    if not isinstance(payload, dict):
+        raise UpstreamCheckError(f"unexpected commit payload for {sha}")
+    files = payload.get("files")
+    if not isinstance(files, list):
+        return []
+    return [
+        {"filename": str(f.get("filename") or ""), "status": str(f.get("status") or "")}
+        for f in files
+        if isinstance(f, dict)
+    ]
+
+
+def cannot_affect_fork(files: list[dict[str, str]], *, root: Path = ROOT) -> bool:
+    """Whether a commit provably has nothing to do with this fork.
+
+    A change to a file this fork does not have cannot reach us -- upstream
+    commits ``chore: sync AI updates`` most days, touching only the digest this
+    fork removed, and left unfiltered those bury the commits that do matter.
+
+    An **added** file is never auto-skipped even though it is equally absent
+    here: that is what a new feature looks like arriving, and this fork's whole
+    premise is porting upstream features rather than accepting the gap.
+    """
+    if not files:
+        return False
+    for entry in files:
+        if entry["status"] == "added":
+            return False
+        name = entry["filename"]
+        if not name or (root / name).exists():
+            return False
+    return True
+
+
+def classify_commits(
+    repo: str, commits: list[dict[str, str]], *, token: str | None = None, root: Path = ROOT
+) -> None:
+    """Annotate each commit in place with whether a human needs to read it."""
+    if len(commits) > MAX_COMMITS_CLASSIFIED:
+        for commit in commits:
+            commit["relevance"] = "unknown"
+        return
+    for commit in commits:
+        try:
+            files = fetch_commit_files(repo, commit["sha"], token=token)
+        except (urllib.error.URLError, urllib.error.HTTPError, UpstreamCheckError):
+            # Never let a failed lookup silently promote a commit to "ignorable".
+            commit["relevance"] = "unknown"
+            continue
+        commit["relevance"] = "ignorable" if cannot_affect_fork(files, root=root) else "review"
+        commit["paths"] = ", ".join(entry["filename"] for entry in files[:4])
+
+
+def needs_review(commits: list[dict[str, str]]) -> list[dict[str, str]]:
+    return [c for c in commits if c.get("relevance") != "ignorable"]
+
+
 def collect_results(
     sync_points: dict[str, Any], *, repo: str | None = None, token: str | None = None
 ) -> list[dict[str, Any]]:
@@ -136,6 +202,7 @@ def collect_results(
         last_reviewed = str(info["last_reviewed"])
         try:
             commits = fetch_new_commits(effective_repo, name, last_reviewed, token=token)
+            classify_commits(effective_repo, commits, token=token)
             error: str | None = None
         except (urllib.error.URLError, urllib.error.HTTPError, UpstreamCheckError) as exc:
             # A network or API failure must not look like "nothing new"; surface it
@@ -177,15 +244,42 @@ def render_markdown(results: list[dict[str, Any]], repo: str) -> str:
             lines.append("- 沒有比 `last_reviewed` 更新的 commit。")
             lines.append("")
             continue
-        lines.append(f"- 有 **{len(commits)}** 個未審視的 commit（由舊到新）：")
-        lines.append("")
-        for commit in commits[:MAX_COMMITS_SHOWN]:
+        review = needs_review(commits)
+        ignorable = [c for c in commits if c.get("relevance") == "ignorable"]
+
+        def _bullet(commit: dict[str, str], indent: str = "  ") -> str:
             sha = commit["sha"]
             link = f"[`{sha}`]({commit['url']})" if commit["url"] else f"`{sha}`"
-            lines.append(f"  - {link} {commit['title']}")
-        if len(commits) > MAX_COMMITS_SHOWN:
-            lines.append(f"  - …另有 {len(commits) - MAX_COMMITS_SHOWN} 筆未列出")
-        lines.append("")
+            return f"{indent}- {link} {commit['title']}"
+
+        if review:
+            lines.append(f"- **需要人工審視：{len(review)} 個**（由舊到新）：")
+            lines.append("")
+            for commit in review[:MAX_COMMITS_SHOWN]:
+                lines.append(_bullet(commit))
+            if len(review) > MAX_COMMITS_SHOWN:
+                lines.append(f"  - …另有 {len(review) - MAX_COMMITS_SHOWN} 筆未列出")
+            lines.append("")
+        else:
+            lines.append("- 沒有需要人工審視的 commit。")
+            lines.append("")
+
+        if ignorable:
+            # Named, not hidden: "the tool decided for me" has to stay auditable,
+            # and the sync point still has to be advanced past them by hand.
+            lines.append(
+                f"<details><summary>另有 {len(ignorable)} 個 commit 只動到本 fork 沒有的檔案"
+                "（可直接推進 <code>last_reviewed</code>，不需逐筆記理由）</summary>"
+            )
+            lines.append("")
+            for commit in ignorable[:MAX_COMMITS_SHOWN]:
+                paths = commit.get("paths")
+                suffix = f" — `{paths}`" if paths else ""
+                lines.append(_bullet(commit, indent="") + suffix)
+            lines.append("")
+            lines.append(f"推進到：`{ignorable[-1]['sha']}`" if not review else "")
+            lines.append("</details>")
+            lines.append("")
     lines.extend(
         [
             "---",
@@ -200,10 +294,13 @@ def render_markdown(results: list[dict[str, Any]], repo: str) -> str:
 
 
 def has_updates(results: list[dict[str, Any]]) -> bool:
-    # An errored branch counts as needing attention: treating a failed lookup as
-    # "nothing new" would let the fork drift silently behind.
-    return any(result["commits"] or result["error"] for result in results)
+    """True when something needs a person, not merely when upstream moved.
 
+    Upstream commits its AI digest most days and those touch files this fork
+    deleted. Counting them would open an issue every week that says "advance
+    last_reviewed past seven chores", which trains the reader to ignore it.
+    """
+    return any(result["error"] or needs_review(result["commits"]) for result in results)
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)

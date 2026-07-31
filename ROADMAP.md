@@ -6,7 +6,7 @@
 
 規劃基準：`v0.31.2`
 
-這份路線圖描述建議的產品方向、里程碑順序與完成條件。版本號代表依賴順序，不是不可調整的日期承諾；當前缺陷仍以 [`REVIEW_Claude.md`](REVIEW_Claude.md) 為準，已完成的歷史則看 [`CHANGELOG.zh-TW.md`](CHANGELOG.zh-TW.md)。
+這份路線圖描述建議的產品方向、里程碑順序與完成條件。版本號代表依賴順序，不是不可調整的日期承諾；當前缺陷仍以 [`REVIEW_Claude.md`](REVIEW_Claude.md) 為準，已完成的歷史則看 [`CHANGELOG.md`](CHANGELOG.md)。
 
 ## 產品判斷
 

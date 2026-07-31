@@ -22,14 +22,15 @@ class DocPair:
 
 
 DOC_PAIRS = (
-    # README, ROADMAP, CONTRIBUTING and SECURITY invert the upstream convention:
+    # Everything a reader lands on first inverts the upstream convention:
     # Traditional Chinese is the suffix-less default and English lives at
-    # *.en.md. README and ROADMAP lead with the maintainer's language; GitHub
-    # also links CONTRIBUTING.md and SECURITY.md directly from its own UI.
-    # CHANGELOG and docs/DEVELOPMENT keep English as the suffix-less default.
+    # *.en.md. README and ROADMAP lead with the maintainer's language, GitHub
+    # links CONTRIBUTING.md and SECURITY.md from its own UI, and the tray menu
+    # opens CHANGELOG.md. docs/DEVELOPMENT is the one that keeps English as the
+    # default -- it is written for contributors, not users.
     DocPair("README", "README.en.md", "README.md"),
     DocPair("ROADMAP", "ROADMAP.en.md", "ROADMAP.md"),
-    DocPair("CHANGELOG", "CHANGELOG.md", "CHANGELOG.zh-TW.md"),
+    DocPair("CHANGELOG", "CHANGELOG.en.md", "CHANGELOG.md"),
     DocPair("CONTRIBUTING", "CONTRIBUTING.en.md", "CONTRIBUTING.md"),
     DocPair("SECURITY", "SECURITY.en.md", "SECURITY.md"),
     DocPair("docs/DEVELOPMENT", "docs/DEVELOPMENT.md", "docs/DEVELOPMENT.zh-TW.md"),

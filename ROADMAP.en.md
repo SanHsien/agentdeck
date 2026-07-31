@@ -6,7 +6,7 @@ Updated: 2026-07-31
 
 Planning baseline: `v0.31.2`
 
-This roadmap describes the recommended product direction, milestone order, and exit criteria. Version numbers express dependency order, not fixed delivery dates. [`REVIEW_Claude.md`](REVIEW_Claude.md) remains the source of truth for current defects, while completed history belongs in [`CHANGELOG.md`](CHANGELOG.md).
+This roadmap describes the recommended product direction, milestone order, and exit criteria. Version numbers express dependency order, not fixed delivery dates. [`REVIEW_Claude.md`](REVIEW_Claude.md) remains the source of truth for current defects, while completed history belongs in [`CHANGELOG.en.md`](CHANGELOG.en.md).
 
 ## Product Judgment
 

@@ -21,7 +21,7 @@ Copyright (c) aqua5230 與各貢獻者
 - 文件結構調整：README 改以繁體中文為預設。
 - 專案更名為 **agentdeck**。上游的美術資產沿用並依 AGPL-3.0 修改：`docs/hero.png` 移除了上游的應用程式圖示，並把字標與副標改為 agentdeck／Windows Tray App；`docs/showcase.*.png`（macOS 實機照）不再於文件中引用。上游原始檔可自[上游 repo](https://github.com/aqua5230/usage) 取得。
 
-逐項變更與日期見 [`CHANGELOG.zh-TW.md`](CHANGELOG.zh-TW.md)；完整修改歷程見本 repo 的 git commit 紀錄。
+逐項變更與日期見 [`CHANGELOG.md`](CHANGELOG.md)；完整修改歷程見本 repo 的 git commit 紀錄。
 
 AGPL-3.0 的重點義務（僅為摘要，以 `LICENSE` 全文為準）：
 

@@ -1176,7 +1176,9 @@ class _WindowsTrayController:
         projects' release news that we could neither write nor fix, and the
         remaining quarter was this changelog rendered twice.
         """
-        suffix = ".zh-TW" if self.language == "zh-TW" else ""
+        # Traditional Chinese is the suffix-less default here, as it is for the
+        # README; English is the one that carries a suffix.
+        suffix = "" if self.language == "zh-TW" else ".en"
         webbrowser.open(
             f"https://github.com/SanHsien/agentdeck/blob/main/CHANGELOG{suffix}.md"
         )

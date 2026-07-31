@@ -4,7 +4,7 @@
 
 **這是 Claude 的覆核紀錄。Codex 的覆核寫在 [`REVIEW_Codex.md`](REVIEW_Codex.md)，兩份各自維護、不互相改寫。** 對彼此改動的意見寫在自己這份裡（見「對 Codex 改動的覆核」），這樣兩邊的判斷都留得住，也看得出哪些是被獨立驗證過的。
 
-本檔維持 **latest-only**：只記**當前狀態與未解問題**。修掉一項就從這裡拿掉，不要留成流水帳——歷史在 git log 與 [`CHANGELOG.zh-TW.md`](CHANGELOG.zh-TW.md)，決策理由在 [`docs/DECISIONS.md`](docs/DECISIONS.md)。這裡只回答兩件事：**現在這個 repo 健康嗎、還有什麼沒解決**。
+本檔維持 **latest-only**：只記**當前狀態與未解問題**。修掉一項就從這裡拿掉，不要留成流水帳——歷史在 git log 與 [`CHANGELOG.md`](CHANGELOG.md)，決策理由在 [`docs/DECISIONS.md`](docs/DECISIONS.md)。這裡只回答兩件事：**現在這個 repo 健康嗎、還有什麼沒解決**。
 
 ## 結論
 

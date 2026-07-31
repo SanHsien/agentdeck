@@ -28,7 +28,7 @@ pwsh tools/dev_check.ps1
 
 ## CHANGELOG 與發版
 
-- 改完一件事就把它寫進 `CHANGELOG.md`（英文，預設）的 `## Unreleased` 段，**同時更新 `CHANGELOG.zh-TW.md`** 對應段（這個專案的 README / CHANGELOG / release notes 全部雙語）。
+- 改完一件事就把它寫進 `CHANGELOG.en.md`（英文，預設）的 `## Unreleased` 段，**同時更新 `CHANGELOG.md`** 對應段（這個專案的 README / CHANGELOG / release notes 全部雙語）。
 - 發版由 maintainer 處理（`pyproject.toml` 版本 bump + `## Unreleased` → `## X.Y.Z — YYYY-MM-DD` + commit `Release vX.Y.Z` + tag）。
 
 ## Commit message 風格

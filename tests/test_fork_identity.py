@@ -36,7 +36,7 @@ SKIP_DIRS = {
     ".git", ".venv", "build", "dist", "reference", "__pycache__",
     "node_modules", ".ruff_cache", ".mypy_cache", ".pytest_cache",
 }
-SKIP_FILES = {"CHANGELOG.md", "CHANGELOG.zh-TW.md", "uv.lock"}
+SKIP_FILES = {"CHANGELOG.en.md", "CHANGELOG.md", "uv.lock"}
 
 SHIPPED_SUFFIXES = {".py", ".html", ".json", ".ps1", ".yml", ".yaml"}
 
