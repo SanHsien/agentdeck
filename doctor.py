@@ -16,8 +16,9 @@ from datetime import UTC, datetime
 from importlib import metadata
 from pathlib import Path
 
+import provider_health
 import setup_hook
-from i18n import packaged_resource_path
+from i18n import _t, packaged_resource_path
 
 SEPARATOR = "-" * 29
 
@@ -41,8 +42,126 @@ def render() -> str:
         f"codex logs:        {_field(_codex_logs)}",
         f"codex state:       {_field(_codex_state)}",
         f"codex rate limits: {_field(_codex_rate_limits)}",
+        SEPARATOR,
+        "provider health:",
+        *_provider_health_lines(),
     ]
     return "\n".join(lines) + "\n"
+
+
+def _provider_health_lines() -> list[str]:
+    """Render the shared health model so --doctor and the panels agree.
+
+    Each surface used to reach its own verdict from the same files and phrase it
+    its own way, so a user comparing them could not tell whether they disagreed
+    about the facts or only about the wording.
+    """
+    import time
+
+    from usage_lang import detect_lang
+
+    now = time.time()
+    try:
+        healths = collect_provider_health(now=now)
+    except Exception as exc:  # noqa: BLE001 - diagnostics must not be what breaks
+        return [f"  error: {type(exc).__name__}: {exc}"]
+
+    language = detect_lang()
+    lines: list[str] = []
+    for health in healths:
+        when = f", updated {_ago(health.last_updated)} ago" if health.last_updated else ""
+        lines.append(f"  {health.provider:<12} [{health.state}]{when}")
+        lines.append(f"    {_t(language, health.reason_key)}")
+        if health.next_step_key and health.state is not provider_health.HealthState.READY:
+            lines.append(f"    -> {_t(language, health.next_step_key)}")
+        if health.detail:
+            lines.append(f"    {health.detail}")
+    return lines or ["  none"]
+
+
+def collect_provider_health(*, now: float) -> list[provider_health.ProviderHealth]:
+    """Gather the facts the projections need. All IO lives here, not in the model."""
+    import codex_loader
+    import usage_client
+
+    claude_error = ""
+    status_path = Path(usage_client.STATUS_FILE)
+    claude_updated: float | None = None
+    try:
+        if status_path.exists():
+            claude_updated = status_path.stat().st_mtime
+    except OSError as exc:
+        claude_error = f"{type(exc).__name__}: {exc}"
+
+    codex_error = ""
+    sessions_dir = codex_loader.SESSIONS_DIR
+    session_count = 0
+    codex_updated: float | None = None
+    try:
+        if sessions_dir.is_dir():
+            for path in sessions_dir.rglob("*.jsonl"):
+                session_count += 1
+                try:
+                    mtime = path.stat().st_mtime
+                except OSError:
+                    continue
+                codex_updated = mtime if codex_updated is None else max(codex_updated, mtime)
+    except OSError as exc:
+        codex_error = f"{type(exc).__name__}: {exc}"
+
+    return [
+        provider_health.claude_health(
+            hook_installed=setup_hook._detect_current_state() != "missing",
+            status_file_exists=status_path.exists(),
+            last_updated=claude_updated,
+            now=now,
+            read_error=claude_error,
+        ),
+        provider_health.codex_health(
+            sessions_dir_exists=sessions_dir.is_dir(),
+            session_count=session_count,
+            last_updated=codex_updated,
+            now=now,
+            read_error=codex_error,
+        ),
+        _antigravity_health(now),
+    ]
+
+
+def _antigravity_health(now: float) -> provider_health.ProviderHealth:
+    """Antigravity's facts come from a preference and a credential, not a file.
+
+    The probe is deliberately not run here: --doctor must stay a read-only
+    report, and firing a network request would make the diagnostic itself a
+    reason the state changes.
+    """
+    import agy_quota_probe
+    from menubar_prefs import _hide_agy_enabled
+
+    probe_error = ""
+    last_updated: float | None = None
+    try:
+        cache = agy_quota_probe.CACHE_PATH
+        if cache.exists():
+            last_updated = cache.stat().st_mtime
+    except OSError as exc:
+        probe_error = f"{type(exc).__name__}: {exc}"
+
+    credentials_found = False
+    try:
+        credentials_found = agy_quota_probe._has_usable_token(
+            agy_quota_probe._read_windows_credential()
+        ) or agy_quota_probe._has_usable_token(agy_quota_probe._read_token_file())
+    except Exception as exc:  # noqa: BLE001 - a broken credential store is a fact, not a crash
+        probe_error = probe_error or f"{type(exc).__name__}: {exc}"
+
+    return provider_health.antigravity_health(
+        enabled=not _hide_agy_enabled(),
+        credentials_found=credentials_found,
+        last_updated=last_updated,
+        now=now,
+        probe_error=probe_error,
+    )
 
 
 def _field(func: Callable[[], str]) -> str:

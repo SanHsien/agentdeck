@@ -53,12 +53,24 @@ jobs:
         shell: pwsh
         run: ./scripts/build_windows.ps1
 
-      - name: Zip Windows bundle
+      # build_windows.ps1 already checks the exe against pyproject.toml. This
+      # closes the last gap: a tag pointing at a commit whose version differs.
+      - name: Check the tag matches the built executable
         shell: pwsh
         run: |
-          Compress-Archive -Path dist/agentdeck-windows -DestinationPath dist/agentdeck-windows.zip
-          $hash = (Get-FileHash dist/agentdeck-windows.zip -Algorithm SHA256).Hash.ToLower()
-          "$hash  agentdeck-windows.zip" | Out-File -FilePath dist/agentdeck-windows.zip.sha256 -Encoding ascii -NoNewline
+          $tag = "${{ steps.ref.outputs.tag }}" -replace '^v', ''
+          $doctor = & ./dist/agentdeck-windows/agentdeck.exe --doctor 2>&1 | Out-String
+          if ($doctor -notmatch "agentdeck v([0-9]+\.[0-9]+\.[0-9]+)") {
+            throw "agentdeck.exe --doctor did not report a version. Output:`n$doctor"
+          }
+          if ($Matches[1] -ne $tag) {
+            throw "Tag v$tag does not match the built executable, which reports $($Matches[1])."
+          }
+          Write-Host "tag v$tag matches the built executable" -ForegroundColor Green
+
+      - name: Zip Windows bundle
+        shell: pwsh
+        run: ./scripts/package_windows.ps1
 
       - name: Upload to release
         env:

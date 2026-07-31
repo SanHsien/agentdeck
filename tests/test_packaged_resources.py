@@ -176,3 +176,39 @@ def test_the_build_script_actually_parses() -> None:
     )
 
     assert result.returncode == 0, f"build_windows.ps1 has syntax errors:\n{result.stdout}"
+
+
+def test_the_build_script_clears_stale_egg_info_and_checks_the_exe_version() -> None:
+    """Both halves of the P6 guard must stay in the build script.
+
+    A leftover ``*.egg-info`` makes ``importlib.metadata`` resolve before the
+    pyproject fallback, so the exe gets stamped with whatever version that
+    directory records. A fresh CI checkout has none, so the mistake only
+    reaches the artifact when a release is cut locally -- and nothing else in
+    the pipeline compares the built exe against the tree it came from.
+    """
+    script = BUILD_SCRIPT.read_text(encoding="utf-8")
+
+    assert '-Filter "*.egg-info"' in script, (
+        "build_windows.ps1 must delete stale *.egg-info before building; "
+        "without it a local release can be stamped with an older version."
+    )
+    assert "--doctor" in script, (
+        "build_windows.ps1 must ask the built exe for its version."
+    )
+    assert "Version mismatch" in script, (
+        "build_windows.ps1 must fail the build when the exe and pyproject.toml "
+        "disagree, not just print the version."
+    )
+
+
+def test_the_release_workflow_checks_the_tag_against_the_exe() -> None:
+    """The tag is the one input the build script cannot see."""
+    workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+
+    assert "--doctor" in workflow, "release.yml must verify the tag against the built exe"
+    assert "does not match the built executable" in workflow
+    assert "scripts/package_windows.ps1" in workflow, (
+        "release.yml must package through the shared script so the asset it "
+        "uploads has the same layout as a locally built one."
+    )

@@ -214,3 +214,23 @@
 **為什麼**：v0.31.2 已有三個 provider、十款主題、報告、persona 與 AI 圓桌，功能廣度不是目前瓶頸；同時仍有 P5 的實機裁切與 P6 的本機錯版號 artifact。繼續加功能會放大維護面，卻不會解決「使用者能不能相信畫面與 release」這個核心問題。Windows-first、local-first 與從監控到行動，才是本 fork 相對同類工具的清楚位置。
 
 **後果**：新 provider 必須先證明有可靠、合法、可測的 Windows 資料來源；新 UI 不得插隊於已知可信度缺口；roadmap 項目只有在自動化與實機證據齊全時才算完成。若日後要改成雲端或帳號路由產品，必須另立決策推翻本條，而不是在單一功能中偷偷擴張。
+
+---
+
+## D-11：ProviderHealth——三個 provider 共用一套狀態語彙
+
+**日期**：2026-07-31
+
+**問題**：Claude、Codex、Antigravity 各自長出一套「資料還能不能用」的判斷，而且彼此不一致——Codex 15 分鐘算舊、Antigravity 20 分鐘算舊；健康時一個回 `None`、一個回 dict；`--doctor` 又印第三套措辭，面板從來沒顯示過。使用者看到 `--` 時分不出「這個工具我從沒用過」「檔案在但很舊」「查詢失敗」三種完全不同的處境。
+
+**決定**：新增 `provider_health.py`，六個狀態：`ready` / `stale` / `missing` / `misconfigured` / `unavailable` / `error`。每個結果一律帶著**原因**與**下一步**兩個 i18n key，面板與 `--doctor` 透過同一組 key 渲染。
+
+**刻意的設計選擇**：
+
+- **純投影、零 IO。** 呼叫端先蒐集事實再傳進來，所以每個分支都能在沒安裝任何 provider 的機器上測到。IO 留在 `doctor.collect_provider_health()`。
+- **stale 門檻維持各自不同**（Claude／Codex 15 分、Antigravity 20 分）。那是刷新節奏、不是政策：Codex 每輪對話寫檔，Antigravity 是定時輪詢；壓成同一個數字會讓健康的 Antigravity 被誤報為舊，或讓死了十分鐘的 Codex session 不出聲。
+- **i18n key 全部顯式傳入，不用 f-string 組。** 用 `f"health_{provider}_missing"` 讀起來很順，然後會去要一個沒人寫過的 key——`antigravity` 會找 `health_antigravity_missing`，但檔案其他地方寫的是 `health_agy_*`。顯式寫死才能讓 parity 測試靠 grep 找得到每一個 key。
+- **`unavailable` 與 `error` 分開。** 前者是遠端暫時不回應、快取數字仍然可以顯示；後者是本機讀取失敗。合併就沒辦法告訴使用者「畫面上的數字是舊的但可信」。
+- **順序即嚴重度**，`worst_of()` 靠它把多個 provider 收斂成一個徽章。
+
+**沒有做的**：把面板改成用這個模型。`--doctor` 是第一個消費者，面板接線排在 ROADMAP 的 v0.32.0。先讓模型有真實使用者驗證形狀，再改動 UI。

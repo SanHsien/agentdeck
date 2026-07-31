@@ -13,6 +13,17 @@
 ### 修正
 - **文件現況漂移**：移除已發布至 v0.31.2、卻仍重複留在 `Unreleased` 的舊內容；README 比較表也改為如實標示本 fork 已提供 AI 人才市場。
 
+## [Unreleased]
+
+### 新增
+- **`ProviderHealth` 共用狀態模型**：Claude、Codex 與 Antigravity 改用同一套語彙描述「資料還能不能用」——`ready` / `stale` / `missing` / `misconfigured` / `unavailable` / `error`，每個結果都帶原因與下一步。先前三者各自判斷且互不一致（Codex 15 分鐘算舊、Antigravity 20 分鐘算舊；健康時一個回 `None`、一個回 dict），`--doctor` 又印第三套措辭。`--doctor` 是第一個消費者；面板接線見 ROADMAP v0.32.0。設計理由見 `docs/DECISIONS.md` D-11。
+- **`tools/verify_discussion_layout.py`**：在真實 WebView2 開窗並量測 DOM 幾何，把「下拉選單被切掉」變成可比對的像素數，取代肉眼看截圖。
+- **`scripts/package_windows.ps1`**：本機與 release workflow 共用同一支打包腳本。先前 CI 壓縮目錄、本機壓縮內容，同一個檔名下發出兩種不同結構。
+
+### 修正
+- **發版版號防護（P6）**：`build_windows.ps1` 建置前清除殘留的 `*.egg-info`，建置後以 `agentdeck.exe --doctor` 比對 `pyproject.toml`，不符就讓建置失敗；release workflow 另外比對 tag。舊 egg-info 會讓 `importlib.metadata` 先命中並蓋掉 pyproject fallback，曾實際建出標著 `0.31.1` 的 `0.31.2` 產物。CI 全新 checkout 沒有 egg-info，所以這個缺陷只在發版的那台機器上出現。
+- **AI 圓桌參與者卡垂直裁切（P5）**：換列讓卡片變兩列高之後，`.controls-scroll` 仍是 `min-height: 0`，900×640 下模型與 persona 下拉選單被容器切掉 24px。已改為保留區段標題加一張完整卡片的高度，並放寬 `.setup` 的 `max-height`。以 3 種 DPI × 2 種尺寸的實機矩陣驗證，證據見 `docs/release-evidence/2026-07-31-discussion-layout.md`。
+
 ## [0.31.2] - 2026-07-31
 
 ### 修正

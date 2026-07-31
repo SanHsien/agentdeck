@@ -12,6 +12,16 @@ Remove-Item $OutputDir -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item $PyInstallerOutput -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item $BuildDir -Recurse -Force -ErrorAction SilentlyContinue
 
+# The project is a uv virtual root and is never installed, so the version comes
+# from pyproject.toml via _current_version()'s fallback. A stale *.egg-info left
+# by the old setuptools build makes importlib.metadata resolve first and win,
+# and PyInstaller bakes that older version into the exe. A fresh CI checkout has
+# no egg-info, so this only ever goes wrong on the machine that cuts releases.
+foreach ($stale in Get-ChildItem -Path $RepoRoot -Filter "*.egg-info" -Directory -ErrorAction SilentlyContinue) {
+    Write-Host "removing stale metadata: $($stale.Name)" -ForegroundColor Yellow
+    Remove-Item $stale.FullName -Recurse -Force
+}
+
 # packaged_resource_path asks for "windows/...", "critters/..." and "personas"
 # without an assets/ prefix, so those subtrees are declared under those names as
 # well as under assets/ — see tests/test_packaged_resources.py.
@@ -71,3 +81,18 @@ foreach ($doc in @("LICENSE", "NOTICE.md", "README.md")) {
     }
     Copy-Item $source (Join-Path $OutputDir $doc)
 }
+
+# Ask the executable what version it thinks it is. Reading pyproject.toml here
+# would only re-check the input; the failure this guards against is the built
+# artifact disagreeing with the tree it was built from.
+$declared = (Select-String -Path (Join-Path $RepoRoot "pyproject.toml") -Pattern '^version = "(.+)"' |
+    Select-Object -First 1).Matches[0].Groups[1].Value
+$doctor = & $Executable --doctor 2>&1 | Out-String
+if ($doctor -notmatch "agentdeck v([0-9]+\.[0-9]+\.[0-9]+)") {
+    throw "agentdeck.exe --doctor did not report a version. Output:`n$doctor"
+}
+$reported = $Matches[1]
+if ($reported -ne $declared) {
+    throw "Version mismatch: pyproject.toml says $declared but the built exe reports $reported."
+}
+Write-Host "version check: exe reports $reported, matching pyproject.toml" -ForegroundColor Green

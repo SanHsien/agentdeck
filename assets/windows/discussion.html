@@ -118,7 +118,7 @@
       display: grid;
       grid-template-columns: minmax(280px, 1fr) minmax(300px, 0.9fr);
       gap: 14px;
-      max-height: clamp(300px, 52vh, 640px);
+      max-height: clamp(300px, 60vh, 640px);
     }
 
     .session-bar {
@@ -636,7 +636,11 @@
       display: flex;
       flex-direction: column;
       flex: 1;
-      min-height: 0;
+      /* Room for the section heading plus one whole participant card. The list
+         may scroll -- what it must never do is cut the first card's model and
+         persona controls off, which is what a bare min-height: 0 allowed once
+         the controls wrapped onto a second row. */
+      min-height: 150px;
       overflow-y: auto;
     }
 

@@ -172,3 +172,23 @@ def test_shutdown_is_idempotent_and_releases_the_window() -> None:
 
     assert window.destroyed == 1
     assert controller.window is None
+
+
+def test_the_participant_scroller_reserves_room_for_a_whole_card() -> None:
+    """The list may scroll; it may not cut the first card's controls off.
+
+    When the model and persona controls wrapped onto a second row the cards got
+    taller, but ``.controls-scroll`` still had ``min-height: 0``, so at 900x640
+    they sat 24px below the fold. A CSS-shape assertion cannot catch that --
+    ``tools/verify_discussion_layout.py`` measures it in a real WebView2 -- but
+    pinning the reservation here stops it silently going back to zero.
+    """
+    html = (ROOT / "assets" / "windows" / "discussion.html").read_text(encoding="utf-8")
+
+    scroller = html.split(".controls-scroll {", maxsplit=1)[1].split("}", maxsplit=1)[0]
+
+    assert "min-height: 150px;" in scroller, (
+        "the participant scroller must reserve height for the section heading "
+        "plus one whole card"
+    )
+    assert "overflow-y: auto;" in scroller

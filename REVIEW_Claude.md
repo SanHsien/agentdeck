@@ -1,6 +1,6 @@
 # Repo Review — Claude
 
-覆核日期：2026-07-31 · 版本：v0.31.2 · 分支：`main`
+覆核日期：2026-07-31 · 版本：v0.31.2+ · 分支：`main`
 
 **這是 Claude 的覆核紀錄。Codex 的覆核寫在 [`REVIEW_Codex.md`](REVIEW_Codex.md)，兩份各自維護、不互相改寫。** 對彼此改動的意見寫在自己這份裡（見「對 Codex 改動的覆核」），這樣兩邊的判斷都留得住，也看得出哪些是被獨立驗證過的。
 
@@ -8,10 +8,11 @@
 
 ## 結論
 
-- 六道閘門全綠：lock freshness / `ruff` / `mypy`（155 個檔案）/ 雙語文件對稱性 / AI 更新頁 / `pytest`（1199 passed、7 skipped、1 個本機權限排除）。實跑複驗，非引用他人回報。
+- 六道閘門全綠：lock freshness / `ruff` / `mypy`（155 個檔案）/ 雙語文件對稱性 / AI 更新頁 / `pytest`（1215 passed、7 skipped、1 個本機權限排除）。實跑複驗，非引用他人回報。
 - 已完成從 macOS 優先的上游轉為 **Windows 專用**，並改名為 **agentdeck**。
 - 2026-07-31 Codex 於 `772f7d9` 修正了更新檢查仍指向上游、CI／release／本機 gate 漂移、wheel 設定、fork 身分文件，以及 AI 圓桌參與者列裁切。**已逐項獨立驗證：三項確認有效、一項為部分修正、一項發現新缺陷**（見下節）。
-- **未解問題：3 項**——一項是本機環境限制、不是程式缺陷；一項是 P5 版面仍有殘留裁切；一項是本機發版時的版號陷阱（P6）。
+- **未解問題：1 項**——只剩本機符號連結權限（P4），是環境限制、不是程式缺陷。
+- P5（AI 圓桌版面）與 P6（發版版號）已修並實測關閉；證據見 [`docs/release-evidence/`](docs/release-evidence/)。
 
 ## 環境
 
@@ -34,24 +35,6 @@
 - 處置：`tools/dev_check.ps1` 先實測本機能不能建連結，不能才 `--deselect` 那一條並印出說明。刻意不在測試裡加 `skipif`——那會讓覆蓋在本機靜默消失（理由見 `docs/DECISIONS.md` D-04）。
 - 要連符號連結那條也在本機跑：開啟 Windows 開發人員模式（設定 → 系統 → 開發人員專用），或以系統管理員身分執行 pytest。這是系統設定，由維護者自行決定。
 
-### P5：AI 圓桌參與者卡的裁切從水平轉為垂直，尚未真正解決
-
-**已完成實機重驗（2026-07-31，真實 WebView2、900×640 邏輯 / 2025×1440 實體 @225%）。結論：部分修正。**
-
-- **修好的部分**：`772f7d9` 的 `@media (max-width: 1050px)` 換列生效。模型名稱「Claude」與狀態「可用」完整可讀，水平捲軸消失。根因判斷正確——`participant-head` 原本把 badge、名稱、主持按鈕與兩個固定 128px 控制項塞進單列。
-- **殘留缺陷**：換列讓每張參與者卡從一列變兩列、**高度增加**，但參與者容器的高度上限沒有跟著調整。結果是模型與 persona 兩個下拉選單現在被**垂直**切掉，只露出頂端數像素。裁切是被搬家，不是被消除。
-- 修正方向：調整參與者清單容器的 `max-height`（或改用可捲動但至少完整顯示一張卡的高度）。**不要只把斷點數字調大**——那不會改變卡片變高這件事。
-- 目前的回歸測試只斷言 CSS 換列結構存在，斷言不到「內容沒有被容器切掉」。純靠讀 CSS 無法發現這個問題，必須實機開窗看。
-
-### P6：舊 `*.egg-info` 會蓋掉版號，讓本機建出版號錯誤的 exe
-
-`package = false`（`772f7d9`）之後不再安裝本專案，版號改由 `pyproject.toml` 的 fallback 供應。**但移除建置系統不會清掉它先前留下的 `agentdeck.egg-info/`**，而 `importlib.metadata` 找得到那個目錄，於是 `metadata.version("agentdeck")` 繼續回傳**舊版號**，fallback 根本不會被觸發。PyInstaller 再把那份過期 metadata 打包進 exe。
-
-- **實際發生過**：`pyproject.toml` 已是 `0.31.2`，建出來的 exe `--doctor` 卻印 `agentdeck v0.31.1`。清掉 `agentdeck.egg-info/` 與更舊的 `usage.egg-info/` 後才正確。
-- **CI 不受影響**：全新 checkout 沒有 egg-info，所以 CI 建置一直是對的。**這個缺陷只在本機重現，而本機正是發版的地方**——最糟的組合。
-- 兩個目錄都被 `.gitignore` 涵蓋、未進版控，所以 git 看不出異常。
-- 處置建議：本機發版前確認 `ls *.egg-info` 為空，或在 `build_windows.ps1` 開頭直接清掉。**光看 `pyproject.toml` 的版號不算驗證**——要跑建好的 exe `--doctor`。
-
 ## 對 Codex 改動的覆核（`772f7d9`、`e575768`）
 
 逐項獨立驗證，不採信 commit message 的自我宣稱。
@@ -62,7 +45,7 @@
 | 刪除 `scripts/install-hook.sh` | ✅ **有效，且比「死碼」更嚴重** | 該腳本從上游的 raw URL 下載 `usage_statusline.py` 裝進使用者的 `~/.claude/`。不只是 macOS 專用的死碼，是會把上游程式碼裝到本 fork 使用者機器上。grep 確認無殘留引用 |
 | `package = false`、移除 `[build-system]` | ✅ **方向正確，但有一個本機陷阱**（見下方 P6） | 風險在 `wintray._current_version()` 走 `metadata.version("agentdeck")`。實測：模擬 `PackageNotFoundError` 後 fallback 正確回傳版號；`build_windows.ps1` 有 `--add-data pyproject.toml`，凍結後的 exe 讀得到；`uv lock --check` 通過 |
 | CI 補上 doc-parity／ai-updates／`uv lock --check` | ✅ **有效** | 先前 CI 比本機 `dev_check.ps1` 弱，兩道文件閘門只在本機跑。現在兩邊一致 |
-| P5 參與者列裁切 | ⚠️ **部分修正** | 實機開窗重驗：名稱可讀了、水平捲軸消失，但卡片變兩列高之後下拉選單改被垂直切掉。詳見上方 P5 |
+| P5 參與者列裁切 | ⚠️ **當時為部分修正，現已補完** | 實機量測顯示換列讓卡片變高、下拉選單改被容器垂直切掉 24px。後續調整 `.controls-scroll` 的 `min-height` 與 `.setup` 的 `max-height` 才真正解決，並以 3×2 矩陣驗證 |
 | 新測試 `test_participant_controls_reflow…` | ❌ **發現缺陷，已修** | 插入新函式時把前一個測試最後一行 `assert win.EVENT_DRAIN_LIMIT == 50` 併進了新測試尾端。結果是 `test_drain_limit_and_shared_serializer` **不再斷言 drain limit**（名字與內容不符），而 CSS 測試多了一條與 CSS 無關的斷言。**兩者都仍會通過，所以 CI 抓不到** |
 
 **這次覆核學到的**：`772f7d9` 的兩個最有價值的修正（更新檢查指向上游、install-hook 拉上游程式碼）有共同特徵——**都是 fork 繼承下來、指向原專案的東西**，而且都不會讓任何測試變紅。改名與去品牌時我掃的是「顯示給人看的字串」，漏掉了「連出去的網址」。**下次做 fork 身分稽核，要把所有對外 URL 當成獨立一類逐條檢查，不能靠 grep 專案名稱帶出來。**
@@ -84,7 +67,7 @@
 
 | 落差 | 結果 |
 |---|---|
-| AI 圓桌討論僅 macOS | 移植完成（pywebview host）；視窗建立、四區塊渲染與關閉皆已實機驗證。參與者卡裁切經 `772f7d9` 修正並實機重驗，水平已解、垂直殘留（P5） |
+| AI 圓桌討論僅 macOS | 移植完成（pywebview host）。參與者卡裁切已完全修正，並以 3 種 DPI × 2 種尺寸的實機矩陣驗證（見 `docs/release-evidence/2026-07-31-discussion-layout.md`） |
 | hook 安裝／statusLine 切換／session resume／terse mode／報告產生失敗無回饋 | 五處都接上結果回報 |
 | 更新提示無法「跳過此版本」 | 三鈕對話框；Escape 落在「稍後」而非「跳過」 |
 | 無自動每日更新檢查（README 卻宣稱有） | 掛進輪詢，採用自動檢查偏好／每日間隔／近期「稍後」／已跳過版本四道閘門 |

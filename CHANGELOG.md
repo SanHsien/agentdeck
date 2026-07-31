@@ -14,6 +14,17 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ### Fixed
 - **Documentation state drift**: removed already-released v0.31.2 content that was still duplicated under `Unreleased`, and corrected the README comparison table to show that this fork does provide the AI Talent Market.
 
+## [Unreleased]
+
+### Added
+- **A shared `ProviderHealth` model**: Claude, Codex, and Antigravity now describe "is this data any good?" in one vocabulary — `ready` / `stale` / `missing` / `misconfigured` / `unavailable` / `error` — and every result carries a reason and a next step. Each provider used to decide for itself and disagree: Codex called data old after 15 minutes and Antigravity after 20, one returned `None` when healthy while another returned a dict, and `--doctor` printed a third set of phrases. `--doctor` is the first consumer; wiring the panels is ROADMAP v0.32.0. Rationale in `docs/DECISIONS.md` D-11.
+- **`tools/verify_discussion_layout.py`**: opens a real WebView2 window and measures DOM geometry, turning "the dropdown is cut off" into a pixel count that can be compared between runs instead of eyeballed in a screenshot.
+- **`scripts/package_windows.ps1`**: local releases and the release workflow now package through one script. CI zipped the directory while the local step zipped its contents, shipping two different layouts under the same filename.
+
+### Fixed
+- **Release version guard (P6)**: `build_windows.ps1` clears leftover `*.egg-info` before building and checks `agentdeck.exe --doctor` against `pyproject.toml` afterwards, failing the build on a mismatch; the release workflow additionally checks the tag. A stale egg-info makes `importlib.metadata` resolve first and shadow the pyproject fallback, which really did produce a `0.31.2` tree stamped `0.31.1`. A fresh CI checkout has no egg-info, so this only ever went wrong on the machine cutting releases.
+- **AI Council participant cards clipped vertically (P5)**: once the controls wrapped to a second row the cards got taller, but `.controls-scroll` still had `min-height: 0`, so at 900×640 the model and persona dropdowns sat 24px below the fold. The scroller now reserves room for the section heading plus one whole card, and `.setup` gets more height. Verified on a real-hardware matrix of three DPI settings by two window sizes; evidence in `docs/release-evidence/2026-07-31-discussion-layout.md`.
+
 ## [0.31.2] - 2026-07-31
 
 ### Fixed
