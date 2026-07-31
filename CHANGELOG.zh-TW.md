@@ -22,6 +22,19 @@
 ### 移除
 - **失效的 macOS 專用產物**：移除會下載上游程式碼、並叫使用者結束已不存在 `.app` 的 curl 安裝器，以及已被其他文件取代的根目錄 Antigravity 實作狀態筆記。
 
+## [0.31.2] - 2026-07-31
+
+### 修正
+- **更新檢查查的是本 fork 的版本**：`update_checker.py` 原本查詢上游 `aqua5230/usage` 的最新 release，等於會通知使用者去更新到別的專案的版本；User-Agent 也改為 `agentdeck/<version>`。單元測試同時鎖住 URL 與 header。
+- **移除會下載上游程式碼的安裝腳本**：`scripts/install-hook.sh` 會從上游的 raw URL 抓 `usage_statusline.py` 裝進使用者的 `~/.claude/`。它是給 macOS `.app` 使用者的 bash 腳本，在這個 Windows 專用 fork 既跑不到、又會把上游程式碼裝到使用者機器上。
+- **AI 圓桌參與者卡在預設視窗寬度下裁切**：`participant-head` 原本把 badge、名稱、主持按鈕與兩個固定 128px 控制項塞進單列，900×640 下模型名稱被擠掉。設定欄較窄時改為換列。**實機重驗結果為部分修正**——名稱可讀、水平捲軸消失，但卡片變兩列高後下拉選單改被垂直切掉，詳見 `REVIEW_Claude.md` P5。
+- **測試斷言錯位**：新增參與者換列測試時，`test_drain_limit_and_shared_serializer` 的 `EVENT_DRAIN_LIMIT` 斷言被併進了新的 CSS 測試尾端。兩者都仍會通過，所以閘門抓不到；已歸位。
+
+### 變更
+- **CI 與本機閘門一致化**：`check.yml` 補上雙語文件對稱性與 AI 更新頁兩道檢查（先前只在本機 `dev_check.ps1` 跑），CI 與 release 都加上 `uv lock --check`。本機閘門由四道變六道。
+- **改為 uv virtual root、不再宣告 wheel 建置**：移除過時的 `[build-system]` 與 `[tool.setuptools]` py-modules 清單（其中仍列著已更名的模組），改為 `package = false`。正式產物一律由 PyInstaller 建置。版號改由 `pyproject.toml` 讀取的既有 fallback 路徑供應，已實測。
+- **`REPO_REVIEW.md` 改名為 `REVIEW_Claude.md`**：Claude 與 Codex 的覆核各自維護一份（`REVIEW_Codex.md`），對彼此改動的意見寫在自己那份裡。
+
 ## [0.31.1] - 2026-07-30
 
 ### 修正

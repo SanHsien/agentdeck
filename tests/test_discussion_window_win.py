@@ -141,6 +141,7 @@ def test_drain_limit_and_shared_serializer() -> None:
     events = discussion_assets.serialize_event_batch([], {})
 
     assert isinstance(events, str)
+    assert win.EVENT_DRAIN_LIMIT == 50
 
 
 def test_participant_controls_reflow_before_the_setup_grid_collapses() -> None:
@@ -154,7 +155,6 @@ def test_participant_controls_reflow_before_the_setup_grid_collapses() -> None:
     assert "grid-template-columns: auto minmax(0, 1fr) auto;" in responsive
     assert ".participant-model" in responsive
     assert "grid-row: 2;" in responsive
-    assert win.EVENT_DRAIN_LIMIT == 50
 
 
 def test_shutdown_is_idempotent_and_releases_the_window() -> None:

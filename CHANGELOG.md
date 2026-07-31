@@ -23,6 +23,19 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ### Removed
 - **Dead macOS-only artifacts**: removed the curl installer that downloaded upstream code and told users to quit a removed `.app`, plus a superseded root-level Antigravity implementation status note.
 
+## [0.31.2] - 2026-07-31
+
+### Fixed
+- **The update check now looks at this fork**: `update_checker.py` queried upstream `aqua5230/usage` for the latest release, so it would have told users to update to a different project's version. The User-Agent is now `agentdeck/<version>`, and unit tests pin both the URL and the header.
+- **Removed an install script that downloaded upstream code**: `scripts/install-hook.sh` fetched `usage_statusline.py` from upstream's raw URL into the user's `~/.claude/`. It was a bash script for macOS `.app` users — unreachable on this Windows-only fork, and it would have installed upstream's code on a user's machine.
+- **AI Council participant cards were clipped at the default window width**: `participant-head` packed the badge, name, moderator toggle, and two fixed 128px controls into a single row, which squeezed the model name out at 900×640. The controls now wrap to a second row when the setup column is narrow. **Re-verified on real hardware and only partly fixed** — the name is readable and the horizontal scrollbar is gone, but the taller two-row card now clips the dropdowns vertically; see P5 in `REVIEW_Claude.md`.
+- **A misplaced test assertion**: adding the reflow test moved `test_drain_limit_and_shared_serializer`'s `EVENT_DRAIN_LIMIT` assertion onto the end of the new CSS test. Both still passed, so no gate could catch it; the assertion is back where it belongs.
+
+### Changed
+- **CI now matches the local gate**: `check.yml` gained the bilingual document parity and AI Update Daily freshness checks that previously ran only in `dev_check.ps1`, and both CI and release run `uv lock --check`. The local gate goes from four steps to six.
+- **Switched to a uv virtual root instead of declaring a wheel build**: dropped the stale `[build-system]` and `[tool.setuptools]` py-modules list (which still named renamed modules) in favour of `package = false`. Release artifacts are built by PyInstaller. The version now comes from the existing `pyproject.toml` fallback path, verified.
+- **`REPO_REVIEW.md` is now `REVIEW_Claude.md`**: Claude and Codex each keep their own review (`REVIEW_Codex.md`), and record their opinion of the other's changes in their own file.
+
 ## [0.31.1] - 2026-07-30
 
 ### Fixed

@@ -18,7 +18,7 @@
 
 **動手前先讀 [`docs/PORTING.zh-TW.md`](docs/PORTING.zh-TW.md)** —— 移植的盤點方法、可行性判斷、實作規矩與驗收標準都在裡面,含實際踩過的坑（盤點用的 grep 錯過三次、對話框按鈕配置讓 Escape 觸發了不可逆選項）。
 
-已知落差清單與移植狀態見 [`REPO_REVIEW.md`](REPO_REVIEW.md) 的「Windows 平台落差移植待辦」。發現新落差就補進那份清單。
+已知落差清單與移植狀態見 [`REVIEW_Claude.md`](REVIEW_Claude.md) 的「Windows 平台落差移植待辦」。發現新落差就補進那份清單。
 
 參考素材：[`reference/upstream-macos/`](reference/upstream-macos/) 放著已從本 repo 移除的上游 macOS 實作，**唯讀、不參與建置與檢查**，用途是移植功能時對照原本的行為。
 
@@ -62,7 +62,7 @@ macOS 專屬的 commit 一律不採用，但仍要進 Skipped 表，理由寫「
 | 其他文件（CONTRIBUTING / SECURITY / CHANGELOG / docs/DEVELOPMENT） | 英文為預設 `.md`，中文為 `.zh-TW.md` | **維持不變** |
 | 產品名稱與落地檔名 | `usage` / `~/.usage/` / `usage-statusline.py` | **`agentdeck`** / `~/.agentdeck/` / `agentdeck-statusline.py`（見 `docs/DECISIONS.md` D-09） |
 
-新增檔案（上游沒有）：`AGENTS.md`、`SKILL.md`、`NOTICE.md`、`REPO_REVIEW.md`、`persona_store.py`、`personas/`、`discussion_window_win.py`、`discussion_assets.py`、`docs/FORK.zh-TW.md`、`docs/DECISIONS.md`、`docs/DEVELOPMENT.zh-TW.md`、`docs/PORTING.zh-TW.md`、`docs/UPSTREAM.md`、`tools/`、`reference/`、`.pre-commit-config.yaml`、`.claude/settings.json`。
+新增檔案（上游沒有）：`AGENTS.md`、`SKILL.md`、`NOTICE.md`、`REVIEW_Claude.md`、`persona_store.py`、`personas/`、`discussion_window_win.py`、`discussion_assets.py`、`docs/FORK.zh-TW.md`、`docs/DECISIONS.md`、`docs/DEVELOPMENT.zh-TW.md`、`docs/PORTING.zh-TW.md`、`docs/UPSTREAM.md`、`tools/`、`reference/`、`.pre-commit-config.yaml`、`.claude/settings.json`。
 
 **有取捨的決定寫進 [`docs/DECISIONS.md`](docs/DECISIONS.md)**，不要只留在 commit message 裡——那是為了避免日後重複討論同一個問題。
 
@@ -105,4 +105,4 @@ uv run --no-sync python main.py --doctor    # 環境／hook 診斷
 - 動任何 `~/.claude/settings.json` 的安裝／解除流程（`setup_hook.py`、`session_hooks.py`）前先備份，那會動到本機真實的 Claude Code 設定。
 - **版本一律用語意化版本（SemVer 2.0.0）**：`MAJOR.MINOR.PATCH`，tag 為 `vX.Y.Z`，**禁止**自創日期版號、build number 或任意後綴。目前在 `0.y.z` 階段：破壞相容性的改動（移除語言、改 hook 檔名／設定 key、拔掉讀取路徑、改 CLI 參數）進 **MINOR**，新功能也進 MINOR，純修 bug 進 **PATCH**；滿 `1.0.0` 之後破壞性改動才升 MAJOR。`pyproject.toml` 的 `version` 是唯一真相，tag 必須指向版號相符的 commit。完整規則見 [`CLAUDE.md`](CLAUDE.md) 的 Versioning 段。
 - **測試綠了才准 commit**：`pwsh tools/dev_check.ps1` 全綠再提交，驗證與 commit 之間用 `&&` 閘門，不要用 `;` 串接。
-- **修 bug 必回註 `REPO_REVIEW.md`**：每修掉一個列出的問題，回到對應項目補上修復 commit hash 與日期；過程中額外發現並修掉的也要補註。review 維持 latest-only，修復狀態必須跟上現況。
+- **修 bug 必回註 `REVIEW_Claude.md`**：每修掉一個列出的問題，回到對應項目補上修復 commit hash 與日期；過程中額外發現並修掉的也要補註。review 維持 latest-only，修復狀態必須跟上現況。

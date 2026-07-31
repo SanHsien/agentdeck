@@ -191,7 +191,7 @@ If the system tray icon shows `--`, it's usually not broken — there's just no 
 | [Decision log](docs/DECISIONS.md) | Why things are the way they are, and what was rejected |
 | [Upstream tracking](docs/UPSTREAM.md) | Reviewed and merged upstream commits, with reasons for the ones skipped |
 | [Fork notes](docs/FORK.zh-TW.md) | Fork-specific files and the sync process |
-| [Repo review](REPO_REVIEW.md) | Current health and open issues |
+| [Repo review](REVIEW_Claude.md) | Current health and open issues |
 | [Changelog](CHANGELOG.md) | Per-version changes |
 | [Contributing](CONTRIBUTING.en.md) | What to know before a PR: the gates, the bilingual doc rule, the versioning rule |
 | [Security policy](SECURITY.en.md) | Supported versions and how to report a vulnerability |

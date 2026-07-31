@@ -39,4 +39,4 @@ pwsh tools/dev_check.ps1                     # ruff + mypy + pytest 三道 gate
 - 改 code 前先讀 [`CLAUDE.md`](CLAUDE.md)（架構）與 [`AGENTS.md`](AGENTS.md)（fork 規則與已分叉之處）。
 - 測試不可碰真實 `~/.claude/`、`~/.codex/`。
 - README 是繁中為預設（`README.md`）、英文在 `README.en.md`，兩邊章節數要一致，CI 會擋。
-- Windows 上有兩個測試會因環境（符號連結權限、Claude Code SDK 注入的環境變數）失敗，不是 code bug——根因與處理見 [`REPO_REVIEW.md`](REPO_REVIEW.md)。
+- Windows 上有兩個測試會因環境（符號連結權限、Claude Code SDK 注入的環境變數）失敗，不是 code bug——根因與處理見 [`REVIEW_Claude.md`](REVIEW_Claude.md)。

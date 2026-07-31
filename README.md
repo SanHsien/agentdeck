@@ -191,7 +191,7 @@ uv run --no-sync python main.py --doctor   # 環境與 hook 診斷
 | [決策紀錄](docs/DECISIONS.md) | 為什麼這樣做、以及當初否決了什麼 |
 | [上游追蹤](docs/UPSTREAM.md) | 已審視／已合併的上游 commit，與不採用的理由 |
 | [fork 說明](docs/FORK.zh-TW.md) | 本 fork 專屬檔案與同步流程 |
-| [Repo Review](REPO_REVIEW.md) | 當前健康狀態與未解問題 |
+| [Repo Review](REVIEW_Claude.md) | 當前健康狀態與未解問題 |
 | [變更紀錄](CHANGELOG.zh-TW.md) | 逐版變更 |
 | [貢獻指南](CONTRIBUTING.md) | 送 PR 前該知道的事：閘門、雙語文件規則、版號規則 |
 | [安全性政策](SECURITY.md) | 支援版本與漏洞回報方式 |

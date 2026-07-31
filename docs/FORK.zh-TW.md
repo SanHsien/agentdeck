@@ -40,7 +40,7 @@ git remote add upstream https://github.com/aqua5230/usage.git
 | 產品名稱 | `usage` | **`agentdeck`**（見 `DECISIONS.md` D-09）；內部模組檔名仍是 `usage_*` |
 | 其他文件（CONTRIBUTING / SECURITY / CHANGELOG / docs/DEVELOPMENT） | 英文為預設 `.md`，中文為 `.zh-TW.md` | **維持上游慣例不變** |
 
-新增檔案（上游沒有，不會有衝突）：`AGENTS.md`、`SKILL.md`、`NOTICE.md`、`REPO_REVIEW.md`、`docs/FORK.zh-TW.md`、`docs/DECISIONS.md`、`docs/DEVELOPMENT.zh-TW.md`、`tools/`、`.pre-commit-config.yaml`、`.claude/settings.json`。
+新增檔案（上游沒有，不會有衝突）：`AGENTS.md`、`SKILL.md`、`NOTICE.md`、`REVIEW_Claude.md`、`docs/FORK.zh-TW.md`、`docs/DECISIONS.md`、`docs/DEVELOPMENT.zh-TW.md`、`tools/`、`.pre-commit-config.yaml`、`.claude/settings.json`。
 
 分叉背後的取捨記在 [`DECISIONS.md`](DECISIONS.md)（D-01 獨立維護、D-02 README 語言結構、D-03 不在 Windows 重 lock、D-04 測試環境失敗的處理層級）。
 
