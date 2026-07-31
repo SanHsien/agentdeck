@@ -40,6 +40,7 @@ from i18n import packaged_resource_path
 PERSONA_DIR = packaged_resource_path("personas", Path(__file__).with_name("personas"))
 AGENTS_DIR = Path(os.path.expanduser("~/.claude/agents"))
 CODEX_DIR = Path(os.path.expanduser("~/.codex"))
+CURSOR_DIR = Path(os.path.expanduser("~/.cursor"))
 STATE_FILE = Path(os.path.expanduser("~/.agentdeck/persona_state.json"))
 
 # Role and pack ids become filenames under ~/.claude/agents, so they may not
@@ -177,6 +178,18 @@ def all_targets() -> tuple[Target, ...]:
             agents_dir=CODEX_DIR / "agents",
             suffix=".toml",
             render=render_codex_agent_file,
+        ),
+        Target(
+            id="cursor",
+            label="Cursor",
+            home=CURSOR_DIR,
+            agents_dir=CURSOR_DIR / "agents",
+            # Cursor documents the same shape Claude Code uses -- markdown with
+            # YAML frontmatter -- so the renderer is shared rather than copied.
+            # Its extra frontmatter keys (model, readonly, is_background) are all
+            # optional and are left out rather than guessed at.
+            suffix=".md",
+            render=render_agent_file,
         ),
     )
 

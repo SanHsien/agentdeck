@@ -67,7 +67,7 @@
 
 - **10 款視覺面板：** 可在 Classic、Matrix、Windows 95、Newspaper、Cloud Observation、Midnight Aquarium、Prism Arcade、Black Hole、World Cup 2026 與 Lepidoptera（藍曬圖）之間切換。
 - **拖曳排序：** 按住任何一張額度卡上下拖曳就能交換順序，排法在所有主題間共用、重開也會記住。
-- **AI 人才市場（自製版）：** 把預先寫好的角色**同時安裝進你機器上實際有的每個 AI 工具**——Claude Code（`~/.claude/agents/*.md`）與 Codex（`~/.codex/agents/*.toml`）。兩者格式不同（YAML frontmatter vs TOML），所以是分別產生而不是複製。沒安裝的工具不會被寫入。目前內建 5 組共 15 個角色：工程、文字、產品、資料、維運與安全。上游這個功能靠一顆閉源二進位提供角色內容，來源與發佈 repo 對外都是 404、且只有 macOS 版，任何人 clone 公開 repo 都用不到。本 fork 改成**自己寫的開源實作**：角色定義放在 repo 的 [`personas/`](personas/)，可自行編輯與新增；安裝後若你手動改過該檔，面板會標示並提供還原。**若你原本已有同名 agent，安裝會先備份再覆寫，並告知備份檔名。**
+- **AI 人才市場（自製版）：** 把預先寫好的角色**同時安裝進你機器上實際有的每個 AI 工具**——Claude Code（`~/.claude/agents/*.md`）、Codex（`~/.codex/agents/*.toml`）與 Cursor（`~/.cursor/agents/*.md`）。格式不同就分別產生：Cursor 與 Claude Code 同為 markdown + YAML frontmatter 所以共用，Codex 的 TOML 另外產生。沒安裝的工具不會被寫入。目前內建 5 組共 15 個角色：工程、文字、產品、資料、維運與安全。上游這個功能靠一顆閉源二進位提供角色內容，來源與發佈 repo 對外都是 404、且只有 macOS 版，任何人 clone 公開 repo 都用不到。本 fork 改成**自己寫的開源實作**：角色定義放在 repo 的 [`personas/`](personas/)，可自行編輯與新增；安裝後若你手動改過該檔，面板會標示並提供還原。**若你原本已有同名 agent，安裝會先備份再覆寫，並告知備份檔名。**
 - **AI 圓桌討論：** 開一個獨立視窗，讓 Claude Code、Codex、Antigravity 進行多輪討論——自選參與者、模型、AI 人才市場角色與辯論風格，開始前就看得到大約會花多少 token。可以在輪間插話引導方向，共識計票看得出誰不同意，並讓討論在全體同意時提早收尾。可附上唯讀資料夾讓參與者參考真實檔案。
 - **變更紀錄：** 從系統匣選單直接開啟本專案的[變更紀錄](https://github.com/SanHsien/agentdeck/blob/main/CHANGELOG.md)，看這一版改了什麼。
 - **神獸夥伴：** 百分比旁常駐一隻小型白色動畫神獸（Claude 是鳳凰，Codex 是飛龍，Antigravity 是獅子），各自跟著自家工具的 token 燃燒率動態加速。

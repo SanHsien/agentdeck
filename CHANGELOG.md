@@ -15,6 +15,9 @@
 
 ## [Unreleased]
 
+### 新增
+- **人才市場支援 Cursor**：`~/.cursor/agents/<id>.md`。Cursor 官方文件載明與 Claude Code 同為 markdown + YAML frontmatter，所以共用同一個 renderer——**若照 Codex 的 TOML 產生會得到 Cursor 讀不懂的檔案**。偵測依據同樣是 `~/.cursor/` 存不存在。
+
 ### 變更
 - **根目錄的 19 個模組依職責歸進套件**：`providers/`（10 個資料來源與快取）、`council/`（6 個 AI 圓桌）、`state/`（3 個純狀態投影）。根目錄從 56 個 `.py` 降到 37 個。**檔名一律不改**，import 寫成 `from providers import codex_loader`，所以模組名仍然可 grep。**五個 hook 腳本刻意留在根目錄**——它們會被複製到 `~/.claude/` 由使用者自己的 `python3` 執行，變成套件成員會讓所有已安裝的 hook 壞掉，而測試抓不到。
 - **README 的「文件」章節補上遺漏**：Codex 的覆核、AGENTS.md、NOTICE.md、實機證據目錄。

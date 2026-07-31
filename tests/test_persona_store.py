@@ -46,9 +46,11 @@ def store(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
     monkeypatch.setattr(persona_store, "PERSONA_DIR", personas)
     monkeypatch.setattr(persona_store, "AGENTS_DIR", tmp_path / "claude" / "agents")
     monkeypatch.setattr(persona_store, "CODEX_DIR", tmp_path / "codex")
+    monkeypatch.setattr(persona_store, "CURSOR_DIR", tmp_path / "cursor")
     monkeypatch.setattr(persona_store, "STATE_FILE", tmp_path / "state.json")
     (tmp_path / "claude").mkdir()
     (tmp_path / "codex").mkdir()
+    (tmp_path / "cursor").mkdir()
     return tmp_path
 
 
@@ -231,7 +233,7 @@ def test_a_role_lands_in_every_tool_the_machine_actually_has(store: Path) -> Non
     result = persona_store.install_role("demo-role", "en")
 
     assert result["ok"] is True
-    assert result["targets"] == ["Claude Code", "Codex"]
+    assert result["targets"] == ["Claude Code", "Codex", "Cursor"]
     assert (store / "claude" / "agents" / "demo-role.md").is_file()
     assert (store / "codex" / "agents" / "demo-role.toml").is_file()
 
@@ -259,7 +261,7 @@ def test_a_tool_that_is_not_installed_is_left_alone(
 
     result = persona_store.install_role("demo-role", "en")
 
-    assert result["targets"] == ["Claude Code"]
+    assert "Codex" not in result["targets"]
     assert not (store / "no-codex-here").exists()
 
 
@@ -317,3 +319,30 @@ def test_a_prompt_containing_a_triple_quote_still_parses() -> None:
     parsed = tomllib.loads(persona_store.render_codex_agent_file(role, "en"))
 
     assert "to open a block" in parsed["developer_instructions"]
+
+
+def test_cursor_gets_the_claude_shape_not_the_codex_one(store: Path) -> None:
+    """Cursor documents markdown with YAML frontmatter, same as Claude Code.
+
+    Sharing the renderer is the point — rendering it as TOML because Codex was
+    the most recently added tool would produce a file Cursor cannot read.
+    """
+    persona_store.install_role("demo-role", "en")
+
+    cursor = (store / "cursor" / "agents" / "demo-role.md").read_text(encoding="utf-8")
+    claude = (store / "claude" / "agents" / "demo-role.md").read_text(encoding="utf-8")
+
+    assert cursor.startswith("---\n")
+    assert 'name: "Role"' in cursor
+    assert cursor == claude
+
+
+def test_cursor_absent_means_cursor_untouched(
+    store: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(persona_store, "CURSOR_DIR", store / "no-cursor")
+
+    result = persona_store.install_role("demo-role", "en")
+
+    assert "Cursor" not in result["targets"]
+    assert not (store / "no-cursor").exists()

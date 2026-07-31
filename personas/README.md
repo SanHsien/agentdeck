@@ -16,8 +16,9 @@ AI 人才市場的角色定義,**本 fork 自製、AGPL-3.0 授權**。
 |---|---|---|---|
 | Claude Code | `~/.claude/` 存在 | `~/.claude/agents/<id>.md` | YAML frontmatter ＋ markdown |
 | Codex | `~/.codex/` 存在 | `~/.codex/agents/<id>.toml` | TOML，prompt 放在 `developer_instructions` |
+| Cursor | `~/.cursor/` 存在 | `~/.cursor/agents/<id>.md` | 與 Claude Code 相同（官方文件明載 markdown + YAML frontmatter），所以共用同一個 renderer |
 
-**兩種格式不能互相複製**——Codex 讀不懂 YAML frontmatter，Claude Code 讀不懂 TOML，所以每個工具各自產生一份。Claude Code 專屬的欄位（`tools`、`model`、`memory`）在 Codex 沒有對應，直接省略而不是編一個出來。
+**格式不能亂套**——Codex 讀不懂 YAML frontmatter，Claude Code 與 Cursor 讀不懂 TOML。Cursor 與 Claude Code 同格式所以共用 renderer；Codex 另外產生。Claude Code 專屬的欄位（`tools`、`model`、`memory`）在 Codex 沒有對應，直接省略而不是編一個出來。
 
 判斷「使用者有沒有這個工具」用的是它自己的設定目錄存不存在。沒裝的工具完全不碰——寫進去只會在使用者磁碟上留下永遠用不到的檔案。
 

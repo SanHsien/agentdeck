@@ -16,6 +16,9 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **The talent market supports Cursor**: `~/.cursor/agents/<id>.md`. Cursor documents the same markdown-with-YAML-frontmatter shape as Claude Code, so the renderer is shared — **rendering it as Codex's TOML would produce a file Cursor cannot read**. Detection is again the presence of `~/.cursor/`.
+
 ### Changed
 - **Nineteen root modules grouped into packages by responsibility**: `providers/` (10 data sources and caches), `council/` (6 AI Council modules), `state/` (3 pure projections). The root drops from 56 `.py` files to 37. **Filenames are unchanged** and imports read `from providers import codex_loader`, so module names stay greppable. **Five hook scripts deliberately stay at the root** — they are copied into `~/.claude/` and run by the user's own `python3`, so making them package members breaks every installed hook, and no test would catch it.
 - **The README's documentation index gained what it was missing**: Codex's review, AGENTS.md, NOTICE.md, and the release-evidence directory.
