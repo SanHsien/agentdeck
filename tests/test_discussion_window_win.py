@@ -13,7 +13,7 @@ from typing import Any
 
 import pytest
 
-import discussion_window_win as win
+from council import discussion_window_win as win
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -136,7 +136,7 @@ def test_clipboard_image_returns_none_when_the_clipboard_is_empty(
 def test_drain_limit_and_shared_serializer() -> None:
     # The neutral half of the feature lives in discussion_assets and is shared,
     # so a change there must keep serving this host.
-    import discussion_assets
+    from council import discussion_assets
 
     events = discussion_assets.serialize_event_batch([], {})
 

@@ -14,6 +14,12 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ### Fixed
 - **Documentation state drift**: removed already-released v0.31.2 content that was still duplicated under `Unreleased`, and corrected the README comparison table to show that this fork does provide the AI Talent Market.
 
+## [Unreleased]
+
+### Changed
+- **Nineteen root modules grouped into packages by responsibility**: `providers/` (10 data sources and caches), `council/` (6 AI Council modules), `state/` (3 pure projections). The root drops from 56 `.py` files to 37. **Filenames are unchanged** and imports read `from providers import codex_loader`, so module names stay greppable. **Five hook scripts deliberately stay at the root** — they are copied into `~/.claude/` and run by the user's own `python3`, so making them package members breaks every installed hook, and no test would catch it.
+- **The README's documentation index gained what it was missing**: Codex's review, AGENTS.md, NOTICE.md, and the release-evidence directory.
+
 ## [0.32.0] - 2026-07-31
 
 ### Added

@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from agy_disk_cache import flush_caches, seed_caches
+from providers.agy_disk_cache import flush_caches, seed_caches
 
 logger = logging.getLogger(__name__)
 

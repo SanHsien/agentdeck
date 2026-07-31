@@ -15,9 +15,9 @@ from pathlib import Path
 
 import pytest
 
-import codex_loader
 import doctor
 import setup_hook
+from providers import codex_loader
 
 
 def test_doctor_handles_missing_settings_and_status_file(

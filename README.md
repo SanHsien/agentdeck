@@ -192,49 +192,50 @@ uv run --no-sync python main.py --doctor   # 環境與 hook 診斷
 | [上游追蹤](docs/UPSTREAM.md) | 已審視／已合併的上游 commit，與不採用的理由 |
 | [fork 說明](docs/FORK.zh-TW.md) | 本 fork 專屬檔案與同步流程 |
 | [Repo Review](REVIEW_Claude.md) | 當前健康狀態與未解問題 |
+| [Codex 的覆核](REVIEW_Codex.md) | Codex 那一側的覆核紀錄；兩份各自維護、不互相改寫 |
+| [AGENTS.md](AGENTS.md) | 給 AI agent 在本 repo 工作時的規則（含「落差要移植、不是接受」） |
+| [NOTICE.md](NOTICE.md) | AGPL-3.0 §5a 的修改聲明、fork 關係與隱私說明 |
+| [實機證據](docs/release-evidence/) | 版面等問題的實機驗證紀錄（環境、DPI、結果） |
 | [變更紀錄](CHANGELOG.md) | 逐版變更 |
 | [貢獻指南](CONTRIBUTING.md) | 送 PR 前該知道的事：閘門、雙語文件規則、版號規則 |
 | [安全性政策](SECURITY.md) | 支援版本與漏洞回報方式 |
 
 ## 專案架構
 
-根目錄有 56 個 `.py`，看起來是平的，但實際上分成幾個明確的群組。**其中有五個檔案刻意不能移動**：它們會被複製到使用者的 `~/.claude/` 下、由使用者自己的 `python3` 獨立執行，一旦變成套件成員就跑不起來。
+根目錄從 56 個 `.py` 收斂到 37 個，其餘依職責歸進套件。**有五個檔案刻意不能移動**：它們會被複製到使用者的 `~/.claude/` 下、由使用者自己的 `python3` 獨立執行，一旦變成套件成員，所有已安裝的 hook 都會壞掉。
 
 ```
 agentdeck/
 ├── main.py                     # 進入點：argparse → 系統匣 / TUI / hook 安裝
-│
-├── wintray.py                  # 系統匣圖示與 WebView2 面板（主要 UI）
+├── wintray.py                  # 系統匣圖示與 WebView2 面板（主要 UI，1900 行上限）
+├── usage_cli.py                # 獨立的終端機報告 CLI
 ├── tui.py, tui_sprite.py       # 終端機介面
 │
-├── usage_client.py             # ── 資料來源 ──────────────────
-├── codex_loader.py             #    Codex session JSONL
-├── agy_loader.py               #    Antigravity 額度
-├── history_loader.py           #    Claude Code 專案紀錄
-├── pricing.py                  #    成本估算（LiteLLM 價格表）
-├── service_status.py           #    服務狀態頁
+├── providers/                  # 額度數字從哪來（10 個模組）
+│   ├── codex_loader.py         #   Codex session JSONL
+│   ├── agy_loader.py           #   Antigravity 額度
+│   ├── history_loader.py       #   Claude Code 專案紀錄
+│   └── *_disk_cache.py         #   各自的磁碟快取
 │
-├── provider_health.py          # ── 狀態投影（純函式，無 IO）──
-├── menubar_state.py            #    歷史／狀態計算
-├── burn_rate.py                #    燃燒率預測
+├── council/                    # AI 圓桌討論（6 個模組）
+│   ├── discussion_bridge.py    #   驅動本機 CLI 的核心
+│   └── discussion_window_win.py#   pywebview 視窗宿主
 │
-├── discussion_*.py  (6)        # ── AI 圓桌討論 ───────────────
-├── persona_store.py            # ── 人才市場（角色安裝）───────
-├── talent_market_bridge.py     #    面板與 persona_store 之間的守衛層
+├── state/                      # 純狀態投影，無 IO（3 個模組）
+│   └── menubar_state.py        #   歷史／狀態計算
 │
-├── setup_hook.py               # ── hook 安裝與設定 ───────────
-├── session_hooks.py            #    session companion hooks
+├── provider_health.py          # 三個 provider 共用的健康狀態語彙
+├── persona_store.py            # 人才市場：角色安裝（多工具）
+├── setup_hook.py               # hook 安裝與設定
 │
-├── usage_statusline.py         # ⚠ 這五個會被複製到 ~/.claude/ 由使用者的
-├── usage_statusline_forwarder.py  #   python3 執行，**必須留在根目錄且只用標準函式庫**
-├── usage_session_resume.py     #   放進套件會讓安裝後的 hook 直接壞掉
+├── usage_statusline.py         # ⚠ 這五個會被複製到 ~/.claude/ 由使用者的 python3
+├── usage_statusline_forwarder.py  #   執行，**必須留在根目錄且只用標準函式庫**。
+├── usage_session_resume.py     #   放進套件會讓所有已安裝的 hook 直接壞掉。
 ├── usage_terse_mode.py         #
 ├── usage_terse_reminder.py     #
 │
 ├── adapters/ analyzer/ ui/     # HTML 報告子系統
-├── panels/                     # 面板 HTML 註冊
-├── personas/                   # 角色定義（JSON）
-├── assets/                     # 面板 HTML、圖示、動畫
+├── panels/ personas/ assets/   # 面板註冊、角色定義、靜態資源
 ├── scripts/ tools/             # 建置與閘門
 └── tests/                      # 1200+ 條測試
 ```

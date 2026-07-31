@@ -20,8 +20,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from history_disk_cache import flush_caches, seed_caches
 from project_resolver import project_from_encoded_path, resolve_project_name
+from providers.history_disk_cache import flush_caches, seed_caches
 from time_utils import parse_optional_iso8601_utc
 
 logger = logging.getLogger(__name__)

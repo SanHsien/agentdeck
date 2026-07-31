@@ -21,17 +21,18 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from codex_disk_cache import (  # noqa: F401  (de)serializers re-exported for tests
+from project_resolver import resolve_project_name
+from providers.codex_disk_cache import (  # noqa: F401  (de)serializers re-exported for tests
     _deserialize_usage_entry as _deserialize_usage_entry,
 )
-from codex_disk_cache import (
+from providers.codex_disk_cache import (
     _serialize_usage_entry as _serialize_usage_entry,
 )
-from codex_disk_cache import (
+from providers.codex_disk_cache import (
     flush_caches,
     seed_caches,
 )
-from codex_events import (
+from providers.codex_events import (
     _as_dict,
     _as_int,
     _as_optional_float,
@@ -43,13 +44,13 @@ from codex_events import (
     _token_usage_from_payload,
     _TokenUsage,
 )
-from codex_events import (
+from providers.codex_events import (
     _SessionFileInfo as _SessionFileInfo,
 )
-from codex_events import (
+from providers.codex_events import (
     _ThreadMetadata as _ThreadMetadata,
 )
-from codex_fork_replay import (
+from providers.codex_fork_replay import (
     _common_prefix_length,
     _fork_replay_lookup_key,
     _raw_token_usage_sequence,
@@ -57,8 +58,7 @@ from codex_fork_replay import (
     _ReplayLookupKey,
     _token_usage_events_after_embedded_parent,
 )
-from history_loader import UsageEntry
-from project_resolver import resolve_project_name
+from providers.history_loader import UsageEntry
 from time_utils import parse_optional_iso8601_utc
 
 logger = logging.getLogger(__name__)

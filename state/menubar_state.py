@@ -16,11 +16,11 @@ from datetime import time as datetime_time
 from pathlib import Path
 from typing import TypedDict
 
-import codex_loader
 from burn_rate import WARNING_PERCENT_FLOOR, BurnRateTracker
-from history_loader import CLAUDE_PROJECTS_DIR, UsageEntry
 from i18n import _t
 from pricing import calculate_cost
+from providers import codex_loader
+from providers.history_loader import CLAUDE_PROJECTS_DIR, UsageEntry
 from service_status import ServiceStatus
 from time_utils import parse_iso8601_utc_or_raise
 from usage_client import PollOutcome, PollState

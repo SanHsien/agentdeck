@@ -13,6 +13,12 @@
 ### 修正
 - **文件現況漂移**：移除已發布至 v0.31.2、卻仍重複留在 `Unreleased` 的舊內容；README 比較表也改為如實標示本 fork 已提供 AI 人才市場。
 
+## [Unreleased]
+
+### 變更
+- **根目錄的 19 個模組依職責歸進套件**：`providers/`（10 個資料來源與快取）、`council/`（6 個 AI 圓桌）、`state/`（3 個純狀態投影）。根目錄從 56 個 `.py` 降到 37 個。**檔名一律不改**，import 寫成 `from providers import codex_loader`，所以模組名仍然可 grep。**五個 hook 腳本刻意留在根目錄**——它們會被複製到 `~/.claude/` 由使用者自己的 `python3` 執行，變成套件成員會讓所有已安裝的 hook 壞掉，而測試抓不到。
+- **README 的「文件」章節補上遺漏**：Codex 的覆核、AGENTS.md、NOTICE.md、實機證據目錄。
+
 ## [0.32.0] - 2026-07-31
 
 ### 新增

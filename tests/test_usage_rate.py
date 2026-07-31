@@ -11,7 +11,7 @@ from datetime import UTC, datetime
 import pytest
 
 import usage_rate
-from history_loader import UsageEntry
+from providers.history_loader import UsageEntry
 
 
 def _entry(total_tokens: int) -> UsageEntry:

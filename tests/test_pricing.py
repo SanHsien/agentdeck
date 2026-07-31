@@ -20,7 +20,7 @@ import pytest
 
 import pricing
 from adapters.types import UsageEntry as AnalyzerUsageEntry
-from history_loader import UsageEntry
+from providers.history_loader import UsageEntry
 
 
 @pytest.fixture(autouse=True)

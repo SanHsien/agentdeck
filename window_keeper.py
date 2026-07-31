@@ -35,7 +35,7 @@ import time
 from contextlib import suppress
 from pathlib import Path
 
-from menubar_prefs import _window_keeper_enabled
+from state.menubar_prefs import _window_keeper_enabled
 
 logger = logging.getLogger(__name__)
 

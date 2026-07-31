@@ -10,7 +10,7 @@ import os
 import time
 from collections.abc import Callable
 
-from history_loader import UsageEntry, load_entries
+from providers.history_loader import UsageEntry, load_entries
 
 BURN_RATE_THRESH_NORMAL = 500.0  # tokens/min
 BURN_RATE_THRESH_ACTIVE = 2500.0

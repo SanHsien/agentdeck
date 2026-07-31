@@ -32,7 +32,7 @@ uv run pytest tests/test_usage_client.py::test_name -v
 pwsh scripts/build_windows.ps1
 ```
 
-Tests **must not** touch real `~/.claude/` or `~/.codex/` files — patch the path constants with `monkeypatch` (see existing tests for the pattern). CI gates lock freshness, ruff, mypy, bilingual document parity, AI Update Daily freshness, and pytest in `.github/workflows/check.yml`.
+Tests **must not** touch real `~/.claude/` or `~/.codex/` files — patch the path constants with `monkeypatch` (see existing tests for the pattern). CI gates lock freshness, ruff, mypy, bilingual document parity, guarded file sizes, and pytest in `.github/workflows/check.yml`.
 
 ## Architecture
 
@@ -45,15 +45,28 @@ Claude Code ──stdin──> usage_statusline.py (hook) ──write──> ~/.
                                                                        │
 ~/.codex/sessions/*.jsonl  (Codex writes these natively) ──┐           │
                                                             ▼           ▼
-                                              codex_loader.py    usage_client.py
+                                              providers/codex_loader  usage_client.py
                                                             └────┬──────┘
                                                                  ▼
                                                    wintray.py  /  tui.py
 ```
 
 - **Claude Code side**: `usage_statusline.py` is installed into `~/.claude/agentdeck-statusline.py` by `setup_hook.py` and wired into `~/.claude/settings.json`'s `statusLine`. Every time Claude Code refreshes its status line, it pipes the session JSON to the hook on stdin; the hook atomically writes it to `~/.claude/agentdeck-status.json`. The UI reads that file — never the network.
-- **Codex side**: `codex_loader.py` scans `~/.codex/sessions/**/*.jsonl` and pulls `rate_limits` straight from the conversation logs. This used to be documented as "no hook is possible"; that is no longer true — Codex CLI 0.129 ships `codex plugin` with a marketplace, plugins can register `SessionStart` / `Stop` hooks, and `codex app-server` exposes rate-limit notifications locally. The log scan stays for now because it needs nothing installed on the user's side, but an event-driven path exists and is worth evaluating; see the reference table in the README.
+- **Codex side**: `providers/codex_loader.py` scans `~/.codex/sessions/**/*.jsonl` and pulls `rate_limits` straight from the conversation logs. This used to be documented as "no hook is possible"; that is no longer true — Codex CLI 0.129 ships `codex plugin` with a marketplace, plugins can register `SessionStart` / `Stop` hooks, and `codex app-server` exposes rate-limit notifications locally. The log scan stays for now because it needs nothing installed on the user's side, but an event-driven path exists and is worth evaluating; see the reference table in the README.
 - **Read priority** in `usage_client.py`: the newest usable data from `agentdeck-status.json` → `usag-status.json` (v0.1.x legacy) → `tt-status.json` (compat fallback for users migrating from the third-party tool `stormzhang/token-tracker`) or Claude Code's `~/.claude.json` `cachedUsageUtilization` fallback; **no `token-tracker` module or source exists in this repository**.
+
+### Package layout
+
+Root modules were grouped in v0.32.0: data loaders into `providers/`, the AI
+Council into `council/`, pure state projections into `state/`. Imports read
+`from providers import codex_loader`, so the module names are unchanged and still
+greppable.
+
+**Five files must stay at the root and stay stdlib-only**: `usage_statusline.py`,
+`usage_statusline_forwarder.py`, `usage_session_resume.py`, `usage_terse_mode.py`
+and `usage_terse_reminder.py`. They are copied into `~/.claude/` and executed by
+whatever `python3` the user's Claude Code finds. Moving them into a package
+breaks every installed hook, and nothing in the test suite would notice.
 
 ### Module map
 
@@ -61,15 +74,15 @@ Claude Code ──stdin──> usage_statusline.py (hook) ──write──> ~/.
 |---|---|
 | `main.py` | argparse + entry point; dispatches to `wintray.run_app`, `run_tui`, or `setup_hook.setup/unsetup`. |
 | `usage_client.py` | Reads the Claude Code status JSON, builds a `UsageSnapshot`. Async interface preserved for the polling loop even though reads are sync. |
-| `codex_loader.py` | Parses Codex JSONL session logs for both rate-limits and per-message token usage. Also reads `~/.codex/state_5.sqlite` (read-only) for thread→model mapping. |
-| `history_loader.py` | Parses Claude Code's per-project JSONL logs under `~/.claude/projects/` for token totals and cost. |
+| `providers/codex_loader.py` | Parses Codex JSONL session logs for both rate-limits and per-message token usage. Also reads `~/.codex/state_5.sqlite` (read-only) for thread→model mapping. |
+| `providers/history_loader.py` | Parses Claude Code's per-project JSONL logs under `~/.claude/projects/` for token totals and cost. |
 | `pricing.py` | Cost estimation. Downloads LiteLLM's `model_prices_and_context_window.json` once, caches to `~/.agentdeck/pricing_cache.json` (TTL 7 days; 10-min TTL on fallback so offline-then-online recovers; `~/.claude/pricing_cache.json` is a legacy read-only fallback). |
 | `service_status.py` | Reads Claude and Codex **public service-status pages** (`status.claude.com/api/v2/summary.json`, `status.openai.com/api/v2/summary.json`) so the panel can flag outages; caches to `~/.agentdeck/anthropic_status_cache.json` and `~/.agentdeck/openai_status_cache.json` (TTL 5 min, 60s backoff after a failure), mirroring `pricing.py`'s fetch/cache shape. Inspects **only** Claude's `Claude Code` and `Claude API (api.anthropic.com)`, plus Codex's `Codex API` — never either page's overall `indicator` or OpenAI shared components, which can reflect unrelated incidents and would false-alarm. A status page is **not a usage API**; this does not violate the no-LLM-usage-API invariant. |
 | `usage_rate.py` | Burn-rate classifier (Idle/Normal/Active/Heavy) — drives sprite animation speed in TUI. Burn rate deliberately excludes `cache_read` (see `UsageEntry.active_tokens`): cache reads are near-free re-sends of the whole context and would pin every heavy user at Heavy. |
 | `wintray.py` | pystray tray icon + pywebview (WebView2) panels — the primary UI. Win32 work areas are in physical pixels while pywebview's API is logical; convert with `_monitor_dpi_scale()` / `_to_logical_rect()` or the panel lands off-screen on scaled displays. |
 | `burn_rate.py` | Burn-rate prediction core used by `wintray.py`. |
-| `menubar_state.py` | Pure history/state projections consumed by `wintray.py`. The `menubar_` prefix is historical — these modules are platform-neutral and load-bearing; don't delete them by name. |
-| `discussion_window_win.py` | pywebview host for the AI Council window, a second window on wintray's GUI loop. Neutral parsing/assets live in `discussion_assets.py`; session state lives in `discussion_session.py`. |
+| `state/menubar_state.py` | Pure history/state projections consumed by `wintray.py`. The `menubar_` prefix is historical — these modules are platform-neutral and load-bearing; don't delete them by name. |
+| `council/discussion_window_win.py` | pywebview host for the AI Council window, a second window on wintray's GUI loop. Neutral parsing/assets live in `council/discussion_assets.py`; session state lives in `council/discussion_session.py`. |
 | `tui.py`, `tui_sprite.py` | `rich`-based terminal renderer. |
 | `usage_cli.py` | Standalone terminal analytics CLI (`uv run --no-sync python usage_cli.py report`) — drives the `adapters/analyzer/ui` report subsystem without the tray UI. |
 | `doctor.py` | Renders the `uv run --no-sync python main.py --doctor` environment/hook-state diagnostic report. |

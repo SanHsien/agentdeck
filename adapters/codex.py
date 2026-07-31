@@ -15,7 +15,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-import codex_loader as shared_codex_loader
+from providers import codex_loader as shared_codex_loader
 
 from .types import AgentInfo, RateLimits, UsageEntry
 

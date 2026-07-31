@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from history_loader import UsageEntry
+    from providers.history_loader import UsageEntry
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ def _serialize_usage_entry(entry: Any) -> dict[str, Any]:
 
 
 def _deserialize_usage_entry(data: dict[str, Any]) -> UsageEntry:
-    from history_loader import UsageEntry
+    from providers.history_loader import UsageEntry
 
     return UsageEntry(
         timestamp=datetime.fromisoformat(data["timestamp"]),
@@ -136,7 +136,7 @@ def seed_caches(
     maxsize: int,
     file_cache: _FileCache,
 ) -> None:
-    from history_loader import _FileCacheEntry
+    from providers.history_loader import _FileCacheEntry
 
     _remove_legacy_cache(cache_path)
     for index in range(_SHARD_COUNT):

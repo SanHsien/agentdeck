@@ -87,7 +87,7 @@ warn_unused_ignores = false
 # reasoning as usage_cli above. tests/test_discussion_cli.py asserts against
 # signal.SIGKILL, which is POSIX-only too.
 [[tool.mypy.overrides]]
-module = ["discussion_cli", "tests.test_discussion_cli"]
+module = ["council.discussion_cli", "tests.test_discussion_cli"]
 warn_unused_ignores = false
 
 [tool.pytest.ini_options]

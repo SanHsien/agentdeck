@@ -12,10 +12,10 @@ from typing import Any, cast
 
 import pytest
 
-import agy_window_keeper
-import menubar_agy
-from agy_quota_probe import AgyQuotaWindow
-from menubar_state import AgyStaleState, QuotaRowState
+from providers import agy_window_keeper
+from providers.agy_quota_probe import AgyQuotaWindow
+from state import menubar_agy
+from state.menubar_state import AgyStaleState, QuotaRowState
 
 
 class _SyncThread:

@@ -19,8 +19,8 @@ import time
 from contextlib import suppress
 from pathlib import Path
 
-from menubar_agy import AgyRefreshResult
-from menubar_prefs import _agy_window_keeper_enabled
+from state.menubar_agy import AgyRefreshResult
+from state.menubar_prefs import _agy_window_keeper_enabled
 
 logger = logging.getLogger(__name__)
 

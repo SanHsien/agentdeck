@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from menubar_state import PopoverState, QuotaRowState
+    from state.menubar_state import PopoverState, QuotaRowState
 
 
 def resolve_resource(name: str) -> str:

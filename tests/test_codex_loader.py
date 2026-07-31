@@ -16,9 +16,8 @@ from unittest.mock import Mock
 
 import pytest
 
-import codex_disk_cache
-import codex_loader
-from history_loader import UsageEntry
+from providers import codex_disk_cache, codex_loader
+from providers.history_loader import UsageEntry
 from tests.helpers import write_codex_session as _write_session
 from tests.helpers import (
     write_codex_session_with_turn_context_model as _write_session_with_turn_context_model,
@@ -2254,7 +2253,7 @@ def test_load_rate_limits_uses_turn_context_model_when_state_db_missing(
 
 def test_usage_entry_round_trip() -> None:
     """Test that UsageEntry serialization/deserialization is lossless."""
-    from history_loader import UsageEntry
+    from providers.history_loader import UsageEntry
 
     original = UsageEntry(
         timestamp=datetime(2026, 6, 24, 12, 0, 0, tzinfo=UTC),

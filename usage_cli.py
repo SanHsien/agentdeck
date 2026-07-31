@@ -10,7 +10,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-import codex_loader
+from providers import codex_loader
 from adapters import claude, codex
 from adapters.rate_limits import load_rate_limits as load_claude_rate_limits
 from adapters.registry import detect_agents

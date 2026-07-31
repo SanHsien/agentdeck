@@ -71,7 +71,7 @@ PROBE = """
 def probe(width: int, height: int) -> dict[str, Any]:
     import webview
 
-    from discussion_window_win import WindowsDiscussionWindowController
+    from council.discussion_window_win import WindowsDiscussionWindowController
 
     controller = WindowsDiscussionWindowController()
     result: dict[str, Any] = {}

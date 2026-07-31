@@ -28,7 +28,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal, cast
 
-from discussion_session import DebateStyle
+from council.discussion_session import DebateStyle
 from i18n import _load_i18n_bundle, packaged_resource_path
 from panels.payload import _data_uri
 from usage_lang import detect_lang

@@ -12,12 +12,11 @@ from typing import cast
 
 import pytest
 
-import menubar_prefs
-import menubar_state
 import prefs
 import win_login_item
 import wintray
 from i18n import _t
+from state import menubar_prefs, menubar_state
 from usage_notifications import NotificationEvent
 
 
@@ -962,7 +961,7 @@ def test_open_discussion_creates_the_controller_once(monkeypatch: pytest.MonkeyP
         def show(self) -> None:
             self.shown += 1
 
-    import discussion_window_win
+    from council import discussion_window_win
 
     monkeypatch.setattr(
         discussion_window_win, "WindowsDiscussionWindowController", _Controller
@@ -981,7 +980,7 @@ def test_open_discussion_creates_the_controller_once(monkeypatch: pytest.MonkeyP
 def test_open_discussion_failure_does_not_take_the_tray_down(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import discussion_window_win
+    from council import discussion_window_win
 
     def _explode() -> None:
         raise RuntimeError("no webview")

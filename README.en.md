@@ -192,49 +192,50 @@ If the system tray icon shows `--`, it's usually not broken — there's just no 
 | [Upstream tracking](docs/UPSTREAM.md) | Reviewed and merged upstream commits, with reasons for the ones skipped |
 | [Fork notes](docs/FORK.zh-TW.md) | Fork-specific files and the sync process |
 | [Repo review](REVIEW_Claude.md) | Current health and open issues |
+| [Codex's review](REVIEW_Codex.md) | The Codex-side review; the two are maintained separately and neither rewrites the other |
+| [AGENTS.md](AGENTS.md) | Rules for AI agents working in this repo, including "port the gap, do not accept it" |
+| [NOTICE.md](NOTICE.md) | The AGPL-3.0 §5a modification notice, fork relationship, and privacy statement |
+| [Release evidence](docs/release-evidence/) | Real-hardware verification records (environment, DPI, outcome) |
 | [Changelog](CHANGELOG.en.md) | Per-version changes |
 | [Contributing](CONTRIBUTING.en.md) | What to know before a PR: the gates, the bilingual doc rule, the versioning rule |
 | [Security policy](SECURITY.en.md) | Supported versions and how to report a vulnerability |
 
 ## Project Structure
 
-The root holds 56 `.py` files. It looks flat, but it falls into clear groups — and **five files deliberately cannot move**: they are copied into the user's `~/.claude/` and run standalone under the user's own `python3`, so making them package members would break every installed hook.
+The root came down from 56 `.py` files to 37; the rest moved into packages by responsibility. **Five files deliberately cannot move**: they are copied into the user's `~/.claude/` and run standalone under the user's own `python3`, so making them package members would break every installed hook.
 
 ```
 agentdeck/
 ├── main.py                     # entry point: argparse → tray / TUI / hook setup
-│
-├── wintray.py                  # tray icon and WebView2 panels (the primary UI)
+├── wintray.py                  # tray icon and WebView2 panels (primary UI, 1,900-line ceiling)
+├── usage_cli.py                # standalone terminal report CLI
 ├── tui.py, tui_sprite.py       # terminal interface
 │
-├── usage_client.py             # ── data sources ─────────────────
-├── codex_loader.py             #    Codex session JSONL
-├── agy_loader.py               #    Antigravity quota
-├── history_loader.py           #    Claude Code project logs
-├── pricing.py                  #    cost estimation (LiteLLM price table)
-├── service_status.py           #    public status pages
+├── providers/                  # where the quota numbers come from (10 modules)
+│   ├── codex_loader.py         #   Codex session JSONL
+│   ├── agy_loader.py           #   Antigravity quota
+│   ├── history_loader.py       #   Claude Code project logs
+│   └── *_disk_cache.py         #   their disk caches
 │
-├── provider_health.py          # ── projections (pure, no IO) ────
-├── menubar_state.py            #    history and state calculations
-├── burn_rate.py                #    burn-rate prediction
+├── council/                    # AI Council (6 modules)
+│   ├── discussion_bridge.py    #   the core that drives local CLIs
+│   └── discussion_window_win.py#   pywebview window host
 │
-├── discussion_*.py  (6)        # ── AI Council ───────────────────
-├── persona_store.py            # ── talent market (role install) ─
-├── talent_market_bridge.py     #    guard layer between panel and store
+├── state/                      # pure projections, no IO (3 modules)
+│   └── menubar_state.py        #   history and state calculations
 │
-├── setup_hook.py               # ── hook install and settings ────
-├── session_hooks.py            #    session companion hooks
+├── provider_health.py          # one health vocabulary shared by all providers
+├── persona_store.py            # talent market: role install (multi-tool)
+├── setup_hook.py               # hook install and settings
 │
-├── usage_statusline.py         # ⚠ these five are copied into ~/.claude/ and run
-├── usage_statusline_forwarder.py  #   by the user's python3. They **must stay at the
-├── usage_session_resume.py     #   root and stay stdlib-only** — moving them into a
-├── usage_terse_mode.py         #   package breaks every installed hook.
+├── usage_statusline.py         # ⚠ these five are copied into ~/.claude/ and run by
+├── usage_statusline_forwarder.py  #   the user's python3. They **must stay at the root
+├── usage_session_resume.py     #   and stay stdlib-only** — moving them into a package
+├── usage_terse_mode.py         #   breaks every installed hook.
 ├── usage_terse_reminder.py     #
 │
 ├── adapters/ analyzer/ ui/     # HTML report subsystem
-├── panels/                     # panel HTML registry
-├── personas/                   # role definitions (JSON)
-├── assets/                     # panel HTML, icons, sprites
+├── panels/ personas/ assets/   # panel registry, role definitions, static assets
 ├── scripts/ tools/             # build and gates
 └── tests/                      # 1200+ tests
 ```

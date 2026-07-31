@@ -12,11 +12,9 @@ from dataclasses import asdict
 
 import pytest
 
-import discussion_assets
-import discussion_bridge
-import discussion_session
-from discussion_bridge import DiscussionBridge
-from discussion_session import (
+from council import discussion_assets, discussion_bridge, discussion_session
+from council.discussion_bridge import DiscussionBridge
+from council.discussion_session import (
     ConsensusCount,
     DebateStyle,
     DiscussionSession,
@@ -27,7 +25,7 @@ from discussion_session import (
     TurnStatus,
     count_stance_consensus,
 )
-from discussion_usage import TurnUsage
+from council.discussion_usage import TurnUsage
 
 
 def _participants() -> list[Participant]:

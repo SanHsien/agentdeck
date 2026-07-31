@@ -16,9 +16,8 @@ from unittest.mock import Mock
 
 import pytest
 
-import history_disk_cache
-import history_loader
 import project_resolver
+from providers import history_disk_cache, history_loader
 
 
 @pytest.fixture(autouse=True)

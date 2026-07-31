@@ -81,8 +81,8 @@ def _provider_health_lines() -> list[str]:
 
 def collect_provider_health(*, now: float) -> list[provider_health.ProviderHealth]:
     """Gather the facts the projections need. All IO lives here, not in the model."""
-    import codex_loader
     import usage_client
+    from providers import codex_loader
 
     claude_error = ""
     status_path = Path(usage_client.STATUS_FILE)
@@ -135,8 +135,8 @@ def _antigravity_health(now: float) -> provider_health.ProviderHealth:
     report, and firing a network request would make the diagnostic itself a
     reason the state changes.
     """
-    import agy_quota_probe
-    from menubar_prefs import _hide_agy_enabled
+    from providers import agy_quota_probe
+    from state.menubar_prefs import _hide_agy_enabled
 
     probe_error = ""
     last_updated: float | None = None
@@ -275,7 +275,7 @@ def _self_heal_log_lines() -> list[str]:
 
 
 def _codex_sessions() -> str:
-    import codex_loader
+    from providers import codex_loader
 
     sessions_dir = codex_loader.SESSIONS_DIR
     if not sessions_dir.is_dir():
@@ -294,7 +294,7 @@ def _codex_sessions() -> str:
 
 
 def _codex_logs() -> str:
-    import codex_loader
+    from providers import codex_loader
 
     logs_db = codex_loader.LOGS_DB
     if not logs_db.exists():
@@ -315,7 +315,7 @@ def _codex_rate_limit_log_count(logs_db: Path) -> int:
 
 
 def _codex_state() -> str:
-    import codex_loader
+    from providers import codex_loader
 
     state_db = codex_loader.STATE_DB
     status = "ok" if state_db.exists() else "missing"
@@ -323,7 +323,7 @@ def _codex_state() -> str:
 
 
 def _codex_rate_limits() -> str:
-    import codex_loader
+    from providers import codex_loader
 
     rate_limits = codex_loader.load_rate_limits()
     if rate_limits is None:

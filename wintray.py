@@ -18,17 +18,19 @@ from importlib import metadata
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import agy_window_keeper
-import codex_loader
-import menubar_agy
-import menubar_state
 import update_checker
 import win_login_item
 import window_keeper
 from burn_rate import BurnRateTracker
-from history_loader import UsageEntry, load_entries
 from i18n import _t
-from menubar_prefs import (
+from panels.dynamic_height import clamp_content_height, inject_content_height_script
+from panels.payload import _load_panel_html, _state_payload
+from prefs import _load_preferences, _save_preferences
+from pricing import calculate_cost
+from providers import agy_window_keeper, codex_loader
+from providers.history_loader import UsageEntry, load_entries
+from state import menubar_agy, menubar_state
+from state.menubar_prefs import (
     _auto_update_check_enabled,
     _hide_agy_enabled,
     _hide_claude_enabled,
@@ -38,10 +40,6 @@ from menubar_prefs import (
     _quota_notifications_enabled,
     _window_keeper_enabled,
 )
-from panels.dynamic_height import clamp_content_height, inject_content_height_script
-from panels.payload import _load_panel_html, _state_payload
-from prefs import _load_preferences, _save_preferences
-from pricing import calculate_cost
 from statusline_settings import _statusline_enabled, _toggle_statusline_settings
 from usage_client import ClaudeUsageClient, PollState
 from usage_lang import detect_lang
@@ -1658,7 +1656,7 @@ class _WindowsTrayController:
         """
         try:
             if self.discussion is None:
-                from discussion_window_win import WindowsDiscussionWindowController
+                from council.discussion_window_win import WindowsDiscussionWindowController
 
                 self.discussion = WindowsDiscussionWindowController()
             self.discussion.show()

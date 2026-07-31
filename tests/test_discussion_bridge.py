@@ -17,18 +17,17 @@ from typing import Any, cast
 
 import pytest
 
-import discussion_bridge
-import discussion_cli
-from discussion_bridge import DiscussionBridge, DiscussionBusyError, ParticipantSpec
-from discussion_cli import (
+from council import discussion_bridge, discussion_cli
+from council.discussion_bridge import DiscussionBridge, DiscussionBusyError, ParticipantSpec
+from council.discussion_cli import (
     CLIAdapter,
     DetectionResult,
     Invocation,
     StreamError,
     StreamFailureReason,
 )
-from discussion_session import build_round1_prompt
-from discussion_usage import TurnUsage
+from council.discussion_session import build_round1_prompt
+from council.discussion_usage import TurnUsage
 
 TERMINAL_STATUSES = {"COMPLETED", "CANCELLED", "FAILED"}
 
@@ -147,7 +146,7 @@ def _bridge_with_adapters(
 
 
 def _install_runner(monkeypatch: pytest.MonkeyPatch, runner: object) -> None:
-    monkeypatch.setattr("discussion_bridge.run_streaming", runner)
+    monkeypatch.setattr("council.discussion_bridge.run_streaming", runner)
 
 
 def _wait_terminal(bridge: DiscussionBridge, timeout: float = 2.0) -> dict[str, Any]:
