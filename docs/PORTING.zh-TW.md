@@ -90,7 +90,7 @@ Windows 有對應的 API 或既有機制。例：上游用 `NSAlert` 顯示 hook
 
 ## 四、驗收
 
-1. `pwsh tools/dev_check.ps1` 全綠（ruff / mypy / doc-parity / ai-updates / pytest）。
+1. `pwsh tools/dev_check.ps1` 全綠（lock / ruff / mypy / doc-parity / pytest）。
 2. **純邏輯用測試守,不要靠手動點**。對話框回傳碼、gating 判斷、資源路徑對應,都寫成測試。
 3. **UI 行為必須實機驗證**。WebView2 開窗、對話框長相、系統匣選單,測試涵蓋不到,要在桌面實際點一次。這一項無法由 AI 代勞,要請維護者確認。
 4. 動到打包相關的東西,跑 `pytest tests/test_packaged_resources.py` —— 它守著「程式碼要求的資源都有宣告給 PyInstaller」,曾經抓到 `--add-data` 目的地與資源名稱不一致。

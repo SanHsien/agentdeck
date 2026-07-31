@@ -69,7 +69,7 @@
 - **拖曳排序：** 按住任何一張額度卡上下拖曳就能交換順序，排法在所有主題間共用、重開也會記住。
 - **AI 人才市場（自製版）：** 把預先寫好的 subagent 角色安裝進 `~/.claude/agents/`。上游這個功能靠一顆閉源二進位提供角色內容，來源與發佈 repo 對外都是 404、且只有 macOS 版，任何人 clone 公開 repo 都用不到。本 fork 改成**自己寫的開源實作**：角色定義放在 repo 的 [`personas/`](personas/)，可自行編輯與新增；安裝後若你手動改過該檔，面板會標示並提供還原。**若你原本已有同名 agent，安裝會先備份再覆寫，並告知備份檔名。**
 - **AI 圓桌討論：** 開一個獨立視窗，讓 Claude Code、Codex、Antigravity 進行多輪討論——自選參與者、模型、AI 人才市場角色與辯論風格，開始前就看得到大約會花多少 token。可以在輪間插話引導方向，共識計票看得出誰不同意，並讓討論在全體同意時提早收尾。可附上唯讀資料夾讓參與者參考真實檔案。
-- **AI 更新日報：** 開啟[更新彙整頁](https://sanhsien.github.io/agentdeck/ai-updates/)，涵蓋 Claude Code、Codex、Antigravity 與相關工具，附官方原文對照。頁面由本 repo 的 `ai_updates.json` 產生（`scripts/build_ai_updates.py`），資料隨上游同步更新。
+- **變更紀錄：** 從系統匣選單直接開啟本專案的[變更紀錄](https://github.com/SanHsien/agentdeck/blob/main/CHANGELOG.zh-TW.md)，看這一版改了什麼。
 - **神獸夥伴：** 百分比旁常駐一隻小型白色動畫神獸（Claude 是鳳凰，Codex 是飛龍，Antigravity 是獅子），各自跟著自家工具的 token 燃燒率動態加速。
 - **自動多語言 (i18n)：** 介面支援繁體中文與英文，自動跟隨系統語言設定。所有中文語系（含簡體）都會套用繁體中文，其餘語系回退英文。
 
@@ -176,7 +176,6 @@ uv run --no-sync python main.py --doctor   # 環境與 hook 診斷
 | HTML 深度報告與 UI 面板 | ✅ | ✅ | — |
 | AI 人才市場 | ✅ | — | — |
 | AI 圓桌討論 | ✅ | — | — |
-| AI 更新日報 | ✅ | — | — |
 | 進度管家與省 token 模式 | ✅ | — | — |
 | Token 浪費健檢 | ✅ | — | — |
 | 讀取額度時不呼叫 LLM API | ✅ | ✅ | ✅ |

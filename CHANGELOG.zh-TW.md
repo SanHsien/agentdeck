@@ -15,6 +15,9 @@
 
 ## [Unreleased]
 
+### 移除
+- **移除「AI 更新日報」，選單改為「變更紀錄」**：該頁面的四分之三是上游在一個**非公開 repo** 裡編寫的第三方工具更新（Claude Code、Codex、Antigravity、GitHub CLI）——我們既寫不出來、壞了也修不了，而這個 fork 的立場是獨立維護。剩下的四分之一則是本專案的 CHANGELOG 再渲染一次。系統匣選單現在直接開啟本專案的變更紀錄，並依介面語言選擇中英文版。一併移除 `ai_updates.json`、`scripts/build_ai_updates.py`、`scripts/sync_ai_updates.py`、`docs/ai-updates/`、排程 workflow，以及本機與 CI 的 ai-updates 閘門（五道閘門）。順帶清掉早已無程式引用的報告區塊樣式與 4 個孤兒 i18n key。
+
 ### 新增
 - **`ProviderHealth` 共用狀態模型**：Claude、Codex 與 Antigravity 改用同一套語彙描述「資料還能不能用」——`ready` / `stale` / `missing` / `misconfigured` / `unavailable` / `error`，每個結果都帶原因與下一步。先前三者各自判斷且互不一致（Codex 15 分鐘算舊、Antigravity 20 分鐘算舊；健康時一個回 `None`、一個回 dict），`--doctor` 又印第三套措辭。`--doctor` 是第一個消費者；面板接線見 ROADMAP v0.32.0。設計理由見 `docs/DECISIONS.md` D-11。
 - **`tools/verify_discussion_layout.py`**：在真實 WebView2 開窗並量測 DOM 幾何，把「下拉選單被切掉」變成可比對的像素數，取代肉眼看截圖。

@@ -36,8 +36,5 @@ jobs:
       - name: Check bilingual document parity
         run: uv run --no-sync python scripts/check_doc_parity.py
 
-      - name: Check AI Update Daily freshness
-        run: uv run --no-sync python scripts/build_ai_updates.py --check
-
       - name: Run pytest
         run: uv run --no-sync pytest -v

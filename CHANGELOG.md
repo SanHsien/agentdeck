@@ -16,6 +16,9 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
 ## [Unreleased]
 
+### Removed
+- **Removed AI Update Daily; the menu now opens the changelog**: three quarters of that page was third-party tool news (Claude Code, Codex, Antigravity, GitHub CLI) curated by upstream in a **repository we cannot see** — content we could neither write nor fix, for a fork whose whole position is independent maintenance. The remaining quarter was this project's CHANGELOG rendered a second time. The tray menu now opens this project's changelog directly, in the UI language. `ai_updates.json`, `scripts/build_ai_updates.py`, `scripts/sync_ai_updates.py`, `docs/ai-updates/`, the scheduled workflow, and the ai-updates gate in both CI and `dev_check.ps1` are gone (five gates now). Also removed report styles and four i18n keys for a section no code had referenced in some time.
+
 ### Added
 - **A shared `ProviderHealth` model**: Claude, Codex, and Antigravity now describe "is this data any good?" in one vocabulary — `ready` / `stale` / `missing` / `misconfigured` / `unavailable` / `error` — and every result carries a reason and a next step. Each provider used to decide for itself and disagree: Codex called data old after 15 minutes and Antigravity after 20, one returned `None` when healthy while another returned a dict, and `--doctor` printed a third set of phrases. `--doctor` is the first consumer; wiring the panels is ROADMAP v0.32.0. Rationale in `docs/DECISIONS.md` D-11.
 - **`tools/verify_discussion_layout.py`**: opens a real WebView2 window and measures DOM geometry, turning "the dropdown is cut off" into a pixel count that can be compared between runs instead of eyeballed in a screenshot.

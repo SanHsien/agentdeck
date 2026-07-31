@@ -435,12 +435,12 @@ def test_panel_menu_data_is_localized_and_reads_current_checks(
     menu = controller._panel_menu_data()
 
     assert menu[0] == {
-        "i18nKey": "panel_ai_daily",
-        "label": "AI Update Daily",
-        "action": "open_ai_daily",
+        "i18nKey": "panel_changelog",
+        "label": "Changelog",
+        "action": "open_changelog",
     }
     assert [entry.get("i18nKey", entry.get("type")) for entry in menu] == [
-        "panel_ai_daily",
+        "panel_changelog",
         "separator",
         "switch_panel",
         "hide_sections_menu",
@@ -469,7 +469,7 @@ def test_panel_menu_data_is_localized_and_reads_current_checks(
 @pytest.mark.parametrize(
     ("payload", "method", "expected"),
     [
-        ({"action": "open_ai_daily"}, "open_ai_daily", ()),
+        ({"action": "open_changelog"}, "open_changelog", ()),
         ({"action": "reset_panel_position"}, "reset_panel_position", ()),
         ({"action": "switch_panel", "panel_id": "matrix"}, "_schedule_panel_switch", ("matrix",)),
         (
@@ -858,7 +858,7 @@ def test_menu_actions_pass_real_pystray_signature_validation() -> None:
         reset_panel_position=lambda: None,
         refresh=lambda: None,
         toggle_login=lambda: None,
-        open_ai_daily=lambda: None,
+        open_changelog=lambda: None,
         open_discussion=lambda: None,
         toggle_hide_section=lambda key: None,
         toggle_quota_notifications=lambda: None,

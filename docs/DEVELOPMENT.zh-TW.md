@@ -57,7 +57,6 @@ uv lock --check
 uv run --no-sync ruff check
 uv run --no-sync mypy .
 uv run --no-sync python scripts/check_doc_parity.py
-uv run --no-sync python scripts/build_ai_updates.py --check
 uv run --no-sync pytest -q
 ```
 

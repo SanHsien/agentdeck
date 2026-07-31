@@ -12,7 +12,6 @@
     "panel_lepidoptera": "蝶類圖鑑",
     "panel_world_cup": "世界盃 2026",
     "panel_talent_market": "AI 人才市場",
-    "panel_ai_daily": "AI 更新日報",
     "discussion_window_title": "AI 圓桌討論",
     "discussion_topic_label": "討論問題",
     "discussion_topic_placeholder": "輸入想讓多位 AI 一起討論的問題…",
@@ -342,10 +341,6 @@
     "report_persona_section": "使用習慣",
     "report_rank": "排名",
     "report_session_section": "最燒的 5 段會話",
-    "report_ai_updates_section": "AI 工具更新速報",
-    "report_ai_updates_updated_to": "更新至",
-    "report_ai_updates_original": "原文",
-    "report_ai_updates_history": "查看歷史更新",
     "report_contribution_section": "52 週貢獻熱力圖",
     "report_contribution_less": "少",
     "report_contribution_more": "多",
@@ -512,7 +507,8 @@
     "health_agy_unavailable": "Google 額度端點暫時無法回應",
     "health_agy_unavailable_fix": "通常是暫時的；顯示的是最後一次查到的數字",
     "health_agy_error": "查詢 Antigravity 額度失敗",
-    "health_generic_error_fix": "執行 agentdeck.exe --doctor 看完整診斷"
+    "health_generic_error_fix": "執行 agentdeck.exe --doctor 看完整診斷",
+    "panel_changelog": "變更紀錄"
   },
   "en": {
     "panel_default_name": "Default",
@@ -527,7 +523,6 @@
     "panel_lepidoptera": "Lepidoptera",
     "panel_world_cup": "World Cup 2026",
     "panel_talent_market": "AI Talent Market",
-    "panel_ai_daily": "AI Update Daily",
     "discussion_window_title": "AI Council",
     "discussion_topic_label": "Discussion topic",
     "discussion_topic_placeholder": "Enter a question for multiple AIs to discuss…",
@@ -857,10 +852,6 @@
     "report_persona_section": "Usage habits",
     "report_rank": "Rank",
     "report_session_section": "Top 5 burn sessions",
-    "report_ai_updates_section": "AI Tool Update Digest",
-    "report_ai_updates_updated_to": "Updated to",
-    "report_ai_updates_original": "Original",
-    "report_ai_updates_history": "View update history",
     "report_contribution_section": "52-week contribution heatmap",
     "report_contribution_less": "Less",
     "report_contribution_more": "More",
@@ -1027,6 +1018,7 @@
     "health_agy_unavailable": "Google's quota endpoint is not responding right now",
     "health_agy_unavailable_fix": "Usually temporary; the numbers shown are the last ones fetched",
     "health_agy_error": "Could not query the Antigravity quota",
-    "health_generic_error_fix": "Run agentdeck.exe --doctor for the full diagnostic"
+    "health_generic_error_fix": "Run agentdeck.exe --doctor for the full diagnostic",
+    "panel_changelog": "Changelog"
   }
 }

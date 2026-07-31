@@ -87,13 +87,20 @@ def test_outgoing_api_calls_name_this_fork(module: str, attribute: str, expected
     assert expected in getattr(imported, attribute)
 
 
-def test_the_menu_opens_a_pages_path_that_matches_the_repository() -> None:
-    """A Pages URL silently follows the repository name; nothing else warns you."""
+def test_every_link_the_menu_opens_belongs_to_this_fork() -> None:
+    """Menu links follow the repository name silently; nothing else warns you.
+
+    Both spellings are checked because both have gone stale before: a Pages
+    path (`sanhsien.github.io/usage/...`, which 404s after the rename) and a
+    repository URL in the generated report footer.
+    """
     source = (ROOT / "wintray.py").read_text(encoding="utf-8")
 
-    opened = re.findall(r'webbrowser\.open\("([^"]+)"\)', source)
-    pages = [url for url in opened if "github.io" in url]
+    opened = re.findall(r'webbrowser\.open\(\s*f?"([^"]+)"', source)
+    ours = [url for url in opened if "github.com" in url or "github.io" in url]
 
-    assert pages, "no Pages link found; this guard has gone stale"
-    for url in pages:
-        assert url.startswith(PAGES_URL), f"{url} does not live under {PAGES_URL}"
+    assert ours, "no GitHub link found in the menu; this guard has gone stale"
+    for url in ours:
+        assert url.startswith((REPO_URL, PAGES_URL)), (
+            f"{url} points outside this fork ({REPO_URL} / {PAGES_URL})"
+        )

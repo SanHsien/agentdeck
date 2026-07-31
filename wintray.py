@@ -1142,7 +1142,7 @@ class _WindowsTrayController:
             ),
         ]
         return [
-            item("panel_ai_daily", "open_ai_daily"),
+            item("panel_changelog", "open_changelog"),
             {"type": "separator"},
             item("switch_panel", "", children=panels),
             item("hide_sections_menu", "", children=hidden_sections),
@@ -1168,8 +1168,18 @@ class _WindowsTrayController:
     def toggle_login(self, _icon: Any = None, _item: Any = None) -> None:
         win_login_item.disable() if win_login_item.is_enabled() else win_login_item.enable()
 
-    def open_ai_daily(self, _icon: Any = None, _item: Any = None) -> None:
-        webbrowser.open("https://sanhsien.github.io/agentdeck/ai-updates/")
+    def open_changelog(self, _icon: Any = None, _item: Any = None) -> None:
+        """Open this project's changelog, matching the UI language.
+
+        This replaced an "AI Update Daily" page that mirrored a digest upstream
+        curates in a repository we cannot see. Three quarters of it was other
+        projects' release news that we could neither write nor fix, and the
+        remaining quarter was this changelog rendered twice.
+        """
+        suffix = ".zh-TW" if self.language == "zh-TW" else ""
+        webbrowser.open(
+            f"https://github.com/SanHsien/agentdeck/blob/main/CHANGELOG{suffix}.md"
+        )
 
     def toggle_hide_section(self, preference_key: str) -> None:
         preferences = _load_preferences()
@@ -1538,8 +1548,8 @@ class _WindowsTrayController:
                     "hide_agy_section",
                 }:
                     self.toggle_hide_section(preference_key)
-            elif action == "open_ai_daily":
-                self.open_ai_daily()
+            elif action == "open_changelog":
+                self.open_changelog()
             elif action in _TALENT_ACTIONS:
                 self._handle_talent_action(action, payload)
             elif action == "reset_panel_position":
@@ -1683,7 +1693,7 @@ def _menu(controller: _WindowsTrayController) -> Any:
     )
     return pystray.Menu(
         pystray.MenuItem("Open", controller.show_panel, default=True, visible=False),
-        pystray.MenuItem(_t(controller.language, "panel_ai_daily"), controller.open_ai_daily),
+        pystray.MenuItem(_t(controller.language, "panel_changelog"), controller.open_changelog),
         pystray.MenuItem(
             _t(controller.language, "discussion_window_title"), controller.open_discussion
         ),
