@@ -801,7 +801,7 @@ def _render_sponsor_section(lang: str) -> str:
     return f"""<p class="sponsor">
     <span class="tagline">{html.escape(_t(lang, "sponsor"))}</span>
   </p>
-  <p class="sponsor-link"><a href="https://github.com/SanHsien/usage" target="_blank" rel="noopener">github.com/SanHsien/usage</a></p>"""
+  <p class="sponsor-link"><a href="https://github.com/SanHsien/agentdeck" target="_blank" rel="noopener">github.com/SanHsien/agentdeck</a></p>"""
 
 
 def _render_styles() -> str:

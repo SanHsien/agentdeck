@@ -209,6 +209,11 @@ uv run --no-sync python main.py --doctor   # 環境與 hook 診斷
 | --- | --- | --- |
 | [karpathy/llm-council](https://github.com/karpathy/llm-council) | 未宣告 | 多模型協作回答同一問題的三階段流程：各模型獨立作答 → 匿名互評排名 → 由「主席」模型彙整成最終答案。與本專案「AI 圓桌討論」的多輪討論、共識計票屬同一類設計，其中**匿名互評**（隱藏模型身分以避免評分偏向名氣）是值得對照的做法。技術上走 OpenRouter + FastAPI + React，與本專案直接驅動本機 CLI、離線運作的路線不同。 |
 | [gkfriend/codex-usage-companion](https://github.com/gkfriend/codex-usage-companion) | MIT | 同樣是 Windows 專用、本機優先、無遙測的 Codex 額度常駐顯示，解的是同一個問題。**取數路徑不同，值得對照**：它註冊 Codex 外掛的 `SessionStart` / `Stop` hook，並讀本機 `codex app-server` 的 rate-limit 通知，是事件驅動；`agentdeck` 則掃 `~/.codex/sessions/*.jsonl`，不需使用者安裝任何東西。它附掛在 Codex Desktop 視窗上、只管 Codex；`agentdeck` 是獨立系統匣程式，涵蓋 Claude Code、Codex 與 Antigravity。技術上是 C# / .NET 8。授權為 MIT，與 AGPL-3.0 單向相容——真要借用程式碼在法律上可行，但目前沒有借用。 |
+| [steipete/CodexBar](https://github.com/steipete/CodexBar) | MIT | 目前同類工具中規模最大的一個（Swift／macOS）。**可參考的是資料來源契約與狀態表達**：它支援的 provider 比本專案廣，值得對照的是「每個 provider 如何宣告自己的可用性」，而不是把 provider 數量追平。 |
+| [ccusage](https://github.com/ccusage/ccusage) | MIT（GitHub 標示為 Other，但 `LICENSE` 內容是 MIT 全文） | CLI 報告、時間區塊與跨工具統計。證明了「額度資料要能餵給腳本」這個需求；本專案的對應方向是讓核心狀態也能穩定輸出，而不是複製它的報告格式。 |
+| [FlorianBruniaux/ccboard](https://github.com/FlorianBruniaux/ccboard) | MIT | 從額度再往前看到 session、設定與診斷。可參考的是「使用者想知道為什麼」這條線，本專案要強化的是修復流程，不是複製大型管理介面。 |
+| [jens-duttke/usage-monitor-for-claude](https://github.com/jens-duttke/usage-monitor-for-claude) | MIT | 同樣是 Windows、Python、單一可攜式程式。**最接近的同儕**，值得對照零設定體驗與 stale 狀態的呈現方式。 |
+| [stormzhang/token-tracker](https://github.com/stormzhang/token-tracker) | MIT | **不只是觀念參考，有實際相容關係**：本專案的 `usage_client.py` 保留讀取它的 `tt-status.json` 作為 fallback，讓從該工具遷移過來的使用者不會看到空白面板。 |
 
 ## 授權
 

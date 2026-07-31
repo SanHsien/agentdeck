@@ -31,8 +31,8 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "e94cd4d",
-      "last_merged": "5fbf0ba",
+      "last_reviewed": "2a5a430",
+      "last_merged": "2a5a430",
       "note": "v0.29.8 的兩個 Windows 修復已於 93550e0 合併；v0.29.9 的 5 筆全數審視後未採用，見下方 Skipped"
     }
   }
