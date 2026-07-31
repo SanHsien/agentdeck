@@ -67,7 +67,7 @@ A quota icon appears in the system tray: left-click for the panel, right-click f
 
 - **10 Visual Themes:** Switch between panel styles including Classic, Matrix, Windows 95, Newspaper, Cloud Observation, Midnight Aquarium, Prism Arcade, Black Hole, World Cup 2026, and Lepidoptera (blueprint).
 - **Drag to Reorder:** Grab any quota card and drag it up or down to swap the order — the arrangement is shared across every theme and survives restarts.
-- **AI Talent Market (our own implementation):** Installs ready-made subagent roles into `~/.claude/agents/`. Upstream sourced its roles from a closed binary whose source and distribution repos are both 404 to everyone else and which only shipped for macOS, so nobody cloning the public repo could use the feature. This fork replaced it with an open implementation: role definitions live in [`personas/`](personas/) and can be edited or extended. If you hand-edit an installed role the panel flags it and offers a restore. **If you already have an agent of the same name, installing backs it up first and tells you the backup filename.**
+- **AI Talent Market (our own implementation):** Installs ready-made roles into **every AI tool this machine actually has** — Claude Code (`~/.claude/agents/*.md`) and Codex (`~/.codex/agents/*.toml`). The two formats differ (YAML frontmatter versus TOML), so each is rendered separately rather than copied. Tools you do not have are left alone. Five packs, fifteen roles: engineering, writing, product, data, and operations & security. Upstream sourced its roles from a closed binary whose source and distribution repos are both 404 to everyone else and which only shipped for macOS, so nobody cloning the public repo could use the feature. This fork replaced it with an open implementation: role definitions live in [`personas/`](personas/) and can be edited or extended. If you hand-edit an installed role the panel flags it and offers a restore. **If you already have an agent of the same name, installing backs it up first and tells you the backup filename.**
 - **AI Council:** Open a dedicated window and run a multi-round discussion between Claude Code, Codex, and Antigravity — pick participants, models, AI Talent Market personas, and a debate style, with a token estimate up front. Steer it between rounds, see who dissents in the consensus tally, and let it stop early once everyone agrees. Seats can reference real files via an optional read-only folder.
 - **Changelog:** Opens this project's [changelog](https://github.com/SanHsien/agentdeck/blob/main/CHANGELOG.en.md) straight from the tray menu, so you can see what changed in the version you are running.
 - **Spirit Companions:** A small animated white silhouette lives beside your usage percentages — a phoenix for Claude, a dragon for Codex, a lion for Antigravity. Each accelerates dynamically as its own tool's token burn rate climbs.
@@ -195,6 +195,51 @@ If the system tray icon shows `--`, it's usually not broken — there's just no 
 | [Changelog](CHANGELOG.en.md) | Per-version changes |
 | [Contributing](CONTRIBUTING.en.md) | What to know before a PR: the gates, the bilingual doc rule, the versioning rule |
 | [Security policy](SECURITY.en.md) | Supported versions and how to report a vulnerability |
+
+## Project Structure
+
+The root holds 56 `.py` files. It looks flat, but it falls into clear groups — and **five files deliberately cannot move**: they are copied into the user's `~/.claude/` and run standalone under the user's own `python3`, so making them package members would break every installed hook.
+
+```
+agentdeck/
+├── main.py                     # entry point: argparse → tray / TUI / hook setup
+│
+├── wintray.py                  # tray icon and WebView2 panels (the primary UI)
+├── tui.py, tui_sprite.py       # terminal interface
+│
+├── usage_client.py             # ── data sources ─────────────────
+├── codex_loader.py             #    Codex session JSONL
+├── agy_loader.py               #    Antigravity quota
+├── history_loader.py           #    Claude Code project logs
+├── pricing.py                  #    cost estimation (LiteLLM price table)
+├── service_status.py           #    public status pages
+│
+├── provider_health.py          # ── projections (pure, no IO) ────
+├── menubar_state.py            #    history and state calculations
+├── burn_rate.py                #    burn-rate prediction
+│
+├── discussion_*.py  (6)        # ── AI Council ───────────────────
+├── persona_store.py            # ── talent market (role install) ─
+├── talent_market_bridge.py     #    guard layer between panel and store
+│
+├── setup_hook.py               # ── hook install and settings ────
+├── session_hooks.py            #    session companion hooks
+│
+├── usage_statusline.py         # ⚠ these five are copied into ~/.claude/ and run
+├── usage_statusline_forwarder.py  #   by the user's python3. They **must stay at the
+├── usage_session_resume.py     #   root and stay stdlib-only** — moving them into a
+├── usage_terse_mode.py         #   package breaks every installed hook.
+├── usage_terse_reminder.py     #
+│
+├── adapters/ analyzer/ ui/     # HTML report subsystem
+├── panels/                     # panel HTML registry
+├── personas/                   # role definitions (JSON)
+├── assets/                     # panel HTML, icons, sprites
+├── scripts/ tools/             # build and gates
+└── tests/                      # 1200+ tests
+```
+
+Per-module responsibilities and gotchas are in [`CLAUDE.md`](CLAUDE.md)'s module map.
 
 ## Development
 

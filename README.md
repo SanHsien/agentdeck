@@ -67,7 +67,7 @@
 
 - **10 款視覺面板：** 可在 Classic、Matrix、Windows 95、Newspaper、Cloud Observation、Midnight Aquarium、Prism Arcade、Black Hole、World Cup 2026 與 Lepidoptera（藍曬圖）之間切換。
 - **拖曳排序：** 按住任何一張額度卡上下拖曳就能交換順序，排法在所有主題間共用、重開也會記住。
-- **AI 人才市場（自製版）：** 把預先寫好的 subagent 角色安裝進 `~/.claude/agents/`。上游這個功能靠一顆閉源二進位提供角色內容，來源與發佈 repo 對外都是 404、且只有 macOS 版，任何人 clone 公開 repo 都用不到。本 fork 改成**自己寫的開源實作**：角色定義放在 repo 的 [`personas/`](personas/)，可自行編輯與新增；安裝後若你手動改過該檔，面板會標示並提供還原。**若你原本已有同名 agent，安裝會先備份再覆寫，並告知備份檔名。**
+- **AI 人才市場（自製版）：** 把預先寫好的角色**同時安裝進你機器上實際有的每個 AI 工具**——Claude Code（`~/.claude/agents/*.md`）與 Codex（`~/.codex/agents/*.toml`）。兩者格式不同（YAML frontmatter vs TOML），所以是分別產生而不是複製。沒安裝的工具不會被寫入。目前內建 5 組共 15 個角色：工程、文字、產品、資料、維運與安全。上游這個功能靠一顆閉源二進位提供角色內容，來源與發佈 repo 對外都是 404、且只有 macOS 版，任何人 clone 公開 repo 都用不到。本 fork 改成**自己寫的開源實作**：角色定義放在 repo 的 [`personas/`](personas/)，可自行編輯與新增；安裝後若你手動改過該檔，面板會標示並提供還原。**若你原本已有同名 agent，安裝會先備份再覆寫，並告知備份檔名。**
 - **AI 圓桌討論：** 開一個獨立視窗，讓 Claude Code、Codex、Antigravity 進行多輪討論——自選參與者、模型、AI 人才市場角色與辯論風格，開始前就看得到大約會花多少 token。可以在輪間插話引導方向，共識計票看得出誰不同意，並讓討論在全體同意時提早收尾。可附上唯讀資料夾讓參與者參考真實檔案。
 - **變更紀錄：** 從系統匣選單直接開啟本專案的[變更紀錄](https://github.com/SanHsien/agentdeck/blob/main/CHANGELOG.md)，看這一版改了什麼。
 - **神獸夥伴：** 百分比旁常駐一隻小型白色動畫神獸（Claude 是鳳凰，Codex 是飛龍，Antigravity 是獅子），各自跟著自家工具的 token 燃燒率動態加速。
@@ -195,6 +195,51 @@ uv run --no-sync python main.py --doctor   # 環境與 hook 診斷
 | [變更紀錄](CHANGELOG.md) | 逐版變更 |
 | [貢獻指南](CONTRIBUTING.md) | 送 PR 前該知道的事：閘門、雙語文件規則、版號規則 |
 | [安全性政策](SECURITY.md) | 支援版本與漏洞回報方式 |
+
+## 專案架構
+
+根目錄有 56 個 `.py`，看起來是平的，但實際上分成幾個明確的群組。**其中有五個檔案刻意不能移動**：它們會被複製到使用者的 `~/.claude/` 下、由使用者自己的 `python3` 獨立執行，一旦變成套件成員就跑不起來。
+
+```
+agentdeck/
+├── main.py                     # 進入點：argparse → 系統匣 / TUI / hook 安裝
+│
+├── wintray.py                  # 系統匣圖示與 WebView2 面板（主要 UI）
+├── tui.py, tui_sprite.py       # 終端機介面
+│
+├── usage_client.py             # ── 資料來源 ──────────────────
+├── codex_loader.py             #    Codex session JSONL
+├── agy_loader.py               #    Antigravity 額度
+├── history_loader.py           #    Claude Code 專案紀錄
+├── pricing.py                  #    成本估算（LiteLLM 價格表）
+├── service_status.py           #    服務狀態頁
+│
+├── provider_health.py          # ── 狀態投影（純函式，無 IO）──
+├── menubar_state.py            #    歷史／狀態計算
+├── burn_rate.py                #    燃燒率預測
+│
+├── discussion_*.py  (6)        # ── AI 圓桌討論 ───────────────
+├── persona_store.py            # ── 人才市場（角色安裝）───────
+├── talent_market_bridge.py     #    面板與 persona_store 之間的守衛層
+│
+├── setup_hook.py               # ── hook 安裝與設定 ───────────
+├── session_hooks.py            #    session companion hooks
+│
+├── usage_statusline.py         # ⚠ 這五個會被複製到 ~/.claude/ 由使用者的
+├── usage_statusline_forwarder.py  #   python3 執行，**必須留在根目錄且只用標準函式庫**
+├── usage_session_resume.py     #   放進套件會讓安裝後的 hook 直接壞掉
+├── usage_terse_mode.py         #
+├── usage_terse_reminder.py     #
+│
+├── adapters/ analyzer/ ui/     # HTML 報告子系統
+├── panels/                     # 面板 HTML 註冊
+├── personas/                   # 角色定義（JSON）
+├── assets/                     # 面板 HTML、圖示、動畫
+├── scripts/ tools/             # 建置與閘門
+└── tests/                      # 1200+ 條測試
+```
+
+逐模組的職責與陷阱見 [`CLAUDE.md`](CLAUDE.md) 的 Module map。
 
 ## 開發
 

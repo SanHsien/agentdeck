@@ -14,8 +14,22 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ### Fixed
 - **Documentation state drift**: removed already-released v0.31.2 content that was still duplicated under `Unreleased`, and corrected the README comparison table to show that this fork does provide the AI Talent Market.
 
-## [Unreleased]
+## [0.32.0] - 2026-07-31
 
+### Added
+- **The talent market installs into every AI tool this machine has**: it previously wrote only to `~/.claude/agents/`, so a Codex user could install a role and never call it. Roles now go to Claude Code (`~/.claude/agents/<id>.md`, YAML frontmatter) and Codex (`~/.codex/agents/<id>.toml`, a `developer_instructions` block). **The formats cannot be copied between tools**, so each is rendered separately; tools that are absent are left alone. Detection is the presence of the tool's own configuration directory.
+- **Four more persona packs, twelve more roles**: Writing Desk (technical writer, ruthless editor, localizer), Product Desk (scope cutter, user interviewer, positioning critic), Data Desk (SQL reviewer, metric definer, chart critic), Operations & Security (incident responder, threat modeler, dependency auditor). Five packs and fifteen roles in total, all bilingual.
+- **The panel names the tools a role landed in**: a successful install deliberately shows no dialog, so without this the user cannot tell whether Codex received a copy.
+- **A file size gate** (ported from upstream `8d26748`): `wintray.py` gets a 1,900-line ceiling. Upstream split the same kind of monolith twice and it grew back both times, because "keep it small" lived in a document with nothing enforcing it. **Lowering a ceiling is correct; raising one is how the policy dies.**
+- **A Project Structure section in the README**: the 56 root `.py` files grouped, with the five hook scripts that **cannot move** called out.
+
+### Changed
+- **Ownership and drift are tracked per tool**: when one tool holds a same-named file we did not write, installing backs it up and names the tool; uninstalling refuses outright if **any** copy is foreign, because removing the ones we own and leaving the rest hands the user a half-removed role. Older state files still read correctly.
+- **Corrected the upstream triage rule**: treating "every file is absent from this fork" as auto-skippable also discarded the **portable idea** behind a macOS-only fix, and porting ideas is what this fork is for. Only pure data churn is auto-skipped now; commits touching only code this fork lacks are listed as "worth porting?" with their paths, for a person to read.
+
+### Fixed
+- **Tests wrote into the developer's real `~/.codex/agents/`** once installs became multi-tool; the fixture patched only the Claude path.
+- **`persona_store` froze its target paths at import time**, which made them unpatchable and sent test writes to the real home directory. They are now built per call.
 ### Changed
 - **Upstream tracking runs daily and triages irrelevant commits by itself**: upstream commits most days, and most of those are `chore: sync AI updates` (touching only the `ai_updates.json` this fork removed) or macOS-only fixes (touching `menubar.py` and friends, which this fork does not have). The checker now looks at what each commit touched and marks it ignorable only when every file is absent from this fork **and** none of them are additions — an addition always goes to a human, because that is what an arriving upstream feature looks like. An issue is opened only when the review group is non-empty, so moving from weekly to daily buys latency without adding noise. The rule is written down in `docs/UPSTREAM.md`.
 - **CHANGELOG now defaults to Traditional Chinese**: `CHANGELOG.md` is the Chinese file and English moves to `CHANGELOG.en.md`, matching README, ROADMAP, CONTRIBUTING and SECURITY. The tray's Changelog menu item opens whichever matches the UI language. `docs/DEVELOPMENT` keeps English as its default — it is written for contributors, not users.

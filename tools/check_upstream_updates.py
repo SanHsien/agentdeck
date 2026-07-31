@@ -147,16 +147,36 @@ def fetch_commit_files(repo: str, sha: str, *, token: str | None = None) -> list
     ]
 
 
-def cannot_affect_fork(files: list[dict[str, str]], *, root: Path = ROOT) -> bool:
-    """Whether a commit provably has nothing to do with this fork.
+# Paths where a change cannot carry an idea worth porting -- a data mirror and
+# translations of documents this fork does not keep. Deliberately tiny, and it
+# must stay that way: "this fork does not have the file" is NOT a reason to
+# skip. A macOS-only fix is written against a platform we dropped, but the
+# reasoning behind it often applies here, and porting reasoning is what this
+# fork is for. Those get flagged for a quick read, never auto-skipped.
+NO_PORTABLE_CONTENT = {
+    "ai_updates.json",
+    "README.ja.md",
+    "README.ko.md",
+    "README.zh-CN.md",
+}
 
-    A change to a file this fork does not have cannot reach us -- upstream
-    commits ``chore: sync AI updates`` most days, touching only the digest this
-    fork removed, and left unfiltered those bury the commits that do matter.
 
-    An **added** file is never auto-skipped even though it is equally absent
-    here: that is what a new feature looks like arriving, and this fork's whole
-    premise is porting upstream features rather than accepting the gap.
+def carries_no_portable_idea(files: list[dict[str, str]]) -> bool:
+    """Whether a commit is pure content churn with no concept behind it."""
+    if not files:
+        return False
+    return all(
+        entry["status"] != "added" and entry["filename"] in NO_PORTABLE_CONTENT
+        for entry in files
+    )
+
+
+def touches_nothing_we_have(files: list[dict[str, str]], *, root: Path = ROOT) -> bool:
+    """Whether every path is absent here -- a hint about effort, not a verdict.
+
+    Such a commit cannot be cherry-picked, but it can still describe a bug we
+    also have or a behaviour worth copying. It is surfaced separately so the
+    reader knows to judge the idea rather than the diff.
     """
     if not files:
         return False
@@ -184,12 +204,24 @@ def classify_commits(
             # Never let a failed lookup silently promote a commit to "ignorable".
             commit["relevance"] = "unknown"
             continue
-        commit["relevance"] = "ignorable" if cannot_affect_fork(files, root=root) else "review"
+        if carries_no_portable_idea(files):
+            commit["relevance"] = "no-content"
+        elif touches_nothing_we_have(files, root=root):
+            # Not portable as a patch; possibly portable as an idea.
+            commit["relevance"] = "port-check"
+        else:
+            commit["relevance"] = "review"
         commit["paths"] = ", ".join(entry["filename"] for entry in files[:4])
 
 
 def needs_review(commits: list[dict[str, str]]) -> list[dict[str, str]]:
-    return [c for c in commits if c.get("relevance") != "ignorable"]
+    """Everything a person still has to form an opinion about.
+
+    ``port-check`` counts. A macOS-only commit cannot be cherry-picked, but the
+    fork exists to port ideas, and deciding "not worth porting" is a judgement
+    only a person can make.
+    """
+    return [c for c in commits if c.get("relevance") != "no-content"]
 
 
 def collect_results(
@@ -244,40 +276,52 @@ def render_markdown(results: list[dict[str, Any]], repo: str) -> str:
             lines.append("- 沒有比 `last_reviewed` 更新的 commit。")
             lines.append("")
             continue
-        review = needs_review(commits)
-        ignorable = [c for c in commits if c.get("relevance") == "ignorable"]
+        direct = [c for c in commits if c.get("relevance") in ("review", "unknown")]
+        port_check = [c for c in commits if c.get("relevance") == "port-check"]
+        no_content = [c for c in commits if c.get("relevance") == "no-content"]
 
         def _bullet(commit: dict[str, str], indent: str = "  ") -> str:
             sha = commit["sha"]
             link = f"[`{sha}`]({commit['url']})" if commit["url"] else f"`{sha}`"
             return f"{indent}- {link} {commit['title']}"
 
-        if review:
-            lines.append(f"- **需要人工審視：{len(review)} 個**（由舊到新）：")
+        def _group(title: str, group: list[dict[str, str]], *, paths: bool = False) -> None:
+            if not group:
+                return
+            lines.append(f"- **{title}：{len(group)} 個**（由舊到新）：")
             lines.append("")
-            for commit in review[:MAX_COMMITS_SHOWN]:
-                lines.append(_bullet(commit))
-            if len(review) > MAX_COMMITS_SHOWN:
-                lines.append(f"  - …另有 {len(review) - MAX_COMMITS_SHOWN} 筆未列出")
+            for commit in group[:MAX_COMMITS_SHOWN]:
+                suffix = f" — `{commit.get('paths')}`" if paths and commit.get("paths") else ""
+                lines.append(_bullet(commit) + suffix)
+            if len(group) > MAX_COMMITS_SHOWN:
+                lines.append(f"  - …另有 {len(group) - MAX_COMMITS_SHOWN} 筆未列出")
             lines.append("")
-        else:
+
+        _group("需要人工審視（動到本 fork 也有的檔案）", direct)
+        # Not auto-skipped on purpose. The patch will not apply, but the reasoning
+        # behind it may still be worth porting -- deciding that is a human call,
+        # and this fork exists to port ideas rather than accept gaps.
+        _group("需要判斷是否值得移植（只動到本 fork 沒有的檔案）", port_check, paths=True)
+
+        if not direct and not port_check:
             lines.append("- 沒有需要人工審視的 commit。")
             lines.append("")
 
-        if ignorable:
-            # Named, not hidden: "the tool decided for me" has to stay auditable,
-            # and the sync point still has to be advanced past them by hand.
+        if no_content:
+            # Folded, not hidden: "the tool decided for me" stays auditable, and
+            # the sync point is still advanced by a person.
             lines.append(
-                f"<details><summary>另有 {len(ignorable)} 個 commit 只動到本 fork 沒有的檔案"
-                "（可直接推進 <code>last_reviewed</code>，不需逐筆記理由）</summary>"
+                f"<details><summary>另有 {len(no_content)} 個 commit 只同步資料、"
+                "沒有可移植的概念（可直接推進 <code>last_reviewed</code>）</summary>"
             )
             lines.append("")
-            for commit in ignorable[:MAX_COMMITS_SHOWN]:
+            for commit in no_content[:MAX_COMMITS_SHOWN]:
                 paths = commit.get("paths")
                 suffix = f" — `{paths}`" if paths else ""
                 lines.append(_bullet(commit, indent="") + suffix)
             lines.append("")
-            lines.append(f"推進到：`{ignorable[-1]['sha']}`" if not review else "")
+            if not direct and not port_check:
+                lines.append(f"推進到：`{no_content[-1]['sha']}`")
             lines.append("</details>")
             lines.append("")
     lines.extend(

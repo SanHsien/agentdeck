@@ -5,7 +5,7 @@
 # License v3.0 only; see the LICENSE file for full terms and the warranty disclaimer.
 <#
 .SYNOPSIS
-    跑本專案的 CI gate：lock、ruff、mypy、雙語文件、pytest。
+    跑本專案的 CI gate：lock、ruff、mypy、雙語文件、檔案大小、pytest。
 
 .DESCRIPTION
     等同 .github/workflows/check.yml。全綠才能 commit。
@@ -14,7 +14,7 @@
     唯一的例外是符號連結權限，那是本機權限限制、CI 上不存在（見下方 pytest 段落）。
 
 .PARAMETER SkipTests
-    跑 pytest 以外的四道閘門，跳過比較慢的 pytest（約 3.5 分鐘）。
+    跑 pytest 以外的五道閘門，跳過比較慢的 pytest（約 3.5 分鐘）。
 
 .EXAMPLE
     pwsh tools/dev_check.ps1
@@ -87,6 +87,9 @@ Invoke-Gate 'mypy' @('run', '--no-sync', 'mypy', '.')
 # CI 把雙語文件對稱性當獨立一步跑（.github/workflows/check.yml），這裡跟上，
 # 免得 README / CHANGELOG 只改了一邊要等 push 之後才發現。
 Invoke-Gate 'doc-parity' @('run', '--no-sync', 'python', 'scripts/check_doc_parity.py')
+# Ported from upstream 8d26748: a size ceiling on the module every feature
+# is tempted to grow into. Lower it when a cut lands; never raise it.
+Invoke-Gate 'file-size' @('run', '--no-sync', 'python', 'scripts/check_file_size.py')
 
 if ($SkipTests) {
     Write-Host ''

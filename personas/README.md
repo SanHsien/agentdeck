@@ -8,6 +8,23 @@ AI 人才市場的角色定義,**本 fork 自製、AGPL-3.0 授權**。
 
 本 fork 的做法不是移除這個功能,而是**自己寫一份開源的角色來源**。`persona_store.py` 讀這個資料夾,提供跟原本 CLI 相同的介面,所以既有的面板 UI 與 AI 圓桌討論的角色選單都能直接用。
 
+## 會安裝到哪裡
+
+角色會**同時安裝進這台機器上實際存在的每個 AI 工具**，不是只裝 Claude Code：
+
+| 工具 | 偵測依據 | 安裝位置 | 格式 |
+|---|---|---|---|
+| Claude Code | `~/.claude/` 存在 | `~/.claude/agents/<id>.md` | YAML frontmatter ＋ markdown |
+| Codex | `~/.codex/` 存在 | `~/.codex/agents/<id>.toml` | TOML，prompt 放在 `developer_instructions` |
+
+**兩種格式不能互相複製**——Codex 讀不懂 YAML frontmatter，Claude Code 讀不懂 TOML，所以每個工具各自產生一份。Claude Code 專屬的欄位（`tools`、`model`、`memory`）在 Codex 沒有對應，直接省略而不是編一個出來。
+
+判斷「使用者有沒有這個工具」用的是它自己的設定目錄存不存在。沒裝的工具完全不碰——寫進去只會在使用者磁碟上留下永遠用不到的檔案。
+
+**擁有權是逐工具記錄的。** 如果某個工具裡同名的檔案不是我們寫的，安裝會先備份再覆寫並告知檔名；移除時只要**任何一個**工具的副本不是我們的，整個操作就會拒絕——只刪我們擁有的、留下其他的，會讓使用者拿到一個半殘的角色而無從解釋。
+
+要新增支援的工具，在 `persona_store.py` 的 `all_targets()` 加一個 `Target`：需要偵測用的 `home`、`agents_dir`、副檔名，以及一個 render 函式。
+
 ## 檔案格式
 
 一個 `.json` 檔就是一個 pack（一組角色）。欄位：
@@ -34,9 +51,9 @@ AI 人才市場的角色定義,**本 fork 自製、AGPL-3.0 授權**。
 
 多語欄位（`name`、`subtitle`、`description`、`system_prompt`、`quick_tasks`）可以寫成字串,或寫成 `{"zh-TW": "...", "en": "..."}` 讓兩種介面語言各自對應。只寫字串時兩種語言共用。
 
-## 安裝到哪裡
+## 手動改動的處理
 
-`install_role()` 會把角色寫成 Claude Code 的 subagent 定義,放在 `~/.claude/agents/<role-id>.md`,格式是 YAML frontmatter + 系統提示本文。安裝後若使用者手動改過那個檔案,`list_state()` 會把該角色標成 `drifted`,面板會顯示提示,可選擇還原或忽略。
+安裝後若使用者手動改過任何一個工具裡的那份檔案,`list_state()` 會把該角色標成 `drifted`,面板顯示提示,可選擇還原或忽略。還原會重寫**所有**工具的副本,所以任何一份被改過就足以觸發提示。
 
 ## 新增角色
 

@@ -141,16 +141,12 @@ def test_long_commit_lists_are_truncated_with_a_count(monkeypatch: pytest.Monkey
     assert "另有 5 筆未列出" in report
 
 
-def test_a_change_to_a_file_this_fork_lacks_cannot_reach_us(tmp_path: Path) -> None:
-    """Upstream commits its AI digest most days, touching a file we deleted.
-
-    Left unfiltered those bury the commits that matter, and a report nobody
-    reads is the same as no report.
-    """
-    assert check.cannot_affect_fork(
+def test_a_change_to_a_file_this_fork_lacks_is_flagged_not_dismissed(tmp_path: Path) -> None:
+    """Absent files mean the patch will not apply, not that the idea is worthless."""
+    assert check.touches_nothing_we_have(
         [{"filename": "ai_updates.json", "status": "modified"}], root=tmp_path
     )
-    assert check.cannot_affect_fork(
+    assert check.touches_nothing_we_have(
         [
             {"filename": "menubar.py", "status": "modified"},
             {"filename": "tests/test_menubar.py", "status": "removed"},
@@ -162,7 +158,7 @@ def test_a_change_to_a_file_this_fork_lacks_cannot_reach_us(tmp_path: Path) -> N
 def test_a_file_we_do_have_always_needs_review(tmp_path: Path) -> None:
     (tmp_path / "wintray.py").write_text("", encoding="utf-8")
 
-    assert not check.cannot_affect_fork(
+    assert not check.touches_nothing_we_have(
         [
             {"filename": "menubar.py", "status": "modified"},
             {"filename": "wintray.py", "status": "modified"},
@@ -175,14 +171,14 @@ def test_an_added_file_is_never_auto_skipped(tmp_path: Path) -> None:
     """A new upstream file is absent here for the same reason a deleted one is,
     but it is what an arriving feature looks like -- and porting features is
     this fork's entire premise."""
-    assert not check.cannot_affect_fork(
+    assert not check.touches_nothing_we_have(
         [{"filename": "brand_new_feature.py", "status": "added"}], root=tmp_path
     )
 
 
 def test_an_empty_file_list_is_never_auto_skipped(tmp_path: Path) -> None:
     """No file list means the lookup told us nothing, not that nothing changed."""
-    assert not check.cannot_affect_fork([], root=tmp_path)
+    assert not check.touches_nothing_we_have([], root=tmp_path)
 
 
 def test_a_failed_lookup_leaves_the_commit_for_a_human(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -221,11 +217,11 @@ def test_too_many_commits_falls_back_to_reviewing_everything(
     assert all(commit["relevance"] == "unknown" for commit in commits)
 
 
-def test_a_run_of_ignorable_commits_does_not_raise_an_issue() -> None:
+def test_a_run_of_data_syncs_does_not_raise_an_issue() -> None:
     """has_updates must mean "a person has something to do"."""
     commits: list[dict[str, str]] = [
-        {"sha": "1", "title": "chore: sync AI updates", "relevance": "ignorable"},
-        {"sha": "2", "title": "chore: sync AI updates", "relevance": "ignorable"},
+        {"sha": "1", "title": "chore: sync AI updates", "relevance": "no-content"},
+        {"sha": "2", "title": "chore: sync AI updates", "relevance": "no-content"},
     ]
     results: list[dict[str, Any]] = [
         {
@@ -241,3 +237,58 @@ def test_a_run_of_ignorable_commits_does_not_raise_an_issue() -> None:
 
     commits.append({"sha": "3", "title": "feat: something", "relevance": "review"})
     assert check.has_updates(results)
+
+
+def test_only_pure_data_churn_is_auto_skipped() -> None:
+    """The auto-skip set must stay tiny.
+
+    "This fork does not have the file" is not a reason to skip: a macOS-only
+    fix is written against a platform we dropped, but the reasoning behind it
+    often applies here, and porting reasoning is what this fork is for.
+    """
+    assert check.carries_no_portable_idea(
+        [{"filename": "ai_updates.json", "status": "modified"}]
+    )
+    # macOS-only source is exactly what must NOT be auto-skipped.
+    assert not check.carries_no_portable_idea(
+        [{"filename": "menubar.py", "status": "modified"}]
+    )
+    assert not check.carries_no_portable_idea(
+        [
+            {"filename": "ai_updates.json", "status": "modified"},
+            {"filename": "menubar.py", "status": "modified"},
+        ]
+    )
+
+
+def test_a_macos_only_commit_still_needs_a_person(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """It cannot be cherry-picked; deciding it is not worth porting is a judgement."""
+    monkeypatch.setattr(
+        check,
+        "fetch_commit_files",
+        lambda *a, **k: [{"filename": "menubar.py", "status": "modified"}],
+    )
+    commits = [{"sha": "abc1234", "title": "fix: something on the menu bar", "url": ""}]
+
+    check.classify_commits("owner/repo", commits, root=tmp_path)
+
+    assert commits[0]["relevance"] == "port-check"
+    assert check.needs_review(commits) == commits
+
+
+def test_a_digest_sync_is_the_one_thing_that_drops_out(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(
+        check,
+        "fetch_commit_files",
+        lambda *a, **k: [{"filename": "ai_updates.json", "status": "modified"}],
+    )
+    commits = [{"sha": "abc1234", "title": "chore: sync AI updates", "url": ""}]
+
+    check.classify_commits("owner/repo", commits, root=tmp_path)
+
+    assert commits[0]["relevance"] == "no-content"
+    assert check.needs_review(commits) == []
