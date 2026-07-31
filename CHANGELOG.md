@@ -13,7 +13,7 @@
 ### 修正
 - **文件現況漂移**：移除已發布至 v0.31.2、卻仍重複留在 `Unreleased` 的舊內容；README 比較表也改為如實標示本 fork 已提供 AI 人才市場。
 
-## [Unreleased]
+## [0.33.0] - 2026-07-31
 
 ### 新增
 - **人才市場支援 Cursor**：`~/.cursor/agents/<id>.md`。Cursor 官方文件載明與 Claude Code 同為 markdown + YAML frontmatter，所以共用同一個 renderer——**若照 Codex 的 TOML 產生會得到 Cursor 讀不懂的檔案**。偵測依據同樣是 `~/.cursor/` 存不存在。

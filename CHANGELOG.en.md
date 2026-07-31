@@ -14,7 +14,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ### Fixed
 - **Documentation state drift**: removed already-released v0.31.2 content that was still duplicated under `Unreleased`, and corrected the README comparison table to show that this fork does provide the AI Talent Market.
 
-## [Unreleased]
+## [0.33.0] - 2026-07-31
 
 ### Added
 - **The talent market supports Cursor**: `~/.cursor/agents/<id>.md`. Cursor documents the same markdown-with-YAML-frontmatter shape as Claude Code, so the renderer is shared — **rendering it as Codex's TOML would produce a file Cursor cannot read**. Detection is again the presence of `~/.cursor/`.
