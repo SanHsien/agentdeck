@@ -36,8 +36,12 @@ if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
-if (-not (Test-Path '.venv')) {
-    Write-Host 'FAIL: 沒有 .venv。請先跑：uv sync --frozen --group dev --extra windows' -ForegroundColor Red
+# UV_PROJECT_ENVIRONMENT moves the environment off the default .venv, which is
+# how a checkout inside a OneDrive folder keeps its virtualenv out of the cloud
+# placeholder tree. Honour it rather than insisting on .venv.
+$ProjectEnv = if ($env:UV_PROJECT_ENVIRONMENT) { $env:UV_PROJECT_ENVIRONMENT } else { '.venv' }
+if (-not (Test-Path $ProjectEnv)) {
+    Write-Host "FAIL: 找不到虛擬環境 $ProjectEnv。請先跑：uv sync --frozen --group dev --extra windows" -ForegroundColor Red
     exit 1
 }
 

@@ -28,6 +28,24 @@ This is **exactly** what the CI job runs (`.github/workflows/check.yml`). None o
 
 You end up with `.venv\` (Python 3.13, gitignored).
 
+### If the checkout lives in a OneDrive folder
+
+Set `UV_PROJECT_ENVIRONMENT` to a path outside it, for example:
+
+```powershell
+setx UV_PROJECT_ENVIRONMENT "C:	mpgentdeck"
+```
+
+Inside a OneDrive tree every directory is a Files On-Demand placeholder
+(reparse tag `IO_REPARSE_TAG_CLOUD_E`), so the cloud filter driver sits in the
+path of every file operation — pausing sync does not detach it. Removing many
+package directories at once can then lose a race with that driver and leave the
+environment half-uninstalled. Keeping the virtualenv outside also stops OneDrive
+from syncing ~5,000 files that `uv.lock` can rebuild in seconds.
+
+`uv run` and `tools/dev_check.ps1` both honour the variable. CI is unaffected —
+it never sets it, so runners use `.venv` as before.
+
 ## Gates
 
 ```powershell
@@ -63,7 +81,6 @@ $env:AGENTDECK_DEBUG=1; uv run --no-sync python main.py   # surface swallowed ex
 This is a flat application distributed with PyInstaller, not as a wheel or PyPI package; `[tool.uv] package = false` is intentional. Do not use `uv build` as the release check.
 
 ```powershell
-uv pip install pyinstaller          # not in uv.lock; CI installs it separately too
 pwsh scripts/build_windows.ps1      # produces dist/agentdeck-windows/agentdeck.exe
 ```
 

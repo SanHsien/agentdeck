@@ -28,6 +28,22 @@ uv sync --frozen --group dev --extra windows
 
 裝完會有 `.venv\`（Python 3.13，已 gitignore）。
 
+### 如果 checkout 放在 OneDrive 資料夾裡
+
+把 `UV_PROJECT_ENVIRONMENT` 指到 OneDrive 以外的位置，例如：
+
+```powershell
+setx UV_PROJECT_ENVIRONMENT "C:	mpgentdeck"
+```
+
+OneDrive 樹裡的每個目錄都是 Files On-Demand 佔位目錄（reparse tag
+`IO_REPARSE_TAG_CLOUD_E`），雲端過濾驅動會掛在每一次檔案操作的路徑上——**暫停同步不會把它卸載**。
+一次移除大量套件目錄時可能跟該驅動搶輸，留下半移除的環境。放到外面同時也省下
+OneDrive 同步約 5,000 個「`uv.lock` 幾秒就能重建」的檔案。
+
+`uv run` 與 `tools/dev_check.ps1` 都會讀這個變數。CI 不受影響——它從不設定它，
+所以 runner 照舊用 `.venv`。
+
 ## 閘門
 
 ```powershell
@@ -63,7 +79,6 @@ $env:AGENTDECK_DEBUG=1; uv run --no-sync python main.py   # 讓被吞掉的例�
 這是以 PyInstaller 發佈的 flat application，不發佈 wheel／PyPI 套件；`[tool.uv] package = false` 是刻意設定。請勿用 `uv build` 當作 release 驗證。
 
 ```powershell
-uv pip install pyinstaller          # 不在 uv.lock 裡，CI 也是這樣單獨裝
 pwsh scripts/build_windows.ps1      # 產出 dist/agentdeck-windows/agentdeck.exe
 ```
 

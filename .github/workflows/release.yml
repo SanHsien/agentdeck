@@ -45,9 +45,7 @@ jobs:
         run: uv lock --check
 
       - name: Install Windows build dependencies
-        run: |
-          uv sync --frozen --group dev --extra windows
-          uv pip install pyinstaller
+        run: uv sync --frozen --group dev --extra windows
 
       - name: Build Windows executable
         shell: pwsh

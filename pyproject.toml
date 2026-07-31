@@ -31,6 +31,13 @@ dev = [
     "ruff>=0.16.0",
     "mypy>=2.3.0",
     "pytest>=9.1.1",
+    # PyInstaller belongs in the lock, not beside it. It used to be installed
+    # out of band with `uv pip install pyinstaller`, which meant every
+    # `uv sync` saw it and its six dependencies as extraneous and deleted them
+    # -- reinstalling the whole build toolchain on each sync, and leaving a
+    # half-removed environment whenever one of those deletions lost a race with
+    # a filesystem filter driver.
+    "pyinstaller>=6.21.0",
 ]
 
 [tool.ruff]

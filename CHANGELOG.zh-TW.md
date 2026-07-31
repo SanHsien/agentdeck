@@ -20,6 +20,8 @@
 - **`tools/verify_discussion_layout.py`**：在真實 WebView2 開窗並量測 DOM 幾何，把「下拉選單被切掉」變成可比對的像素數，取代肉眼看截圖。
 - **`scripts/package_windows.ps1`**：本機與 release workflow 共用同一支打包腳本。先前 CI 壓縮目錄、本機壓縮內容，同一個檔名下發出兩種不同結構。
 
+- **`pyinstaller` 納入 `uv.lock`**：先前它在 lock 之外用 `uv pip install` 另裝，導致每次 `uv sync` 都把它與六個相依當成多餘套件刪掉再重裝。建置工具版本現在也被釘住，CI 與本機一致。理由見 `docs/DECISIONS.md` D-12。
+- **開發文件補上 OneDrive 內 checkout 的處理方式**：用 `UV_PROJECT_ENVIRONMENT` 把虛擬環境移出雲端佔位目錄樹；`tools/dev_check.ps1` 已改為尊重該變數。
 ### 修正
 - **發版版號防護（P6）**：`build_windows.ps1` 建置前清除殘留的 `*.egg-info`，建置後以 `agentdeck.exe --doctor` 比對 `pyproject.toml`，不符就讓建置失敗；release workflow 另外比對 tag。舊 egg-info 會讓 `importlib.metadata` 先命中並蓋掉 pyproject fallback，曾實際建出標著 `0.31.1` 的 `0.31.2` 產物。CI 全新 checkout 沒有 egg-info，所以這個缺陷只在發版的那台機器上出現。
 - **AI 圓桌參與者卡垂直裁切（P5）**：換列讓卡片變兩列高之後，`.controls-scroll` 仍是 `min-height: 0`，900×640 下模型與 persona 下拉選單被容器切掉 24px。已改為保留區段標題加一張完整卡片的高度，並放寬 `.setup` 的 `max-height`。以 3 種 DPI × 2 種尺寸的實機矩陣驗證，證據見 `docs/release-evidence/2026-07-31-discussion-layout.md`。

@@ -234,3 +234,35 @@
 - **順序即嚴重度**，`worst_of()` 靠它把多個 provider 收斂成一個徽章。
 
 **沒有做的**：把面板改成用這個模型。`--doctor` 是第一個消費者，面板接線排在 ROADMAP 的 v0.32.0。先讓模型有真實使用者驗證形狀，再改動 UI。
+
+---
+
+## D-12：建置工具進 lock；OneDrive 內的 checkout 把 venv 移出去
+
+**日期**：2026-07-31
+
+**症狀**：`uv sync` 反覆把虛擬環境弄成半殘——PyInstaller 連同 pefile、setuptools、packaging 等被刪到一半，`Access denied`，接著就建不出 exe。發生四次，每次都在發版路徑上。
+
+**先排除的錯誤結論**：一開始歸咎於 OneDrive。實測**暫停同步後第一次 `uv sync` 仍然失敗**，所以「暫停同步」不是修復；而失敗的目錄是空的、`Remove-Item` 一秒就刪得掉，代表不是持續性的檔案鎖。
+
+**真正的根因**（`uv sync --dry-run` 直接看出來）：
+
+```
+Would uninstall 7 packages
+ - altgraph - pefile - pyinstaller - pyinstaller-hooks-contrib
+ - pywin32-ctypes - setuptools - usage==0.30.0
+```
+
+PyInstaller **不在 `uv.lock` 裡**，是用 `uv pip install pyinstaller` 另外裝的。而 `uv sync` 的職責是讓環境與 lock 一致——**不在 lock 裡的一律視為多餘並刪除**。所以每一次 sync 都會刪掉整個建置工具鏈再要求重裝。
+
+對照組很清楚：`yt_fetch` 的 venv **也在 OneDrive 裡**，但用 pip + `requirements.txt`，而 **pip 只裝不刪**，所以從來沒壞過。
+
+**決定一：把 PyInstaller 放進 `dev` 依賴群組。** 放進 `build` 之類的獨立群組反而沒用——標準指令 `uv sync --frozen --group dev --extra windows`（CI、`dev_check.ps1`、文件都用它）不會裝它，於是照樣刪。放 `dev` 是唯一不用同步修改所有指令的正解。`release.yml` 的 `uv pip install pyinstaller` 隨之移除。
+
+**決定二：checkout 在 OneDrive 裡時，用 `UV_PROJECT_ENVIRONMENT` 把 venv 移出去。** 這是縱深防禦，不是根因修復——根因已由決定一解掉。但 OneDrive 樹裡每個目錄都是 Files On-Demand 佔位目錄（reparse tag `IO_REPARSE_TAG_CLOUD_E`，實測 repo 根目錄與 `.venv` 皆是），雲端過濾驅動在每次檔案操作的路徑上，暫停同步不會卸載它。移出去同時省下同步 5,134 個「`uv.lock` 幾秒可重建」的檔案，並讓路徑脫離含中文的 `...\OneDrive\文件\...`（該路徑已造成多次工具輸出亂碼）。
+
+`tools/dev_check.ps1` 改為尊重該變數；CI 從不設定它，runner 照舊用 `.venv`。
+
+**驗證**：改動後連續三次 `uv sync` 皆為「移除 0 個套件、零失敗」（先前每次移除 7 個）。新環境跑完六道閘門與完整建置，exe 版號 guard 通過。
+
+**教訓**：**「我的環境有問題」跟「我的設定在跟工具對打」長得一模一樣。** 分辨方法是問「這個工具正在做的事，是它被要求做的嗎」——`uv sync` 刪掉不在 lock 裡的套件是完全正確的行為，錯的是把建置工具裝在 lock 外面。環境（OneDrive）只是讓這個錯誤從「浪費」升級成「損壞」。
