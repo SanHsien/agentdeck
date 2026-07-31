@@ -14,8 +14,10 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ### Fixed
 - **Documentation state drift**: removed already-released v0.31.2 content that was still duplicated under `Unreleased`, and corrected the README comparison table to show that this fork does provide the AI Talent Market.
 
-## [Unreleased]
+## [0.34.0] - 2026-07-31
 
+### Added
+- **The panels and `--doctor` now share one health verdict**: a new `provider_probe` is the only place that turns files into facts, and both surfaces call it. They previously reached the same files through separate code, which is exactly how they drifted into describing one situation two ways — the thing the shared model exists to prevent. The panel payload carries `state`, `reason`, `nextStep` and `updatedAt` per provider, resolved through the same i18n keys. If collecting health fails the panel still renders: **a diagnostic must never be the reason a screen goes blank.**
 ### Tests
 - **The symlink branch is now covered on machines that cannot create symlinks (P4)**: `Path.symlink_to()` needs `SeCreateSymbolicLinkPrivilege`, and checking the process token showed the privilege is **absent entirely** rather than present-but-disabled — so the only routes left are Developer Mode or elevation, both system settings for the maintainer to decide. The branch under test only asks whether `lstat().st_mode` is a regular file, so a new test makes `lstat` report `S_IFLNK` for a real, stale, name-matching file and walks the same branch, with a control proving the same file is deleted without the disguise. Directory, junction and symlink shapes are all covered locally now.
 

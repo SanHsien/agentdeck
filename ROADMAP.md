@@ -103,7 +103,7 @@ agentdeck 的差異化應維持四點：
 ### 工作
 
 - 建立共用 `ProviderHealth` 狀態模型，至少包含 `ready`、`stale`、`missing`、`misconfigured`、`unavailable`、`error`。
-- 讓 Claude、Codex、Antigravity 的卡片與 `--doctor` 共用同一套健康狀態與修復建議，避免 UI 與 CLI 各說各話。
+- ~~讓 Claude、Codex、Antigravity 的卡片與 `--doctor` 共用同一套健康狀態與修復建議，避免 UI 與 CLI 各說各話。~~ **v0.34.0 完成**（`provider_probe` 為唯一取事實處，兩個介面共用）。
 - 擴充既有首次啟動與 stale 判斷：統一辨識「尚未用過工具」「hook 未安裝」「檔案太舊」「CLI 未登入」「服務暫時失敗」。
 - 評估 Codex plugin／`app-server` 的事件驅動來源，寫成決策記錄；JSONL 掃描仍保留為零安裝 fallback，不為追求即時性犧牲可靠性。
 - 建立效能基準：冷啟動、90 天紀錄掃描、檔案事件後刷新延遲與記憶體峰值。

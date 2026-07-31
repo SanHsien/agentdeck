@@ -103,7 +103,7 @@ Goal: explain every `--`, stale value, and query failure so the user never has t
 ### Work
 
 - Create a shared `ProviderHealth` state model covering at least `ready`, `stale`, `missing`, `misconfigured`, `unavailable`, and `error`.
-- Make Claude, Codex, and Antigravity cards share health states and repair guidance with `--doctor`, so UI and CLI cannot tell different stories.
+- ~~Make Claude, Codex, and Antigravity cards share health states and repair guidance with `--doctor`, so UI and CLI cannot tell different stories.~~ **Done in v0.34.0**
 - Extend the existing first-run and stale checks to consistently distinguish "tool never used," "hook missing," "file too old," "CLI not signed in," and "service temporarily failed."
 - Evaluate Codex plugin and `app-server` event-driven inputs and record a decision. Keep JSONL scanning as the zero-install fallback rather than trading reliability for novelty.
 - Establish performance baselines for cold start, 90-day history scanning, file-event refresh latency, and peak memory.
