@@ -202,7 +202,7 @@ If the system tray icon shows `--`, it's usually not broken — there's just no 
 
 ## Project Structure
 
-The root came down from 56 `.py` files to 37; the rest moved into packages by responsibility. **Five files deliberately cannot move**: they are copied into the user's `~/.claude/` and run standalone under the user's own `python3`, so making them package members would break every installed hook.
+The root came down from 56 `.py` files to 39; the rest moved into packages by responsibility. **Five files deliberately cannot move**: they are copied into the user's `~/.claude/` and run standalone under the user's own `python3`, so making them package members would break every installed hook.
 
 ```
 agentdeck/

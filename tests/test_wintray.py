@@ -552,6 +552,38 @@ def test_minimize_button_uses_the_native_window_action() -> None:
     controller.minimize_panel()
 
     assert minimized == [True]
+    assert controller._minimized is True
+
+
+def test_native_window_events_keep_minimized_state_in_sync() -> None:
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+
+    controller.on_minimized()
+    assert controller._minimized is True
+
+    controller.on_restored()
+    assert controller._minimized is False
+
+
+def test_tray_click_restores_a_minimized_panel(monkeypatch: pytest.MonkeyPatch) -> None:
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+    calls: list[str] = []
+    controller.window = SimpleNamespace(
+        restore=lambda: calls.append("restore"),
+        hide=lambda: calls.append("hide"),
+    )
+    controller.visible = True
+    controller._minimized = True
+    monkeypatch.setattr(
+        controller, "inject_state", lambda *, force=False: calls.append(f"inject:{force}")
+    )
+    monkeypatch.setattr(controller, "refresh", lambda: calls.append("refresh"))
+
+    controller.show_panel()
+
+    assert controller.visible is True
+    assert controller._minimized is False
+    assert calls == ["restore", "inject:True", "refresh"]
 
 
 @pytest.mark.parametrize("panel_id", ["matrix", "aquarium", "win95"])
@@ -614,11 +646,20 @@ def test_run_app_wires_pystray_and_pywebview(
             events.append("run_detached")
 
     class Event:
+        def __init__(self, name: str) -> None:
+            self.name = name
+
         def __iadd__(self, callback: object) -> Event:
-            events.append("loaded_handler")
+            events.append(f"{self.name}_handler")
             return self
 
-    window = SimpleNamespace(events=SimpleNamespace(loaded=Event()))
+    window = SimpleNamespace(
+        events=SimpleNamespace(
+            loaded=Event("loaded"),
+            minimized=Event("minimized"),
+            restored=Event("restored"),
+        )
+    )
 
     def create_window(*args: object, **kwargs: object) -> object:
         events.append(
@@ -645,6 +686,8 @@ def test_run_app_wires_pystray_and_pywebview(
     assert events == [
         ("window", "agentdeck", True, "#eef2f7"),
         "loaded_handler",
+        "minimized_handler",
+        "restored_handler",
         ("icon", "agentdeck"),
         "run_detached",
         ("start", "edgechromium"),

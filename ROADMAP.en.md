@@ -2,11 +2,11 @@
 
 [繁體中文](ROADMAP.md) · English
 
-Updated: 2026-07-31
+Updated: 2026-08-02
 
 Planning baseline: `v0.31.2`
 
-This roadmap describes the recommended product direction, milestone order, and exit criteria. Version numbers express dependency order, not fixed delivery dates. [`REVIEW_Claude.md`](REVIEW_Claude.md) remains the source of truth for current defects, while completed history belongs in [`CHANGELOG.en.md`](CHANGELOG.en.md).
+This roadmap describes the recommended product direction, phase order, and exit criteria. Phase names express dependency order without binding the work to a release number or fixed date. [`REVIEW_Claude.md`](REVIEW_Claude.md) remains the source of truth for current defects, while completed history belongs in [`CHANGELOG.en.md`](CHANGELOG.en.md).
 
 ## Product Judgment
 
@@ -25,11 +25,11 @@ The twelve-month ideal:
 ```text
 Today: broad capability with remaining release and UI edge cases
   │
-  ├─ v0.31.x close known trust gaps first
-  ├─ v0.32   explain every source's health and repair path
-  ├─ v0.33   expose status and diagnostics to PowerShell and local tools
-  ├─ v0.34   turn AI Council runs into reusable work products
-  └─ v0.35   define maintainable source and release contracts
+  ├─ Completed baseline: close known trust gaps first
+  ├─ Phase A: explain every source's health and repair path
+  ├─ Phase B: expose status and diagnostics to PowerShell and local tools
+  ├─ Phase C: turn AI Council runs into reusable work products
+  └─ Phase D: define maintainable source and release contracts
        │
        ▼
 v1.0: users can trust the numbers, trust updates, and recover when something breaks
@@ -77,7 +77,7 @@ Future work should be ranked in this order:
 
 A feature looking new does not make it more important than "the built executable reports the right version." The latter has little screenshot value, but it is the foundation of product trust.
 
-## v0.31.x: Close the Trust Gaps
+## Completed Baseline: Close the Trust Gaps
 
 Goal: stop carrying known, reproducible product and release defects.
 
@@ -96,7 +96,7 @@ Goal: stop carrying known, reproducible product and release defects.
 - The AI Council has no critical control clipping or unexpected horizontal scrollbar in the real-hardware matrix.
 - All six gates pass, and P5 and P6 are removed from `REVIEW_Claude.md`.
 
-## v0.32.0: Trustworthy Sources and Repair Flows
+## Phase A: Trustworthy Sources and Repair Flows
 
 Goal: explain every `--`, stale value, and query failure so the user never has to guess.
 
@@ -117,7 +117,7 @@ Goal: explain every `--`, stale value, and query failure so the user never has t
 
 Delivery order: health model → three provider projections → shared UI and doctor output → first-run repair → Codex event-source evaluation → benchmarks.
 
-## v0.33.0: A Scriptable Local Cockpit
+## Phase B: A Scriptable Local Cockpit
 
 Goal: let PowerShell, scheduled jobs, and other local tools reuse agentdeck's trusted state.
 
@@ -138,7 +138,7 @@ Goal: let PowerShell, scheduled jobs, and other local tools reuse agentdeck's tr
 
 Delivery order: neutral status projection → `--status --json` → `--doctor --json` → redaction and schema tests → PowerShell smoke.
 
-## v0.34.0: Make AI Council a Reusable Work Product
+## Phase C: Make AI Council a Reusable Work Product
 
 Goal: discussions should be searchable, reusable, and actionable rather than one-off runs.
 
@@ -159,14 +159,14 @@ Goal: discussions should be searchable, reusable, and actionable rather than one
 
 Delivery order: failure and cancellation persistence → history index and search → reopen view → budget boundaries → migration and recovery matrix.
 
-### Follow-up Candidates (Not Required for v0.34.0)
+### Follow-up Candidates (Not Required for Phase C)
 
 - Reusable discussion templates for code review, architecture tradeoffs, incident retrospectives, and release decisions.
 - Advanced summary structure for decisions, dissent, unresolved questions, and next actions, with links back to the originating round.
 
-Only schedule these into a later MINOR after the history index and reopen flow demonstrate real use, so v0.34 does not carry too many new interactions at once.
+Only schedule these into a later MINOR after the history index and reopen flow demonstrate real use, so Phase C does not carry too many new interactions at once.
 
-## v0.35.0: Maintainable Expansion and Releases
+## Phase D: Maintainable Expansion and Releases
 
 Goal: add capabilities without continuously growing `wintray.py`, packaging risk, or source ambiguity.
 
@@ -211,7 +211,7 @@ This project does not add telemetry. Evidence for the following targets comes fr
 | App crashes from malformed or incomplete local data | 0 known cases |
 | Diagnostics required for an issue report | One `--doctor` command |
 
-Performance should be baselined in v0.32 before numbers become gates. Do not invent an attractive millisecond target without a reproducible measurement method.
+Performance should be baselined in Phase A before numbers become gates. Do not invent an attractive millisecond target without a reproducible measurement method.
 
 ## Primary Risks, Dependencies, and Defenses
 
@@ -252,6 +252,6 @@ Every milestone follows the same completion flow:
 
 ## Next Three Actions
 
-1. **P6 release-version guard**: clean egg-info in `build_windows.ps1` and smoke the executable version. This is the most direct supply-chain trust gap.
-2. **P5 AI Council vertical clipping**: fix the container height or scrolling strategy, then verify 900×640 at three real DPI settings.
-3. **ProviderHealth design and first implementation**: make Claude, Codex, and Antigravity speak the same language for ready, stale, unconfigured, and failed states before considering more providers.
+1. **Close the remaining Phase A repair loops**: explain first launch, signed-out CLIs, old hooks, and service failures with a next step, then complete the Codex event-source decision and performance baselines.
+2. **Start Phase B with a stable JSON surface**: ship a redacted, schema-tested `--status --json` so PowerShell never needs to parse human-readable text.
+3. **Start Phase C with discussion recovery**: guarantee archives survive failure and cancellation before adding history indexing, search, and reopen views.

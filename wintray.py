@@ -24,6 +24,7 @@ import win_login_item
 import window_keeper
 from burn_rate import BurnRateTracker
 from i18n import _t
+from panels import window_visibility
 from panels.dynamic_height import clamp_content_height, inject_content_height_script
 from panels.payload import _load_panel_html, _state_payload
 from prefs import _load_preferences, _save_preferences
@@ -626,6 +627,7 @@ class _WindowsTrayController:
         self.window: Any = None
         self.discussion: Any = None
         self.visible = False
+        self._minimized = False
         self._positioned_this_show = False
         self.stopping = threading.Event()
         self.refresh_lock = threading.Lock()
@@ -707,6 +709,12 @@ class _WindowsTrayController:
         self._update_tray()
         threading.Thread(target=self._poll_loop, daemon=True).start()
         self.refresh()
+
+    def on_minimized(self) -> None:
+        self._minimized = True
+
+    def on_restored(self) -> None:
+        self._minimized = False
 
     def on_loaded(self) -> None:
         # pywebview's resize()/move() call SetWindowPos with SWP_SHOWWINDOW,
@@ -1091,22 +1099,10 @@ class _WindowsTrayController:
         self._last_injected_state = encoded
 
     def show_panel(self, _icon: Any = None, _item: Any = None) -> None:
-        if self.visible:
-            self._save_window_position()
-            self.visible = False
-            self._positioned_this_show = False
-            self.window.hide()
-            return
-        self.visible = True
-        self._place_window()
-        self.window.show()
-        self.inject_state(force=True)
-        self.refresh()
+        window_visibility.toggle_panel(self)
 
     def minimize_panel(self) -> None:
-        if self.window is not None:
-            self._save_window_position()
-            self.window.minimize()
+        window_visibility.minimize_panel(self)
 
     def switch_panel(self, panel_id: str) -> None:
         self.active_panel_id = panel_id
@@ -1894,6 +1890,8 @@ def run_app(mock: bool = False, interval: int = 60) -> None:
     if window is None:
         raise RuntimeError("pywebview did not create a window")
     window.events.loaded += controller.on_loaded
+    window.events.minimized += controller.on_minimized
+    window.events.restored += controller.on_restored
     icon = pystray.Icon("agentdeck", draw_tray_icon(None), "agentdeck", _menu(controller))
     controller.attach(icon, window)
     icon.run_detached()

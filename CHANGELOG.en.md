@@ -6,22 +6,23 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
-## Unreleased
+## [0.35.0] - 2026-08-02
 
 ### Added
 - **Windows panels gained window and product entry points**: every panel now has a native minimize button; the HTML feature menu and system tray menu gained About, showing the installed version and official GitHub website.
-- **Product roadmap**: added bilingual `ROADMAP.md` and `ROADMAP.en.md`, using v0.31.2 as the baseline to define priorities, milestones, exit criteria, measurements, and explicit non-goals from v0.31.x through v1.0. D-13 records the choice to establish a trust contract before expanding providers and features, and the bilingual parity gate now checks this pair too.
 
 ### Changed
 - **Panel entry points now say what they do**: Switch Panel is now Menu, AI Council is available inside that menu, and the ambiguous Refresh Now action is consistently named Refresh Usage.
+- **Roadmap work now uses Phase A–D ordering**: unfinished milestones are no longer bound to the v0.32–v0.35 numbers already used by real releases, preventing plans from being mistaken for shipped release contents.
 
 ### Fixed
-- **Documentation state drift**: removed already-released v0.31.2 content that was still duplicated under `Unreleased`, and corrected the README comparison table to show that this fork does provide the AI Talent Market.
+- **Minimized panels now restore from the system tray**: the controller tracks the minimized state, so clicking the tray icon again restores the window instead of hiding a panel that was still marked visible.
 
 ## [0.34.0] - 2026-07-31
 
 ### Added
 - **The panels and `--doctor` now share one health verdict**: a new `provider_probe` is the only place that turns files into facts, and both surfaces call it. They previously reached the same files through separate code, which is exactly how they drifted into describing one situation two ways — the thing the shared model exists to prevent. The panel payload carries `state`, `reason`, `nextStep` and `updatedAt` per provider, resolved through the same i18n keys. If collecting health fails the panel still renders: **a diagnostic must never be the reason a screen goes blank.**
+
 ### Tests
 - **The symlink branch is now covered on machines that cannot create symlinks (P4)**: `Path.symlink_to()` needs `SeCreateSymbolicLinkPrivilege`, and checking the process token showed the privilege is **absent entirely** rather than present-but-disabled — so the only routes left are Developer Mode or elevation, both system settings for the maintainer to decide. The branch under test only asks whether `lstat().st_mode` is a regular file, so a new test makes `lstat` report `S_IFLNK` for a real, stale, name-matching file and walks the same branch, with a control proving the same file is deleted without the disguise. Directory, junction and symlink shapes are all covered locally now.
 
@@ -38,6 +39,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
 ### Added
 - **The talent market installs into every AI tool this machine has**: it previously wrote only to `~/.claude/agents/`, so a Codex user could install a role and never call it. Roles now go to Claude Code (`~/.claude/agents/<id>.md`, YAML frontmatter) and Codex (`~/.codex/agents/<id>.toml`, a `developer_instructions` block). **The formats cannot be copied between tools**, so each is rendered separately; tools that are absent are left alone. Detection is the presence of the tool's own configuration directory.
+- **Product roadmap**: added bilingual `ROADMAP.md` and `ROADMAP.en.md`, using v0.31.2 as the baseline to define priorities, milestones, exit criteria, measurements, and explicit non-goals from v0.31.x through v1.0. D-13 records the choice to establish a trust contract before expanding providers and features, and the bilingual parity gate now checks this pair too.
 - **Four more persona packs, twelve more roles**: Writing Desk (technical writer, ruthless editor, localizer), Product Desk (scope cutter, user interviewer, positioning critic), Data Desk (SQL reviewer, metric definer, chart critic), Operations & Security (incident responder, threat modeler, dependency auditor). Five packs and fifteen roles in total, all bilingual.
 - **The panel names the tools a role landed in**: a successful install deliberately shows no dialog, so without this the user cannot tell whether Codex received a copy.
 - **A file size gate** (ported from upstream `8d26748`): `wintray.py` gets a 1,900-line ceiling. Upstream split the same kind of monolith twice and it grew back both times, because "keep it small" lived in a document with nothing enforcing it. **Lowering a ceiling is correct; raising one is how the policy dies.**
@@ -48,6 +50,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 - **Corrected the upstream triage rule**: treating "every file is absent from this fork" as auto-skippable also discarded the **portable idea** behind a macOS-only fix, and porting ideas is what this fork is for. Only pure data churn is auto-skipped now; commits touching only code this fork lacks are listed as "worth porting?" with their paths, for a person to read.
 
 ### Fixed
+- **Documentation state drift**: removed already-released v0.31.2 content that was still duplicated under `Unreleased`, and corrected the README comparison table to show that this fork does provide the AI Talent Market.
 - **Tests wrote into the developer's real `~/.codex/agents/`** once installs became multi-tool; the fixture patched only the Claude path.
 - **`persona_store` froze its target paths at import time**, which made them unpatchable and sent test writes to the real home directory. They are now built per call.
 ### Changed
