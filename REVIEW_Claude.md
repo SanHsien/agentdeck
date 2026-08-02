@@ -75,7 +75,7 @@
 - **更新檢查屬於本 fork**：`update_checker.py` 查詢 `SanHsien/agentdeck` 的 latest release，user agent 也是 `agentdeck/<version>`；單元測試同時鎖住 URL 與 header（`772f7d9`）。
 - **AGPL-3.0 合規**：`LICENSE` 與各檔 SPDX 標頭完好；`NOTICE.md` 有 §5a 要求的修改聲明與日期；建置腳本會把 `LICENSE`／`NOTICE.md`／`README.md` 放進發佈產出，缺任一個就讓建置失敗（§4）。
 - **發佈模型與打包資源**：本 repo 是 uv virtual root／flat application，不發佈 wheel；正式產物由 PyInstaller 建置。`tests/test_packaged_resources.py` 守著「程式碼透過 `packaged_resource_path()` 要求的資源，都有用 `--add-data` 宣告給 PyInstaller」。
-- **上游追蹤**：`docs/UPSTREAM.md` 的 `last_reviewed` 為 `ec24f50`、`last_merged` 為 `8d26748`；**每日** workflow 會分流後回報，只有需要人看的才開 issue。
+- **上游追蹤**：`docs/UPSTREAM.md` 的 `last_reviewed` 為 `33641bc`、`last_merged` 為 `276a4a2`；**每日** workflow 會分流後回報，只有需要人看的才開 issue。
 - **CI 實際涵蓋範圍**：`CI`、`CodeQL`、`上游更新檢查`、`Release` 為啟用狀態並有成功紀錄；`ClusterFuzzLite batch` 已啟用並實測跑完（build 與 30 分鐘 fuzzing 全綠、無 crash）。`ClusterFuzzLite PR` 保留但只在 PR 時觸發。`Scorecard` **現為 active 並執行成功**——D-10 當時記的是停用，實際狀態已改變（推 tag 後由 GitHub 啟用，非本專案主動開啟）；產出的分數沒有掛徽章，但跑著不花成本也無害，故不刻意關回去。
 
 ## Windows 平台落差：已全數處理

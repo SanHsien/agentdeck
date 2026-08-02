@@ -5,6 +5,17 @@
 本檔記錄 agentdeck 所有重要變更。格式參考 [Keep a Changelog](https://keepachangelog.com/)，
 版號遵循[語意化版本 2.0.0](https://semver.org/lang/zh-TW/)。
 
+## Unreleased
+
+### 修正
+- **Antigravity 遇到 HTTP 429 會遵守 `Retry-After`**：支援秒數與 HTTP-date，退避上限一小時；退避期間保留舊快取，不持續重撞外部服務。
+- **配額重置前最後一分鐘不再顯示「重置 0分鐘」**：改為「即將重置」，並停止顯示已無意義的燒盡警告。
+- **損毀成非 UTF-8 的 preferences 與 window-keeper 狀態檔不再讓程式中斷**：依既有容錯契約視為無狀態。
+- **浪費診斷的 token 估算納入 CJK 字元**：中日韓文字不再套用 ASCII 的四字元一 token 比例而被低估約四倍。
+
+### 維護
+- **上游審視推進至 v0.29.16**：完整評估 `ec24f50..33641bc` 的 36 筆 commit，移植 4 項可驗證修正、依政策自動略過 5 項純資料同步，另 27 項不採用理由逐筆記錄於 `docs/UPSTREAM.md`。
+
 ## [0.35.0] - 2026-08-02
 
 ### 新增

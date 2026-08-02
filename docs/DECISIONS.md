@@ -266,3 +266,15 @@ PyInstaller **不在 `uv.lock` 裡**，是用 `uv pip install pyinstaller` 另�
 **驗證**：改動後連續三次 `uv sync` 皆為「移除 0 個套件、零失敗」（先前每次移除 7 個）。新環境跑完六道閘門與完整建置，exe 版號 guard 通過。
 
 **教訓**：**「我的環境有問題」跟「我的設定在跟工具對打」長得一模一樣。** 分辨方法是問「這個工具正在做的事，是它被要求做的嗎」——`uv sync` 刪掉不在 lock 裡的套件是完全正確的行為，錯的是把建置工具裝在 lock 外面。環境（OneDrive）只是讓這個錯誤從「浪費」升級成「損壞」。
+
+---
+
+## D-14：審視上游 v0.29.11 至 v0.29.16，移植四項可驗證修正
+
+**日期**：2026-08-02
+
+**決定**：審視 `ec24f50..33641bc` 共 36 筆 commit；移植 `75292da`（429 `Retry-After`）、`32d27d7`（即將重置）、`83f77ba`（非 UTF-8 狀態檔容錯）與 `276a4a2`（CJK token 估算）。純資料同步直接略過，其餘逐筆不採用理由記在 [`UPSTREAM.md`](UPSTREAM.md)。`last_reviewed` 推進到 `33641bc`，`last_merged` 推進到最後採用的 `276a4a2`。
+
+**取捨**：不把「上游有新功能」等同於「本 fork 現在就要加入」。`doctor --json`、cache quarantine 與對話標題都有價值，但分別牽涉 schema/redaction、證據留存與報告相容性，應走 Phase A–B 的產品契約；macOS 面板、通知、shell 安裝與獨立版號則不適用 Windows-first fork。
+
+**驗證方式**：四項移植都補 fork 內的直接回歸測試；完整品質閘門通過後才關閉追蹤 issue。

@@ -31,9 +31,9 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "ec24f50",
-      "last_merged": "8d26748",
-      "note": "v0.29.8 的兩個 Windows 修復已於 93550e0 合併；v0.29.9 的 5 筆全數審視後未採用，見下方 Skipped"
+      "last_reviewed": "33641bc",
+      "last_merged": "276a4a2",
+      "note": "審視至上游 v0.29.16；移植 429 退避、即將重置、非 UTF-8 狀態容錯與 CJK token 估算，其餘逐筆理由見 Skipped"
     }
   }
 }
@@ -62,6 +62,33 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
 
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
+| main | `9f7a155` | feat(report,tui): 顯示 Claude Code 自動產生的對話標題 | 2026-08-02 | 屬報告與 TUI 的新呈現能力；目前優先完成 Phase A 的資料修復閉環，不在這次上游維護中擴張報告 schema 與 snapshot。 |
+| main | `5a8bbd7` | chore: release v0.29.11 | 2026-08-02 | 純上游版號、CHANGELOG 與本 fork 已移除的 README 語言；本 fork 版號獨立（D-05）。 |
+| main | `f4338e5` | fix(tests): 修 mypy 在測試檔上的 11 個錯誤 | 2026-08-02 | 修的是上游當時的測試型別錯誤；本 fork 的 mypy gate 已全綠，沒有對應缺陷。 |
+| main | `97ed52a` | docs: cut CLAUDE.md to what the repo cannot tell you itself | 2026-08-02 | 與 `9be2ddf` 同一概念；本 fork 的模組導覽仍和 README 專案架構互相引用，不能單獨裁掉。 |
+| main | `cb5799d` | feat(talent-market): 角色卡一律顯示啟動，不再分兩步安裝 | 2026-08-02 | 本 fork 同時管理 Claude、Codex、Cursor 的安裝、drift 與還原；保留明確的安裝／啟動兩步，避免一次點擊隱含跨工具寫檔。 |
+| main | `efc2691` | chore: release v0.29.12 | 2026-08-02 | 純上游版號與 CHANGELOG；本 fork 版號獨立。 |
+| main | `c1f35c8` | chore: 同步 uv.lock 到 v0.29.12 | 2026-08-02 | 只同步上游 root package 版號；本 fork 的 lock 與 v0.35.0 已一致。 |
+| main | `3daba5f` | fix(setup,hooks): 讀不出來或不是自己的設定就停手 | 2026-08-02 | 等價保護已存在：本 fork 對 JSON／TOML／UTF-8 讀取失敗會略過，且只修復 agentdeck 擁有的 hook；現有 ownership 與 unreadable 測試覆蓋。 |
+| main | `4d34ee5` | chore: release v0.29.13 | 2026-08-02 | 純上游版號、lock 與 CHANGELOG；本 fork 版號獨立。 |
+| main | `a801c3a` | test(jsonl-utils,time-utils): 補共用底層模組直接單元測試 | 2026-08-02 | 上游的 `jsonl_utils.py` 本 fork 不存在；`time_utils` 目前由消費端測試覆蓋，不能原樣搬入兩份不存在／不同結構的測試。 |
+| main | `3bcfb79` | refactor(menubar): 抽出 macOS 通知橋接 | 2026-08-02 | macOS-only；本 fork 已移除 `menubar.py` 與 Objective-C 通知橋接。 |
+| main | `30bb4b0` | fix(panel): 面板位置改用頂邊當錨點 | 2026-08-02 | 修的是 macOS `NSPanel` 座標；Windows 使用工作區座標、持久化頂左位置並已有 clamp／hide-show 測試。 |
+| main | `a5c8391` | fix(tests): 面板位置測試改為函式內匯入 menubar | 2026-08-02 | 只修 macOS 測試在 Windows 匯入 `menubar` 的問題；本 fork 沒有該測試或模組。 |
+| main | `6fccf63` | fix(panel): 開啟時使用上次實測高度 | 2026-08-02 | 上游修的是 `NSPanel`；Windows 已以 `_content_height` 保存實測高度，切換面板也刻意沿用並有回歸測試。 |
+| main | `de40632` | chore: release v0.29.14 | 2026-08-02 | 純上游版號、lock 與 CHANGELOG；本 fork 版號獨立。 |
+| main | `12e476d` | feat(cache): 快取損毀先隔離再刪 | 2026-08-02 | 概念有價值但會同時改三種 cache 的生命週期與隱私留存；排入 Phase A／D 設計，不在追蹤 issue 中直接新增持久化 `.corrupt` 證據。 |
+| main | `886a666` | chore(scripts): 新增 install_local.sh | 2026-08-02 | POSIX-only；本 fork 是 Windows-first，正式安裝產物為 PyInstaller ZIP。 |
+| main | `f9e1576` | fix(doctor): 健檢報告分層 | 2026-08-02 | 本 fork 的 `doctor` 已由共享 `ProviderHealth` 提供狀態、原因與下一步；直接套用上游文字層級會繞過共享模型。 |
+| main | `a4550c7` | fix(tests): wintray 測試寫入真實 preferences | 2026-08-02 | 本 fork 對應測試已用 `tmp_path` 與 monkeypatch 隔離 preferences；完整測試未寫入真實設定。 |
+| main | `5922a67` | fix(scripts): 文件同步納入簡中、日文、韓文 README | 2026-08-02 | 本 fork 只維護繁中／英文雙語（D-11），其他三份 README 已移除。 |
+| main | `d074018` | chore: release v0.29.15 | 2026-08-02 | 純上游版號與 CHANGELOG；本 fork 版號獨立。 |
+| main | `fc098c5` | chore: 同步 uv.lock 到 v0.29.15 | 2026-08-02 | 只同步上游 root package 版號；本 fork lock 已獨立維護。 |
+| main | `3942090` | feat: 日誌輪替與 doctor 機器可讀輸出 | 2026-08-02 | `doctor --json` 是 Phase B 的正式 schema 工作，必須先完成 redaction 與相容性契約；不直接搬入尚未承諾 schema 的上游版本。日誌輪替亦需先定 Windows 路徑與隱私政策。 |
+| main | `81d5b24` | fix(tests): 隔離 ~/Library/Logs/usage | 2026-08-02 | macOS-only 路徑，且本 fork 未採用該上游日誌功能。 |
+| main | `32b8908` | docs: 記錄測試日誌 fixture 不可移除 | 2026-08-02 | 文件只描述未採用的 macOS 日誌 fixture，對本 fork 不成立。 |
+| main | `2328b5e` | refactor(menubar): 抽出 switchPanel_ 選單樣板 | 2026-08-02 | macOS `menubar.py` 重構；Windows 功能表由 HTML／系統匣各自的既有實作負責。 |
+| main | `33641bc` | chore: release v0.29.16 | 2026-08-02 | 純上游版號、lock 與 CHANGELOG；本 fork 版號獨立。 |
 | main | `9be2ddf` | docs: trim CLAUDE.md module map to gotchas only | 2026-07-31 | 只改上游的 `CLAUDE.md`。概念（模組表只留陷阱、不重複程式碼講得清楚的事）可移植，但本 fork 的模組表剛被 README 的「專案架構」章節引用為導覽入口，現在砍掉會讓兩邊對不上。留待日後與該章節一起重整。 |
 | main | `ece46e2` | refactor: move menubar chrome helpers into menubar_chrome.py | 2026-07-31 | 拆 `menubar.py`（本 fork 沒有），**同時調降 `check_file_size.py` 的上限**——這正是 `8d26748` 那條政策在運作，是採用該概念的佐證。上游正往「小葉模組」收斂，而本 fork 從一開始就沒有那顆巨石。 |
 | main | `be4e4ac` | refactor: move state constructors into menubar_state.py | 2026-07-31 | 動到 `menubar_state.py`（本 fork 有同名檔案），但內容是把上游 `menubar.py` 裡的 macOS 狀態建構子搬出來——本 fork 從未有那顆巨石，這些建構子本來就在各自的模組裡。與 D-07 同一類：上游在往本 fork 已有的結構靠。 |

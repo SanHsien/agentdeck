@@ -232,6 +232,16 @@ def test_invalid_content_height_keeps_registered_fallback(
     assert controller.panel_height() == fallback
 
 
+def test_load_preferences_tolerates_non_utf8(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    preferences_path = tmp_path / "agentdeck-preferences.json"
+    preferences_path.write_bytes(b"\xff\xfe\x00bad")
+    monkeypatch.setattr(prefs, "PREFERENCES_FILE", preferences_path)
+
+    assert prefs._load_preferences() == {}
+
+
 def test_panel_position_is_clamped_and_persisted_on_hide(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

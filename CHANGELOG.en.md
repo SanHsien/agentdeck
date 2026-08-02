@@ -6,6 +6,17 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
+## Unreleased
+
+### Fixed
+- **Antigravity now honors `Retry-After` after HTTP 429 responses**: both seconds and HTTP-date values are supported, capped at one hour; stale cache remains available while requests are paused.
+- **The final minute before a quota reset no longer reads “Resets in 0m”**: it now says “Reset imminent” and suppresses a burn warning that is no longer actionable.
+- **Preferences and window-keeper state corrupted into non-UTF-8 no longer interrupt the app**: they follow the existing recovery contract and are treated as absent state.
+- **Waste-diagnosis token estimates now account for CJK characters**: Chinese, Japanese, and Korean text is no longer underestimated by applying the ASCII four-characters-per-token approximation.
+
+### Maintenance
+- **Upstream review advanced through v0.29.16**: all 36 commits in `ec24f50..33641bc` were evaluated; 4 verifiable fixes were ported, 5 data-only syncs were auto-triaged by policy, and the other 27 skip decisions are recorded individually in `docs/UPSTREAM.md`.
+
 ## [0.35.0] - 2026-08-02
 
 ### Added

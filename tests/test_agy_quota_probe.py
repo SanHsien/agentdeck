@@ -11,8 +11,10 @@ import sys
 from base64 import b64encode
 from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
+from email.message import Message
+from email.utils import format_datetime
 from pathlib import Path
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from urllib.request import Request
 
 import pytest
@@ -87,9 +89,62 @@ def _write_token(
 @pytest.fixture(autouse=True)
 def _reset_token_cache(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     agy_quota_probe._token_cache.clear()
+    agy_quota_probe._rate_limit_until_monotonic = 0.0
     monkeypatch.setattr(agy_quota_probe, "_read_macos_credential", lambda: None)
     yield
     agy_quota_probe._token_cache.clear()
+    agy_quota_probe._rate_limit_until_monotonic = 0.0
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [("120", 120.0), (None, 60.0), ("not-a-date", 60.0), ("999999", 3600.0)],
+)
+def test_retry_after_is_parsed_and_bounded(value: str | None, expected: float) -> None:
+    assert agy_quota_probe._parse_retry_after(value) == expected
+
+
+def test_retry_after_accepts_http_date() -> None:
+    retry_at = datetime.now(UTC) + timedelta(seconds=120)
+    assert agy_quota_probe._parse_retry_after(format_datetime(retry_at)) == pytest.approx(
+        120.0, abs=2.0
+    )
+
+
+def test_http_429_sets_backoff(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("providers.agy_quota_probe.time.monotonic", lambda: 1000.0)
+    headers = Message()
+    headers["Retry-After"] = "90"
+    error = HTTPError("https://example.test", 429, "rate limited", headers, None)
+
+    agy_quota_probe._handle_http_error(error)
+
+    assert agy_quota_probe._rate_limit_until_monotonic == 1090.0
+
+
+def test_shorter_retry_after_does_not_shorten_existing_backoff(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("providers.agy_quota_probe.time.monotonic", lambda: 1000.0)
+    agy_quota_probe._rate_limit_until_monotonic = 4600.0
+
+    agy_quota_probe._set_rate_limit_backoff("60")
+
+    assert agy_quota_probe._rate_limit_until_monotonic == 4600.0
+
+
+def test_post_json_http_429_starts_backoff(monkeypatch: pytest.MonkeyPatch) -> None:
+    headers = Message()
+    headers["Retry-After"] = "90"
+
+    def raise_rate_limit(request: Request, timeout: float = 0.0) -> object:  # noqa: ARG001
+        raise HTTPError(request.full_url, 429, "rate limited", headers, None)
+
+    monkeypatch.setattr("providers.agy_quota_probe.time.monotonic", lambda: 1000.0)
+    monkeypatch.setattr(agy_quota_probe, "urlopen", raise_rate_limit)
+
+    assert agy_quota_probe._post_json("https://example.test", "token", {}, 1.0) is None
+    assert agy_quota_probe._rate_limit_until_monotonic == 1090.0
 
 
 # --- find_agy (unchanged behavior) -----------------------------------------
@@ -554,6 +609,21 @@ def test_load_quota_returns_stale_cache_when_probe_fails(
     monkeypatch.setattr(agy_quota_probe, "CACHE_PATH", cache_path)
     agy_quota_probe._write_cache(stale)
     monkeypatch.setattr(agy_quota_probe, "probe_quota", lambda: None)
+
+    assert agy_quota_probe.load_quota(max_age_minutes=15) == stale
+
+
+def test_load_quota_returns_stale_cache_without_probe_during_backoff(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    cache_path = tmp_path / "agy_quota_cache.json"
+    stale = _result(datetime.now(UTC) - timedelta(minutes=16))
+    monkeypatch.setattr(agy_quota_probe, "CACHE_PATH", cache_path)
+    agy_quota_probe._write_cache(stale)
+    monkeypatch.setattr("providers.agy_quota_probe.time.monotonic", lambda: 1000.0)
+    agy_quota_probe._rate_limit_until_monotonic = 1090.0
+    monkeypatch.setattr(agy_quota_probe, "probe_quota", _unexpected_probe)
 
     assert agy_quota_probe.load_quota(max_age_minutes=15) == stale
 

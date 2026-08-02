@@ -17,6 +17,29 @@ from providers.history_loader import UsageEntry
 from state import menubar_state
 
 
+def test_quota_row_shows_imminent_reset_and_suppresses_warning() -> None:
+    row = menubar_state._quota_row(
+        "Session",
+        82.0,
+        1_030.0,
+        1_000.0,
+        menubar_state.CODEX_COLOR,
+        language="zh-TW",
+        forecast_seconds=18.0,
+    )
+
+    assert row.reset_text == "即將重置"
+    assert row.warning is False
+
+
+def test_quota_row_keeps_normal_text_at_exactly_one_minute() -> None:
+    row = menubar_state._quota_row(
+        "Session", 50.0, 1_060.0, 1_000.0, menubar_state.CODEX_COLOR, language="en"
+    )
+
+    assert row.reset_text == "Resets in 1m"
+
+
 def test_critter_animation_tick_handles_different_intervals() -> None:
     tick = menubar_state.critter_animation_tick(
         now=1.0,

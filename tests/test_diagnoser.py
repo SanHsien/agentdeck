@@ -84,6 +84,18 @@ def _patch_claude_dirs(monkeypatch: pytest.MonkeyPatch, base: Path) -> None:
     monkeypatch.setattr(claude, "CLAUDE_DIRS", [str(base)])
 
 
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [("abcdefgh", 2), ("中文測試", 4), ("abcd中文", 3), ("", 0)],
+)
+def test_estimate_tokens_handles_ascii_and_cjk(text: str, expected: int) -> None:
+    assert diagnoser._estimate_tokens(text) == expected
+
+
+def test_content_tokens_aggregates_short_blocks_before_rounding() -> None:
+    assert diagnoser._content_tokens(["abc", "def"]) == 1
+
+
 def test_analyze_without_jsonl_dir_returns_no_data(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -153,6 +165,41 @@ def test_repeated_reads_flags_same_file_read_11_times(
     assert repeated
     assert repeated[0].items[0]["label"] == "/repo/app.py"
     assert repeated[0].items[0]["n"] == 11
+
+
+def test_repeated_reads_carries_cjk_tokens_from_jsonl_to_finding(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    base = tmp_path / "projects"
+    records: list[dict[str, Any] | str] = []
+    for index in range(11):
+        tool_id = f"read-cjk-{index}"
+        records.append(
+            _assistant(
+                session_id="s1",
+                tool_id=tool_id,
+                name="Read",
+                tool_input={"file_path": "/repo/cjk.txt"},
+            )
+        )
+        result_record = _user_result(tool_id, 0)
+        result_record["message"]["content"][0]["content"] = "中文測試"
+        records.append(result_record)
+    _write_jsonl(base / "repo" / "session.jsonl", records)
+    _patch_claude_dirs(monkeypatch, base)
+
+    analysis_result = diagnoser.analyze(
+        date(2026, 5, 1), date(2026, 5, 31), 100.0
+    )
+
+    repeated = next(
+        finding
+        for finding in analysis_result.findings
+        if finding.kind == "repeated_reads"
+    )
+    assert repeated.items[0]["estimated_waste_tokens"] == 44
+    assert repeated.estimated_waste_tokens == 44
 
 
 def test_polluter_dirs_detects_node_modules(

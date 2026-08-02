@@ -28,7 +28,7 @@ Repo：`SanHsien/agentdeck`
 | Python source（排除 `reference/`） | 155 files / 42,181 lines |
 | pytest files | 68 |
 | open PR / open issue | 0 / 0 |
-| upstream `main` tip | `e94cd4d`，與 `docs/UPSTREAM.md.last_reviewed` 一致 |
+| upstream `main` tip | `33641bc`，與 `docs/UPSTREAM.md.last_reviewed` 一致 |
 | latest release | v0.31.1，published、非 draft、非 prerelease |
 | open CodeQL alerts | 0 |
 
