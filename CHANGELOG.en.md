@@ -9,7 +9,11 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ## Unreleased
 
 ### Added
+- **Windows panels gained window and product entry points**: every panel now has a native minimize button; the HTML feature menu and system tray menu gained About, showing the installed version and official GitHub website.
 - **Product roadmap**: added bilingual `ROADMAP.md` and `ROADMAP.en.md`, using v0.31.2 as the baseline to define priorities, milestones, exit criteria, measurements, and explicit non-goals from v0.31.x through v1.0. D-13 records the choice to establish a trust contract before expanding providers and features, and the bilingual parity gate now checks this pair too.
+
+### Changed
+- **Panel entry points now say what they do**: Switch Panel is now Menu, AI Council is available inside that menu, and the ambiguous Refresh Now action is consistently named Refresh Usage.
 
 ### Fixed
 - **Documentation state drift**: removed already-released v0.31.2 content that was still duplicated under `Unreleased`, and corrected the README comparison table to show that this fork does provide the AI Talent Market.

@@ -18,6 +18,7 @@ from importlib import metadata
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import about_info
 import update_checker
 import win_login_item
 import window_keeper
@@ -191,8 +192,32 @@ window.webkit.messageHandlers.usage = {
   document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') closeMenu();
   });
+  document.addEventListener('DOMContentLoaded', function() {
+    var host = document.querySelector('.footer .actions');
+    var menuButton = document.querySelector('[data-action="switch"]');
+    if (!host && menuButton) host = menuButton.parentElement;
+    if (!host) return;
+    var minimizeButton = document.createElement('button');
+    minimizeButton.type = 'button';
+    minimizeButton.className = host.matches('.actions')
+      ? 'action usage-window-minimize-button'
+      : ((menuButton && menuButton.className) || 'usage-window-minimize-button');
+    minimizeButton.setAttribute('data-action', 'minimize');
+    minimizeButton.textContent = '−';
+    minimizeButton.title = {{MINIMIZE_LABEL}};
+    minimizeButton.setAttribute('aria-label', {{MINIMIZE_LABEL}});
+    minimizeButton.addEventListener('click', function(event) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      post('minimize');
+    });
+    if (menuButton && menuButton.parentElement === host) {
+      host.insertBefore(minimizeButton, menuButton);
+    } else {
+      host.appendChild(minimizeButton);
+    }
+  });
 })();
-
 // Panel assets register their card reorder handler in the bubbling phase. This
 // earlier capture listener turns their empty card area into a native drag
 // region without changing the shared macOS HTML.  Add the class only after
@@ -249,6 +274,11 @@ document.addEventListener('DOMContentLoaded', function() {
 .usage-window-drag-handle:active,
 .usage-card-window-dragging {
   cursor: grabbing;
+}
+.usage-window-minimize-button {
+  flex: 0 0 32px !important;
+  min-width: 32px;
+  padding: 0 !important;
 }
 .usage-panel-menu-backdrop {
   position: fixed;
@@ -482,10 +512,13 @@ def draw_tray_icon(used_percent: float | None) -> Image:
     return image
 
 
-def panel_html(filename: str) -> str:
+def panel_html(filename: str, *, language: str = "en") -> str:
     html = inject_content_height_script(_load_panel_html(filename))
     marker = "<head>"
-    return html.replace(marker, f"{marker}\n{JS_SHIM}", 1)
+    shim = JS_SHIM.replace(
+        "{{MINIMIZE_LABEL}}", json.dumps(_t(language, "minimize_window"), ensure_ascii=False)
+    )
+    return html.replace(marker, f"{marker}\n{shim}", 1)
 
 
 def _active_panel_id() -> str:
@@ -1070,6 +1103,11 @@ class _WindowsTrayController:
         self.inject_state(force=True)
         self.refresh()
 
+    def minimize_panel(self) -> None:
+        if self.window is not None:
+            self._save_window_position()
+            self.window.minimize()
+
     def switch_panel(self, panel_id: str) -> None:
         self.active_panel_id = panel_id
         # Deliberately keep the previous panel's measured height instead of
@@ -1083,7 +1121,7 @@ class _WindowsTrayController:
         # worker, so refresh this field from the shared preferences before the
         # next theme receives that state.
         self.latest_state.card_order = _quota_card_order()
-        self.window.load_html(panel_html(self.panel_filename()))
+        self.window.load_html(panel_html(self.panel_filename(), language=self.language))
 
     def _deferred_switch_panel(self, panel_id: str) -> None:
         self._switch_pending = False
@@ -1141,6 +1179,8 @@ class _WindowsTrayController:
         ]
         return [
             item("panel_changelog", "open_changelog"),
+            item("discussion_window_title", "open_discussion"),
+            item("about", "show_about"),
             {"type": "separator"},
             item("switch_panel", "", children=panels),
             item("hide_sections_menu", "", children=hidden_sections),
@@ -1180,6 +1220,9 @@ class _WindowsTrayController:
         webbrowser.open(
             f"https://github.com/SanHsien/agentdeck/blob/main/CHANGELOG{suffix}.md"
         )
+
+    def show_about(self, _icon: Any = None, _item: Any = None) -> None:
+        self._message_box(about_info.text(self.language, _current_version()), style=MB_ICON_INFO)
 
     def toggle_hide_section(self, preference_key: str) -> None:
         preferences = _load_preferences()
@@ -1550,6 +1593,12 @@ class _WindowsTrayController:
                     self.toggle_hide_section(preference_key)
             elif action == "open_changelog":
                 self.open_changelog()
+            elif action == "open_discussion":
+                self.open_discussion()
+            elif action == "show_about":
+                self.show_about()
+            elif action == "minimize":
+                self.minimize_panel()
             elif action in _TALENT_ACTIONS:
                 self._handle_talent_action(action, payload)
             elif action == "reset_panel_position":
@@ -1697,6 +1746,7 @@ def _menu(controller: _WindowsTrayController) -> Any:
         pystray.MenuItem(
             _t(controller.language, "discussion_window_title"), controller.open_discussion
         ),
+        pystray.MenuItem(_t(controller.language, "about"), controller.show_about),
         pystray.MenuItem(
             _t(controller.language, "reset_panel_position"), controller.reset_panel_position
         ),
@@ -1831,7 +1881,7 @@ def run_app(mock: bool = False, interval: int = 60) -> None:
     controller = _WindowsTrayController(mock, interval)
     window = webview.create_window(
         "agentdeck",
-        html=panel_html(controller.panel_filename()),
+        html=panel_html(controller.panel_filename(), language=controller.language),
         js_api=_JSApi(controller),
         width=PANEL_WIDTH,
         height=controller.panel_height(),

@@ -178,7 +178,24 @@ def test_panel_html_installs_webkit_shim_without_changing_asset() -> None:
     assert "button, a, input, select, textarea, label, summary" in html
     assert "cursor: grab" in html
     assert "cursor: grabbing" in html
+    assert "post('minimize')" in html
+    assert 'minimizeButton.title = "Minimize"' in html
     assert "usageApplyStateWithDynamicHeight" in html
+
+
+def test_panel_html_localizes_the_minimize_button() -> None:
+    html = wintray.panel_html("classic.html", language="zh-TW")
+
+    assert 'minimizeButton.title = "最小化"' in html
+
+
+def test_every_panel_uses_the_feature_menu_label_for_its_switch_button() -> None:
+    for _panel_id, _key, filename in wintray.available_panels():
+        html = wintray.panel_html(filename)
+
+        assert 'data-action="switch"' in html, filename
+        assert 'data-action="switch" data-i18n="switch_panel"' not in html, filename
+        assert 'data-i18n="panel_menu"' in html, filename
 
 
 def test_content_height_message_resizes_visible_panel_with_work_area_clamp(
@@ -379,7 +396,7 @@ def test_switch_panel_message_returns_menu_instead_of_cycling(
     menu = controller.handle_panel_message("switch")
 
     assert isinstance(menu, list)
-    assert menu[2]["i18nKey"] == "switch_panel"
+    assert next(item for item in menu if item.get("i18nKey") == "switch_panel")
     assert switched_to == []
 
 
@@ -440,6 +457,8 @@ def test_panel_menu_data_is_localized_and_reads_current_checks(
     }
     assert [entry.get("i18nKey", entry.get("type")) for entry in menu] == [
         "panel_changelog",
+        "discussion_window_title",
+        "about",
         "separator",
         "switch_panel",
         "hide_sections_menu",
@@ -453,22 +472,25 @@ def test_panel_menu_data_is_localized_and_reads_current_checks(
         "separator",
         "refresh_now",
     ]
-    panels = cast(list[dict[str, object]], menu[2]["children"])
-    hidden_sections = cast(list[dict[str, object]], menu[3]["children"])
+    panels = cast(list[dict[str, object]], menu[4]["children"])
+    hidden_sections = cast(list[dict[str, object]], menu[5]["children"])
     assert panels[1]["panelId"] == "matrix"
     assert panels[1]["checked"] is True
     assert [item["checked"] for item in hidden_sections] == [True, False, True]
-    assert menu[5]["checked"] is True
-    assert menu[6]["checked"] is False
     assert menu[7]["checked"] is True
+    assert menu[8]["checked"] is False
     assert menu[9]["checked"] is True
-    assert menu[10]["checked"] is False
+    assert menu[11]["checked"] is True
+    assert menu[12]["checked"] is False
 
 
 @pytest.mark.parametrize(
     ("payload", "method", "expected"),
     [
         ({"action": "open_changelog"}, "open_changelog", ()),
+        ({"action": "open_discussion"}, "open_discussion", ()),
+        ({"action": "show_about"}, "show_about", ()),
+        ({"action": "minimize"}, "minimize_panel", ()),
         ({"action": "reset_panel_position"}, "reset_panel_position", ()),
         ({"action": "switch_panel", "panel_id": "matrix"}, "_schedule_panel_switch", ("matrix",)),
         (
@@ -499,6 +521,37 @@ def test_panel_menu_actions_dispatch_to_controller_methods(
     controller.handle_panel_message(json.dumps(payload))
 
     assert calls == [expected]
+
+
+def test_about_shows_the_current_version_and_project_homepage(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+    controller.language = "zh-TW"
+    shown: list[str] = []
+
+    def capture_message(text: str, **_kwargs: object) -> int:
+        shown.append(text)
+        return 0
+
+    monkeypatch.setattr(wintray, "_current_version", lambda: "9.8.7")
+    monkeypatch.setattr(controller, "_message_box", capture_message)
+
+    controller.show_about()
+
+    assert shown == [
+        "agentdeck\n版本：9.8.7\n程式官網：https://github.com/SanHsien/agentdeck"
+    ]
+
+
+def test_minimize_button_uses_the_native_window_action() -> None:
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+    minimized: list[bool] = []
+    controller.window = SimpleNamespace(minimize=lambda: minimized.append(True))
+
+    controller.minimize_panel()
+
+    assert minimized == [True]
 
 
 @pytest.mark.parametrize("panel_id", ["matrix", "aquarium", "win95"])
@@ -859,6 +912,7 @@ def test_menu_actions_pass_real_pystray_signature_validation() -> None:
         toggle_login=lambda: None,
         open_changelog=lambda: None,
         open_discussion=lambda: None,
+        show_about=lambda: None,
         toggle_hide_section=lambda key: None,
         toggle_quota_notifications=lambda: None,
         toggle_window_keeper=lambda: None,
