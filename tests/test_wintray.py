@@ -554,15 +554,41 @@ def test_about_shows_the_current_version_and_project_homepage(
     ]
 
 
-def test_minimize_button_uses_the_native_window_action() -> None:
+def test_minimizing_goes_to_the_tray_not_the_taskbar() -> None:
+    """A tray app that also leaves a taskbar button is reachable from two
+    places, and the two behave differently. hide() takes it off the taskbar
+    and out of Alt-Tab, leaving the tray icon as the single way back."""
     controller = wintray._WindowsTrayController(mock=True, interval=60)
-    minimized: list[bool] = []
-    controller.window = SimpleNamespace(minimize=lambda: minimized.append(True))
+    calls: list[str] = []
+    controller.window = SimpleNamespace(
+        minimize=lambda: calls.append("minimize"),
+        hide=lambda: calls.append("hide"),
+    )
+    controller.visible = True
 
     controller.minimize_panel()
 
-    assert minimized == [True]
+    assert calls == ["hide"], "native minimize would leave a taskbar button behind"
     assert controller._minimized is True
+    assert controller.visible is False
+
+
+def test_an_os_driven_minimize_also_lands_in_the_tray() -> None:
+    """Show Desktop and Win+D can still minimize a frameless window natively.
+
+    If those landed on the taskbar while the panel's own button landed in the
+    tray, one action would behave two ways depending on how it was invoked.
+    """
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+    calls: list[str] = []
+    controller.window = SimpleNamespace(hide=lambda: calls.append("hide"))
+    controller.visible = True
+
+    controller.on_minimized()
+
+    assert calls == ["hide"]
+    assert controller._minimized is True
+    assert controller.visible is False
 
 
 def test_native_window_events_keep_minimized_state_in_sync() -> None:
@@ -580,10 +606,12 @@ def test_tray_click_restores_a_minimized_panel(monkeypatch: pytest.MonkeyPatch) 
     calls: list[str] = []
     controller.window = SimpleNamespace(
         restore=lambda: calls.append("restore"),
+        show=lambda: calls.append("show"),
         hide=lambda: calls.append("hide"),
     )
     controller.visible = True
     controller._minimized = True
+    monkeypatch.setattr(controller, "_place_window", lambda **_: calls.append("place"))
     monkeypatch.setattr(
         controller, "inject_state", lambda *, force=False: calls.append(f"inject:{force}")
     )
@@ -593,7 +621,9 @@ def test_tray_click_restores_a_minimized_panel(monkeypatch: pytest.MonkeyPatch) 
 
     assert controller.visible is True
     assert controller._minimized is False
-    assert calls == ["restore", "inject:True", "refresh"]
+    # show(), not restore(): the window was hidden, and restore() does nothing
+    # to a hidden window -- the tray icon would look unresponsive.
+    assert calls == ["place", "show", "inject:True", "refresh"]
 
 
 @pytest.mark.parametrize("panel_id", ["matrix", "aquarium", "win95"])

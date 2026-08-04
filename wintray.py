@@ -711,7 +711,7 @@ class _WindowsTrayController:
         self.refresh()
 
     def on_minimized(self) -> None:
-        self._minimized = True
+        window_visibility.on_native_minimize(self)
 
     def on_restored(self) -> None:
         self._minimized = False

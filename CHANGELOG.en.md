@@ -17,6 +17,13 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ### Maintenance
 - **Upstream review advanced through v0.29.16**: all 36 commits in `ec24f50..33641bc` were evaluated; 4 verifiable fixes were ported, 5 data-only syncs were auto-triaged by policy, and the other 27 skip decisions are recorded individually in `docs/UPSTREAM.md`.
 
+## [0.36.0] - 2026-08-04
+
+### Changed
+- **Minimizing now goes to the tray instead of leaving a taskbar button**: the panel's `−` button called the native Windows minimize, so one window sat in the tray and the taskbar at once — two entry points behaving differently, taking taskbar room it did not need. It now hides the window, **removing it from the taskbar and Alt-Tab**, leaving the tray icon as the single way back. The position is saved first, so reopening returns it to where you left it.
+- **OS-driven minimizes (Show Desktop, Win+D, taskbar right-click) land in the tray too**: the panel is frameless, but those system-level actions can still minimize it natively. Changing only the button would make one action behave two ways depending on how it was invoked.
+- Reopening from the tray uses `show()` rather than `restore()` — `restore()` does nothing to a hidden window, which would make the tray icon look unresponsive.
+
 ## [0.35.0] - 2026-08-02
 
 ### Added
