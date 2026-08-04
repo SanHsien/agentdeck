@@ -178,15 +178,16 @@ def test_panel_html_installs_webkit_shim_without_changing_asset() -> None:
     assert "button, a, input, select, textarea, label, summary" in html
     assert "cursor: grab" in html
     assert "cursor: grabbing" in html
-    assert "post('minimize')" in html
-    assert 'minimizeButton.title = "Minimize"' in html
     assert "usageApplyStateWithDynamicHeight" in html
 
 
-def test_panel_html_localizes_the_minimize_button() -> None:
-    html = wintray.panel_html("classic.html", language="zh-TW")
+def test_panel_html_injects_no_minimize_button() -> None:
+    """The title bar supplies minimize now, so an in-page button would be a
+    second control for the same thing, sitting under a real one."""
+    html = wintray.panel_html("classic.html")
 
-    assert 'minimizeButton.title = "最小化"' in html
+    assert "minimizeButton" not in html
+    assert "post('minimize')" not in html
 
 
 def test_every_panel_uses_the_feature_menu_label_for_its_switch_button() -> None:
@@ -500,7 +501,6 @@ def test_panel_menu_data_is_localized_and_reads_current_checks(
         ({"action": "open_changelog"}, "open_changelog", ()),
         ({"action": "open_discussion"}, "open_discussion", ()),
         ({"action": "show_about"}, "show_about", ()),
-        ({"action": "minimize"}, "minimize_panel", ()),
         ({"action": "reset_panel_position"}, "reset_panel_position", ()),
         ({"action": "switch_panel", "panel_id": "matrix"}, "_schedule_panel_switch", ("matrix",)),
         (
@@ -554,30 +554,29 @@ def test_about_shows_the_current_version_and_project_homepage(
     ]
 
 
-def test_minimizing_goes_to_the_tray_not_the_taskbar() -> None:
-    """A tray app that also leaves a taskbar button is reachable from two
-    places, and the two behave differently. hide() takes it off the taskbar
-    and out of Alt-Tab, leaving the tray icon as the single way back."""
+def test_closing_the_window_goes_to_the_tray_and_cancels_the_close() -> None:
+    """The X must not quit the app. pywebview cancels the close when a
+    ``closing`` handler returns False, so returning anything truthy here --
+    including None from an early return -- would tear the window down and leave
+    a tray icon pointing at nothing."""
     controller = wintray._WindowsTrayController(mock=True, interval=60)
     calls: list[str] = []
-    controller.window = SimpleNamespace(
-        minimize=lambda: calls.append("minimize"),
-        hide=lambda: calls.append("hide"),
-    )
+    controller.window = SimpleNamespace(hide=lambda: calls.append("hide"))
     controller.visible = True
 
-    controller.minimize_panel()
+    result = controller.on_closing()
 
-    assert calls == ["hide"], "native minimize would leave a taskbar button behind"
+    assert result is False, "a non-False result lets pywebview destroy the window"
+    assert calls == ["hide"]
     assert controller._minimized is True
     assert controller.visible is False
 
 
 def test_an_os_driven_minimize_also_lands_in_the_tray() -> None:
-    """Show Desktop and Win+D can still minimize a frameless window natively.
+    """The title bar's minimize, Show Desktop and Win+D all minimize natively.
 
-    If those landed on the taskbar while the panel's own button landed in the
-    tray, one action would behave two ways depending on how it was invoked.
+    If those landed on the taskbar while the close button landed in the tray,
+    one window would behave two ways depending on which control was used.
     """
     controller = wintray._WindowsTrayController(mock=True, interval=60)
     calls: list[str] = []
@@ -696,6 +695,7 @@ def test_run_app_wires_pystray_and_pywebview(
     window = SimpleNamespace(
         events=SimpleNamespace(
             loaded=Event("loaded"),
+            closing=Event("closing"),
             minimized=Event("minimized"),
             restored=Event("restored"),
         )
@@ -726,6 +726,7 @@ def test_run_app_wires_pystray_and_pywebview(
     assert events == [
         ("window", "agentdeck", True, "#eef2f7"),
         "loaded_handler",
+        "closing_handler",
         "minimized_handler",
         "restored_handler",
         ("icon", "agentdeck"),
@@ -1222,3 +1223,25 @@ def test_explaining_a_feature_is_a_no_op_before_the_tray_exists() -> None:
     controller.icon = None
 
     controller._explain_feature("terse_mode_tooltip")  # must not raise
+
+
+def test_chrome_height_is_measured_from_the_live_form(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """resize() sets the outer size, so a framed window handed the content
+    height it needs comes up one title bar short and clips its own last rows.
+    The delta is physical pixels and the resize argument is logical ones."""
+    monkeypatch.setattr(wintray, "_monitor_dpi_scale", lambda *a: 2.25)
+    window = SimpleNamespace(
+        native=SimpleNamespace(Height=1998, ClientSize=SimpleNamespace(Height=1919))
+    )
+
+    assert wintray._window_chrome_height(window) == 35  # 79 physical / 2.25
+
+
+def test_chrome_height_is_zero_when_the_form_is_not_reachable() -> None:
+    """Before the window is realised there is nothing to measure. Guessing a
+    caption height here would misplace every panel on the first show."""
+    assert wintray._window_chrome_height(None) == 0
+    assert wintray._window_chrome_height(SimpleNamespace()) == 0
+    assert wintray._window_chrome_height(SimpleNamespace(native=SimpleNamespace())) == 0

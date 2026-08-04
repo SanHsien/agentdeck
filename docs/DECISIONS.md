@@ -278,3 +278,19 @@ PyInstaller **不在 `uv.lock` 裡**，是用 `uv pip install pyinstaller` 另�
 **取捨**：不把「上游有新功能」等同於「本 fork 現在就要加入」。`doctor --json`、cache quarantine 與對話標題都有價值，但分別牽涉 schema/redaction、證據留存與報告相容性，應走 Phase A–B 的產品契約；macOS 面板、通知、shell 安裝與獨立版號則不適用 Windows-first fork。
 
 **驗證方式**：四項移植都補 fork 內的直接回歸測試；完整品質閘門通過後才關閉追蹤 issue。
+
+---
+
+## D-15：面板改用系統標題列，關閉與最小化都收進系統匣
+
+**日期**：2026-08-04
+
+**決定**：面板從無邊框視窗改為一般標題列（`frameless=False`、`resizable=False`），並攔截 `closing` 事件回傳 `False`，讓 X、標題列最小化、Alt+F4 全部走「隱藏到系統匣」。面板內自繪的 `−` 按鈕、`minimize` JS 動作與 `minimize_window` 翻譯字串一併移除。離開程式的唯一入口是系統匣選單的「結束」。
+
+**取捨**：另一個選項是「乾脆不要關閉按鈕」。WinForms 做不到只拿掉 X——`ControlBox = False` 會連最小化一起拿掉，`GetSystemMenu` + `DeleteMenu(SC_CLOSE)` 只是把它變灰。更關鍵的是**Alt+F4 照樣送出 `WM_CLOSE`**，所以無論按鈕在不在，`closing` 都必須攔截。既然攔截是必要的，保留一顆行為正確的 X 比拿掉它更簡單，也不會少任何安全性。
+
+**驗證方式**：不是讀文件推論，是開真視窗用 Win32 量測（225% DPI、3840×2160）：`WS_CAPTION` 存在、`WS_MAXIMIZEBOX` 與 `WS_THICKFRAME` 皆不存在；`PostMessage(WM_CLOSE)` 走真實訊息路徑後 `IsWindowVisible` 為 0 而行程仍在，再開啟又回到可見。刻意不從非 GUI 執行緒直接觸發 `closing` 事件——pywebview 的 `should_lock=True` 會同步執行處理常式，那會是一條真實使用者永遠走不到的路徑。
+
+**過程中發現的真缺陷**：`resize()` 設定的是**外框**尺寸。加上標題列之後，量到 `clientH=1919` 而面板要的是 888 邏輯像素（1998 物理），也就是內容區短少一整條標題列，底部會被切掉。改為向即時視窗量測 `Height - ClientSize.Height` 再換算回邏輯像素加上去（實測 35），修正後 `clientH=1997`。**不寫死常數**：這個差值隨 DPI 與使用者的標題列設定改變，寫錯只會表現成「少了幾像素」——沒有例外、沒有紅燈，只有看起來怪怪的畫面。
+
+**教訓**：換掉視窗外框不是換一個旗標，是換掉整套尺寸座標系。UI 改動要**量**，不能推論——這次若沒量，送出去的就是一個底部被裁掉的面板。

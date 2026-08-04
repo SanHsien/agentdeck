@@ -193,31 +193,6 @@ window.webkit.messageHandlers.usage = {
   document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') closeMenu();
   });
-  document.addEventListener('DOMContentLoaded', function() {
-    var host = document.querySelector('.footer .actions');
-    var menuButton = document.querySelector('[data-action="switch"]');
-    if (!host && menuButton) host = menuButton.parentElement;
-    if (!host) return;
-    var minimizeButton = document.createElement('button');
-    minimizeButton.type = 'button';
-    minimizeButton.className = host.matches('.actions')
-      ? 'action usage-window-minimize-button'
-      : ((menuButton && menuButton.className) || 'usage-window-minimize-button');
-    minimizeButton.setAttribute('data-action', 'minimize');
-    minimizeButton.textContent = '−';
-    minimizeButton.title = {{MINIMIZE_LABEL}};
-    minimizeButton.setAttribute('aria-label', {{MINIMIZE_LABEL}});
-    minimizeButton.addEventListener('click', function(event) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      post('minimize');
-    });
-    if (menuButton && menuButton.parentElement === host) {
-      host.insertBefore(minimizeButton, menuButton);
-    } else {
-      host.appendChild(minimizeButton);
-    }
-  });
 })();
 // Panel assets register their card reorder handler in the bubbling phase. This
 // earlier capture listener turns their empty card area into a native drag
@@ -381,6 +356,25 @@ def _monitor_dpi_scale(monitor_handle: Any = None) -> float:
         return 1.0
 
 
+def _window_chrome_height(window: Any) -> int:
+    """Logical pixels the title bar and border steal from the content area.
+
+    ``resize()`` sets the *outer* size, so a framed window asked for the content
+    height it needs comes up exactly one title bar short and clips its own last
+    rows. The delta is read from the live form rather than hardcoded: caption
+    height varies with DPI and with the user's title-bar settings, and a wrong
+    constant fails silently as a few missing pixels of panel.
+    """
+    native = getattr(window, "native", None)
+    client = getattr(native, "ClientSize", None)
+    if native is None or client is None:
+        return 0
+    physical = native.Height - client.Height
+    if physical <= 0:
+        return 0
+    return int(round(physical / max(0.1, _monitor_dpi_scale())))
+
+
 def _taskbar_edge() -> str:
     """Which screen edge the taskbar occupies: top/bottom/left/right.
 
@@ -513,13 +507,10 @@ def draw_tray_icon(used_percent: float | None) -> Image:
     return image
 
 
-def panel_html(filename: str, *, language: str = "en") -> str:
+def panel_html(filename: str) -> str:
     html = inject_content_height_script(_load_panel_html(filename))
     marker = "<head>"
-    shim = JS_SHIM.replace(
-        "{{MINIMIZE_LABEL}}", json.dumps(_t(language, "minimize_window"), ensure_ascii=False)
-    )
-    return html.replace(marker, f"{marker}\n{shim}", 1)
+    return html.replace(marker, f"{marker}\n{JS_SHIM}", 1)
 
 
 def _active_panel_id() -> str:
@@ -710,6 +701,18 @@ class _WindowsTrayController:
         threading.Thread(target=self._poll_loop, daemon=True).start()
         self.refresh()
 
+    def on_closing(self) -> bool:
+        """Send the window to the tray instead of quitting.
+
+        Returning False cancels the close: pywebview's ``closing`` event is
+        cancellable, and the winforms backend sets ``args.Cancel`` when any
+        handler says so. Quitting from the title bar would be a trap -- the
+        tray icon is how this app is meant to be dismissed and recalled, and a
+        stray click on X should not end the session that is tracking quota.
+        """
+        window_visibility.on_native_minimize(self)
+        return False
+
     def on_minimized(self) -> None:
         window_visibility.on_native_minimize(self)
 
@@ -892,7 +895,9 @@ class _WindowsTrayController:
         work_area = self._work_area_for_point(anchor) or primary_work_area
         left, top, right, bottom = work_area
         height = min(self.panel_height(), max(240, bottom - top - 24))
-        self.window.resize(PANEL_WIDTH, height)
+        # The window is framed, so ask for content height plus the chrome that
+        # sits above it; otherwise the panel loses its last rows to the caption.
+        self.window.resize(PANEL_WIDTH, height + _window_chrome_height(self.window))
         position = anchor if anchor is not None else self._default_window_position(
             work_area, height, _taskbar_edge()
         )
@@ -1101,9 +1106,6 @@ class _WindowsTrayController:
     def show_panel(self, _icon: Any = None, _item: Any = None) -> None:
         window_visibility.toggle_panel(self)
 
-    def minimize_panel(self) -> None:
-        window_visibility.minimize_panel(self)
-
     def switch_panel(self, panel_id: str) -> None:
         self.active_panel_id = panel_id
         # Deliberately keep the previous panel's measured height instead of
@@ -1117,7 +1119,7 @@ class _WindowsTrayController:
         # worker, so refresh this field from the shared preferences before the
         # next theme receives that state.
         self.latest_state.card_order = _quota_card_order()
-        self.window.load_html(panel_html(self.panel_filename(), language=self.language))
+        self.window.load_html(panel_html(self.panel_filename()))
 
     def _deferred_switch_panel(self, panel_id: str) -> None:
         self._switch_pending = False
@@ -1593,8 +1595,6 @@ class _WindowsTrayController:
                 self.open_discussion()
             elif action == "show_about":
                 self.show_about()
-            elif action == "minimize":
-                self.minimize_panel()
             elif action in _TALENT_ACTIONS:
                 self._handle_talent_action(action, payload)
             elif action == "reset_panel_position":
@@ -1877,12 +1877,13 @@ def run_app(mock: bool = False, interval: int = 60) -> None:
     controller = _WindowsTrayController(mock, interval)
     window = webview.create_window(
         "agentdeck",
-        html=panel_html(controller.panel_filename(), language=controller.language),
+        html=panel_html(controller.panel_filename()),
         js_api=_JSApi(controller),
         width=PANEL_WIDTH,
         height=controller.panel_height(),
-        frameless=True,
+        frameless=False,
         easy_drag=False,
+        resizable=False,
         on_top=True,
         hidden=True,
         background_color=_system_background_color(),
@@ -1890,6 +1891,7 @@ def run_app(mock: bool = False, interval: int = 60) -> None:
     if window is None:
         raise RuntimeError("pywebview did not create a window")
     window.events.loaded += controller.on_loaded
+    window.events.closing += controller.on_closing
     window.events.minimized += controller.on_minimized
     window.events.restored += controller.on_restored
     icon = pystray.Icon("agentdeck", draw_tray_icon(None), "agentdeck", _menu(controller))

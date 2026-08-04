@@ -6,6 +6,11 @@ leaves a taskbar button behind is reachable from two places at once, takes
 taskbar room it does not need, and offers two ways back that behave
 differently. ``window.hide()`` removes it from the taskbar and Alt-Tab, and the
 tray icon becomes the single way back.
+
+The window wears a normal title bar, so its own minimize button, its close
+button and Alt+F4 all arrive here and all end the same way: hidden, still
+running, one tray icon to bring it back. Closing never quits the app -- the
+tray menu's Quit is the only exit, which is what makes a single X press safe.
 """
 
 from __future__ import annotations
@@ -40,28 +45,17 @@ def toggle_panel(controller: Any) -> None:
     controller.refresh()
 
 
-def minimize_panel(controller: Any) -> None:
-    """Send the panel to the tray.
-
-    The position is saved first so the next show returns it to where the user
-    left it. ``_positioned_this_show`` is deliberately left alone: dismissing a
-    panel resets it, minimizing should not.
-    """
-    if controller.window is None:
-        return
-    controller._save_window_position()
-    controller.visible = False
-    controller._minimized = True
-    controller.window.hide()
-
-
 def on_native_minimize(controller: Any) -> None:
-    """Follow an OS-driven minimize into the tray as well.
+    """Send the panel to the tray instead of to the taskbar.
 
-    The panel is frameless, so its own button is the usual route -- but Show
-    Desktop, Win+D and a taskbar right-click can still minimize it natively.
-    Letting those land on the taskbar while the button lands in the tray would
-    make one action behave two ways depending on how it was invoked.
+    Every route into this function is an OS-driven one -- the title bar's
+    minimize and close buttons, Alt+F4, Show Desktop, Win+D, a taskbar
+    right-click. They are handled identically on purpose: one action should not
+    behave two ways depending on how it was invoked.
+
+    The position is saved first so the next show returns the panel to where the
+    user left it. ``_positioned_this_show`` is deliberately left alone:
+    dismissing a panel resets it, minimizing should not.
     """
     controller._minimized = True
     if controller.window is None:

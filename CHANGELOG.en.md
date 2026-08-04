@@ -6,7 +6,15 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
-## Unreleased
+## [0.37.0] - 2026-08-04
+
+### Changed
+- **The window now has a title bar, and both close and minimize go to the tray**: the panel used to be frameless, so minimizing meant a hand-drawn `−` button — a second set of window controls living outside the system's own. It now uses a standard title bar, and minimize, close and Alt+F4 all take the same path: hide the window, leave the taskbar and Alt-Tab, and let the tray icon be the single way back. **Closing does not quit the app**; the tray menu's Quit is the only exit, which is what makes a single press of X safe.
+- **The in-panel minimize button is gone**: the title bar supplies minimize, so an in-page button was a second control for the same thing sitting directly under a real one. The `minimize` JS action and the `minimize_window` translation string were removed with it.
+- **Maximize and resizing are disabled**: panel height is computed from content, so enlarging the window would only add empty space. `resizable=False` removes both the maximize button and the drag borders.
+
+### Fixed
+- **The title bar no longer eats the bottom of the panel**: `resize()` sets the *outer* size, so a framed window handed the content height it needs comes up exactly one title bar short and clips its own last rows. The caption and border height is now measured from the live window and added back (35 logical pixels at 225% DPI). It is not hardcoded: that delta moves with DPI and with the user's title-bar settings, and a wrong constant fails silently as a few missing pixels of panel.
 
 ### Fixed
 - **Antigravity now honors `Retry-After` after HTTP 429 responses**: both seconds and HTTP-date values are supported, capped at one hour; stale cache remains available while requests are paused.
