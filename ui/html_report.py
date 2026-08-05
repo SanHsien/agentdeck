@@ -446,7 +446,7 @@ def _render_header(data: ReportData, lang: str, title: str, generated_at: str) -
       <p class="narrative">{html.escape(_narrative(data, lang))}</p>
     </div>
     <div class="header-actions">
-      <div class="meta">{html.escape(_t(lang, "generated"))} {html.escape(generated_at)}<br>usage {_escape(_t(lang, "version"))} {_escape(_version())}</div>
+      <div class="meta">{html.escape(_t(lang, "generated"))} {html.escape(generated_at)}<br>agentdeck {_escape(_t(lang, "version"))} {_escape(_version())}</div>
       <button class="share-trigger" type="button" data-share-open><span aria-hidden="true">↗</span>{html.escape(_t(lang, "share_button_label"))}</button>
     </div>
   </header>"""

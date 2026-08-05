@@ -1083,7 +1083,7 @@ def _run_quietly(func: Any, *args: Any, **kwargs: Any) -> Any:
 
 def _debug_self_heal_failure(action: str, exc: BaseException) -> None:
     if os.environ.get("AGENTDECK_DEBUG") == "1":
-        print(f"usage self-heal {action} failed: {type(exc).__name__}: {exc}", file=sys.stderr)
+        print(f"agentdeck self-heal {action} failed: {type(exc).__name__}: {exc}", file=sys.stderr)
 
 
 def self_heal() -> None:

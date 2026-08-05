@@ -6,6 +6,15 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
+## [0.37.1] - 2026-08-05
+
+### Fixed
+- **Messages and dialogs no longer show the old product name**: the single-instance dialog read “usage is already running; click the usage tray icon”, and nine more strings carried the same leftover — the status-line-not-configured hint, the report footer and version line, five statusLine install/remove messages, the TUI title, the coexistence-mode explanation, and the Codex staleness tooltip. **English was the worst affected**: several of these had already been rebranded to `agentdeck` in Traditional Chinese while English kept the old name, so one sentence named two different products depending on the reader's language. The status-line hint also had its command corrected (`usage setup` → `agentdeck --setup`).
+- **The report footer and the self-heal diagnostic hardcoded the product name**: `ui/html_report.py` and `session_hooks.py` wrote it straight into an f-string rather than going through i18n, so no check aimed at the translation bundle could see them.
+
+### Maintenance
+- **Added a branding regression gate**, `tests/test_i18n_branding.py`: de-branding has now leaked three times in the same way. The check is narrow on purpose — the product name is always lowercase, so only a standalone lowercase `usage` counts as a leak while title-case `Usage` stays legal as the ordinary English noun; the 11 keys that genuinely mean the noun are listed individually, so adding one is a deliberate act. A second test stops the allowlist outliving the strings it covers. Verified by injecting a leak and watching the gate fail.
+
 ## [0.37.0] - 2026-08-04
 
 ### Changed
