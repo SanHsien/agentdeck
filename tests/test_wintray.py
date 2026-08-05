@@ -620,9 +620,12 @@ def test_tray_click_restores_a_minimized_panel(monkeypatch: pytest.MonkeyPatch) 
 
     assert controller.visible is True
     assert controller._minimized is False
-    # show(), not restore(): the window was hidden, and restore() does nothing
-    # to a hidden window -- the tray icon would look unresponsive.
-    assert calls == ["place", "show", "inject:True", "refresh"]
+    # show() *then* restore(), and in that order. The title bar's minimize sets
+    # the window iconic before our handler hides it, so it is hidden and
+    # minimized at once: show() alone brought back only a taskbar button the
+    # user had to click a second time, and restore() alone does nothing to a
+    # window that is still hidden -- the tray icon would look unresponsive.
+    assert calls == ["place", "show", "restore", "inject:True", "refresh"]
 
 
 @pytest.mark.parametrize("panel_id", ["matrix", "aquarium", "win95"])
@@ -1245,3 +1248,24 @@ def test_chrome_height_is_zero_when_the_form_is_not_reachable() -> None:
     assert wintray._window_chrome_height(None) == 0
     assert wintray._window_chrome_height(SimpleNamespace()) == 0
     assert wintray._window_chrome_height(SimpleNamespace(native=SimpleNamespace())) == 0
+
+
+def test_quit_is_not_cancelled_by_the_close_to_tray_handler() -> None:
+    """quit() shuts the window down with destroy(), which fires `closing` just
+    like the X does. Cancelling that close stranded the app: the tray icon was
+    already stopped, so the process kept running with no window and no icon
+    while the single-instance lock told the next launch it was already
+    running."""
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+    calls: list[str] = []
+    controller.window = SimpleNamespace(
+        hide=lambda: calls.append("hide"),
+        destroy=lambda: calls.append("destroy"),
+    )
+    controller.icon = SimpleNamespace(stop=lambda: calls.append("icon.stop"))
+
+    controller.quit()
+
+    assert calls == ["icon.stop", "destroy"]
+    assert controller.on_closing() is True, "quit's own close must not be cancelled"
+    assert "hide" not in calls, "quitting must not fall back to hiding the window"

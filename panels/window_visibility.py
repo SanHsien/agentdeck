@@ -15,18 +15,32 @@ tray menu's Quit is the only exit, which is what makes a single X press safe.
 
 from __future__ import annotations
 
+import contextlib
 from typing import Any
+
+
+def _reveal(window: Any) -> None:
+    """Put the window back on screen, whatever state it was left in.
+
+    Both calls are needed, in this order. The title bar's minimize button sets
+    the window iconic *before* our handler hides it, so it ends up hidden and
+    minimized at once: ``show()`` alone brings back only a taskbar button the
+    user has to click a second time, and ``restore()`` alone does nothing to a
+    window that is still hidden, which makes the tray icon look dead.
+    """
+    window.show()
+    with contextlib.suppress(Exception):
+        # Cosmetic on a window that was never iconic; never worth failing a
+        # show over.
+        window.restore()
 
 
 def toggle_panel(controller: Any) -> None:
     if controller._minimized:
-        # Minimizing hides rather than minimizing natively, so returning is a
-        # show. restore() would do nothing to a hidden window, which would
-        # leave the tray icon looking unresponsive.
         controller.visible = True
         controller._minimized = False
         controller._place_window()
-        controller.window.show()
+        _reveal(controller.window)
         controller.inject_state(force=True)
         controller.refresh()
         return
@@ -40,9 +54,32 @@ def toggle_panel(controller: Any) -> None:
     controller.visible = True
     controller._minimized = False
     controller._place_window()
-    controller.window.show()
+    _reveal(controller.window)
     controller.inject_state(force=True)
     controller.refresh()
+
+
+def on_closing(controller: Any) -> bool:
+    """Send the window to the tray instead of quitting.
+
+    Returning False cancels the close: pywebview's ``closing`` event is
+    cancellable, and the winforms backend sets ``args.Cancel`` when any handler
+    says so. Quitting from the title bar would be a trap -- the tray icon is how
+    this app is meant to be dismissed and recalled, and a stray click on X
+    should not end the session that is tracking quota.
+
+    ``quit()`` reaches this same handler, because it shuts the window down with
+    ``destroy()`` and that fires ``closing`` too. Cancelling *that* close
+    stranded the app: the tray icon was already stopped, so the process kept
+    running with no window and no icon -- nothing to click, nothing to quit --
+    while the single-instance lock told the next launch it was already running.
+    ``stopping`` is set only by ``quit()``, so it is the one signal that
+    separates "the user pressed X" from "the app is going away".
+    """
+    if controller.stopping.is_set():
+        return True
+    on_native_minimize(controller)
+    return False
 
 
 def on_native_minimize(controller: Any) -> None:

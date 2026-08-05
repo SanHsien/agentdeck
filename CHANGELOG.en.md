@@ -6,6 +6,15 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
+## [0.37.2] - 2026-08-05
+
+### Fixed
+- **Quit did not actually quit**: `quit()` shuts the window down with `destroy()`, and `destroy()` fires `closing` just like the X does — so the close-to-tray handler added in 0.37.0 cancelled it. That left the worst possible state: the tray icon was already stopped and the window hidden, but the process kept running with **nothing to click and no way out**, while the single-instance lock told the next launch it was already running. `stopping`, which only `quit()` sets, now separates "the user pressed X" from "the app is going away".
+- **Clicking the tray icon brought back only a taskbar button, needing a second click**: the title bar's minimize sets the window iconic *before* our handler hides it, so it ends up hidden and minimized at once. `show()` restores visibility but not the iconic state, which is why only a taskbar button appeared. `show()` is now followed by `restore()`; the order cannot be swapped, because `restore()` does nothing to a window that is still hidden.
+
+### Maintenance
+- `on_closing` moved into `panels/window_visibility.py` next to `on_native_minimize`, bringing `wintray.py` back under its 1900-line ceiling instead of raising the ceiling.
+
 ## [0.37.1] - 2026-08-05
 
 ### Fixed

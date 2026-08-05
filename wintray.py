@@ -702,16 +702,7 @@ class _WindowsTrayController:
         self.refresh()
 
     def on_closing(self) -> bool:
-        """Send the window to the tray instead of quitting.
-
-        Returning False cancels the close: pywebview's ``closing`` event is
-        cancellable, and the winforms backend sets ``args.Cancel`` when any
-        handler says so. Quitting from the title bar would be a trap -- the
-        tray icon is how this app is meant to be dismissed and recalled, and a
-        stray click on X should not end the session that is tracking quota.
-        """
-        window_visibility.on_native_minimize(self)
-        return False
+        return bool(window_visibility.on_closing(self))
 
     def on_minimized(self) -> None:
         window_visibility.on_native_minimize(self)
