@@ -20,7 +20,6 @@ GITHUB_RELEASES_API = "https://api.github.com/repos/SanHsien/agentdeck/releases/
 class ReleaseInfo:
     version: str
     html_url: str
-    body: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -135,13 +134,10 @@ def _release_from_payload(payload: Any) -> ReleaseInfo | None:
 
     tag_name = payload.get("tag_name")
     html_url = payload.get("html_url")
-    body = payload.get("body", "")
     if not isinstance(tag_name, str) or not isinstance(html_url, str):
         return None
-    if not isinstance(body, str):
-        body = ""
 
     version = tag_name.removeprefix("v")
     if _parse_version(version) is None:
         return None
-    return ReleaseInfo(version=version, html_url=html_url, body=body)
+    return ReleaseInfo(version=version, html_url=html_url)

@@ -69,7 +69,6 @@ def test_check_latest_release_offers_final_to_beta_user(
     assert update_checker.check_latest_release("0.11.0-beta.1") == update_checker.ReleaseInfo(
         version="0.11.0",
         html_url="https://example.test/release",
-        body="notes",
     )
 
 
@@ -90,7 +89,6 @@ def test_check_latest_release_parses_newer_release(monkeypatch: pytest.MonkeyPat
     assert release == update_checker.ReleaseInfo(
         version="0.10.2",
         html_url="https://example.test/release",
-        body="notes",
     )
     assert captured["timeout"] == 1.5
     assert captured["request"].full_url == (

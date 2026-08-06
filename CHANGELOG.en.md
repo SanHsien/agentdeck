@@ -6,6 +6,12 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
+## [0.37.3] - 2026-08-05
+
+### Changed
+- **The update prompt now shows only the version and the download address**, not the full release notes. A `MessageBoxW` has no scrollbar, so a whole changelog turned the dialog into a wall of Markdown the user had to read past to reach the buttons — and those notes are one click away on the page this very dialog offers to open. The prompt only has to answer two things: what is new, and where to get it.
+- Removed `ReleaseInfo.body` and `UPDATE_PROMPT_BODY_LIMIT` along with it; their only reason to exist was the text just taken out.
+
 ## [0.37.2] - 2026-08-05
 
 ### Fixed

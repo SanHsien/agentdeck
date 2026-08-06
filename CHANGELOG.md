@@ -5,6 +5,12 @@
 本檔記錄 agentdeck 所有重要變更。格式參考 [Keep a Changelog](https://keepachangelog.com/)，
 版號遵循[語意化版本 2.0.0](https://semver.org/lang/zh-TW/)。
 
+## [0.37.3] - 2026-08-05
+
+### 變更
+- **更新提醒只顯示版本與下載網址**，不再整段貼出 release notes。`MessageBoxW` 沒有捲軸，整份更新說明會把這個對話框變成一面要讀完才看得到按鈕的 Markdown 牆——而那些說明就在這個對話框正要幫你開的頁面上，一鍵可達。提醒只需要回答兩件事:有什麼新版、在哪裡拿。
+- 順帶移除 `ReleaseInfo.body` 與 `UPDATE_PROMPT_BODY_LIMIT`——它們存在的唯一理由就是剛剛拿掉的那段內容。
+
 ## [0.37.2] - 2026-08-05
 
 ### 修正

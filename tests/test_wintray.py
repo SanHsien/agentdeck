@@ -1269,3 +1269,35 @@ def test_quit_is_not_cancelled_by_the_close_to_tray_handler() -> None:
     assert calls == ["icon.stop", "destroy"]
     assert controller.on_closing() is True, "quit's own close must not be cancelled"
     assert "hide" not in calls, "quitting must not fall back to hiding the window"
+
+
+def test_update_prompt_shows_the_version_and_address_not_the_release_notes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A MessageBoxW has no scrollbar, so pasting a full changelog in turned
+    the prompt into a wall of Markdown the user had to read past to reach the
+    buttons -- and the notes are one click away on the page this dialog offers
+    to open."""
+    shown: list[str] = []
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+
+    def capture(text: str, **_: object) -> int:
+        shown.append(text)
+        return 2  # IDCANCEL -- "later", the choice that changes no state
+
+    monkeypatch.setattr(controller, "_message_box", capture)
+    release = SimpleNamespace(
+        version="9.9.9",
+        html_url="https://example.test/releases/tag/v9.9.9",
+        # Present on the real object; the prompt must simply not reach for it.
+        body="## Changed\n- a very long changelog that must stay out of the box",
+    )
+
+    controller._show_update_prompt(release)
+
+    assert shown, "the prompt was never shown"
+    text = shown[0]
+    assert "9.9.9" in text
+    assert "https://example.test/releases/tag/v9.9.9" in text
+    assert _t(controller.language, "update_btn_download") in text
+    assert "changelog" not in text, "release notes are back in the prompt"

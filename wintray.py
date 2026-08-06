@@ -61,7 +61,6 @@ _TALENT_ACTIONS = frozenset(
     {"install_role", "restore_role", "ignore_drift", "set_folder", "launch_role"}
 )
 # Matches upstream's UPDATE_ALERT_BODY_LIMIT so both hosts truncate alike.
-UPDATE_PROMPT_BODY_LIMIT = 2000
 
 SLOW_POLL_INTERVAL_S = 300
 HISTORY_SCAN_CACHE_SECONDS = 30.0
@@ -1393,9 +1392,13 @@ class _WindowsTrayController:
                 f"[{_t(self.language, 'update_btn_later')}]  →  Cancel / Esc",
             )
         )
-        body = release.body[:UPDATE_PROMPT_BODY_LIMIT]
+        # Deliberately not the release notes. A MessageBoxW has no scrollbar, so
+        # a full changelog turned this prompt into a wall of Markdown the user
+        # had to read past to reach the buttons -- and the notes are one click
+        # away on the page this very dialog offers to open. Version and address
+        # are all the prompt has to answer: what is new, and where is it.
         choice = self._message_box(
-            f"{title}\n\n{body}\n\n{legend}", style=MB_YESNOCANCEL | MB_ICON_INFO
+            f"{title}\n\n{release.html_url}\n\n{legend}", style=MB_YESNOCANCEL | MB_ICON_INFO
         )
         action, updates = update_gate.resolve_message_box_choice(choice, release.version)
 

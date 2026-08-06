@@ -64,7 +64,7 @@ def test_build_check_cache_entry_with_release(monkeypatch: pytest.MonkeyPatch) -
 
     result = update_gate.build_check_cache_entry(
         "0.11.3",
-        update_checker.ReleaseInfo(version="0.12.0", html_url="https://x/v0.12.0", body=""),
+        update_checker.ReleaseInfo(version="0.12.0", html_url="https://x/v0.12.0"),
     )
 
     assert result == {
