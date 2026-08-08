@@ -312,3 +312,24 @@ PyInstaller **不在 `uv.lock` 裡**，是用 `uv pip install pyinstaller` 另�
 **留下兩道閘門**：`tests/test_i18n_traditional.py`（繁中字體）與 `test_i18n_key_parity.py` 新增的兩條。字體那條是字元黑名單、不是轉換器——它不可能知道「分布」該是「分佈」，但簡體專用字一出現就會紅。繁簡同形字（目、置、配、段、消、加、字、周、布、余、退）刻意排除在外，還多寫一條測試守著這件事:**會對正確文字誤報的檢查，最後會被關掉而不是被修好**。
 
 **驗證方式**：兩道閘門都注入錯誤實測會紅、還原會綠；價目表修完再次與線上快取全表比對，8 個模型零差異。
+
+---
+
+## D-17：越過審視順序先移植上游資安修正 `537e56f`
+
+**日期**：2026-08-08
+
+**決定**：上游 `537e56f`（收緊狀態列輸出、發版流程與網路讀取的信任邊界）不排隊等常規審視，立即移植六項全部。`last_merged` 推進到 `537e56f`，但 `last_reviewed` **維持 73b71d4**——中間十幾筆還沒看過，把標記一起往前推等於謊稱已審視。上游檢查工具只依 `last_reviewed` 報告，所以這樣做不會漏掉任何一筆。
+
+**每一項都先在本機重現，不是照著上游描述套用**：
+
+- **狀態列 ANSI 注入**（`usage_statusline.py`）——實測成立。惡意 repo 的 `.git/HEAD` 裡，ref 名稱之後全是攻擊者可控文字；寫入 `\x1b[2K\r` 就能清掉整行狀態列並印出偽造的配額讀數。門檻只是「解開一包 repo、cd 進去、開 Claude Code」，不需事先取得執行權。`safe_text()` 只濾控制字元、不動內容——修完偽造文字仍在，但變成分支欄位裡的惰性純文字。這是正確的邊界：repo 可以有奇怪的分支名，不可以驅動終端機。
+- **`javascript:` 更新網址**（`update_checker.py`）——`html_url` 未驗 scheme 就交給 `webbrowser.open()`。實測 `javascript:` 與 `http://` 現在都會被拒。這條在本 fork 特別要緊：v0.37.3 才剛把這個網址放到更新對話框最顯眼的位置，當成「可以信任、點下去」的東西。
+- **四處無上限網路讀取**（`pricing`、`service_status`、`update_checker`、`providers/agy_quota_probe`）——`urlopen().read()` 不帶參數就是「對方送多少收多少」。改為讀「上限+1」後拒絕。本 fork 另有上游沒有的第五處 `tools/check_upstream_updates.py`，一併處理。
+- **逐字稿權限**（`council/discussion_bridge.py`）——這項**沒有照抄，先做了對照實驗**。`os.chmod` 在 Windows 只切換唯讀屬性，直覺上 POSIX 的修法應該無效。實測結果相反：CPython 3.13 的 `mkdir(mode=0o700)` 在 Windows 上會建立真正的限制性 DACL。無 mode 建立的目錄會繼承 `BUILTIN\Users:(I)(OI)(CI)(RX)`，帶 mode 建立的則沒有，裡面的檔案也沒有。**因此上游的修法原封不動就能移植,我原本寫的 `icacls` 輔助函式是多餘的,寫完就刪掉。** 這件事在本機不是理論問題——`~/.agentdeck` 上有一條明確的 `CodexSandboxUsers:(RX)`，逐字稿目錄本來會整條繼承。
+- **`release.yml` 的 shell 插值**——三處 `${{ }}` 直接插進 `run:`，其中 `inputs.tag` 在 `workflow_dispatch` 時是觸發者輸入的任意字串，而同一個 job 帶著寫入權杖。全改走 `env:`。順手掃了全部七個 workflow，其餘本來就乾淨。
+- **遮蔽名單**（`council/discussion_cli.py`）——補 `COOKIE`／`PRIVATE`／`PAT`，`PAT` 用 `(?!H)` 排除 `PATH`：直接加會把 PATH 的值從所有錯誤訊息裡整段遮掉，而**會摧毀診斷資訊的過濾器最後會被關掉，不會被調整**。
+
+**順帶修掉的**：`pricing.py` 與 `service_status.py` 的 `USER_AGENT` 還是 `"usage/0.9"`——既是舊程式名，又把版號凍在 0.9,而且是發送給外部服務的識別字串。v0.37.1 的品牌閘門只看 `i18n.json`，看不到這裡。
+
+**測試替身的教訓**：四個 `FakeResponse.read()` 都不收參數，與真實 `HTTPResponse.read(amt)` 介面不符——加上讀取上限後它們立刻炸了 15 條測試。**比真實介面寬鬆的替身，會讓真實介面上的 bug 永遠測不出來**；這和上游 `57f207b` 用 `dict` 當 `NSDictionary` 替身踩到的是同一件事。

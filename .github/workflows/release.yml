@@ -21,16 +21,25 @@ jobs:
       contents: write
 
     steps:
+      # Every ${{ }} below goes through env: rather than into the script text.
+      # Interpolation happens before the shell ever runs, so a tag containing
+      # shell syntax would execute as code in a job that holds a write token --
+      # and on workflow_dispatch the tag is whoever triggered it types.
       - name: Resolve ref
         id: ref
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          GIT_REF: ${{ github.ref }}
+          GIT_REF_NAME: ${{ github.ref_name }}
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "ref=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
-            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "ref=$INPUT_TAG" >> "$GITHUB_OUTPUT"
+            echo "tag=$INPUT_TAG" >> "$GITHUB_OUTPUT"
           else
-            echo "ref=${{ github.ref }}" >> "$GITHUB_OUTPUT"
-            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+            echo "ref=$GIT_REF" >> "$GITHUB_OUTPUT"
+            echo "tag=$GIT_REF_NAME" >> "$GITHUB_OUTPUT"
           fi
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -55,8 +64,10 @@ jobs:
       # closes the last gap: a tag pointing at a commit whose version differs.
       - name: Check the tag matches the built executable
         shell: pwsh
+        env:
+          RELEASE_TAG: ${{ steps.ref.outputs.tag }}
         run: |
-          $tag = "${{ steps.ref.outputs.tag }}" -replace '^v', ''
+          $tag = $env:RELEASE_TAG -replace '^v', ''
           $doctor = & ./dist/agentdeck-windows/agentdeck.exe --doctor 2>&1 | Out-String
           if ($doctor -notmatch "agentdeck v([0-9]+\.[0-9]+\.[0-9]+)") {
             throw "agentdeck.exe --doctor did not report a version. Output:`n$doctor"
@@ -73,5 +84,7 @@ jobs:
       - name: Upload to release
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.ref.outputs.tag }}
         shell: bash
-        run: gh release upload "${{ steps.ref.outputs.tag }}" dist/agentdeck-windows.zip dist/agentdeck-windows.zip.sha256 --clobber
+        run: |
+          gh release upload "$RELEASE_TAG"             dist/agentdeck-windows.zip dist/agentdeck-windows.zip.sha256 --clobber

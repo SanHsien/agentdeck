@@ -939,3 +939,23 @@ def test_custom_command_modes_keep_prompt_as_separate_argv() -> None:
     )
     with pytest.raises(ValueError, match="explicit opt-in"):
         discussion_cli.build_login_shell_invocation("tool", prompt, opt_in=False)
+
+
+def test_redaction_covers_cookies_private_and_pat_without_eating_path() -> None:
+    """PAT must not match PATH: PATH's value appears in most error messages,
+    and redacting it would gut the diagnostics the council surfaces -- a filter
+    that destroys error messages gets turned off rather than tightened."""
+    environment = {
+        "GITHUB_PAT": "ghp_secret_value_1",
+        "SESSION_COOKIE": "cookie_value_abc",
+        "MY_PRIVATE_KEY": "private_value_xyz",
+        "PATH": "/usr/local/bin:/usr/bin:/bin",
+    }
+    message = " ".join(environment.values())
+
+    redacted = discussion_cli._redact_environment_values(message, environment)
+
+    assert "ghp_secret_value_1" not in redacted
+    assert "cookie_value_abc" not in redacted
+    assert "private_value_xyz" not in redacted
+    assert "/usr/local/bin:/usr/bin:/bin" in redacted, "PATH is diagnostics, not a secret"

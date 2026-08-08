@@ -42,8 +42,10 @@ class FakeResponse:
     def __exit__(self, *args: object) -> None:
         return None
 
-    def read(self) -> bytes:
-        return self.body
+    def read(self, amt: int | None = None) -> bytes:
+        # Real HTTPResponse.read takes an optional size. A double that refuses
+        # it hides every capped read the production code performs.
+        return self.body if amt is None else self.body[:amt]
 
 
 def _entry(
@@ -873,3 +875,23 @@ def test_missing_model_resolution_rechecks_after_pricing_object_replaced(
     assert pricing.is_model_priced("glm-5.2") is True
     assert pricing.calculate_cost(_entry(model="glm-5.2", input_tokens=2)) == 2.0
     assert resolve_calls == 2
+
+
+def test_an_oversized_pricing_response_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The LiteLLM table is a few MB and read straight into memory; with no
+    cap, a broken or hostile mirror decides how much this process allocates."""
+
+    class Endless:
+        def __enter__(self) -> Endless:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            return None
+
+        def read(self, amt: int | None = None) -> bytes:
+            size = amt if amt is not None else pricing.MAX_RESPONSE_BYTES * 4
+            return b"{" + b"x" * (size - 1)
+
+    monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **k: Endless())
+
+    assert pricing._fetch_pricing() is None

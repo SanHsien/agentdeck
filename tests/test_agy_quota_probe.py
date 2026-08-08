@@ -49,8 +49,10 @@ class _FakeResponse:
     def __exit__(self, *_exc: object) -> None:
         return None
 
-    def read(self) -> bytes:
-        return self._data
+    def read(self, amt: int | None = None) -> bytes:
+        # Real HTTPResponse.read takes an optional size. A double that refuses
+        # it hides every capped read the production code performs.
+        return self._data if amt is None else self._data[:amt]
 
 
 def _build_urlopen(

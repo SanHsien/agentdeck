@@ -27,8 +27,10 @@ class FakeResponse:
     def __exit__(self, *args: object) -> None:
         return None
 
-    def read(self) -> bytes:
-        return self._body
+    def read(self, amt: int | None = None) -> bytes:
+        # Real HTTPResponse.read takes an optional size. A double that refuses
+        # it hides every capped read the production code performs.
+        return self._body if amt is None else self._body[:amt]
 
 
 @pytest.fixture(autouse=True)

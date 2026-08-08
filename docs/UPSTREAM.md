@@ -32,8 +32,8 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "branches": {
     "main": {
       "last_reviewed": "73b71d4",
-      "last_merged": "bc28b5a",
-      "note": "審視至上游 v0.29.18；移植離線價目表修正、zh-TW 簡體字修正與兩條 i18n 檢查概念，其餘逐筆理由見 Skipped"
+      "last_merged": "537e56f",
+      "note": "審視至上游 v0.29.18（73b71d4）。537e56f 是資安修正，越過順序先行移植——因此 last_merged 比 last_reviewed 新，73b71d4..537e56f 之間仍未審視，下次會照常被列出。"
     }
   }
 }

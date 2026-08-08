@@ -83,7 +83,7 @@ def load_sync_points(path: Path = UPSTREAM_MD) -> dict[str, Any]:
 def _request(url: str, token: str | None) -> Any:
     headers = {
         "Accept": "application/vnd.github+json",
-        "User-Agent": "usage-upstream-check",
+        "User-Agent": "agentdeck-upstream-check",
     }
     if token:
         headers["Authorization"] = f"Bearer {token}"

@@ -5,6 +5,24 @@
 本檔記錄 agentdeck 所有重要變更。格式參考 [Keep a Changelog](https://keepachangelog.com/)，
 版號遵循[語意化版本 2.0.0](https://semver.org/lang/zh-TW/)。
 
+## [0.37.5] - 2026-08-08
+
+### 安全性
+- **惡意 repo 可以竄改狀態列**：`.git/HEAD` 裡 ref 名稱之後全是攻擊者可控文字，寫入 `\x1b[2K\r` 就能清掉整行狀態列、印出偽造的配額讀數。門檻只是「解開一包 repo、cd 進去、開 Claude Code」，**不需要事先取得任何執行權**。新增 stdlib-only 的 `safe_text()` 過濾四個外部字串點（目錄名、分支名、模型名、更新版本號）。它只濾控制字元、不動內容——修完偽造文字仍在，但變成分支欄位裡的惰性純文字:repo 可以有奇怪的分支名，不可以驅動終端機。
+- **更新網址未驗證 scheme 就交給瀏覽器開啟**：`javascript:` 值可以組進 release 資料裡。現在只接受 `https://`。這條在本 fork 特別要緊——v0.37.3 才剛把這個網址放到更新對話框最顯眼的位置。
+- **五處網路讀取沒有上限**：`urlopen().read()` 不帶參數就是對方送多少收多少。`pricing`、`service_status`、`update_checker`、`providers/agy_quota_probe` 與 `tools/check_upstream_updates` 全部改為讀「上限+1」後拒絕。
+- **AI 圓桌逐字稿的目錄權限**：逐字稿含完整對話與專案路徑。目錄改以 `mode=0o700` 建立、檔案 `0o600`。這在 Windows 上**不是裝飾**:實測 CPython 3.13 會把 mode 轉成真正的 DACL——不帶 mode 建立的目錄會繼承 `BUILTIN\Users:(RX)`，帶 mode 的不會。
+- **發版流程的 shell 插值**：`release.yml` 有三處 `${{ }}` 直接插進 `run:`，其中 `inputs.tag` 在 `workflow_dispatch` 時是觸發者輸入的任意字串，而同一個 job 帶著寫入權杖。全改走 `env:` 中介。
+- **遮蔽名單補 `COOKIE`／`PRIVATE`／`PAT`**：`PAT` 用 `(?!H)` 排除 `PATH`——直接加會把 PATH 的值從所有錯誤訊息裡整段遮掉，而會摧毀診斷資訊的過濾器最後會被關掉，不會被調整。
+
+（以上移植自上游 `537e56f`，每一項都先在本機重現才動手。）
+
+### 修正
+- **`pricing` 與 `service_status` 的 User-Agent 還是 `usage/0.9`**：既是舊程式名、又把版號凍在 0.9，而且是發送給外部服務的識別字串。v0.37.1 的品牌閘門只看 `i18n.json`，看不到這裡。
+
+### 維護
+- **四個 `FakeResponse` 測試替身的 `read()` 不收參數**，與真實 `HTTPResponse.read(amt)` 介面不符，加上讀取上限後立刻炸了 15 條測試。比真實介面寬鬆的替身，會讓真實介面上的 bug 永遠測不出來。
+
 ## [0.37.4] - 2026-08-08
 
 ### 修正

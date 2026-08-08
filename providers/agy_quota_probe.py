@@ -59,6 +59,9 @@ def _user_agent() -> str:
 
 
 _USER_AGENT = _user_agent()
+# Both endpoints return small JSON objects; cap the read so a broken or hostile
+# endpoint cannot make us buffer an unbounded response.
+_MAX_RESPONSE_BYTES = 4 * 1024 * 1024
 
 # In-memory cache of a refreshed access token so each probe does not re-refresh.
 # Holds {"access_token": str, "expires_monotonic": float}.
@@ -337,7 +340,10 @@ def _refresh_token(refresh_token: str, timeout: float) -> tuple[str, int] | None
     )
     try:
         with urlopen(request, timeout=timeout) as response:
-            payload = json.load(response)
+            raw = response.read(_MAX_RESPONSE_BYTES + 1)
+        if len(raw) > _MAX_RESPONSE_BYTES:
+            raise ValueError("token response exceeds the size limit")
+        payload = json.loads(raw)
     except HTTPError as exc:
         _handle_http_error(exc)
         return None
@@ -368,7 +374,10 @@ def _post_json(url: str, access_token: str, body: dict[str, object], timeout: fl
     )
     try:
         with urlopen(request, timeout=timeout) as response:
-            return json.load(response)
+            raw = response.read(_MAX_RESPONSE_BYTES + 1)
+        if len(raw) > _MAX_RESPONSE_BYTES:
+            raise ValueError("quota response exceeds the size limit")
+        return json.loads(raw)
     except HTTPError as exc:
         _handle_http_error(exc)
         return None

@@ -6,6 +6,24 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
+## [0.37.5] - 2026-08-08
+
+### Security
+- **A hostile repository could rewrite the status line**: everything after the ref name in `.git/HEAD` is attacker-controlled text, and `\x1b[2K\r` erases the whole line so the repo can print a forged quota reading in its place. The threshold is "unzip a repo, cd in, open Claude Code" — **no prior code execution required**. A stdlib-only `safe_text()` now filters the four external string sites (directory name, branch name, model name, update version). It drops control characters, not content: the forged text survives as inert content inside the branch field, which is the right boundary — a repo may have a strange branch name, it may not drive the terminal.
+- **The update URL went to the browser without a scheme check**: a `javascript:` value could be assembled into the release payload. Only `https://` is accepted now. This matters especially here — v0.37.3 had just made that address the most prominent thing in the update prompt.
+- **Five unbounded network reads**: `urlopen().read()` with no argument buffers whatever the endpoint sends. `pricing`, `service_status`, `update_checker`, `providers/agy_quota_probe` and `tools/check_upstream_updates` now read the cap plus one byte and refuse.
+- **AI Council transcript directory permissions**: transcripts carry full conversation text and project paths. The directory is created with `mode=0o700` and files with `0o600`. This is **not decorative on Windows**: CPython 3.13 turns the mode into a real DACL — a directory created without it inherits `BUILTIN\Users:(RX)`, one created with it does not.
+- **Shell interpolation in the release workflow**: `release.yml` had three `${{ }}` expressions inside `run:` blocks, and on `workflow_dispatch` `inputs.tag` is arbitrary text from whoever triggered it, in a job holding a write token. All of them now go through `env:`.
+- **Redaction list gained `COOKIE`, `PRIVATE` and `PAT`**: `PAT` uses `(?!H)` to exclude `PATH` — adding it plainly would redact the PATH value out of every error message, and a filter that destroys diagnostics gets switched off rather than tightened.
+
+(Ported from upstream `537e56f`; every item was reproduced locally before being changed.)
+
+### Fixed
+- **`pricing` and `service_status` still sent `usage/0.9` as their User-Agent**: the old product name, a version frozen at 0.9, and an identifier sent to external services. The branding gate added in v0.37.1 only inspects `i18n.json` and could not see it.
+
+### Maintenance
+- **Four `FakeResponse` test doubles took no argument to `read()`**, unlike the real `HTTPResponse.read(amt)`; adding the size caps broke 15 tests immediately. A double more permissive than the real interface hides every bug that lives on that interface.
+
 ## [0.37.4] - 2026-08-08
 
 ### Fixed

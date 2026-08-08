@@ -14,6 +14,9 @@ from dataclasses import dataclass
 from typing import Any
 
 GITHUB_RELEASES_API = "https://api.github.com/repos/SanHsien/agentdeck/releases/latest"
+# A release payload is tens of KB; cap the read so a broken or hostile endpoint
+# cannot make us buffer an unbounded response.
+MAX_RESPONSE_BYTES = 4 * 1024 * 1024
 
 
 @dataclass(frozen=True, slots=True)
@@ -107,11 +110,14 @@ def check_latest_release_result(
     )
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
-            payload = json.loads(response.read().decode("utf-8"))
+            raw = response.read(MAX_RESPONSE_BYTES + 1)
+        if len(raw) > MAX_RESPONSE_BYTES:
+            raise ValueError("release response exceeds the size limit")
+        payload = json.loads(raw.decode("utf-8"))
     except (
         OSError,
         UnicodeDecodeError,
-        json.JSONDecodeError,
+        ValueError,
         urllib.error.URLError,
         urllib.error.HTTPError,
     ):
@@ -135,6 +141,10 @@ def _release_from_payload(payload: Any) -> ReleaseInfo | None:
     tag_name = payload.get("tag_name")
     html_url = payload.get("html_url")
     if not isinstance(tag_name, str) or not isinstance(html_url, str):
+        return None
+    # This URL is handed to webbrowser.open(). Anything but https is not a
+    # release page -- a javascript: value would execute rather than navigate.
+    if not html_url.startswith("https://"):
         return None
 
     version = tag_name.removeprefix("v")

@@ -31,7 +31,7 @@ LEGACY_CACHE_PATH = DEFAULT_LEGACY_CACHE_PATH
 CACHE_TTL_DAYS = 7
 FALLBACK_RETRY_SECONDS = 600
 MISSING_MODEL_REFRESH_SECONDS = FALLBACK_RETRY_SECONDS
-USER_AGENT = "usage/0.9"
+USER_AGENT = "agentdeck"
 PROVIDER_PREFIXES = (
     "openai/",
     "anthropic/",
@@ -267,12 +267,20 @@ def _read_cache(*, allow_stale: bool = False) -> PricingTable | None:
     return None
 
 
+# The upstream table is a few MB; cap the read so a broken or hostile endpoint cannot make us
+# buffer an unbounded response.
+MAX_RESPONSE_BYTES = 16 * 1024 * 1024
+
+
 def _fetch_pricing() -> PricingTable | None:
     request = urllib.request.Request(LITELLM_PRICING_URL, headers={"User-Agent": USER_AGENT})
     try:
         with urllib.request.urlopen(request, timeout=10) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError, TimeoutError):
+            raw = response.read(MAX_RESPONSE_BYTES + 1)
+        if len(raw) > MAX_RESPONSE_BYTES:
+            raise ValueError("pricing response exceeds the size limit")
+        payload = json.loads(raw.decode("utf-8"))
+    except (OSError, UnicodeDecodeError, ValueError, TimeoutError):
         if os.environ.get("AGENTDECK_DEBUG") == "1":
             logger.warning("failed to fetch pricing from %s", LITELLM_PRICING_URL, exc_info=True)
         return None

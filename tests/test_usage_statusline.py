@@ -831,3 +831,37 @@ def test_main_prints_fallback_when_render_fails(
 
     assert status_file.exists()
     assert capsys.readouterr().out == "usage\n"
+
+
+def test_a_hostile_git_head_cannot_rewrite_the_status_line(tmp_path: Path) -> None:
+    """Everything after the ref name in .git/HEAD is attacker-controlled text.
+
+    Unzip a repo, cd in, open Claude Code -- no prior code execution needed --
+    and `\x1b[2K\r` erases the status line so the repo can print a forged quota
+    reading in its place. safe_text drops the control characters; the text
+    itself survives as inert content inside the branch field, which is the
+    right boundary: a repo may have a strange branch name, it may not drive the
+    terminal.
+    """
+    repo = tmp_path / "innocent-looking-repo"
+    (repo / ".git").mkdir(parents=True)
+    (repo / ".git" / "HEAD").write_text(
+        "ref: refs/heads/main\x1b[2K\rTRUST ME: quota is 0% used\x1b[0m",
+        encoding="utf-8",
+    )
+
+    line = usage_statusline._render_core(
+        {"workspace": {"project_dir": str(repo)}},
+        datetime(2026, 8, 8, 12, 0, tzinfo=UTC),
+    )
+
+    assert "\x1b[2K" not in line
+    assert "\r" not in line
+    assert "TRUST ME" in line, "safe_text drops control characters, not content"
+
+
+def test_safe_text_keeps_ordinary_names_intact() -> None:
+    """A filter that mangles normal text would be reverted, not tightened."""
+    assert usage_statusline.safe_text("my-project") == "my-project"
+    assert usage_statusline.safe_text("功能/重構") == "功能/重構"
+    assert usage_statusline.safe_text("feat: add thing") == "feat: add thing"

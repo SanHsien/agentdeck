@@ -25,8 +25,10 @@ class FakeResponse:
     def __exit__(self, *args: object) -> None:
         return None
 
-    def read(self) -> bytes:
-        return self.body
+    def read(self, amt: int | None = None) -> bytes:
+        # Real HTTPResponse.read takes an optional size. A double that refuses
+        # it hides every capped read the production code performs.
+        return self.body if amt is None else self.body[:amt]
 
 
 def test_compare_versions_orders_numeric_versions() -> None:
@@ -142,3 +144,41 @@ def test_check_latest_release_returns_none_for_network_error(
 
     assert update_checker.check_latest_release("0.10.1") is None
     assert update_checker.check_latest_release_result("0.10.1").failed is True
+
+
+def test_a_non_https_release_url_is_refused() -> None:
+    """The URL is handed to webbrowser.open(). A javascript: value would
+    execute rather than navigate, and the update prompt now puts this address
+    in front of the user as the thing to trust."""
+    hostile = {
+        "tag_name": "v99.0.0",
+        "html_url": "javascript:alert(document.cookie)//github.com/x/releases",
+    }
+    plain_http = {"tag_name": "v99.0.0", "html_url": "http://github.com/x/releases/tag/v99"}
+    good = {"tag_name": "v99.0.0", "html_url": "https://github.com/x/releases/tag/v99"}
+
+    assert update_checker._release_from_payload(hostile) is None
+    assert update_checker._release_from_payload(plain_http) is None
+    assert update_checker._release_from_payload(good) is not None
+
+
+def test_an_oversized_release_response_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    """urlopen().read() with no argument buffers whatever the endpoint sends."""
+
+    class Endless:
+        def __enter__(self) -> Endless:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            return None
+
+        def read(self, amt: int | None = None) -> bytes:
+            size = amt if amt is not None else update_checker.MAX_RESPONSE_BYTES * 4
+            return b"{" + b"x" * (size - 1)
+
+    monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **k: Endless())
+
+    result = update_checker.check_latest_release_result("0.1.0")
+
+    assert result.release is None
+    assert result.failed is True
