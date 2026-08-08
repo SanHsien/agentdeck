@@ -6,6 +6,21 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
+## [0.37.6] - 2026-08-08
+
+### Fixed
+- **Two error messages told you to run a command you do not have**: when the status line stops updating or the status file is missing, they said to run `python3 main.py --setup` — but you run `agentdeck.exe`, and the panel already has a "Set Up Status Line" button. They now point at that button. Same class of mistake as the `usage setup` text fixed in v0.37.1, which missed these two.
+- **The talent market's empty state told you to "rebuild the .app"**: `.app` is a macOS artefact and this app is Windows-only; the same sentence also used "role marketplace", a term nothing else in the UI uses (every other `talent_*` string says talent market).
+
+### Security
+- **`SECURITY.md` now lists every outbound connection**: endpoint, when it fires, and the constant that governs it (`service_status.CACHE_TTL_SECONDS`, `pricing.CACHE_TTL_DAYS`, `update_gate.AUTO_CHECK_TTL_SECONDS`). The cadences were read out of the code rather than copied. It also states that every response is capped by `MAX_RESPONSE_BYTES`, that credential access is read-only and only for Antigravity users, and that `tools/check_upstream_updates.py` is a maintainer CI tool that is never distributed.
+- **Explains why the `GOCSPX-` constant in the source is not a leaked credential**: under RFC 8252 an app installed on a user's machine cannot keep a client secret confidential, so it is a public client and not a security boundary. Something a secret scanner will flag has to ship with the reason it is not a finding.
+
+### Maintenance
+- **Added `tests/test_security_disclosure.py`**: "here is every endpoint this app contacts" is only worth claiming if something enforces it. The gate reads the URLs out of the code and requires each to appear in both language versions; exclusions match host+path rather than host, so `api.openai.com/auth` (a JWT claim key) cannot excuse the whole host.
+- **Added 10 tests for `providers/agy_disk_cache.py`** — the only one of the three disk caches nothing tested. Its entire contract is "recover silently from anything", which is exactly the shape that hides breakage: a cache that stopped loading would look identical to a cold start and simply cost a re-parse every launch.
+- Upstream review advanced to the tip `6a498ea` (including v0.29.19), realigning `last_reviewed` with `last_merged`; the eight commits not adopted are recorded individually in `docs/UPSTREAM.md`.
+
 ## [0.37.5] - 2026-08-08
 
 ### Security

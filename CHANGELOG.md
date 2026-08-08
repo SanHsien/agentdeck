@@ -5,6 +5,21 @@
 本檔記錄 agentdeck 所有重要變更。格式參考 [Keep a Changelog](https://keepachangelog.com/)，
 版號遵循[語意化版本 2.0.0](https://semver.org/lang/zh-TW/)。
 
+## [0.37.6] - 2026-08-08
+
+### 修正
+- **兩則錯誤訊息叫你去跑一個你沒有的指令**：狀態列失效與找不到狀態檔時，訊息寫著「請執行 `python3 main.py --setup`」——但你跑的是 `agentdeck.exe`，而且面板上本來就有「設定狀態列」按鈕。改為指向那顆按鈕。這和 v0.37.1 修掉的 `usage setup` 是同一類錯誤，當時漏了這兩則。
+- **人才市場的空狀態提示叫你「重新打包 .app」**：`.app` 是 macOS 產物，本程式只有 Windows；同一句話還用了「角色市集」這個 UI 別處都不用的舊術語（其餘 `talent_*` 全部寫「人才市場」）。
+
+### 安全性
+- **`SECURITY.md` 現在列出全部對外連線**：端點、觸發時機、以及對應的常數名（`service_status.CACHE_TTL_SECONDS`、`pricing.CACHE_TTL_DAYS`、`update_gate.AUTO_CHECK_TTL_SECONDS`）。時機是從程式碼讀出來的，不是抄來的。同時說明每個回應都有 `MAX_RESPONSE_BYTES` 上限、憑證存取是唯讀且僅限 Antigravity 使用者，以及 `tools/check_upstream_updates.py` 是維護者 CI 工具、不隨程式散布。
+- **說明原始碼裡那個 `GOCSPX-` 常數為什麼不是外洩憑證**：依 RFC 8252，安裝在使用者電腦上的應用程式無法保密 client secret，這是 public client、不構成安全邊界。會被祕密掃描器誤判為漏洞的東西，理由必須跟著程式一起出貨。
+
+### 維護
+- **新增 `tests/test_security_disclosure.py`**：「這是本程式連線的全部端點」只有在有東西強制它為真時才值得寫。這道閘門從程式碼讀出網址，要求每一個都出現在雙語 SECURITY 裡；排除項比對 host+path 而非只比 host，所以 `api.openai.com/auth`（JWT claim 的鍵名）不會順便赦免整個 host。
+- **補上 `providers/agy_disk_cache.py` 的 10 條測試**——三個磁碟快取裡唯一沒被測到的。它整份契約就是「遇到任何錯誤都安靜復原」，正是最會藏壞掉的形狀:徹底失效看起來會跟冷啟動一模一樣，代價只是每次啟動重新解析，沒有任何訊號。
+- 上游審視推進至 tip `6a498ea`（含 v0.29.19），`last_reviewed` 與 `last_merged` 重新對齊；不採用的八筆逐列記在 `docs/UPSTREAM.md`。
+
 ## [0.37.5] - 2026-08-08
 
 ### 安全性

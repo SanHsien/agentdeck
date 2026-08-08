@@ -31,9 +31,9 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "73b71d4",
-      "last_merged": "537e56f",
-      "note": "審視至上游 v0.29.18（73b71d4）。537e56f 是資安修正，越過順序先行移植——因此 last_merged 比 last_reviewed 新，73b71d4..537e56f 之間仍未審視，下次會照常被列出。"
+      "last_reviewed": "6a498ea",
+      "last_merged": "6a498ea",
+      "note": "審視至上游 tip 6a498ea（含 v0.29.19）。已補齊 537e56f 之前被跳過的區間，兩個標記重新對齊。"
     }
   }
 }
@@ -62,6 +62,14 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
 
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
+| main | `ad786a9` | refactor(menubar): 第九刀——四塊搬進葉模組 | 2026-08-08 | 同 `86bde4a`：抽葉模組的概念本 fork 已是既有做法，被重構的 `menubar.py` 我們沒有。 |
+| main | `377aec2` | refactor(menubar): 第十刀——標題渲染與 PopoverViewController 出走 | 2026-08-08 | 同上。 |
+| main | `13eba4d` | chore: 發版 v0.29.19 | 2026-08-08 | 純上游版號；本 fork 版號獨立（D-05）。 |
+| main | `1220a08` | build(deps-dev): bump ruff 0.16.0 → 0.16.1 | 2026-08-08 | 本 fork 的開發相依由自己的 `uv.lock` 與 Dependabot 管理。 |
+| main | `31e8883` | build(deps): bump the codeql-action group | 2026-08-08 | 同上；本 fork 的 workflow 以 SHA 釘選，由自己的 Dependabot 推進。 |
+| main | `cdf43b3` | docs: README 移除 TUI 賣點與失效的 Star History 圖 | 2026-08-08 | 上游自身的行銷文案取捨；本 fork 的 README 已獨立改寫，TUI 仍是本 fork 支援的模式。 |
+| main | `82c7c2a` | docs: README 開頭去複述、AI 協作獨立分組 | 2026-08-08 | 同上。 |
+| main | `4d2d7e1` | docs: 修正日韓數字語序與繁韓翻譯錯誤 | 2026-08-08 | 只動 `README.ja.md`／`README.ko.md`／`README.zh-TW.md`；前兩者本 fork 已移除，第三者對應本 fork 的 `README.md`，該處無對應錯誤。 |
 | main | `86bde4a` | refactor(menubar): 第八刀——_refresh_in_background 抽成 menubar_refresh | 2026-08-08 | 概念（檔案觸頂就把內聚的一塊抽成葉模組，而不是抬高上限）本 fork 已是既有做法，寫在 `scripts/check_file_size.py` 的錯誤訊息裡並實際執行過（v0.37.2 把 `on_closing` 搬進 `panels/window_visibility.py`）；被重構的 `menubar.py` 本 fork 沒有。 |
 | main | `1fd5235` | chore: release v0.29.17 | 2026-08-08 | 純上游版號與 CHANGELOG；本 fork 版號獨立（D-05）。 |
 | main | `57f207b` | fix(panels): 面板高度在 974 與 1004 之間反覆跳動 | 2026-08-08 | 根因是 `NSUserDefaults` 回傳 `NSDictionary` 而 `isinstance(x, dict)` 為 False，存下的實測高度被丟棄。本 fork 的 `_content_height` 只存在記憶體（`wintray.py`），不經任何持久化字典，也沒有「永遠不回報高度」的面板——`panel_html()` 一律注入回報腳本，機制不存在。 |

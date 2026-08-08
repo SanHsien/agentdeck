@@ -333,3 +333,29 @@ PyInstaller **不在 `uv.lock` 裡**，是用 `uv pip install pyinstaller` 另�
 **順帶修掉的**：`pricing.py` 與 `service_status.py` 的 `USER_AGENT` 還是 `"usage/0.9"`——既是舊程式名，又把版號凍在 0.9,而且是發送給外部服務的識別字串。v0.37.1 的品牌閘門只看 `i18n.json`，看不到這裡。
 
 **測試替身的教訓**：四個 `FakeResponse.read()` 都不收參數，與真實 `HTTPResponse.read(amt)` 介面不符——加上讀取上限後它們立刻炸了 15 條測試。**比真實介面寬鬆的替身，會讓真實介面上的 bug 永遠測不出來**；這和上游 `57f207b` 用 `dict` 當 `NSDictionary` 替身踩到的是同一件事。
+
+---
+
+## D-18：補齊 `73b71d4..6a498ea`，兩個追蹤標記重新對齊
+
+**日期**：2026-08-08
+
+**決定**：把 D-17 越過的區間補審完，`last_reviewed` 與 `last_merged` 同時推到上游 tip `6a498ea`。採用 `21d0141`（對外連線揭露、OAuth public client 說明）、`c413af3` 與 `6a498ea` 的 i18n 部分、`8fa5809` 的測試覆蓋概念；其餘八筆逐列記在 [`UPSTREAM.md`](UPSTREAM.md)。
+
+**三個 i18n 字串是本 fork 的實際缺陷，不只是同步**：
+
+- `hook_broken_not_installed` 與 `usage_status_missing` 叫使用者去跑 `python3 main.py --setup`——**我們的使用者跑的是 `agentdeck.exe`，而且面板上就有「設定狀態列」按鈕**（`install_hook`）。這和 v0.37.1 修掉的 `usage setup` 是同一類錯誤，當時漏掉了這兩則。
+- `talent_empty_hint` 一句話裡有兩個缺陷：叫使用者「重新打包 **.app**」（macOS 產物，本 fork 是 Windows-only），以及用「角色市集」這個 UI 別處都不用的舊術語（其餘 `talent_*` 全部寫「人才市場」）。
+
+掃過整份 i18n 找同類問題（`python`／`main.py`／`.app`／`brew`／`sudo`／`Finder`），只剩「終端」這個正常的面板標籤。
+
+**`21d0141` 表面是文件 commit，實際帶了程式改動**——`agy_quota_probe.py` 加了七行註解。這是分流不能只看標題的例子：`docs:` 開頭的 commit 動了 `SECURITY.md`（+34 行）與一個 `.py`。
+
+兩項都採用，而且對本 fork 更要緊：
+
+- **對外連線揭露**：原本 `SECURITY.md` 只有一段散文，指向 README。現在列出全部五類端點、觸發時機，以及對應的常數名（`service_status.CACHE_TTL_SECONDS`、`pricing.CACHE_TTL_DAYS`、`update_gate.AUTO_CHECK_TTL_SECONDS`）——**時機是從程式碼讀出來的，不是抄上游的數字**。上游沒有的 `MAX_RESPONSE_BYTES` 上限與 `tools/check_upstream_updates.py`（維護者工具，不隨程式散布）也一併寫明。
+- **`GOCSPX-` 常數的說明**：`providers/agy_quota_probe.py` 裡有明文 OAuth client secret，對任何掃描 repo 的人（或我們自己跑的 CodeQL／Scorecard）看起來就是外洩憑證。依 RFC 8252，安裝在使用者電腦上的應用程式無法保密 client secret，這是 public client、不構成安全邊界。**會被誤判為漏洞的東西，理由必須跟著程式一起出貨。**
+
+**新增 `tests/test_security_disclosure.py`**：「這是本程式連線的全部端點」這種宣告，只有在有東西強制它為真時才值得寫。散文清單會在下一次有人加 fetch 時安靜過期——程式照跑，文件默默變成一句關於隱私的謊。這道閘門從**程式碼**讀出網址，要求每一個都出現在雙語 SECURITY 裡。排除項比對 host+path 而非只比 host，所以 `api.openai.com/auth`（JWT claim 的鍵名）不會順便赦免整個 `api.openai.com`。實測:注入一個假的 telemetry 端點 → 紅燈。
+
+**`agy_disk_cache` 是三個磁碟快取裡唯一沒有測試的**（`test_disk_cache_shards.py` 只涵蓋 history 與 codex），和上游 `8fa5809` 補的是同一個洞。補了 10 條。這個模組整份契約就是「遇到任何錯誤都安靜復原」——**正是最會藏壞掉的形狀**：每條失敗路徑都靜靜返回，快取徹底失效看起來會跟冷啟動一模一樣，代價只是每次啟動重新解析一次，沒有任何訊號。實測:把 `thinking_tokens` 序列化成 0、把上限淘汰關掉，兩條測試分別紅燈。

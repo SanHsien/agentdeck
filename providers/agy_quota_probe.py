@@ -45,6 +45,14 @@ _KEYRING_BASE64_PREFIX = "go-keyring-base64:"
 _TOKEN_URL = "https://oauth2.googleapis.com/token"
 _QUOTA_URL = "https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary"
 # Antigravity's installed-app public client constants (same values quotio ships).
+#
+# Plain text on purpose. Under RFC 8252 an app installed on a user's machine
+# cannot keep a client secret confidential, so this is a public client, not a
+# security boundary. It is not the user's credential and grants nothing on its
+# own -- the authorization comes from the Antigravity OAuth token already on
+# their machine. Secret scanners flag the GOCSPX- prefix here by design; see
+# SECURITY.md. If Google rotates these, the token request fails, the probe
+# returns None, and only Antigravity quota disappears.
 _CLIENT_ID = "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"
 _CLIENT_SECRET = "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"
 
