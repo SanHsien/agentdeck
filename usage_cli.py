@@ -661,7 +661,7 @@ def main() -> None:
             _show_agent_dashboard(agents[0].id)
         return
 
-    # 其他命令使用合并数据
+    # 其他命令使用合併資料
     agent_names = [a.name for a in agents]
     rest_args, sort_key, sort_desc = _parse_sort_args(args[1:])
 

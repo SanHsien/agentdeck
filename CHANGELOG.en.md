@@ -6,7 +6,19 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
-## [0.37.3] - 2026-08-05
+## [0.37.4] - 2026-08-08
+
+### Fixed
+- **52 strings in the Traditional Chinese UI were actually Simplified**: "暂无数据", "加载数据…", "消息", "会话", "时间", "项目", "总Token", "限额" — across the TUI, the report, the panels and the setup messages. This fork ships only Traditional Chinese and English, Traditional is the default, and **no existing gate could see this**: the key is present, the value is non-empty, the format is valid — a string in the wrong script is still a perfectly valid string. One CHANGELOG line and four code comments were converted as well. (Ported from upstream `843505e`.)
+- **The offline price table had stale Opus prices and no Opus 5 at all**: when the online table cannot be fetched the built-in one takes over, but `claude-opus-4-6`/`4-7` still read $15/$75 (now $5/$25), `claude-haiku-4-5` was 20% under, and `claude-opus-5` **was not in the table** — offline, Opus 5 quietly costed out at $0. The numbers were not copied from upstream but checked entry by entry against this machine's `~/.agentdeck/pricing_cache.json` (2,525 real LiteLLM rows); all 8 models now match it exactly. (Concept from upstream `c33e260`.)
+- Corrected the 0.37.3 release date: it shipped 2026-08-06, not 08-05.
+
+### Maintenance
+- **Added a Traditional-script gate**, `tests/test_i18n_traditional.py`. It is a character blocklist, not a converter — it cannot know that "分布" should be "分佈", but a Simplified-only form fails the build the moment it reappears. Characters shared by both scripts (目, 置, 配, 段, 消, 加, 字, 周, 布, 余, 退) are deliberately excluded, and a second test guards that exclusion: a check that cries wolf on correct text gets switched off rather than fixed.
+- **Two checks added to the i18n key parity test** (concept ported from upstream `bc28b5a`, whose ja/ko data does not apply here): a present-but-empty value passes key parity yet ships a blank label, and a `{placeholder}` that drifts from English makes `.format` raise at runtime — for whoever happens to be reading in that language.
+- Upstream review advanced to v0.29.18 (`73b71d4`); `86bde4a`, `57f207b` and two release chores were not adopted, with reasons recorded individually in `docs/UPSTREAM.md`.
+
+## [0.37.3] - 2026-08-06
 
 ### Changed
 - **The update prompt now shows only the version and the download address**, not the full release notes. A `MessageBoxW` has no scrollbar, so a whole changelog turned the dialog into a wall of Markdown the user had to read past to reach the buttons — and those notes are one click away on the page this very dialog offers to open. The prompt only has to answer two things: what is new, and where to get it.

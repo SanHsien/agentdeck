@@ -277,21 +277,25 @@ def test_normalize_pricing_filters_invalid_models_and_values() -> None:
 def test_fallback_pricing_contains_expected_models() -> None:
     fallback = pricing._fallback_pricing()
 
+    # A model that is absent prices at $0 offline rather than failing loudly,
+    # so the flagship names have to be present -- claude-opus-5 was missing.
+    assert "claude-opus-5" in fallback
+    assert "claude-fable-5" in fallback
     assert "claude-opus-4-7" in fallback
     assert "claude-sonnet-4-6" in fallback
     assert "claude-sonnet-5" in fallback
     assert "claude-haiku-4-5-20251001" in fallback
     assert fallback["claude-opus-4-6"] == {
-        "input_cost_per_token": 15e-6,
-        "output_cost_per_token": 75e-6,
-        "cache_creation_input_token_cost": 18.75e-6,
-        "cache_read_input_token_cost": 1.5e-6,
+        "input_cost_per_token": 5e-6,
+        "output_cost_per_token": 25e-6,
+        "cache_creation_input_token_cost": 6.25e-6,
+        "cache_read_input_token_cost": 0.5e-6,
     }
     assert fallback["claude-opus-4-7"] == {
-        "input_cost_per_token": 15e-6,
-        "output_cost_per_token": 75e-6,
-        "cache_creation_input_token_cost": 18.75e-6,
-        "cache_read_input_token_cost": 1.5e-6,
+        "input_cost_per_token": 5e-6,
+        "output_cost_per_token": 25e-6,
+        "cache_creation_input_token_cost": 6.25e-6,
+        "cache_read_input_token_cost": 0.5e-6,
     }
     assert fallback["claude-sonnet-5"] == {
         "input_cost_per_token": 2e-6,

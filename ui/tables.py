@@ -47,7 +47,7 @@ def _is_light_theme() -> bool:
 
 
 class _S:
-    """语义化样式，根据终端主题自动切换"""
+    """語意化樣式，依終端機主題自動切換"""
     light = _is_light_theme()
     dim = "grey50" if light else "dim"
     token = "dark_cyan" if light else "dim cyan"
@@ -320,12 +320,12 @@ def render_dashboard(
         top_margin=top_margin,
     )
 
-    # --- 本月概览 ---
+    # --- 本月概覽 ---
     if monthly_stats:
         last_month = monthly_stats[-2] if len(monthly_stats) >= 2 else None
         _render_month_overview(monthly_stats[-1], last_month)
 
-    # --- 数据面板 ---
+    # --- 資料面板 ---
     cur_week = weekly_stats[-1] if weekly_stats else None
     last_week = weekly_stats[-2] if len(weekly_stats) >= 2 else None
 
@@ -345,7 +345,7 @@ def render_dashboard(
         elif rate_limits:
             _render_idle_panel(rate_limits, cur_week, last_week)
 
-    # --- 最近会话 ---
+    # --- 最近會話 ---
     if sessions and session_limit > 0:
         _render_recent_sessions(sessions[:session_limit], title=session_title)
 

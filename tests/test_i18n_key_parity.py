@@ -21,8 +21,10 @@ returns ``zh-TW`` or ``en``).
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
+_PLACEHOLDER = re.compile(r"\{[^}]*\}")
 EXPECTED_LANGS = {"zh-TW", "en"}
 I18N_PATH = Path(__file__).resolve().parent.parent / "i18n.json"
 
@@ -48,3 +50,46 @@ def test_every_language_has_the_same_keys() -> None:
         if set(keys) != reference
     }
     assert not mismatches, f"i18n key mismatch vs en: {mismatches}"
+
+
+def test_no_translation_is_blank() -> None:
+    """A present-but-empty value passes key parity yet ships a blank label.
+
+    Ported from upstream ``bc28b5a``, whose ja/ko sections had 63 empty
+    strings each while every key-set check stayed green. This fork does not
+    ship those languages, but the hole the test closes is in the check, not in
+    the data.
+    """
+    bundle = _bundle()
+
+    blanks = {
+        lang: sorted(key for key, value in strings.items() if not value.strip())
+        for lang, strings in bundle.items()
+        if any(not value.strip() for value in strings.values())
+    }
+
+    assert not blanks, f"i18n blank translations: {blanks}"
+
+
+def test_placeholders_match_english() -> None:
+    """A dropped or renamed ``{placeholder}`` makes ``.format`` raise at runtime.
+
+    Key parity cannot see this: both sections have the key, both hold a
+    non-empty string, and the mismatch only surfaces when that one string is
+    formatted -- in whichever language the user happens to be reading.
+    """
+    bundle = _bundle()
+    english = bundle["en"]
+
+    mismatches = {
+        f"{lang}.{key}": {
+            "en": sorted(_PLACEHOLDER.findall(english[key])),
+            lang: sorted(_PLACEHOLDER.findall(value)),
+        }
+        for lang, strings in bundle.items()
+        for key, value in strings.items()
+        if key in english
+        and sorted(_PLACEHOLDER.findall(value)) != sorted(_PLACEHOLDER.findall(english[key]))
+    }
+
+    assert not mismatches, f"i18n placeholder mismatch vs en: {mismatches}"
