@@ -57,6 +57,7 @@ A quota icon appears in the system tray: left-click for the panel, right-click f
 - **Progress Concierge:** Open a new Claude Code session and `agentdeck` hands your last progress straight to the AI, including your last request, uncommitted changes, and unfinished todos. No `/resume`, no recap. Fully local, off by default.
 - **Token Saver:** A tray-menu toggle asks Claude Code and Codex to answer more tersely, saving output tokens while keeping code and error messages byte-exact. A light reminder keeps long conversations from drifting back to verbose — tested to keep late replies ~40% shorter.
 - **Token-waste Health Check:** A daily background diagnosis scans your logs for waste, including repeated file reads, polluter directories, and noisy Bash output. If it finds issues, a one-line heads-up appears; say "show me" and the AI walks you through fixes.
+- **Resume After the Quota Resets:** When the 5-hour allowance runs out mid-task, the work is picked back up once the quota returns, and you get a notification when it finishes. The wait is handed to the Windows scheduler, so a sleeping machine does not miss it; nothing is scheduled once the 7-day figure is high, so one night cannot spend the whole week. Off by default — enable with `"auto_resume": true` in the preferences file.
 
 ### Reporting & Insight
 
@@ -91,9 +92,11 @@ Everything this tool knows lives on your own disk. These are the only things it 
 | `~/.claude/settings.json` | Only the `statusLine` field; the previous value is backed up under `settings["agentdeck"]["previousStatusLine"]` | `--setup` |
 | `~/.agentdeck/` | Caches for pricing, service status and history, plus council and persona state | the app |
 | `~/.agentdeck-reports/` | HTML reports you generate | the app |
+| `~/.agentdeck/autoresume-log.txt` | A record of every auto-resume run | auto-resume |
+| Windows scheduled task `agentdeck-auto-resume` | One-shot trigger waiting for the quota reset; removed after it runs | auto-resume |
 | `~/.claude/projects/`, `~/.codex/sessions/` | Usage sources | **read-only, never written** |
 
-`--unsetup` removes the hook and restores the original `settings.json` value. The cache directory can be deleted at any time; it is rebuilt on next launch.
+`--unsetup` removes the hook and restores the original `settings.json` value. The cache directory can be deleted at any time; it is rebuilt on next launch. Auto-resume is off by default; while it is off no scheduled task is created, and any existing one is removed.
 
 ## Requirements
 

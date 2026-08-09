@@ -39,6 +39,7 @@ def test_parse_args_defaults(monkeypatch: Any) -> None:
     assert args.tui is False
     assert args.setup is False
     assert args.unsetup is False
+    assert args.resume_now is False
     assert args.force_group is None
 
 
@@ -66,6 +67,14 @@ def test_parse_args_setup(monkeypatch: Any) -> None:
     args = _parse_args(monkeypatch, "--setup")
 
     assert args.setup is True
+
+
+def test_parse_args_resume_now(monkeypatch: Any) -> None:
+    # The scheduled task passes this flag; the dash-to-underscore rename argparse
+    # performs is what main() dispatches on.
+    args = _parse_args(monkeypatch, "--resume-now")
+
+    assert args.resume_now is True
 
 
 def test_apply_outcome_success_updates_snapshot_and_clears_fatal_message() -> None:
@@ -120,6 +129,7 @@ def _patch_main_for_win32(monkeypatch: Any, calls: list[dict[str, Any]]) -> None
             "doctor": False,
             "setup": False,
             "unsetup": False,
+            "resume_now": False,
             "tui": False,
             "mock": False,
             "interval": 60,

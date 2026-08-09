@@ -39,6 +39,30 @@ AGPL-3.0 的重點義務（僅為摘要，以 `LICENSE` 全文為準）：
 - fork 專屬檔案清單與同步流程見 [`docs/FORK.zh-TW.md`](docs/FORK.zh-TW.md)。
 - 本 fork 與上游維護者、Anthropic、OpenAI 皆無隸屬關係，也未獲其背書。
 
+## 設計參考
+
+`v0.38.0` 的「額度重置後自動續跑」在設計上參考了兩個既有專案。**未複製任何程式碼**——本 repo 的實作為重新撰寫，此處記錄的是概念與設計上的借鑑。查證日期 2026-08-09，記下當時的 commit 與授權狀態，以便日後對照（來源 repo 可能變動或消失）。
+
+### [`chenlu-hung/my-skills` 的 autocontinue](https://github.com/chenlu-hung/my-skills/tree/main/autocontinue)
+
+- 查證版本：`7304f6d65aa6`（2026-08-07）
+- 授權：**repo 未附授權聲明**。因此僅參考其架構概念，未取用任何程式碼或檔案。
+- 借鑑：整體流程——偵測到額度耗盡後寫入佇列、到重置時間執行續跑、失敗重新入列。其排程載體為 macOS launchd，本專案改用 Windows 排程。
+
+### [`drpwchen/claude-pacer`](https://github.com/drpwchen/claude-pacer)
+
+- 查證版本：`3e31cda9ae22`（2026-08-05）
+- 授權：MIT
+- 借鑑四項實作細節，取自 `extras/windows/schedule-resume.ps1` 與 `extras/windows/resume-runner.ps1`：
+  1. 觸發時間取 `resets_at` 再加緩衝，不卡在重置的當下。
+  2. 排程任務設定 `StartWhenAvailable`，錯過觸發時間可在喚醒後補跑。
+  3. 一次性任務在執行後自行刪除，不留殘骸。
+  4. 使用非互動的 `claude -p` 而非互動式的 `claude --resume`——排程任務沒有終端機，互動模式會無限期等待。
+
+本專案未採用其閾值硬停（hard stop）機制：額度告警沿用既有的 `usage_notifications`，不中止使用者正在進行的工作。
+
+兩者皆與本專案無隸屬關係，亦未對本專案背書。
+
 ## 隱私與資料
 
 `usage` 不呼叫 Anthropic 或 OpenAI 的用量 API，用量數字全部來自本機檔案。會連外的只有：

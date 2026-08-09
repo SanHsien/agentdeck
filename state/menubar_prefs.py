@@ -9,6 +9,12 @@ from __future__ import annotations
 from collections.abc import Mapping
 
 from prefs import _load_preferences, _save_preferences
+from state.autoresume import (
+    DEFAULT_LEAD_SECONDS,
+    DEFAULT_TRIGGER_PCT,
+    DEFAULT_WEEKLY_CEILING_PCT,
+    AutoResumeConfig,
+)
 
 DEFAULT_QUOTA_CARD_ORDER = ("claude", "codex", "agy")
 
@@ -78,6 +84,39 @@ def _window_keeper_enabled(prefs: Mapping[str, object] | None = None) -> bool:
 
 def _agy_window_keeper_enabled(prefs: Mapping[str, object] | None = None) -> bool:
     return _window_keeper_enabled(prefs)
+
+
+def _auto_resume_enabled(prefs: Mapping[str, object] | None = None) -> bool:
+    # Defaults OFF: this one starts an unattended Claude run on its own, so it has to
+    # be asked for rather than inherited by anyone who updates.
+    data = _resolved_preferences(prefs)
+    return data.get("auto_resume") is True
+
+
+def _auto_resume_config(prefs: Mapping[str, object] | None = None) -> AutoResumeConfig:
+    data = _resolved_preferences(prefs)
+    return AutoResumeConfig(
+        enabled=_auto_resume_enabled(data),
+        trigger_pct=_percentage(data.get("auto_resume_trigger_pct"), DEFAULT_TRIGGER_PCT),
+        weekly_ceiling_pct=_percentage(
+            data.get("auto_resume_weekly_ceiling_pct"), DEFAULT_WEEKLY_CEILING_PCT
+        ),
+        lead_seconds=_lead_seconds(data.get("auto_resume_lead_seconds")),
+    )
+
+
+def _percentage(value: object, fallback: float) -> float:
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return fallback
+    return float(value) if 0 < float(value) <= 100 else fallback
+
+
+def _lead_seconds(value: object) -> int:
+    # A negative lead would fire before the quota actually rolls over, which is the
+    # one thing the buffer exists to prevent.
+    if isinstance(value, bool) or not isinstance(value, int):
+        return DEFAULT_LEAD_SECONDS
+    return value if 0 <= value <= 3600 else DEFAULT_LEAD_SECONDS
 
 
 def _quota_notification_thresholds(prefs: Mapping[str, object] | None = None) -> list[float]:

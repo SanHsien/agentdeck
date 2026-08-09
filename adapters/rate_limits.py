@@ -10,7 +10,7 @@ import os
 from datetime import datetime, timezone
 from typing import Any
 
-from .types import RateLimits
+from .types import RateLimits, ResumeTarget
 
 STATUS_FILE = os.path.expanduser("~/.claude/agentdeck-status.json")
 LEGACY_STATUS_FILE = os.path.expanduser("~/.claude/usag-status.json")
@@ -74,3 +74,29 @@ def load_rate_limits() -> RateLimits | None:
         model=model_name,
         updated_at=data.get("_received_at", ""),
     )
+
+
+def _as_str(value: Any) -> str:
+    return value if isinstance(value, str) else ""
+
+
+def load_resume_target() -> ResumeTarget | None:
+    """Identify the session an unattended resume would pick back up.
+
+    Read from the same status file as the quota figures — the status line hook records
+    ``session_id`` and ``cwd`` on every refresh, so the most recently active session is
+    already on disk and needs no separate capture step.
+
+    A stale file is fine and expected: once work stops the file simply keeps naming the
+    session that stopped, which is precisely the one worth resuming.
+    """
+    data = _read_status()
+    if data is None:
+        return None
+
+    target = ResumeTarget(
+        session_id=_as_str(data.get("session_id")),
+        cwd=_as_str(data.get("cwd")),
+        transcript_path=_as_str(data.get("transcript_path")),
+    )
+    return target if target.is_usable() else None

@@ -229,6 +229,12 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help=argparse.SUPPRESS,
     )
+    parser.add_argument(
+        # Started by the scheduled task, never typed by a user.
+        "--resume-now",
+        action="store_true",
+        help=argparse.SUPPRESS,
+    )
     args = parser.parse_args()
     args.interval = max(30, args.interval)
     return args
@@ -310,6 +316,12 @@ def main() -> None:
 
         print(doctor.render(), end="")
         raise SystemExit(0)
+    if args.resume_now:
+        # Runs headless with no tray and no self-heal: this process exists only to
+        # carry out the resume and exit.
+        import autoresume_runner
+
+        raise SystemExit(autoresume_runner.run_resume())
     if args.setup:
         import session_hooks
         from setup_hook import setup

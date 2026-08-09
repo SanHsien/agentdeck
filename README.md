@@ -57,6 +57,7 @@
 - **進度管家 (Progress Concierge)：** 開新對話時，自動把你上次的請求、未提交的 commits 與待辦清單交給 AI，不用重講一遍進度。完全本機、預設關閉。
 - **省 token 模式 (Token Saver)：** 一鍵讓 Claude Code 與 Codex 講話更精簡，省下輸出 token，但程式碼與錯誤訊息保證一個字都不縮水。輕聲提醒維持精簡，長對話也不走鐘——實測對話後段回覆少約 40%。
 - **Token 浪費健檢：** 每日背景診斷重複讀取檔案、污染目錄與雜訊輸出。當發現浪費時會有一行提示，AI 也能帶你看懂問題並給出改善建議。
+- **額度重置後自動續跑：** 5 小時額度用完、工作停在半路時，等額度回來自動接回去跑，跑完通知你。交給 Windows 排程等待，所以電腦睡著也不會錯過；7 天額度超過上限時不會排程，一個晚上不會把整週的量用光。預設關閉，在偏好設定加 `"auto_resume": true` 啟用。
 
 ### 報告與洞察
 
@@ -91,9 +92,11 @@
 | `~/.claude/settings.json` | 只改 `statusLine` 一欄；原值備份在 `settings["agentdeck"]["previousStatusLine"]` | `--setup` |
 | `~/.agentdeck/` | 價格表、服務狀態、歷史紀錄等快取，加上圓桌討論與角色安裝狀態 | app |
 | `~/.agentdeck-reports/` | 你按下「產生報告」時輸出的 HTML | app |
+| `~/.agentdeck/autoresume-log.txt` | 每次自動續跑的執行紀錄 | 自動續跑 |
+| Windows 排程任務 `agentdeck-auto-resume` | 一次性觸發器，等額度重置。跑完自動刪除 | 自動續跑 |
 | `~/.claude/projects/`、`~/.codex/sessions/` | 用量來源 | **唯讀，不會寫入** |
 
-`--unsetup` 會移除 hook 並還原 `settings.json` 的原值。快取目錄可以隨時整個刪掉，下次啟動會重建。
+`--unsetup` 會移除 hook 並還原 `settings.json` 的原值。快取目錄可以隨時整個刪掉，下次啟動會重建。自動續跑預設關閉；關閉狀態下不會建立任何排程任務，已存在的也會被清掉。
 
 ## 環境需求
 

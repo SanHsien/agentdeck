@@ -26,7 +26,12 @@ class UsageEntry:
 
     @property
     def total_tokens(self) -> int:
-        return self.input_tokens + self.output_tokens + self.cache_creation_tokens + self.cache_read_tokens
+        return (
+            self.input_tokens
+            + self.output_tokens
+            + self.cache_creation_tokens
+            + self.cache_read_tokens
+        )
 
     @property
     def dedup_key(self) -> str:
@@ -114,6 +119,22 @@ class RateLimits:
     seven_day_resets_at: int | None = None
     model: str = ""
     updated_at: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class ResumeTarget:
+    """Which session an unattended resume should pick back up, and where.
+
+    Every field is already present in the status file Claude Code's status line hook
+    writes, so identifying the session needs no separate capture step.
+    """
+
+    session_id: str
+    cwd: str
+    transcript_path: str = ""
+
+    def is_usable(self) -> bool:
+        return bool(self.session_id and self.cwd)
 
 
 @dataclass

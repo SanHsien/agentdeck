@@ -6,6 +6,16 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
+## [0.38.0] - 2026-08-09
+
+### Added
+- **Resume work after the quota resets (off by default)**: when the 5-hour allowance runs out the work simply stops until the window rolls over. Enabled, agentdeck picks that work back up once the quota returns and reports the outcome as a system notification. Turn it on with `"auto_resume": true` in the preferences file; `auto_resume_trigger_pct` (default 95 — below it the session is not blocked, so nothing is scheduled), `auto_resume_weekly_ceiling_pct` (default 85) and `auto_resume_lead_seconds` (default 180) are tunable.
+  - **Why the Windows scheduler rather than an in-process timer**: a sleeping machine freezes an in-process timer, and "nobody there all night" is the case this feature exists for. The scheduled task carries `StartWhenAvailable`, so a trigger missed while asleep runs on wake.
+  - **Why an absolute stamp rather than watching the percentage drop**: the status file is only written while Claude Code refreshes its status line, so the numbers freeze once the machine goes idle. `resets_at` is an absolute stamp that stays usable in a stale snapshot, so scheduling keys on it instead of on a change in the figures.
+  - **Weekly ceiling**: a resume fires on the 5-hour reset but spends the same 7-day allowance. Nothing is scheduled once the 7-day figure reaches `auto_resume_weekly_ceiling_pct`, so one night cannot consume the days after it.
+  - The resumed run uses `claude -p` (non-interactive) rather than `claude --resume`: a scheduled task has no terminal and the interactive mode would block forever. The traces it is given — recent requests, commits, open to-dos — come from the existing session-resume extraction, so the two features cannot disagree about where work stopped.
+  - The resume instruction tells the run to skip destructive or irreversible actions and to stop and explain rather than widen scope when the traces are too thin.
+
 ## [0.37.6] - 2026-08-08
 
 ### Fixed

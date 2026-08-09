@@ -89,3 +89,77 @@ def test_load_rate_limits_clears_expired_percentage(
     assert result.five_hour_pct == 0.0
     assert result.five_hour_resets_at == int(now_ts - 60)
     assert result.seven_day_pct == 70.0
+
+
+def _point_at(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, status_path: Path) -> None:
+    monkeypatch.setattr(rate_limits, "STATUS_FILE", str(status_path))
+    monkeypatch.setattr(rate_limits, "LEGACY_STATUS_FILE", str(tmp_path / "missing-legacy.json"))
+    monkeypatch.setattr(rate_limits, "TT_STATUS_FILE", str(tmp_path / "missing-tt.json"))
+
+
+def test_load_resume_target_reads_the_session_identity(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "agentdeck-status.json"
+    _write_status(
+        status_path,
+        {
+            "session_id": "abc-123",
+            "cwd": "C:/work/project",
+            "transcript_path": "C:/logs/abc-123.jsonl",
+        },
+    )
+    _point_at(monkeypatch, tmp_path, status_path)
+
+    target = rate_limits.load_resume_target()
+
+    assert target is not None
+    assert target.session_id == "abc-123"
+    assert target.cwd == "C:/work/project"
+    assert target.transcript_path == "C:/logs/abc-123.jsonl"
+
+
+def test_load_resume_target_tolerates_a_missing_transcript_path(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "agentdeck-status.json"
+    _write_status(status_path, {"session_id": "abc-123", "cwd": "C:/work/project"})
+    _point_at(monkeypatch, tmp_path, status_path)
+
+    target = rate_limits.load_resume_target()
+
+    assert target is not None
+    assert target.transcript_path == ""
+
+
+def test_load_resume_target_rejects_a_status_without_a_working_directory(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "agentdeck-status.json"
+    _write_status(status_path, {"session_id": "abc-123"})
+    _point_at(monkeypatch, tmp_path, status_path)
+
+    assert rate_limits.load_resume_target() is None
+
+
+def test_load_resume_target_rejects_non_string_fields(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "agentdeck-status.json"
+    _write_status(status_path, {"session_id": 123, "cwd": ["C:/work"]})
+    _point_at(monkeypatch, tmp_path, status_path)
+
+    assert rate_limits.load_resume_target() is None
+
+
+def test_load_resume_target_returns_none_without_a_status_file(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    _point_at(monkeypatch, tmp_path, tmp_path / "absent.json")
+
+    assert rate_limits.load_resume_target() is None

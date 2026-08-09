@@ -512,7 +512,14 @@
     "health_agy_unavailable_fix": "通常是暫時的；顯示的是最後一次查到的數字",
     "health_agy_error": "查詢 Antigravity 額度失敗",
     "health_generic_error_fix": "執行 agentdeck.exe --doctor 看完整診斷",
-    "panel_changelog": "變更紀錄"
+    "panel_changelog": "變更紀錄",
+    "autoresume_menu": "額度重置後自動續跑",
+    "autoresume_none": "（未記錄）",
+    "autoresume_prompt": "這是額度重置後的自動續跑，沒有人在旁邊看著。上次工作留下的線索：\n最近在忙的（新→舊）：{last_request}\n已完成的進度：{commits}\n未完成的待辦：{todos}\n\n請接續上面的工作繼續做。只依據這些線索判斷，沒寫到的不要臆造；若線索不足以判斷下一步，說明原因後停下，不要自行擴大範圍。破壞性或不可逆的操作一律跳過並記下來，留給人確認。結束時簡短總結做了什麼、還剩什麼。",
+    "autoresume_done_title": "自動續跑完成",
+    "autoresume_done_body": "額度重置後的續跑已結束，記錄在 autoresume-log.txt。",
+    "autoresume_failed_title": "自動續跑失敗",
+    "autoresume_failed_body": "續跑沒有正常結束，原因記錄在 autoresume-log.txt。"
   },
   "en": {
     "panel_default_name": "Default",
@@ -1027,6 +1034,13 @@
     "health_agy_unavailable_fix": "Usually temporary; the numbers shown are the last ones fetched",
     "health_agy_error": "Could not query the Antigravity quota",
     "health_generic_error_fix": "Run agentdeck.exe --doctor for the full diagnostic",
-    "panel_changelog": "Changelog"
+    "panel_changelog": "Changelog",
+    "autoresume_menu": "Resume work after the quota resets",
+    "autoresume_none": "(none recorded)",
+    "autoresume_prompt": "This is an unattended resume after a quota reset — nobody is watching. Traces from where the work stopped:\nRecently working on (newest first): {last_request}\nProgress made: {commits}\nOpen to-dos: {todos}\n\nCarry that work forward. Use only what is above and invent nothing; if the traces are too thin to tell what comes next, say so and stop rather than widening the scope. Skip anything destructive or irreversible and note it for a human instead. Finish with a short summary of what was done and what remains.",
+    "autoresume_done_title": "Auto-resume finished",
+    "autoresume_done_body": "The post-reset run has ended; details are in autoresume-log.txt.",
+    "autoresume_failed_title": "Auto-resume failed",
+    "autoresume_failed_body": "The run did not finish cleanly; details are in autoresume-log.txt."
   }
 }
