@@ -32,8 +32,8 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "branches": {
     "main": {
       "last_reviewed": "0f97979",
-      "last_merged": "1ac8961",
-      "note": "審視至上游 v0.29.21（0f97979）。e16c5c0 只採用了一部分——遮蔽長度門檻本 fork 早已有，設定檔 symlink 保留已移植，self-heal log 的跨行程鎖尚未做（Windows 沒有 flock，要另抽共用鎖模組），因此 last_merged 停在 1ac8961。"
+      "last_merged": "e16c5c0",
+      "note": "審視至上游 v0.29.21（0f97979）。e16c5c0 三項全部到位：遮蔽長度門檻本 fork 早已有，設定檔 symlink 保留已移植，self-heal log 的跨行程鎖以 msvcrt/fcntl 的共用模組 settings_lock.py 補上（Windows 沒有 flock）。"
     }
   }
 }

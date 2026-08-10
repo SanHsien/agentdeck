@@ -20,6 +20,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import settings_lock
 import setup_hook
 from i18n import t as _t
 from setup_hook import (
@@ -48,6 +49,10 @@ from setup_hook import (
 
 CLAUDE_SETTINGS = setup_hook.CLAUDE_SETTINGS
 CODEX_CONFIG = setup_hook.CODEX_CONFIG
+
+# Its own lock file, not the status line's: that one is taken several times a
+# minute by the refresh, and a settings edit has no reason to queue behind it.
+SETTINGS_LOCK = Path(os.path.expanduser("~/.claude/agentdeck-settings.lock"))
 
 # Ceiling C — opt-in SessionStart hook that injects "where you left off" into a new
 # session. Off by default: enabled only via the menu toggle, never by self_heal.
@@ -1052,25 +1057,33 @@ def _recent_claude_dir_changes(limit: int = 6) -> str:
 
 
 def _append_self_heal_log(action: str, detail: str) -> None:
-    settings = _load_settings()
-    usage_settings = settings.get(BACKUP_KEY)
-    if not isinstance(usage_settings, dict):
-        usage_settings = {}
-        settings[BACKUP_KEY] = usage_settings
-    log = usage_settings.get("selfHealLog")
-    if not isinstance(log, list):
-        log = []
-    log.append(
-        {
-            "timestamp": (
-                datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-            ),
-            "action": action,
-            "detail": detail,
-        }
-    )
-    usage_settings["selfHealLog"] = log[-20:]
-    _save_settings(settings)
+    """Append one entry to the self-heal log, serialised across processes.
+
+    Load, modify and save must happen inside one lock. Each save is atomic on
+    its own, which is what made the race invisible: no file is ever corrupt, a
+    second writer simply serialises the copy it read before the first one
+    landed, and the earlier entry vanishes with nothing to show it existed.
+    """
+    with settings_lock.exclusive(SETTINGS_LOCK):
+        settings = _load_settings()
+        usage_settings = settings.get(BACKUP_KEY)
+        if not isinstance(usage_settings, dict):
+            usage_settings = {}
+            settings[BACKUP_KEY] = usage_settings
+        log = usage_settings.get("selfHealLog")
+        if not isinstance(log, list):
+            log = []
+        log.append(
+            {
+                "timestamp": (
+                    datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+                ),
+                "action": action,
+                "detail": detail,
+            }
+        )
+        usage_settings["selfHealLog"] = log[-20:]
+        _save_settings(settings)
 
 
 def _run_quietly(func: Any, *args: Any, **kwargs: Any) -> Any:

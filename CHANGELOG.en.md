@@ -6,6 +6,13 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
+## [0.39.1] - 2026-08-10
+
+### Fixed
+- **Two processes editing the settings file at once lost entries, and on Windows raised outright**: the self-heal log is a load → modify → save cycle, and every save is atomic on its own — **which is exactly what made it invisible**: no file is ever corrupt, the later writer simply serialises the copy it read before the first one landed, and the earlier entry disappears with nothing to show it existed. A new `settings_lock.py` (`fcntl` on POSIX, `msvcrt` on Windows) wraps the whole cycle, in its own lock file so a settings edit never queues behind the status line's several-times-a-minute refresh. (Ported from upstream `e16c5c0`.)
+
+  Measured with four real processes writing five entries each: **20/20 kept with the lock, 5/20 without**. The unlocked run also raised `PermissionError: [WinError 5]` — on Windows `os.replace` fails while another process holds the target open, so the same bug is more severe here than upstream's description of it.
+
 ## [0.39.0] - 2026-08-10
 
 ### Fixed
