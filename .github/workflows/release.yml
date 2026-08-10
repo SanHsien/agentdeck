@@ -56,6 +56,19 @@ jobs:
       - name: Install Windows build dependencies
         run: uv sync --frozen --group dev --extra windows
 
+      # Before the build, not after: a mistyped tag otherwise builds all the way
+      # through and only shows up on the user's machine, where the update check
+      # compares versions and quietly decides there is nothing to install.
+      # Skipped for workflow_dispatch, which exists to rebuild an existing tag.
+      - name: Refuse a version that is not strictly newer
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ steps.ref.outputs.tag }}
+        shell: bash
+        run: uv run python scripts/check_release_version.py "$TARGET_REPO" "$RELEASE_TAG"
+
       - name: Build Windows executable
         shell: pwsh
         run: ./scripts/build_windows.ps1

@@ -32,19 +32,20 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
 
+from codex_paths import codex_home
 from i18n import t as _t
 
 CLAUDE_SETTINGS = Path(os.path.expanduser("~/.claude/settings.json"))
 HOOK_TARGET = Path(os.path.expanduser("~/.claude/agentdeck-statusline.py"))
 FORWARDER_TARGET = Path(os.path.expanduser("~/.claude/agentdeck-statusline-forwarder.py"))
 STATUS_FILE = Path(os.path.expanduser("~/.claude/agentdeck-status.json"))
-CODEX_CONFIG = Path(os.path.expanduser("~/.codex/config.toml"))
-CODEX_BACKUP = Path(os.path.expanduser("~/.codex/agentdeck-backup.json"))
+CODEX_CONFIG = codex_home() / "config.toml"
+CODEX_BACKUP = codex_home() / "agentdeck-backup.json"
 # LEGACY_TT_* / tokenTracker / tt-* below are MIGRATION-ONLY constants for users
 # upgrading from the third-party tool stormzhang/token-tracker. They are NOT links
 # to any in-repo module or external directory. Do not investigate or "go look" for
 # a token-tracker source. It does not exist in this repository or on this machine.
-LEGACY_CODEX_BACKUP = Path(os.path.expanduser("~/.codex/tt-backup.json"))
+LEGACY_CODEX_BACKUP = codex_home() / "tt-backup.json"
 CODEX_STATUS_LINE = [
     "project",
     "five-hour-limit",

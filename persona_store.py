@@ -35,11 +35,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from codex_paths import codex_home
 from i18n import packaged_resource_path
 
 PERSONA_DIR = packaged_resource_path("personas", Path(__file__).with_name("personas"))
 AGENTS_DIR = Path(os.path.expanduser("~/.claude/agents"))
-CODEX_DIR = Path(os.path.expanduser("~/.codex"))
+CODEX_DIR = codex_home()
 CURSOR_DIR = Path(os.path.expanduser("~/.cursor"))
 STATE_FILE = Path(os.path.expanduser("~/.agentdeck/persona_state.json"))
 

@@ -13,13 +13,15 @@ from collections import OrderedDict, defaultdict
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+from codex_paths import codex_home
 from typing import Any
 
 from providers import codex_loader as shared_codex_loader
 
 from .types import AgentInfo, RateLimits, UsageEntry
 
-CODEX_DIR = os.path.expanduser("~/.codex")
+CODEX_DIR = str(codex_home())
 SESSIONS_DIR = os.path.join(CODEX_DIR, "sessions")
 STATE_DB = os.path.join(CODEX_DIR, "state_5.sqlite")
 _FILE_CACHE_MAXSIZE = 512

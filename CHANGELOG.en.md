@@ -6,6 +6,15 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
+## [0.39.2] - 2026-08-10
+
+### Fixed
+- **Anyone who sets `CODEX_HOME` saw an empty Codex card**: a second account, a containerised Codex — eleven paths in this app were hardcoded to `~/.codex`, so those setups read nothing, and **nothing reported it**: "Codex has no usage" and "we looked in the wrong place" render identically. Every one of them now goes through the new `codex_paths.codex_home()`. (Ported from upstream `ab03f92`.) The path constants are resolved at startup, so a changed `CODEX_HOME` takes effect on the next launch.
+
+### Maintenance
+- **The release workflow now guards the version number**: a mistyped tag — an older number, or re-cutting a version that has already been superseded — used to build all the way through, and the only symptom appeared on the user's machine, where the update check compares versions and quietly decides there is nothing to install. A version that is not strictly newer is now refused before the build. (Concept from upstream `45397d8`, **not copied**: their comparison set includes the tag being released, and this project creates the GitHub release first and lets the tag push drive the workflow, so copying it would have refused every release.)
+- Upstream review advanced to v0.29.23. The `codex_otel.trace_safe` legacy query path is now documented in `CLAUDE.md` — and **measured rather than taken on trust**: on this machine that target accounts for 47 of 35,250 rows, all within one 52-minute window on 2026-08-05, while the table itself is still being written to. The shared panel core and two new themes are recorded as separate follow-up work; the remaining skip reasons are in `docs/UPSTREAM.md`.
+
 ## [0.39.1] - 2026-08-10
 
 ### Fixed

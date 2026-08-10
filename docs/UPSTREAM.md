@@ -31,9 +31,9 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "0f97979",
-      "last_merged": "e16c5c0",
-      "note": "審視至上游 v0.29.21（0f97979）。e16c5c0 三項全部到位：遮蔽長度門檻本 fork 早已有，設定檔 symlink 保留已移植，self-heal log 的跨行程鎖以 msvcrt/fcntl 的共用模組 settings_lock.py 補上（Windows 沒有 flock）。"
+      "last_reviewed": "3192874",
+      "last_merged": "45397d8",
+      "note": "審視至上游 v0.29.23（3192874）。移植 CODEX_HOME 支援與發版版號守門；共用面板核心與兩張新面板（3e0fc4e／7743649／417ff01）互相耦合、份量大，列為後續獨立工作，理由見 Skipped。"
     }
   }
 }
@@ -62,6 +62,12 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
 
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
+| main | `efce61a` | docs: 修正鐵則措辭矛盾、標註 codex_otel 舊格式相容路徑 | 2026-08-10 | 文件本身是上游 CLAUDE.md，但其中的事實已採用並**自行量測驗證**後寫進本 fork 的 CLAUDE.md：`codex_otel.trace_safe` 在本機 35,250 筆紀錄中只佔 47 筆，全部集中在 2026-08-05 的 52 分鐘視窗內，而該表至今仍在寫入。 |
+| main | `7a8f8f6` | fix: 補 ruff lint（import 排序、Yoda condition） | 2026-08-10 | 修的是上游當時的 lint 紅燈；本 fork 的 ruff gate 一直是綠的。 |
+| main | `bd89d98`／`fe0d547`／`236ff02`／`483e635` | docs/style: 官網與主題文案 | 2026-08-10 | 上游自家官網的內容與視覺；本 fork 的 `docs/index.html` 已獨立改寫，主題清單也因移除 World Cup 而不同。 |
+| main | `60d11fe` | feat: 年度熱力圖加入貪食蛇彩蛋 | 2026-08-10 | 純娛樂性彩蛋，不影響任何額度資料；本 fork 目前優先處理正確性與資安，未來要加也應以本 fork 自己的報告版面為準。 |
+| main | `3e0fc4e`／`7743649`／`417ff01` | refactor+feat: 共用面板核心 `panel_core.js` 與彩繪玻璃、摺紙兩張新面板 | 2026-08-10 | **值得做，但不在這次**。三者互相耦合：兩張新面板建立在 `panel_core.js` 之上，而本 fork 的面板已與上游分歧（去品牌、移除最小化按鈕、i18n 兩語、World Cup 已移除）。先確認過兩張新面板**都有** Antigravity 欄位（13／17 處），不是 World Cup 那種缺一整個來源的問題。列為後續獨立工作。 |
+| main | `67eb3bb`／`3192874` | chore(release): v0.29.22／v0.29.23 | 2026-08-10 | 純上游版號（D-05）。 |
 | main | `410ba88` | docs: CLAUDE.md 補上 codex 雙 sqlite 與 agy 配額端點的實際行為 | 2026-08-10 | 上游 CLAUDE.md 的內部說明；本 fork 的對應段落已自行改寫，且對外連線已在 `SECURITY.md` 逐條列出（D-18）。 |
 | main | `d57e7c3` | refactor: 抽掉磁碟快取與 session hook 的三處逐字重複 | 2026-08-10 | 去重的三處在本 fork 的檔案結構下並非逐字重複（磁碟快取已分成 history／codex／agy 三個模組，session hook 在 `session_hooks.py`）；為了對齊上游而重構，風險大於收益。 |
 | main | `723b9ab` | fix(security): build_app.sh 核對 instate-cli 指紋才打包 | 2026-08-10 | 針對 macOS 的 `build_app.sh` 與 py2app 打包流程；本 fork 用 PyInstaller，且 `instate-cli` 已被 `persona_store` 取代，沒有要核對的外部二進位檔。 |
