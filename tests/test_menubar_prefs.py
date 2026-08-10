@@ -46,12 +46,20 @@ def test_quota_card_order_validates_preferences() -> None:
         "claude",
         "codex",
     )
+    # A saved order written before a card existed keeps the part the user
+    # arranged and gains the newcomer at the end. Rejecting it would silently
+    # reset everyone's arrangement the first time a quota source is added.
+    assert menubar_prefs._quota_card_order({"quota_card_order": ["agy", "claude"]}) == (
+        "agy",
+        "claude",
+        "codex",
+    )
     invalid_values = (
         None,
         "agy",
-        ["agy", "claude"],
         ["agy", "claude", "claude"],
         ["agy", "claude", "unknown"],
+        [1, 2, 3],
     )
     for value in invalid_values:
         assert menubar_prefs._quota_card_order({"quota_card_order": value}) == (

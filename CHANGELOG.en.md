@@ -6,6 +6,23 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
+## [0.39.0] - 2026-08-10
+
+### Fixed
+- **The AI Talent Market said "component is not installed" every time it opened**: the roster is only read while that panel is the active one, but switching panels renders the page from **the state built for the previous panel**. Content therefore never appeared until the next background poll, up to 60 seconds later — indistinguishable, to a user, from a broken feature. Opening it now rebuilds the state first.
+- **Card order was discarded wholesale whenever a quota source was added**: validation required the saved order to be exactly as long as the default, so a fourth card would have marked **every existing user's arrangement invalid and silently reset it**, with nothing to explain why. Only duplicates and unknown ids are rejected now; missing cards are appended. (Concept from upstream `1ac8961`.)
+- **Writing a settings file that is a symlink replaced the link with a regular file**: `os.replace` swaps the directory entry, so anyone keeping `~/.claude/settings.json` in a dotfiles repo would find it quietly detached. The real path is resolved before writing. (Ported from upstream `e16c5c0`.)
+- **The panel height table held stale values**: it is the size the window opens at *before* the WebView reports its real height, so wrong values cost a visible jump on every open. The numbers were **not copied from upstream** — those are macOS calibrations for different panels drawn by a different engine — but measured against this fork's own panels on Windows 11 at 225% DPI, reading the reported height before it is clamped.
+
+### Changed
+- **The AI Talent Market left the panel list and became its own tray menu item**: it shows role cards and install buttons and no quota at all, so listing it among the themes made that list lie about what it offers and let a user land in it by picking what looked like a skin. It is **deliberately never restored as the startup panel**: opening into it would hide the quota the app exists to show.
+- **Removed the World Cup 2026 theme**: `world_cup.html` contains no Antigravity fields at all, while the other nine quota panels carry 24–33 each — anyone on that theme silently lost a whole source with nothing on screen to say so. Upstream is the same and has not fixed it. It also hardcoded `USAGE 2026`. The theme count goes from 10 to 9.
+
+### Maintenance
+- **Fixed a time bomb left in v0.38.0's tests**: `tests/test_autoresume_wiring.py` hardcoded its base time to `2026-08-09 10:00 UTC` while `tick()` reads the real clock. It was green the day it was written and went red a day later with no code change. The base is now relative to the real clock.
+- The panel registry moved to `panels/registry.py`, bringing `wintray.py` back under its 1900-line ceiling rather than raising it; `wintray` re-exports the names explicitly so no import site moved.
+- Upstream review advanced to v0.29.21. `e16c5c0` is only partly adopted — the cross-process lock for the self-heal log is still outstanding (Windows has no `flock`; it needs a shared lock module) — and the reasons for that and six other commits are recorded in `docs/UPSTREAM.md`.
+
 ## [0.38.0] - 2026-08-09
 
 ### Added

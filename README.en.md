@@ -66,7 +66,7 @@ A quota icon appears in the system tray: left-click for the panel, right-click f
 
 ### Experience & Customization
 
-- **10 Visual Themes:** Switch between panel styles including Classic, Matrix, Windows 95, Newspaper, Cloud Observation, Midnight Aquarium, Prism Arcade, Black Hole, World Cup 2026, and Lepidoptera (blueprint).
+- **9 Visual Themes:** Switch between panel styles including Classic, Matrix, Windows 95, Newspaper, Cloud Observation, Midnight Aquarium, Prism Arcade, Black Hole, and Lepidoptera (blueprint).
 - **Drag to Reorder:** Grab any quota card and drag it up or down to swap the order — the arrangement is shared across every theme and survives restarts.
 - **AI Talent Market (our own implementation):** Installs ready-made roles into **every AI tool this machine actually has** — Claude Code (`~/.claude/agents/*.md`), Codex (`~/.codex/agents/*.toml`), and Cursor (`~/.cursor/agents/*.md`). Cursor documents the same markdown-with-frontmatter shape as Claude Code, so they share a renderer; Codex's TOML is rendered separately. Tools you do not have are left alone. Five packs, fifteen roles: engineering, writing, product, data, and operations & security. Upstream sourced its roles from a closed binary whose source and distribution repos are both 404 to everyone else and which only shipped for macOS, so nobody cloning the public repo could use the feature. This fork replaced it with an open implementation: role definitions live in [`personas/`](personas/) and can be edited or extended. If you hand-edit an installed role the panel flags it and offers a restore. **If you already have an agent of the same name, installing backs it up first and tells you the backup filename.**
 - **AI Council:** Open a dedicated window and run a multi-round discussion between Claude Code, Codex, and Antigravity — pick participants, models, AI Talent Market personas, and a debate style, with a token estimate up front. Steer it between rounds, see who dissents in the consensus tally, and let it stop early once everyone agrees. Seats can reference real files via an optional read-only folder.
@@ -148,7 +148,6 @@ Switch between **10 visual themes** directly from the UI:
 <p align="center">
   <img src="docs/matrix.en.png" width="32%" alt="Matrix theme" />
   <img src="docs/win95.en.png" width="32%" alt="Windows 95 theme" />
-  <img src="docs/world_cup.en.png" width="32%" alt="World Cup HUD theme" />
   <img src="docs/newspaper.en.png" width="32%" alt="Newspaper theme" />
   <img src="docs/aquarium.en.png" width="32%" alt="Aquarium theme" />
   <img src="docs/black_hole.en.png" width="32%" alt="Black Hole theme" />

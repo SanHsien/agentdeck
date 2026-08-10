@@ -117,15 +117,17 @@ def test_draw_tray_icon_and_tooltip(monkeypatch: pytest.MonkeyPatch) -> None:
     ]
 
 
-def test_all_panels_including_talent_market_are_available() -> None:
-    # talent_market used to be excluded because it needed a macOS-only vendored
-    # binary. persona_store replaced that binary with role definitions shipped in
-    # this repo, so the panel is reachable on Windows now.
-    ids = [panel[0] for panel in wintray.available_panels()]
+def test_the_talent_market_is_reachable_but_is_not_a_theme() -> None:
+    """It shows role cards and installs them, and displays no quota at all.
+    Listing it among the themes made the theme list lie about what it offers and
+    let a user land in it by picking what looked like a skin."""
+    themes = [panel[0] for panel in wintray.available_panels()]
+    renderable = [panel[0] for panel in wintray.renderable_panels()]
 
-    assert "classic" in ids
-    assert "talent_market" in ids
-    assert len(ids) == len(wintray.WINDOWS_PANELS)
+    assert "classic" in themes
+    assert "talent_market" not in themes
+    assert "talent_market" in renderable
+    assert len(themes) == len(wintray.WINDOWS_PANELS)
 
 
 def test_every_panel_has_a_registered_height() -> None:
@@ -316,7 +318,7 @@ def test_switch_panel_keeps_dragged_position_before_new_height_is_measured(
     controller = wintray._WindowsTrayController(mock=True, interval=60)
     controller.window = window
     controller.visible = True
-    controller.active_panel_id = "world_cup"
+    controller.active_panel_id = "classic"
     monkeypatch.setattr(controller, "_working_area", lambda: (0, 0, 1920, 1080))
     monkeypatch.setattr(controller, "_work_area_for_point", lambda point: (0, 0, 1920, 1080))
 
@@ -364,7 +366,7 @@ def test_switch_panel_keeps_dragged_position_on_secondary_monitor(
     controller = wintray._WindowsTrayController(mock=True, interval=60)
     controller.window = window
     controller.visible = True
-    controller.active_panel_id = "world_cup"
+    controller.active_panel_id = "classic"
     monkeypatch.setattr(controller, "_working_area", lambda: primary)
     monkeypatch.setattr(controller, "_work_area_for_point", work_area_for_point)
 
@@ -993,6 +995,7 @@ def test_menu_actions_pass_real_pystray_signature_validation() -> None:
         language="en",
         active_panel_id="classic",
         switch_panel=lambda panel_id: None,
+        open_talent_market=lambda _icon=None, _item=None: None,
         show_panel=lambda: None,
         reset_panel_position=lambda: None,
         refresh=lambda: None,
@@ -1301,3 +1304,39 @@ def test_update_prompt_shows_the_version_and_address_not_the_release_notes(
     assert "https://example.test/releases/tag/v9.9.9" in text
     assert _t(controller.language, "update_btn_download") in text
     assert "changelog" not in text, "release notes are back in the prompt"
+
+
+def test_opening_the_talent_market_rebuilds_state_before_showing_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The roster is only read while this panel is active, and a switch renders
+    from the state built for the *previous* panel. Without a refresh the market
+    showed "component is not installed" on every open until the next poll --
+    indistinguishable, to a user, from a broken feature."""
+    calls: list[str] = []
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+    controller.visible = True
+    monkeypatch.setattr(
+        controller, "switch_panel", lambda panel_id, **kw: calls.append(f"switch:{panel_id}:{kw}")
+    )
+    monkeypatch.setattr(controller, "refresh", lambda: calls.append("refresh"))
+
+    controller.open_talent_market()
+
+    assert calls == ["switch:talent_market:{'remember': False}", "refresh"]
+
+
+def test_the_talent_market_is_never_restored_as_the_startup_panel(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """It is somewhere you visit to install a role. Opening the app into it
+    would hide the quota the app exists to show."""
+    saved: list[str] = []
+    monkeypatch.setattr(wintray, "_save_active_panel_id", lambda panel_id: saved.append(panel_id))
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+    controller.window = SimpleNamespace(load_html=lambda html: None)
+
+    controller.switch_panel("talent_market", remember=False)
+    controller.switch_panel("matrix")
+
+    assert saved == ["matrix"]

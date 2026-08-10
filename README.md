@@ -66,7 +66,7 @@
 
 ### 體驗與客製化
 
-- **10 款視覺面板：** 可在 Classic、Matrix、Windows 95、Newspaper、Cloud Observation、Midnight Aquarium、Prism Arcade、Black Hole、World Cup 2026 與 Lepidoptera（藍曬圖）之間切換。
+- **9 款視覺面板：** 可在 Classic、Matrix、Windows 95、Newspaper、Cloud Observation、Midnight Aquarium、Prism Arcade、Black Hole 與 Lepidoptera（藍曬圖）之間切換。
 - **拖曳排序：** 按住任何一張額度卡上下拖曳就能交換順序，排法在所有主題間共用、重開也會記住。
 - **AI 人才市場（自製版）：** 把預先寫好的角色**同時安裝進你機器上實際有的每個 AI 工具**——Claude Code（`~/.claude/agents/*.md`）、Codex（`~/.codex/agents/*.toml`）與 Cursor（`~/.cursor/agents/*.md`）。格式不同就分別產生：Cursor 與 Claude Code 同為 markdown + YAML frontmatter 所以共用，Codex 的 TOML 另外產生。沒安裝的工具不會被寫入。目前內建 5 組共 15 個角色：工程、文字、產品、資料、維運與安全。上游這個功能靠一顆閉源二進位提供角色內容，來源與發佈 repo 對外都是 404、且只有 macOS 版，任何人 clone 公開 repo 都用不到。本 fork 改成**自己寫的開源實作**：角色定義放在 repo 的 [`personas/`](personas/)，可自行編輯與新增；安裝後若你手動改過該檔，面板會標示並提供還原。**若你原本已有同名 agent，安裝會先備份再覆寫，並告知備份檔名。**
 - **AI 圓桌討論：** 開一個獨立視窗，讓 Claude Code、Codex、Antigravity 進行多輪討論——自選參與者、模型、AI 人才市場角色與辯論風格，開始前就看得到大約會花多少 token。可以在輪間插話引導方向，共識計票看得出誰不同意，並讓討論在全體同意時提早收尾。可附上唯讀資料夾讓參與者參考真實檔案。
@@ -112,7 +112,7 @@
 
 系統匣 UI 需要 Microsoft Edge WebView2 Runtime，Windows 10 與 11 通常已內建。
 
-系統匣圖示會隨 Claude 額度百分比更新；提示文字摘要 Claude 與 Codex 的各視窗。左鍵用 WebView2 開啟 10 款主題面板；右鍵可切換面板、重新整理、設定開機自啟、檢查更新與結束。
+系統匣圖示會隨 Claude 額度百分比更新；提示文字摘要 Claude 與 Codex 的各視窗。左鍵用 WebView2 開啟 9 款主題面板；右鍵可切換面板、重新整理、設定開機自啟、檢查更新與結束。
 
 面板**不貼齊系統匣圖示**，這是刻意的：它是可自由拖曳的浮動視窗，會記住你放的位置，點別處也不會消失。首次開啟的角落跟著工作列位置走（工作列在上方就開在右上，在左側就靠左），之後一律尊重你拖到的地方。上游後來也從「貼齊圖示的彈出視窗」改成同樣的浮動模型，理由正是貼齊會讓使用者無法自行擺放。
 
@@ -143,12 +143,11 @@ uv run --no-sync python main.py --doctor   # 環境與 hook 診斷
 
 ## 主題展示
 
-內建 **10 款可切換的視覺主題**，可直接在 UI 中切換：
+內建 **9 款可切換的視覺主題**，可直接在 UI 中切換：
 
 <p align="center">
   <img src="docs/matrix.png" width="32%" alt="Matrix 主題" />
   <img src="docs/win95.png" width="32%" alt="Windows 95 主題" />
-  <img src="docs/world_cup.png" width="32%" alt="世界盃 HUD 主題" />
   <img src="docs/newspaper.png" width="32%" alt="復古報紙主題" />
   <img src="docs/aquarium.png" width="32%" alt="深夜水族箱主題" />
   <img src="docs/black_hole.png" width="32%" alt="黑洞主題" />

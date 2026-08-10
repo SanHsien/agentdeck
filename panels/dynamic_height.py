@@ -16,7 +16,9 @@ CONTENT_HEIGHT_SCRIPT = """
     var wrap = document.querySelector(".wrap");
     if (!wrap) return null;
     // A panel can explicitly mark a flexible region whose current laid-out
-    // height is part of the design (for example, world_cup's empty pitch).
+    // height is part of the design. No shipped panel declares one today;
+    // the hook stays because a panel that needs it has no other way to keep
+    // a deliberately empty area from collapsing during measurement.
     // Preserve only those declared floors while releasing the viewport height
     // chain; ordinary content can still contract when a quota row disappears.
     var floors = Array.from(
@@ -30,7 +32,7 @@ CONTENT_HEIGHT_SCRIPT = """
       }
     );
     // Panels nest .wrap differently: most put it straight in <body>, but the
-    // viewport-based ones (world_cup, aquarium, black_hole, ...) insert a
+    // viewport-based ones (aquarium, black_hole, ...) insert a
     // padded .viewport in between. Walk the real ancestor chain instead of
     // assuming a fixed depth, so every 100%-height link is released and every
     // layer's spacing is counted.

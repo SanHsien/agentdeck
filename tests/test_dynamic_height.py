@@ -39,12 +39,6 @@ def test_script_wraps_state_application_and_measures_without_height_constraints(
     assert 'floor.element.style.minHeight = floor.height + "px"' in CONTENT_HEIGHT_SCRIPT
 
 
-def test_world_cup_declares_its_pitch_height_floor() -> None:
-    html = (PANEL_ASSETS / "world_cup.html").read_text(encoding="utf-8")
-
-    assert '<div style="flex:1" data-usage-height-floor></div>' in html
-
-
 @pytest.mark.parametrize(
     ("value", "maximum", "expected"),
     [

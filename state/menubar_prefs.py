@@ -60,14 +60,21 @@ def _save_quota_card_order(order: object) -> bool:
 
 
 def _valid_quota_card_order(value: object) -> tuple[str, ...] | None:
-    if not isinstance(value, list) or len(value) != len(DEFAULT_QUOTA_CARD_ORDER):
-        return None
-    if any(not isinstance(card, str) for card in value):
+    """Accept a saved order that is merely incomplete, and complete it.
+
+    Requiring the exact set meant that adding a quota source would invalidate
+    every order already on disk: the next launch after an upgrade would throw
+    away the arrangement each user had chosen and silently reset to default,
+    with nothing to explain why. Only genuinely broken input is rejected now --
+    duplicates, unknown ids, non-strings -- and cards the saved order predates
+    are appended at the end.
+    """
+    if not isinstance(value, list) or any(not isinstance(card, str) for card in value):
         return None
     order = tuple(value)
-    if set(order) != set(DEFAULT_QUOTA_CARD_ORDER):
+    if len(order) != len(set(order)) or not set(order) <= set(DEFAULT_QUOTA_CARD_ORDER):
         return None
-    return order
+    return order + tuple(card for card in DEFAULT_QUOTA_CARD_ORDER if card not in order)
 
 
 def _quota_notifications_enabled(prefs: Mapping[str, object] | None = None) -> bool:

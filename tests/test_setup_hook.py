@@ -671,3 +671,22 @@ def test_self_heal_keeps_correct_python_commands_unchanged(
     assert data["statusLine"]["command"] == f"/usr/bin/python3 {hook_target}"
     assert data["hooks"]["SessionStart"][0]["hooks"][0]["command"] == resume_command
     assert "usage" not in data
+
+
+def test_writing_through_a_symlink_keeps_the_link(tmp_path: Path) -> None:
+    """os.replace swaps the directory entry, so writing straight at the link
+    turns a settings file someone keeps in a dotfiles repo into a regular file
+    -- detached, with our copy as the only one left."""
+    real = tmp_path / "dotfiles" / "settings.json"
+    real.parent.mkdir()
+    real.write_text('{"old": true}', encoding="utf-8")
+    link = tmp_path / "settings.json"
+    try:
+        link.symlink_to(real)
+    except OSError as exc:  # pragma: no cover - needs developer mode on Windows
+        pytest.skip(f"symlink creation is not permitted here: {exc}")
+
+    setup_hook._atomic_write_text(link, '{"new": true}')
+
+    assert link.is_symlink(), "the link was replaced by a regular file"
+    assert real.read_text(encoding="utf-8") == '{"new": true}'

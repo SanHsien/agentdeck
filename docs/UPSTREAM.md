@@ -31,9 +31,9 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "6a498ea",
-      "last_merged": "6a498ea",
-      "note": "審視至上游 tip 6a498ea（含 v0.29.19）。已補齊 537e56f 之前被跳過的區間，兩個標記重新對齊。"
+      "last_reviewed": "0f97979",
+      "last_merged": "1ac8961",
+      "note": "審視至上游 v0.29.21（0f97979）。e16c5c0 只採用了一部分——遮蔽長度門檻本 fork 早已有，設定檔 symlink 保留已移植，self-heal log 的跨行程鎖尚未做（Windows 沒有 flock，要另抽共用鎖模組），因此 last_merged 停在 1ac8961。"
     }
   }
 }
@@ -62,6 +62,12 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
 
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
+| main | `410ba88` | docs: CLAUDE.md 補上 codex 雙 sqlite 與 agy 配額端點的實際行為 | 2026-08-10 | 上游 CLAUDE.md 的內部說明；本 fork 的對應段落已自行改寫，且對外連線已在 `SECURITY.md` 逐條列出（D-18）。 |
+| main | `d57e7c3` | refactor: 抽掉磁碟快取與 session hook 的三處逐字重複 | 2026-08-10 | 去重的三處在本 fork 的檔案結構下並非逐字重複（磁碟快取已分成 history／codex／agy 三個模組，session hook 在 `session_hooks.py`）；為了對齊上游而重構，風險大於收益。 |
+| main | `723b9ab` | fix(security): build_app.sh 核對 instate-cli 指紋才打包 | 2026-08-10 | 針對 macOS 的 `build_app.sh` 與 py2app 打包流程；本 fork 用 PyInstaller，且 `instate-cli` 已被 `persona_store` 取代，沒有要核對的外部二進位檔。 |
+| main | `6e22e84` | chore: 刪除死碼與 13 個孤兒翻譯鍵 | 2026-08-10 | 孤兒鍵清單是上游五語 bundle 的產物；本 fork 的兩語 bundle 已由 `test_i18n_key_parity.py` 與 v0.37.6 新增的兩條檢查把關，另行清理應以本 fork 自己的掃描為準。 |
+| main | `dfa051c` | chore(release): v0.29.20 | 2026-08-10 | 純上游版號（D-05）。 |
+| main | `0f97979` | chore(release): v0.29.21 | 2026-08-10 | 同上。 |
 | main | `ad786a9` | refactor(menubar): 第九刀——四塊搬進葉模組 | 2026-08-08 | 同 `86bde4a`：抽葉模組的概念本 fork 已是既有做法，被重構的 `menubar.py` 我們沒有。 |
 | main | `377aec2` | refactor(menubar): 第十刀——標題渲染與 PopoverViewController 出走 | 2026-08-08 | 同上。 |
 | main | `13eba4d` | chore: 發版 v0.29.19 | 2026-08-08 | 純上游版號；本 fork 版號獨立（D-05）。 |

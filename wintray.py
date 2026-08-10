@@ -28,6 +28,16 @@ from i18n import _t
 from panels import window_visibility
 from panels.dynamic_height import clamp_content_height, inject_content_height_script
 from panels.payload import _load_panel_html, _state_payload
+
+# Re-exported deliberately -- the ``as`` form is what marks a re-export explicit
+# under mypy strict. Callers and tests have always reached these through
+# wintray, and moving the registry into a leaf module for the size ceiling
+# should not move their import site.
+from panels.registry import PANEL_HEIGHTS as PANEL_HEIGHTS
+from panels.registry import TALENT_PANEL as TALENT_PANEL
+from panels.registry import WINDOWS_PANELS as WINDOWS_PANELS
+from panels.registry import available_panels as available_panels
+from panels.registry import renderable_panels as renderable_panels
 from prefs import _load_preferences, _save_preferences
 from pricing import calculate_cost
 from providers import agy_window_keeper, codex_loader
@@ -66,33 +76,6 @@ _TALENT_ACTIONS = frozenset(
 SLOW_POLL_INTERVAL_S = 300
 HISTORY_SCAN_CACHE_SECONDS = 30.0
 PANEL_WIDTH = 380
-WINDOWS_PANELS = (
-    ("classic", "panel_default_name", "classic.html"),
-    ("matrix", "panel_matrix", "matrix.html"),
-    ("win95", "panel_win95", "win95.html"),
-    ("newspaper", "panel_newspaper", "newspaper.html"),
-    ("cloud_observation", "panel_cloud_observation", "cloud_observation.html"),
-    ("aquarium", "panel_aquarium", "aquarium.html"),
-    ("prism_arcade", "panel_prism_arcade", "prism_arcade.html"),
-    ("black_hole", "panel_black_hole", "black_hole.html"),
-    ("lepidoptera", "panel_lepidoptera", "lepidoptera.html"),
-    ("world_cup", "panel_world_cup", "world_cup.html"),
-    ("talent_market", "panel_talent_market", "talent_market.html"),
-)
-PANEL_HEIGHTS = {
-    "classic": 1004,
-    "matrix": 1070,
-    "win95": 1079,
-    "newspaper": 1073,
-    "cloud_observation": 1023,
-    "aquarium": 1023,
-    "prism_arcade": 1023,
-    "black_hole": 1023,
-    "lepidoptera": 1070,
-    "world_cup": 812,
-    "talent_market": 812,
-}
-
 JS_SHIM = """
 <script>
 window.webkit = window.webkit || {};
@@ -451,16 +434,6 @@ def _system_background_color() -> str:
     return "#eef2f7"
 
 
-def available_panels() -> tuple[tuple[str, str, str], ...]:
-    """Every panel is available on Windows.
-
-    talent_market used to be excluded here because it depended on a macOS-only
-    vendored binary. persona_store replaced that binary with role definitions
-    shipped in this repository, so the panel works on Windows now.
-    """
-    return WINDOWS_PANELS
-
-
 def tray_icon_style(used_percent: float | None) -> tuple[str, tuple[int, int, int, int]]:
     if used_percent is None:
         return ("--", (110, 118, 129, 255))
@@ -672,7 +645,7 @@ class _WindowsTrayController:
         )
 
     def panel_filename(self) -> str:
-        return next(item[2] for item in available_panels() if item[0] == self.active_panel_id)
+        return next(item[2] for item in renderable_panels() if item[0] == self.active_panel_id)
 
     def panel_height(self) -> int:
         return self._content_height or PANEL_HEIGHTS[self.active_panel_id]
@@ -1098,14 +1071,34 @@ class _WindowsTrayController:
     def show_panel(self, _icon: Any = None, _item: Any = None) -> None:
         window_visibility.toggle_panel(self)
 
-    def switch_panel(self, panel_id: str) -> None:
+    def open_talent_market(self, _icon: Any = None, _item: Any = None) -> None:
+        """Show the talent market and bring the window forward.
+
+        Deliberately not remembered as the active panel: it is somewhere you go
+        to install a role, not a view to live in, and restoring it on launch
+        would hide the quota the app exists to show.
+
+        The refresh is not optional. The roster is only read while this panel is
+        the active one, and a switch reloads the page from ``latest_state`` --
+        which was built while some other panel was active and therefore carries
+        no roster at all. Without rebuilding here, opening the talent market
+        showed "component is not installed" every time until the next poll came
+        around, which reads as a broken feature rather than a slow one.
+        """
+        self.switch_panel(TALENT_PANEL[0], remember=False)
+        if not self.visible:
+            self.show_panel()
+        self.refresh()
+
+    def switch_panel(self, panel_id: str, *, remember: bool = True) -> None:
         self.active_panel_id = panel_id
         # Deliberately keep the previous panel's measured height instead of
         # resetting to None: on_loaded() clamps the window to fit before the
         # new panel reports its real height, and PANEL_HEIGHTS' fallback
         # values are near-fullscreen placeholders that would clamp a dragged
         # window's Y position back up to the top of the screen every switch.
-        _save_active_panel_id(panel_id)
+        if remember:
+            _save_active_panel_id(panel_id)
         # A panel reload is initialized from ``latest_state`` in ``on_loaded``.
         # Card order is changed directly by the JS bridge, outside the refresh
         # worker, so refresh this field from the shared preferences before the
@@ -1744,6 +1737,10 @@ def _menu(controller: _WindowsTrayController) -> Any:
         ),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem(_t(controller.language, "switch_panel"), pystray.Menu(*panel_items)),
+        pystray.MenuItem(
+            _t(controller.language, "panel_talent_market"),
+            controller.open_talent_market,
+        ),
         pystray.MenuItem(
             _t(controller.language, "hide_sections_menu"),
             pystray.Menu(

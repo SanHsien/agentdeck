@@ -383,6 +383,18 @@ def _load_settings() -> dict[str, Any]:
 
 
 def _atomic_write_text(path: Path, content: str, encoding: str = "utf-8") -> None:
+    """Replace a file's contents without replacing the file itself.
+
+    ``os.replace`` swaps the directory entry, so writing straight to ``path``
+    turns a symlinked settings file into a regular one -- someone who keeps
+    ``~/.claude/settings.json`` in a dotfiles repo would find it quietly
+    detached, with our write as the only copy. Resolving first means the
+    temporary file is created beside the real target, which also keeps the
+    rename on one filesystem instead of failing across a link.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with contextlib.suppress(OSError):
+        path = path.resolve()
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path: str | None = None
     try:

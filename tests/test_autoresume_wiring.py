@@ -25,7 +25,12 @@ from state.autoresume import (
 )
 from state.menubar_prefs import _auto_resume_config, _auto_resume_enabled
 
-NOW = int(datetime(2026, 8, 9, 10, 0, tzinfo=UTC).timestamp())
+# Relative to the real clock on purpose. tick() reads datetime.now() itself, so
+# a fixed date here is a time bomb: these tests passed on the day they were
+# written and went red a day later with no code change, because NOW + 3600 had
+# become the past and the scheduler correctly refused to schedule into it.
+# Every use below is an offset from "now", which is what the cases actually mean.
+NOW = int(datetime.now(UTC).timestamp())
 
 
 # --------------------------------------------------------------------------- prefs
