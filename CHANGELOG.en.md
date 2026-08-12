@@ -6,6 +6,16 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
+## [0.39.4] - 2026-08-12
+
+### Fixed
+- **A fat system prompt could pin the burn rate at Heavy**: the rate is total tokens divided by the span they cover, and the span had a one-minute floor, so a single `cache_creation` inside a very short window divided into a rate that read as sustained heavy burn. **Measured**: two messages thirty seconds apart, one of them carrying 20,000 cache-creation tokens, classified as Heavy — and the sprite ran accordingly.
+
+  The floor now matches this project's own forecast threshold (`burn_rate.MIN_FORECAST_SPAN_SECONDS`, five minutes) rather than a second number written next to it: two answers to "how short is too short" drift apart eventually. The same data now reads Active, while twenty minutes of genuinely heavy burn still reads Heavy — a fix that only ever suppresses is indistinguishable from deleting the feature. (Concept from upstream `d92f683`.)
+
+### Maintenance
+- Upstream review advanced to `49a0dfa`. **The panel architecture has diverged**: since upstream moved its nine panels onto a shared core, even `classic.html` no longer defines `window.usageApplyState`, while all nine panels here still do. Every new upstream theme (Catppuccin, stained glass, origami) is therefore un-copyable — taking one as-is would give a theme that renders but never receives quota data and never reports its height. All three are recorded as one piece of follow-up work in `docs/UPSTREAM.md`.
+
 ## [0.39.3] - 2026-08-10
 
 ### Fixed

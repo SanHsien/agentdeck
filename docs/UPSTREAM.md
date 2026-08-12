@@ -31,9 +31,9 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "3192874",
-      "last_merged": "45397d8",
-      "note": "審視至上游 v0.29.23（3192874）。移植 CODEX_HOME 支援與發版版號守門；共用面板核心與兩張新面板（3e0fc4e／7743649／417ff01）互相耦合、份量大，列為後續獨立工作，理由見 Skipped。"
+      "last_reviewed": "49a0dfa",
+      "last_merged": "d92f683",
+      "note": "審視至 49a0dfa。移植燃燒速率的短跨度誤判修正。**本 fork 與上游的面板架構已分家**：上游 3e0fc4e 之後所有面板（含 classic）都不再定義 window.usageApplyState，改吃共用核心；因此上游此後的每一張新面板都無法直接移植，三張（Catppuccin／彩繪玻璃／摺紙）一併列為同一項後續工作。"
     }
   }
 }
@@ -62,6 +62,8 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
 
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
+| main | `d01f38a`／`49a0dfa` | feat+docs: Catppuccin 面板主題與四款 flavor 截圖 | 2026-08-12 | **想要，但不能直接複製**。實測 `catppuccin.html` 完全沒有 JS 狀態入口（`applyState` 出現 0 次），因為上游 `3e0fc4e` 之後面板狀態由共用核心供應——上游連 `classic.html` 都已經不定義 `window.usageApplyState`，而本 fork 的九張面板都還定義它。照抄會得到一張畫得出來、但永遠收不到額度資料、也永遠不回報高度的主題。與 `3e0fc4e`／`7743649`／`417ff01` 合併為同一項後續工作。 |
+| main | `2a03853` | fix: 新面板同步測試在 Windows CI 誤觸 PyObjC import | 2026-08-12 | 為他們的 `panels.panel_ids()`（延遲 import PyObjC 的 HTMLPanel）加 macOS-only skip；本 fork 沒有那條測試，也沒有 PyObjC 路徑。 |
 | main | `efce61a` | docs: 修正鐵則措辭矛盾、標註 codex_otel 舊格式相容路徑 | 2026-08-10 | 文件本身是上游 CLAUDE.md，但其中的事實已採用並**自行量測驗證**後寫進本 fork 的 CLAUDE.md：`codex_otel.trace_safe` 在本機 35,250 筆紀錄中只佔 47 筆，全部集中在 2026-08-05 的 52 分鐘視窗內，而該表至今仍在寫入。 |
 | main | `7a8f8f6` | fix: 補 ruff lint（import 排序、Yoda condition） | 2026-08-10 | 修的是上游當時的 lint 紅燈；本 fork 的 ruff gate 一直是綠的。 |
 | main | `bd89d98`／`fe0d547`／`236ff02`／`483e635` | docs/style: 官網與主題文案 | 2026-08-10 | 上游自家官網的內容與視覺；本 fork 的 `docs/index.html` 已獨立改寫，主題清單也因移除 World Cup 而不同。 |

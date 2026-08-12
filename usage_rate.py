@@ -10,6 +10,7 @@ import os
 import time
 from collections.abc import Callable
 
+from burn_rate import MIN_FORECAST_SPAN_SECONDS
 from providers.history_loader import UsageEntry, load_entries
 
 BURN_RATE_THRESH_NORMAL = 500.0  # tokens/min
@@ -56,7 +57,11 @@ class UsageRateTracker:
 
         active_tokens = sum(entry.active_tokens for entry in entries)
         elapsed_seconds = (entries[-1].timestamp - entries[0].timestamp).total_seconds()
-        elapsed_minutes = max(elapsed_seconds / 60.0, 1.0)
+        # Match burn_rate.MIN_FORECAST_SPAN_SECONDS: over a shorter span than
+        # this, one message's cache_creation -- a fat system prompt at the start
+        # of a session -- divides into a rate that reads as sustained Heavy
+        # burn. Two messages thirty seconds apart were enough to trigger it.
+        elapsed_minutes = max(elapsed_seconds / 60.0, MIN_FORECAST_SPAN_SECONDS / 60.0)
         burn_rate = active_tokens / min(elapsed_minutes, 60.0)
 
         if burn_rate < BURN_RATE_THRESH_NORMAL:
