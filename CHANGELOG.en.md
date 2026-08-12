@@ -6,6 +6,18 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
+## [0.39.3] - 2026-08-10
+
+### Fixed
+- **The About dialog could not be closed**: it was raised with no owner from a background thread, so Windows never gave it focus and it opened *behind* the window you were looking at — pressing About looked like it did nothing. So you pressed it again, and **every press added another dialog**: measured, three presses produced three dialogs, each needing its own dismissal. That is what "it will not close" actually was.
+
+  The dialog is now owned by the panel window and raised with `MB_SETFOREGROUND | MB_TOPMOST`, so it sits above the always-on-top panel and greys the panel out while it waits — visible, and obviously the thing to deal with. Only one native dialog can be open at a time. Verified on a real window: three presses now produce one dialog; the dialog's owner is the panel, the panel is disabled while it is up, and re-enabled when it closes.
+
+  About also no longer blocks the panel's JS bridge thread, so the panel stays responsive while the dialog is open.
+
+### Maintenance
+- Native dialog handling moved to `win_modal.py`, bringing `wintray.py` back under its 1900-line ceiling rather than raising it. The lock is process-wide rather than per-object: there is one UI and one user, so a second modal is never the right answer.
+
 ## [0.39.2] - 2026-08-10
 
 ### Fixed

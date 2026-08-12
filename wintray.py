@@ -22,6 +22,7 @@ import about_info
 import autoresume_scheduler
 import update_checker
 import win_login_item
+import win_modal
 import window_keeper
 from burn_rate import BurnRateTracker
 from i18n import _t
@@ -58,6 +59,7 @@ from usage_client import ClaudeUsageClient, PollState
 from usage_lang import detect_lang
 from usage_notifications import NotificationEvent, QuotaNotifier
 from usage_rate import UsageRateTracker
+from win_modal import MB_ICON_INFO, MB_ICON_WARNING, MB_YESNOCANCEL
 
 if TYPE_CHECKING:
     from PIL.Image import Image
@@ -65,9 +67,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # MessageBoxW uMSGBOXPARAMS icon flags.
-MB_ICON_WARNING = 0x30
-MB_ICON_INFO = 0x40
-MB_YESNOCANCEL = 0x03
 _TALENT_ACTIONS = frozenset(
     {"install_role", "restore_role", "ignore_drift", "set_folder", "launch_role"}
 )
@@ -1534,12 +1533,10 @@ class _WindowsTrayController:
         with contextlib.suppress(Exception):
             self._message_box(text, style=MB_ICON_WARNING if failed else MB_ICON_INFO)
 
-    def _message_box(self, text: str, *, style: int = 0x40) -> int:
-        import ctypes
-
-        library_name = "windll"
-        windll: Any = getattr(ctypes, library_name)
-        return int(windll.user32.MessageBoxW(0, text, "agentdeck", style))
+    def _message_box(self, text: str, *, style: int = MB_ICON_INFO) -> int:
+        return win_modal.show(
+            text, style=style, owner=win_modal.owner_handle(self.window, visible=self.visible)
+        )
 
     def handle_panel_message(self, message: object) -> list[dict[str, object]] | None:
         payload: object = message
@@ -1583,7 +1580,7 @@ class _WindowsTrayController:
             elif action == "open_discussion":
                 self.open_discussion()
             elif action == "show_about":
-                self.show_about()
+                threading.Thread(target=self.show_about, daemon=True).start()
             elif action in _TALENT_ACTIONS:
                 self._handle_talent_action(action, payload)
             elif action == "reset_panel_position":

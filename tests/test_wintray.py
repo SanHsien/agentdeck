@@ -14,6 +14,7 @@ import pytest
 
 import prefs
 import win_login_item
+import win_modal
 import wintray
 from i18n import _t
 from state import menubar_prefs, menubar_state
@@ -1340,3 +1341,60 @@ def test_the_talent_market_is_never_restored_as_the_startup_panel(
     controller.switch_panel("matrix")
 
     assert saved == ["matrix"]
+
+
+def test_only_one_modal_can_be_open_at_a_time(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every click used to add another dialog. They open behind the window and
+    never take focus, so the first click looks like it did nothing and the user
+    clicks again -- three clicks, three dialogs, each needing its own dismissal.
+    That is what "the About box will not close" actually was."""
+    import ctypes
+
+    shown: list[str] = []
+
+    def blocking_box(hwnd: int, text: str, title: str, style: int) -> int:
+        shown.append(text)
+        # Stands in for MessageBoxW blocking until dismissed: ask for a second
+        # one from inside the first, exactly as a second click would.
+        win_modal.show("second")
+        return 1
+
+    monkeypatch.setattr(
+        ctypes, "windll", SimpleNamespace(user32=SimpleNamespace(MessageBoxW=blocking_box))
+    )
+
+    win_modal.show("first")
+
+    assert shown == ["first"], "a modal opened while another was already up"
+
+
+def test_a_modal_is_owned_by_the_panel_so_it_sits_above_it() -> None:
+    """The panel is always-on-top. An unowned dialog can be covered by it, and
+    an owned one is placed above it and greys it out while it waits."""
+    window = SimpleNamespace(native=SimpleNamespace(Handle=SimpleNamespace(ToInt64=lambda: 4242)))
+
+    assert win_modal.owner_handle(window, visible=True) == 4242
+
+
+def test_the_owner_handle_survives_a_dotnet_intptr() -> None:
+    """WinForms returns a .NET IntPtr, and int() refuses it outright. Letting
+    that raise and catching it turned the whole fix into a silent no-op."""
+
+    class IntPtrLike:
+        def __int__(self) -> int:
+            raise TypeError("int() argument must be a real number, not 'IntPtr'")
+
+        def __str__(self) -> str:
+            return "9182"
+
+    window = SimpleNamespace(native=SimpleNamespace(Handle=IntPtrLike()))
+
+    assert win_modal.owner_handle(window, visible=True) == 9182
+
+
+def test_a_hidden_panel_owns_nothing() -> None:
+    """An owner the user cannot see gives the dialog nothing to sit above and
+    nothing to disable."""
+    window = SimpleNamespace(native=SimpleNamespace(Handle=SimpleNamespace(ToInt64=lambda: 4242)))
+
+    assert win_modal.owner_handle(window, visible=False) == 0
