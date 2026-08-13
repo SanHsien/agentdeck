@@ -6,6 +6,18 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
+## [0.40.0] - 2026-08-12
+
+### Changed
+- **Panels now share one behaviour core; a theme is its appearance**: the nine old themes came to 11,263 lines, 3,675 of them `<script>` that was **89–96% identical** between files — the only genuinely distinct part of a theme was its CSS, on top of ~350 lines of copied logic. That cost kept surfacing: removing the minimise button, the drag regions, the `data-i18n` contract each had to be done nine times, and the World Cup panel shipped with no Antigravity fields at all until someone grepped for them. The behaviour now lives in `panel_core.js` and a panel carries its own CSS and a few hooks.
+- **Four themes**: Classic (default), **Catppuccin** (all four flavours — Latte, Frappé, Macchiato, Mocha — switchable from the tray), **Stained Glass** and **Origami**. The nine old themes are gone. Each new theme was checked for full Antigravity support before porting (19/13/17 references) so the World Cup situation could not repeat.
+  - Anyone on an old theme lands back on the default automatically; nothing to do.
+
+### Fixed
+- **A panel that does not fit now scrolls instead of losing content**: the new panels pin `html, body` to `100vh; overflow: hidden`, so on a screen shorter than the panel every card was flex-shrunk and clipped its own last row — and `overflow: hidden` meant the clipped part was **unreachable**. Measured against the old panels: they did not clip, all four new ones did.
+- **The window no longer covers the taskbar**: the height cap was applied to the work area and the title bar added *afterwards*, making the outer window taller than the work area by exactly one caption. The chrome is now subtracted before the cap, and the position is clamped by the outer height.
+- **First-run placement anchors to the top of the screen**: the panel is a column taller than the work area, so anchoring it to the bottom pushed it off-screen and moved the title bar people grab depending on how tall the theme was. The side still follows the taskbar. Measured (logical pixels): window `(1315, 12, 1695, 900)`, work area `(0, 0, 1707, 912)`.
+
 ## [0.39.4] - 2026-08-12
 
 ### Fixed

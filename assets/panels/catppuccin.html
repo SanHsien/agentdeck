@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-flavor="{{PANEL_FLAVOR}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -590,6 +590,532 @@
     .card[data-card="agy"] { cursor: grab; }
     .card.is-dragging { cursor: grabbing; opacity: 0.72; box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24); transform: translateY(-2px); }
     .is-card-dragging, .is-card-dragging * { user-select: none; }
+/* 工程藍圖 × Catppuccin — 色碼由官方 palette.json 生成，勿手改 */
+html[data-flavor="latte"] {
+  --ctp-rosewater: #dc8a78;
+  --ctp-flamingo: #dd7878;
+  --ctp-pink: #ea76cb;
+  --ctp-mauve: #8839ef;
+  --ctp-red: #d20f39;
+  --ctp-maroon: #e64553;
+  --ctp-peach: #fe640b;
+  --ctp-yellow: #df8e1d;
+  --ctp-green: #40a02b;
+  --ctp-teal: #179299;
+  --ctp-sky: #04a5e5;
+  --ctp-sapphire: #209fb5;
+  --ctp-blue: #1e66f5;
+  --ctp-lavender: #7287fd;
+  --ctp-text: #4c4f69;
+  --ctp-subtext1: #5c5f77;
+  --ctp-subtext0: #6c6f85;
+  --ctp-overlay2: #7c7f93;
+  --ctp-overlay1: #8c8fa1;
+  --ctp-overlay0: #9ca0b0;
+  --ctp-surface2: #acb0be;
+  --ctp-surface1: #bcc0cc;
+  --ctp-surface0: #ccd0da;
+  --ctp-base: #eff1f5;
+  --ctp-mantle: #e6e9ef;
+  --ctp-crust: #dce0e8;
+  --bg: #e6e9ef;
+  --panel: #eff1f5;
+  --panel-border: #8c8fa1;
+  --line: #acb0be;
+  --text: #4c4f69;
+  --muted: #6c6f85;
+  --blueprint-accent: #209fb5;
+  --button: #ccd0da;
+  --button-border: #bcc0cc;
+  --button-hover: #bcc0cc;
+  --warn: #df8e1d;
+  --danger: #d20f39;
+  --claude: var(--ctp-peach);
+  --codex: var(--ctp-sky);
+  --agy: var(--ctp-mauve);
+  --projects: var(--ctp-green);
+  --track: color-mix(in srgb, var(--ctp-overlay0) 25%, transparent);
+  --blueprint-grid-fine: color-mix(in srgb, var(--ctp-overlay0) 22%, transparent);
+  --blueprint-grid-coarse: color-mix(in srgb, var(--ctp-overlay0) 45%, transparent);
+}
+html[data-flavor="frappe"] {
+  --ctp-rosewater: #f2d5cf;
+  --ctp-flamingo: #eebebe;
+  --ctp-pink: #f4b8e4;
+  --ctp-mauve: #ca9ee6;
+  --ctp-red: #e78284;
+  --ctp-maroon: #ea999c;
+  --ctp-peach: #ef9f76;
+  --ctp-yellow: #e5c890;
+  --ctp-green: #a6d189;
+  --ctp-teal: #81c8be;
+  --ctp-sky: #99d1db;
+  --ctp-sapphire: #85c1dc;
+  --ctp-blue: #8caaee;
+  --ctp-lavender: #babbf1;
+  --ctp-text: #c6d0f5;
+  --ctp-subtext1: #b5bfe2;
+  --ctp-subtext0: #a5adce;
+  --ctp-overlay2: #949cbb;
+  --ctp-overlay1: #838ba7;
+  --ctp-overlay0: #737994;
+  --ctp-surface2: #626880;
+  --ctp-surface1: #51576d;
+  --ctp-surface0: #414559;
+  --ctp-base: #303446;
+  --ctp-mantle: #292c3c;
+  --ctp-crust: #232634;
+  --bg: #292c3c;
+  --panel: #303446;
+  --panel-border: #838ba7;
+  --line: #626880;
+  --text: #c6d0f5;
+  --muted: #a5adce;
+  --blueprint-accent: #85c1dc;
+  --button: #414559;
+  --button-border: #51576d;
+  --button-hover: #51576d;
+  --warn: #e5c890;
+  --danger: #e78284;
+  --claude: var(--ctp-peach);
+  --codex: var(--ctp-sky);
+  --agy: var(--ctp-mauve);
+  --projects: var(--ctp-green);
+  --track: color-mix(in srgb, var(--ctp-overlay0) 25%, transparent);
+  --blueprint-grid-fine: color-mix(in srgb, var(--ctp-overlay0) 22%, transparent);
+  --blueprint-grid-coarse: color-mix(in srgb, var(--ctp-overlay0) 45%, transparent);
+}
+html[data-flavor="macchiato"] {
+  --ctp-rosewater: #f4dbd6;
+  --ctp-flamingo: #f0c6c6;
+  --ctp-pink: #f5bde6;
+  --ctp-mauve: #c6a0f6;
+  --ctp-red: #ed8796;
+  --ctp-maroon: #ee99a0;
+  --ctp-peach: #f5a97f;
+  --ctp-yellow: #eed49f;
+  --ctp-green: #a6da95;
+  --ctp-teal: #8bd5ca;
+  --ctp-sky: #91d7e3;
+  --ctp-sapphire: #7dc4e4;
+  --ctp-blue: #8aadf4;
+  --ctp-lavender: #b7bdf8;
+  --ctp-text: #cad3f5;
+  --ctp-subtext1: #b8c0e0;
+  --ctp-subtext0: #a5adcb;
+  --ctp-overlay2: #939ab7;
+  --ctp-overlay1: #8087a2;
+  --ctp-overlay0: #6e738d;
+  --ctp-surface2: #5b6078;
+  --ctp-surface1: #494d64;
+  --ctp-surface0: #363a4f;
+  --ctp-base: #24273a;
+  --ctp-mantle: #1e2030;
+  --ctp-crust: #181926;
+  --bg: #1e2030;
+  --panel: #24273a;
+  --panel-border: #8087a2;
+  --line: #5b6078;
+  --text: #cad3f5;
+  --muted: #a5adcb;
+  --blueprint-accent: #7dc4e4;
+  --button: #363a4f;
+  --button-border: #494d64;
+  --button-hover: #494d64;
+  --warn: #eed49f;
+  --danger: #ed8796;
+  --claude: var(--ctp-peach);
+  --codex: var(--ctp-sky);
+  --agy: var(--ctp-mauve);
+  --projects: var(--ctp-green);
+  --track: color-mix(in srgb, var(--ctp-overlay0) 25%, transparent);
+  --blueprint-grid-fine: color-mix(in srgb, var(--ctp-overlay0) 22%, transparent);
+  --blueprint-grid-coarse: color-mix(in srgb, var(--ctp-overlay0) 45%, transparent);
+}
+html[data-flavor="mocha"] {
+  --ctp-rosewater: #f5e0dc;
+  --ctp-flamingo: #f2cdcd;
+  --ctp-pink: #f5c2e7;
+  --ctp-mauve: #cba6f7;
+  --ctp-red: #f38ba8;
+  --ctp-maroon: #eba0ac;
+  --ctp-peach: #fab387;
+  --ctp-yellow: #f9e2af;
+  --ctp-green: #a6e3a1;
+  --ctp-teal: #94e2d5;
+  --ctp-sky: #89dceb;
+  --ctp-sapphire: #74c7ec;
+  --ctp-blue: #89b4fa;
+  --ctp-lavender: #b4befe;
+  --ctp-text: #cdd6f4;
+  --ctp-subtext1: #bac2de;
+  --ctp-subtext0: #a6adc8;
+  --ctp-overlay2: #9399b2;
+  --ctp-overlay1: #7f849c;
+  --ctp-overlay0: #6c7086;
+  --ctp-surface2: #585b70;
+  --ctp-surface1: #45475a;
+  --ctp-surface0: #313244;
+  --ctp-base: #1e1e2e;
+  --ctp-mantle: #181825;
+  --ctp-crust: #11111b;
+  --bg: #181825;
+  --panel: #1e1e2e;
+  --panel-border: #7f849c;
+  --line: #585b70;
+  --text: #cdd6f4;
+  --muted: #a6adc8;
+  --blueprint-accent: #74c7ec;
+  --button: #313244;
+  --button-border: #45475a;
+  --button-hover: #45475a;
+  --warn: #f9e2af;
+  --danger: #f38ba8;
+  --claude: var(--ctp-peach);
+  --codex: var(--ctp-sky);
+  --agy: var(--ctp-mauve);
+  --projects: var(--ctp-green);
+  --track: color-mix(in srgb, var(--ctp-overlay0) 25%, transparent);
+  --blueprint-grid-fine: color-mix(in srgb, var(--ctp-overlay0) 22%, transparent);
+  --blueprint-grid-coarse: color-mix(in srgb, var(--ctp-overlay0) 45%, transparent);
+}
+
+* {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace !important;
+  letter-spacing: 0.05em !important;
+}
+
+body {
+  background-color: var(--bg) !important;
+  background-image: 
+    repeating-linear-gradient(0deg, transparent, transparent 7px, var(--blueprint-grid-fine) 7px, var(--blueprint-grid-fine) 8px),
+    repeating-linear-gradient(90deg, transparent, transparent 7px, var(--blueprint-grid-fine) 7px, var(--blueprint-grid-fine) 8px),
+    repeating-linear-gradient(0deg, transparent, transparent 39px, var(--blueprint-grid-coarse) 39px, var(--blueprint-grid-coarse) 40px),
+    repeating-linear-gradient(90deg, transparent, transparent 39px, var(--blueprint-grid-coarse) 39px, var(--blueprint-grid-coarse) 40px) !important;
+  background-position: center top !important;
+}
+
+.card, .footer, .track, .fill, .proj-bar, .proj-bar-fill, .switch, .action, .brand img, .brand-icon, .proj-rank, .meta > div, .service-alert {
+  border-radius: 0 !important;
+}
+
+.card, .footer {
+  background: var(--bg) !important;
+  border: 1px solid var(--panel-border) !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.card::before, .footer::before {
+  content: "";
+  display: block !important;
+  position: absolute;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--panel-border), var(--panel-border)) 4px 8px / 9px 1px no-repeat,
+    linear-gradient(var(--panel-border), var(--panel-border)) 8px 4px / 1px 9px no-repeat,
+    linear-gradient(var(--panel-border), var(--panel-border)) calc(100% - 4px) 8px / 9px 1px no-repeat,
+    linear-gradient(var(--panel-border), var(--panel-border)) calc(100% - 8px) 4px / 1px 9px no-repeat,
+    linear-gradient(var(--panel-border), var(--panel-border)) 4px calc(100% - 8px) / 9px 1px no-repeat,
+    linear-gradient(var(--panel-border), var(--panel-border)) 8px calc(100% - 4px) / 1px 9px no-repeat,
+    linear-gradient(var(--panel-border), var(--panel-border)) calc(100% - 4px) calc(100% - 8px) / 9px 1px no-repeat,
+    linear-gradient(var(--panel-border), var(--panel-border)) calc(100% - 8px) calc(100% - 4px) / 1px 9px no-repeat !important;
+  opacity: 1 !important;
+  z-index: 10;
+}
+
+.card::after, .footer::after {
+  content: "SEC: 0" !important;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  padding: 2px 6px !important;
+  font-size: 8px !important;
+  line-height: 10px !important;
+  font-weight: bold;
+  color: var(--panel-border);
+  border-top: 1px solid var(--panel-border);
+  border-left: 1px solid var(--panel-border);
+  background: var(--bg);
+  pointer-events: none;
+  z-index: 10;
+}
+.card[data-card="claude"]::after { content: "SYS: CLAUDE" !important; }
+.card[data-card="codex"]::after { content: "SYS: CODEX" !important; }
+.card[data-card="agy"]::after { content: "SYS: AGY" !important; }
+.card[data-card="projects"]::after { content: "SYS: PROJ" !important; }
+.footer::after { content: "SYS: META" !important; }
+
+.row-title, .switch, .action, .meta > div, .today, .proj-name {
+  text-transform: uppercase;
+}
+
+h1 {
+  letter-spacing: 0.01em !important;
+}
+
+.track {
+  position: relative !important;
+  background: 
+    repeating-linear-gradient(90deg, 
+      var(--panel-border) 0, 
+      var(--panel-border) 1px, 
+      transparent 1px, 
+      transparent 10%) bottom left / 100% 4px no-repeat,
+    transparent !important;
+  border-bottom: 1px solid var(--panel-border) !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.track::before,
+.track::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  width: 6px;
+  height: 6px;
+  border-top: 1px solid var(--panel-border);
+}
+.track::before {
+  left: 0;
+  border-left: 1px solid var(--panel-border);
+  transform: translateY(-50%) rotate(-45deg);
+}
+.track::after {
+  right: 0;
+  border-right: 1px solid var(--panel-border);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.fill {
+  background: repeating-linear-gradient(45deg, 
+    var(--blueprint-accent), 
+    var(--blueprint-accent) 2px, 
+    transparent 2px, 
+    transparent 4px) !important;
+  box-shadow: none !important;
+  border-bottom: 2px solid var(--blueprint-accent) !important;
+}
+
+.proj-bar {
+  position: relative !important;
+  background: 
+    repeating-linear-gradient(90deg, 
+      var(--panel-border) 0, 
+      var(--panel-border) 1px, 
+      transparent 1px, 
+      transparent 10%) bottom left / 100% 3px no-repeat,
+    transparent !important;
+  border-bottom: 1px solid var(--panel-border) !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.proj-bar::before,
+.proj-bar::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  width: 4px;
+  height: 4px;
+  border-top: 1px solid var(--panel-border);
+}
+.proj-bar::before {
+  left: 0;
+  border-left: 1px solid var(--panel-border);
+  transform: translateY(-50%) rotate(-45deg);
+}
+.proj-bar::after {
+  right: 0;
+  border-right: 1px solid var(--panel-border);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.proj-bar-fill {
+  background: repeating-linear-gradient(45deg, 
+    var(--blueprint-accent), 
+    var(--blueprint-accent) 1px, 
+    transparent 1px, 
+    transparent 3px) !important;
+  border-bottom: 1px solid var(--blueprint-accent) !important;
+  opacity: 1 !important;
+}
+
+.percent, .proj-tokens, .proj-cost {
+  text-shadow: 
+    -1px -1px 0 var(--bg),  
+     1px -1px 0 var(--bg),
+    -1px  1px 0 var(--bg),
+     1px  1px 0 var(--bg) !important;
+}
+
+.action, .switch {
+  background: var(--button) !important;
+  border: 1px solid var(--button-border) !important;
+  color: var(--text) !important;
+  box-shadow: none !important;
+}
+
+.action:hover, .switch:hover {
+  background: var(--button-hover) !important;
+}
+
+.action.primary {
+  background: var(--blueprint-accent) !important;
+  color: var(--bg) !important;
+  border-color: var(--blueprint-accent) !important;
+  font-weight: bold !important;
+}
+
+.action.primary:hover {
+  background: var(--text) !important;
+  border-color: var(--text) !important;
+  color: var(--bg) !important;
+}
+
+.switch[data-active="true"] {
+  background: var(--blueprint-accent) !important;
+  color: var(--bg) !important;
+  border-color: var(--blueprint-accent) !important;
+}
+
+.brand img {
+  filter: grayscale(100%) contrast(200%);
+  border: 1px solid var(--panel-border);
+  box-shadow: none !important;
+}
+
+.brand-icon {
+  background: transparent !important;
+  box-shadow: inset 0 0 0 1px var(--panel-border) !important;
+  color: var(--blueprint-accent) !important;
+}
+
+.proj-rank {
+  border: 1px solid var(--panel-border) !important;
+  background: transparent !important;
+  color: var(--text) !important;
+}
+.proj-row:first-child .proj-rank {
+  border-color: var(--blueprint-accent) !important;
+  color: var(--blueprint-accent) !important;
+  background: transparent !important;
+}
+
+.meta > div {
+  border: 1px solid var(--panel-border) !important;
+  background: transparent !important;
+}
+
+
+/* 藍圖原稿把填色寫死成單一製圖藍，蓋掉了每張卡自己的 --accent。
+   改回吃 --accent，四張卡才會各是 peach / sky / mauve / green。 */
+.fill {
+  background: repeating-linear-gradient(45deg,
+    var(--accent),
+    var(--accent) 2px,
+    transparent 2px,
+    transparent 4px) !important;
+  border-bottom: 2px solid var(--accent) !important;
+}
+
+.proj-bar-fill {
+  background: repeating-linear-gradient(45deg,
+    var(--ctp-green),
+    var(--ctp-green) 2px,
+    transparent 2px,
+    transparent 4px) !important;
+}
+
+/* 卡片原本跟背景同色，整片糊在一起。Catppuccin 的層次靠 mantle < base，讓卡片浮起來。 */
+.card, .footer {
+  background: var(--panel) !important;
+}
+
+/* SYS 標籤原本貼在卡片右下角內側，正好蓋住最後一行的 "Resets in ..."。
+   改成騎在卡片下框線上，像貼在圖紙外緣的標籤，就不會壓字。 */
+.card::after, .footer::after {
+  bottom: -7px !important;
+  right: 10px !important;
+  background: var(--panel) !important;
+}
+
+/* 署名原本淡到幾乎看不見 */
+.attribution {
+  color: var(--muted) !important;
+  opacity: 0.75 !important;
+}
+
+.attribution a { color: var(--ctp-sapphire) !important; }
+
+/* 等寬字 + 大寫 + 字距讓標題列塞不下，兩邊各讓一點，避免 "Claude Co…" 被截 */
+.brand h1 {
+  font-size: 19px !important;
+  letter-spacing: 0 !important;
+}
+
+.switch {
+  letter-spacing: 0.02em !important;
+  font-size: 11px !important;
+}
+
+/* footer 署名被色票列擠掉，拉開間距並補回對比 */
+.footer .credit,
+.footer > div:last-of-type {
+  opacity: 1;
+}
+
+/* 底部 flavor 選色列：方形色票 + 製圖十字，配合圖紙語彙 */
+.ctp-flavors {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  padding: 12px 0 2px;
+}
+
+.ctp-flavors button {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 0;
+  border: 1px solid var(--panel-border);
+  cursor: pointer;
+  position: relative;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: transform 0.12s ease;
+}
+
+.ctp-flavors button:hover { transform: scale(1.15); }
+
+.ctp-flavors button[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border: 1px solid var(--blueprint-accent);
+}
+
+.ctp-flavors button[aria-pressed="true"]::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -9px;
+  width: 1px;
+  height: 5px;
+  background: var(--blueprint-accent);
+}
+
+.ctp-flavors button[data-flavor="latte"] { background: #eff1f5; }
+.ctp-flavors button[data-flavor="frappe"] { background: #303446; }
+.ctp-flavors button[data-flavor="macchiato"] { background: #24273a; }
+.ctp-flavors button[data-flavor="mocha"] { background: #1e1e2e; }
+
+
   </style>
 </head>
 <body>
@@ -618,6 +1144,7 @@
       </header>
       <div class="row" data-row="session"></div>
       <div class="row" data-row="weekly"></div>
+      <div class="codex-credits" data-codex-credits></div>
     </section>
 
     <section class="card" data-card="agy" style="--accent: var(--agy)">
@@ -670,9 +1197,47 @@
         <button class="action" data-action="install" data-i18n="install_hook">Install Hook</button>
       </div>
       <p class="attribution">based on <a href="https://github.com/aqua5230/usage" target="_blank">usage</a> by lollapalooza</p>
+      <div class="ctp-flavors">
+        <button type="button" data-flavor="latte" title="Latte" aria-label="Latte" aria-pressed="false"></button>
+        <button type="button" data-flavor="frappe" title="Frappé" aria-label="Frappé" aria-pressed="false"></button>
+        <button type="button" data-flavor="macchiato" title="Macchiato" aria-label="Macchiato" aria-pressed="false"></button>
+        <button type="button" data-flavor="mocha" title="Mocha" aria-label="Mocha" aria-pressed="false"></button>
+      </div>
     </section>
   </main>
 
+  <script>
+    var ctpFlavorButtons = document.querySelectorAll(".ctp-flavors button");
+
+    function syncCtpFlavorButtons() {
+      var flavor = document.documentElement.dataset.flavor;
+      for (var i = 0; i < ctpFlavorButtons.length; i += 1) {
+        ctpFlavorButtons[i].setAttribute(
+          "aria-pressed",
+          String(ctpFlavorButtons[i].dataset.flavor === flavor)
+        );
+      }
+    }
+
+    function setCtpFlavor(flavor) {
+      document.documentElement.dataset.flavor = flavor;
+      syncCtpFlavorButtons();
+      var bridge =
+        window.webkit &&
+        window.webkit.messageHandlers &&
+        window.webkit.messageHandlers.usage;
+      if (bridge && typeof bridge.postMessage === "function") {
+        bridge.postMessage(JSON.stringify({ action: "set_panel_flavor", flavor: flavor }));
+      }
+    }
+
+    for (var i = 0; i < ctpFlavorButtons.length; i += 1) {
+      ctpFlavorButtons[i].addEventListener("click", function () {
+        setCtpFlavor(this.dataset.flavor);
+      });
+    }
+    syncCtpFlavorButtons();
+  </script>
   <script>
 {{CORE_SCRIPT}}  </script>
 </body>

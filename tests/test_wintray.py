@@ -327,7 +327,7 @@ def test_switch_panel_keeps_dragged_position_before_new_height_is_measured(
     controller.handle_panel_message(json.dumps({"action": "content_height", "height": 700}))
     window.x, window.y = 300, 200  # simulates the user dragging the window here
 
-    controller.switch_panel("cloud_observation")  # PANEL_HEIGHTS[...] == 1023
+    controller.switch_panel("catppuccin")
     controller.on_loaded()
 
     assert moves[-1] == (300, 200)
@@ -375,7 +375,7 @@ def test_switch_panel_keeps_dragged_position_on_secondary_monitor(
     controller.handle_panel_message(json.dumps({"action": "content_height", "height": 700}))
     window.x, window.y = 2200, 300  # simulates dragging the window onto the secondary monitor
 
-    controller.switch_panel("cloud_observation")
+    controller.switch_panel("catppuccin")
     controller.on_loaded()
 
     assert moves[-1] == (2200, 300)
@@ -437,14 +437,16 @@ def test_selected_panel_switch_waits_for_bridge_promise_and_debounces(
     monkeypatch.setattr(controller, "switch_panel", switched_to.append)
     monkeypatch.setattr(threading, "Timer", FakeTimer)
 
-    controller.handle_panel_message(json.dumps({"action": "switch_panel", "panel_id": "matrix"}))
-    controller.handle_panel_message(json.dumps({"action": "switch_panel", "panel_id": "win95"}))
+    controller.handle_panel_message(
+        json.dumps({"action": "switch_panel", "panel_id": "catppuccin"})
+    )
+    controller.handle_panel_message(json.dumps({"action": "switch_panel", "panel_id": "origami"}))
 
     assert len(scheduled) == 1
     assert scheduled[0].delay == 0.05
     scheduled[0].fire()
 
-    assert switched_to == ["matrix"]
+    assert switched_to == ["catppuccin"]
 
 
 def test_panel_menu_data_is_localized_and_reads_current_checks(
@@ -452,7 +454,7 @@ def test_panel_menu_data_is_localized_and_reads_current_checks(
 ) -> None:
     controller = wintray._WindowsTrayController(mock=True, interval=60)
     controller.language = "en"
-    controller.active_panel_id = "matrix"
+    controller.active_panel_id = "catppuccin"
     monkeypatch.setattr(wintray, "_hide_claude_enabled", lambda: True)
     monkeypatch.setattr(wintray, "_hide_codex_enabled", lambda: False)
     monkeypatch.setattr(wintray, "_hide_agy_enabled", lambda: True)
@@ -488,7 +490,7 @@ def test_panel_menu_data_is_localized_and_reads_current_checks(
     ]
     panels = cast(list[dict[str, object]], menu[4]["children"])
     hidden_sections = cast(list[dict[str, object]], menu[5]["children"])
-    assert panels[1]["panelId"] == "matrix"
+    assert panels[1]["panelId"] == "catppuccin"
     assert panels[1]["checked"] is True
     assert [item["checked"] for item in hidden_sections] == [True, False, True]
     assert menu[7]["checked"] is True
@@ -505,7 +507,11 @@ def test_panel_menu_data_is_localized_and_reads_current_checks(
         ({"action": "open_discussion"}, "open_discussion", ()),
         ({"action": "show_about"}, "show_about", ()),
         ({"action": "reset_panel_position"}, "reset_panel_position", ()),
-        ({"action": "switch_panel", "panel_id": "matrix"}, "_schedule_panel_switch", ("matrix",)),
+        (
+            {"action": "switch_panel", "panel_id": "catppuccin"},
+            "_schedule_panel_switch",
+            ("catppuccin",),
+        ),
         (
             {"action": "toggle_hide_section", "preference_key": "hide_codex_section"},
             "toggle_hide_section",
@@ -631,7 +637,7 @@ def test_tray_click_restores_a_minimized_panel(monkeypatch: pytest.MonkeyPatch) 
     assert calls == ["place", "show", "restore", "inject:True", "refresh"]
 
 
-@pytest.mark.parametrize("panel_id", ["matrix", "aquarium", "win95"])
+@pytest.mark.parametrize("panel_id", ["catppuccin", "stained_glass", "origami"])
 def test_card_order_persists_into_the_next_loaded_panel(
     monkeypatch: pytest.MonkeyPatch,
     panel_id: str,
@@ -1164,19 +1170,23 @@ def test_tray_menu_offers_the_ai_council() -> None:
 @pytest.mark.parametrize(
     ("edge", "expected"),
     [
-        ("bottom", (1315, 340)),  # tray bottom-right: panel bottom-right
-        ("top", (1315, 12)),  # tray top-right: panel must not open at the far corner
-        ("left", (12, 340)),  # tray bottom-left: hug the left edge
-        ("right", (1315, 340)),  # tray right: right edge, same as bottom
+        ("bottom", (1315, 12)),
+        ("top", (1315, 12)),
+        ("left", (12, 12)),  # tray on the left: hug the left edge, still at the top
+        ("right", (1315, 12)),
     ],
 )
 def test_default_position_follows_the_taskbar_edge(
     edge: str, expected: tuple[int, int]
 ) -> None:
-    # The panel floats and remembers where it is dragged, so this only picks the
-    # first-run corner — but bottom-right is only near the tray when the taskbar
-    # is at the bottom. With the taskbar on top the old default opened the panel
-    # at the opposite corner from the icon the user had just clicked.
+    """The side follows the tray; the top is fixed.
+
+    The panel is a tall column -- taller than the work area on a scaled display
+    -- so anchoring it to the bottom pushed its lower edge onto the taskbar and
+    moved the title bar people grab depending on how tall the theme happened to
+    be. From the top the grab handle is always in the same corner, and anything
+    that does not fit scrolls.
+    """
     work_area = (0, 0, 1707, 912)
 
     assert (
@@ -1338,9 +1348,9 @@ def test_the_talent_market_is_never_restored_as_the_startup_panel(
     controller.window = SimpleNamespace(load_html=lambda html: None)
 
     controller.switch_panel("talent_market", remember=False)
-    controller.switch_panel("matrix")
+    controller.switch_panel("origami")
 
-    assert saved == ["matrix"]
+    assert saved == ["origami"]
 
 
 def test_only_one_modal_can_be_open_at_a_time(monkeypatch: pytest.MonkeyPatch) -> None:

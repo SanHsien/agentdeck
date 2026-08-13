@@ -52,6 +52,7 @@ from state.menubar_prefs import (
     _quota_card_order,
     _quota_notification_thresholds,
     _quota_notifications_enabled,
+    _save_panel_flavor,
     _window_keeper_enabled,
 )
 from statusline_settings import _statusline_enabled, _toggle_statusline_settings
@@ -60,6 +61,10 @@ from usage_lang import detect_lang
 from usage_notifications import NotificationEvent, QuotaNotifier
 from usage_rate import UsageRateTracker
 from win_modal import MB_ICON_INFO, MB_ICON_WARNING, MB_YESNOCANCEL
+
+# Re-exported so the tray menu keeps its import site while its 96 lines live in
+# a leaf module (the `as` form is what marks a re-export explicit under mypy).
+from win_tray_menu import _menu as _menu
 
 if TYPE_CHECKING:
     from PIL.Image import Image
@@ -284,6 +289,18 @@ document.addEventListener('DOMContentLoaded', function() {
   display: none;
 }
 .usage-panel-menu-separator { height: 1px; margin: 5px 4px; background: rgba(180, 180, 180, .35); }
+/* Scroll rather than squeeze.
+   The shipped panels pin html/body to 100vh with overflow hidden and give
+   .wrap height:100%, so on a screen shorter than the panel every card is
+   flex-shrunk and clips its own last row -- measured: the Claude card lost its
+   whole weekly line, with nothing to scroll to and no sign anything was
+   missing. The window is already capped at the work area by
+   clamp_content_height; past that point the content has to be reachable.
+   Injected here rather than edited into each panel so it also covers panels
+   that arrive later. */
+html, body { height: auto !important; min-height: 100%; overflow-y: auto !important; }
+.wrap { height: auto !important; min-height: 100%; }
+.card, .footer { flex-shrink: 0; }
 </style>
 """.strip()
 
@@ -811,28 +828,33 @@ class _WindowsTrayController:
         height: int,
         taskbar_edge: str = "bottom",
     ) -> tuple[int, int]:
-        """First-run placement: the corner nearest the notification area.
+        """First-run placement: the top corner on the side the tray is on.
 
         The panel floats freely and remembers wherever the user drags it, so this
-        only decides where it appears before there is a remembered position. It
-        still matters: bottom-right is only near the tray when the taskbar is at
-        the bottom. With the taskbar on top the tray sits top-right and the panel
-        would open at the far corner of the screen from the icon just clicked.
+        only decides where it appears before there is a remembered position.
 
-        Anchoring to the icon's exact rectangle was the alternative, but that
-        needs pystray's private window handle, and upstream independently moved
-        *away* from icon-anchored panels because anchoring blocks manual
-        placement (see docs/DECISIONS.md D-07).
+        It anchors to the *top* regardless of where the taskbar is. The panel is
+        a tall column -- taller than the work area on a scaled display -- so
+        anchoring it to the bottom pushed its lower edge onto the taskbar, and
+        the title bar people grab to move it ended up in a different place
+        depending on how tall the current theme happened to be. From the top,
+        the grab handle is always in the same corner and the overflow scrolls.
+
+        The side still follows the taskbar: with the taskbar on the left the
+        tray is on the left, and opening at the far corner from the icon just
+        clicked would be worse than any height concern. Anchoring to the icon's
+        exact rectangle needs pystray's private window handle, and upstream
+        moved away from icon-anchored panels because it blocks manual placement
+        (see docs/DECISIONS.md D-07).
         """
         left, top, right, bottom = work_area
-        near_top = taskbar_edge == "top"
         near_left = taskbar_edge == "left"
         x = (
             max(left + 12, min(left + 12, right - PANEL_WIDTH - 12))
             if near_left
             else max(left + 12, right - PANEL_WIDTH - 12)
         )
-        y = top + 12 if near_top else max(top + 12, bottom - height - 12)
+        y = max(top + 12, min(top + 12, bottom - height - 12))
         return (x, y)
 
     def _place_window(self, *, force_default: bool = False) -> None:
@@ -857,14 +879,18 @@ class _WindowsTrayController:
 
         work_area = self._work_area_for_point(anchor) or primary_work_area
         left, top, right, bottom = work_area
-        height = min(self.panel_height(), max(240, bottom - top - 24))
-        # The window is framed, so ask for content height plus the chrome that
-        # sits above it; otherwise the panel loses its last rows to the caption.
-        self.window.resize(PANEL_WIDTH, height + _window_chrome_height(self.window))
+        # Subtract the title bar *before* capping, not after. Adding it on
+        # afterwards made the outer window taller than the work area by exactly
+        # one caption, so its bottom edge sat over the taskbar. The panel scrolls
+        # now, so anything that does not fit is reachable rather than lost.
+        chrome = _window_chrome_height(self.window)
+        available = max(240, bottom - top - 24 - chrome)
+        height = min(self.panel_height(), available)
+        self.window.resize(PANEL_WIDTH, height + chrome)
         position = anchor if anchor is not None else self._default_window_position(
-            work_area, height, _taskbar_edge()
+            work_area, height + chrome, _taskbar_edge()
         )
-        self.window.move(*self._clamp_window_position(position, work_area, height))
+        self.window.move(*self._clamp_window_position(position, work_area, height + chrome))
         self._positioned_this_show = True
 
     def _save_window_position(self) -> None:
@@ -1069,6 +1095,18 @@ class _WindowsTrayController:
 
     def show_panel(self, _icon: Any = None, _item: Any = None) -> None:
         window_visibility.toggle_panel(self)
+
+    def set_panel_flavor(self, flavor: str) -> None:
+        """Pick a Catppuccin flavour and redraw if that panel is on screen.
+
+        The flavour is baked into the page as a data attribute at assembly
+        time, so the panel has to be reloaded to see it -- changing the
+        preference alone would look like the menu did nothing.
+        """
+        if not _save_panel_flavor(flavor):
+            return
+        if self.active_panel_id == "catppuccin" and self.window is not None:
+            self.switch_panel("catppuccin")
 
     def open_talent_market(self, _icon: Any = None, _item: Any = None) -> None:
         """Show the talent market and bring the window forward.
@@ -1706,90 +1744,6 @@ class _WindowsTrayController:
             self.icon.stop()
         if self.window is not None:
             self.window.destroy()
-
-
-def _menu(controller: _WindowsTrayController) -> Any:
-    import pystray
-
-    panel_items = tuple(
-        pystray.MenuItem(
-            _t(controller.language, key),
-            # pystray rejects actions whose co_argcount isn't 0/1/2, so the
-            # panel_id binding must be keyword-only.
-            lambda _icon, _item, *, panel_id=panel_id: controller.switch_panel(panel_id),
-            checked=lambda _item, panel_id=panel_id: controller.active_panel_id == panel_id,
-            radio=True,
-        )
-        for panel_id, key, _filename in available_panels()
-    )
-    return pystray.Menu(
-        pystray.MenuItem("Open", controller.show_panel, default=True, visible=False),
-        pystray.MenuItem(_t(controller.language, "panel_changelog"), controller.open_changelog),
-        pystray.MenuItem(
-            _t(controller.language, "discussion_window_title"), controller.open_discussion
-        ),
-        pystray.MenuItem(_t(controller.language, "about"), controller.show_about),
-        pystray.MenuItem(
-            _t(controller.language, "reset_panel_position"), controller.reset_panel_position
-        ),
-        pystray.Menu.SEPARATOR,
-        pystray.MenuItem(_t(controller.language, "switch_panel"), pystray.Menu(*panel_items)),
-        pystray.MenuItem(
-            _t(controller.language, "panel_talent_market"),
-            controller.open_talent_market,
-        ),
-        pystray.MenuItem(
-            _t(controller.language, "hide_sections_menu"),
-            pystray.Menu(
-                pystray.MenuItem(
-                    _t(controller.language, "claude_name"),
-                    lambda _icon, _item: controller.toggle_hide_section("hide_claude_section"),
-                    checked=lambda _item: _hide_claude_enabled(),
-                ),
-                pystray.MenuItem(
-                    _t(controller.language, "codex_name"),
-                    lambda _icon, _item: controller.toggle_hide_section("hide_codex_section"),
-                    checked=lambda _item: _hide_codex_enabled(),
-                ),
-                pystray.MenuItem(
-                    _t(controller.language, "agy_name"),
-                    lambda _icon, _item: controller.toggle_hide_section("hide_agy_section"),
-                    checked=lambda _item: _hide_agy_enabled(),
-                ),
-            ),
-        ),
-        pystray.Menu.SEPARATOR,
-        pystray.MenuItem(_t(controller.language, "refresh_now"), lambda i, x: controller.refresh()),
-        pystray.MenuItem(
-            _t(controller.language, "launch_at_login"),
-            controller.toggle_login,
-            checked=lambda _item: win_login_item.is_enabled(),
-        ),
-        pystray.MenuItem(
-            _t(controller.language, "quota_notifications_menu"),
-            controller.toggle_quota_notifications,
-            checked=lambda _item: _quota_notifications_enabled(),
-        ),
-        pystray.MenuItem(
-            _t(controller.language, "window_keeper_menu"),
-            controller.toggle_window_keeper,
-            checked=lambda _item: _window_keeper_enabled(),
-        ),
-        pystray.Menu.SEPARATOR,
-        pystray.MenuItem(
-            _t(controller.language, "project_butler"),
-            controller.toggle_session_resume,
-            checked=lambda _item: _session_resume_enabled(),
-        ),
-        pystray.MenuItem(
-            _t(controller.language, "terse_mode_menu"),
-            controller.toggle_terse_mode,
-            checked=lambda _item: _terse_mode_enabled(),
-        ),
-        pystray.Menu.SEPARATOR,
-        pystray.MenuItem(_t(controller.language, "check_update"), controller.check_update),
-        pystray.MenuItem(_t(controller.language, "quit"), controller.quit),
-    )
 
 
 def _session_resume_enabled() -> bool:

@@ -7,12 +7,15 @@ import base64
 import json
 import sys
 import time
-from functools import cache, lru_cache
+from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from state.menubar_state import PopoverState, QuotaRowState
+
+
+from state.menubar_prefs import _panel_flavor
 
 
 def resolve_resource(name: str) -> str:
@@ -46,14 +49,28 @@ def _new_state_payload(view: Any, payload: dict[str, object]) -> str | None:
     return encoded
 
 
-@cache
+CORE_SCRIPT_FILENAME = "panels/panel_core.js"
+
+
 def _load_panel_html(filename: str) -> str:
+    """Assemble a panel: its own markup and CSS, plus the shared behaviour.
+
+    Not cached, unlike before: the Catppuccin flavour is a preference, so the
+    same file has to be able to render differently after the user changes it.
+    """
     html = Path(resolve_resource(f"panels/{filename}")).read_text(encoding="utf-8")
     return (
-        html.replace("{{CLAUDE_ICON}}", _data_uri("claude.webp"))
+        html.replace("{{CORE_SCRIPT}}", _load_core_script())
+        .replace("{{CLAUDE_ICON}}", _data_uri("claude.webp"))
         .replace("{{CODEX_ICON}}", _data_uri("codex.webp"))
+        .replace("{{PANEL_FLAVOR}}", _panel_flavor())
         .replace("{{I18N_BUNDLE}}", json.dumps(_load_i18n_bundle(), ensure_ascii=False))
     )
+
+
+@lru_cache(maxsize=1)
+def _load_core_script() -> str:
+    return Path(resolve_resource(CORE_SCRIPT_FILENAME)).read_text(encoding="utf-8")
 
 
 @lru_cache(maxsize=1)

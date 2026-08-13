@@ -10,14 +10,9 @@ from __future__ import annotations
 
 WINDOWS_PANELS = (
     ("classic", "panel_default_name", "classic.html"),
-    ("matrix", "panel_matrix", "matrix.html"),
-    ("win95", "panel_win95", "win95.html"),
-    ("newspaper", "panel_newspaper", "newspaper.html"),
-    ("cloud_observation", "panel_cloud_observation", "cloud_observation.html"),
-    ("aquarium", "panel_aquarium", "aquarium.html"),
-    ("prism_arcade", "panel_prism_arcade", "prism_arcade.html"),
-    ("black_hole", "panel_black_hole", "black_hole.html"),
-    ("lepidoptera", "panel_lepidoptera", "lepidoptera.html"),
+    ("catppuccin", "panel_catppuccin", "catppuccin.html"),
+    ("stained_glass", "panel_stained_glass", "stained_glass.html"),
+    ("origami", "panel_origami", "origami.html"),
 )
 # The talent market is a feature screen, not a theme: it shows role cards and
 # installs them, and displays no quota at all. Listing it among the themes made
@@ -31,7 +26,7 @@ TALENT_PANEL = ("talent_market", "panel_talent_market", "talent_market.html")
 # visible jump on every open -- too small clips, too large leaves a band of
 # empty panel.
 #
-# Measured against this fork's own panels rather than inherited: 2026-08-10,
+# Measured against this fork's own panels rather than inherited: 2026-08-12,
 # Windows 11 at 225% DPI, mock data, reading the height the page reports before
 # it is clamped to the work area. Upstream recalibrated the same table against
 # macOS, and those numbers describe different panels drawn by a different
@@ -42,14 +37,9 @@ TALENT_PANEL = ("talent_market", "panel_talent_market", "talent_market.html")
 # needs once the shipped role cards are present.
 PANEL_HEIGHTS = {
     "classic": 1026,
-    "matrix": 1051,
-    "win95": 1045,
-    "newspaper": 1045,
-    "cloud_observation": 1009,
-    "aquarium": 1009,
-    "prism_arcade": 1011,
-    "black_hole": 1009,
-    "lepidoptera": 1046,
+    "catppuccin": 1058,
+    "stained_glass": 1026,
+    "origami": 1016,
     "talent_market": 812,
 }
 
