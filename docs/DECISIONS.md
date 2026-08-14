@@ -555,4 +555,4 @@ CodeQL 指的是 `tests/test_fork_identity.py` 用 `"github.com" in url` 判斷�
 
 **Scorecard CIIBestPractices（#7）— 需要主人本人。** 要到 OpenSSF Best Practices 網站以具名身分申請 badge，跟 SignPath 一樣是 AI 助理做不完的一步。
 
-**Scorecard BranchProtection（#1）— 待主人決定。** 這項可以做，但每個做法都會動到目前「直推 main」的授權:只要求 CI 綠燈且允許管理員繞過（流程不變，能擋掉 2026-07-22 那種紅燈照推的實錯）、不允許繞過（緊急修復也得等 CI）、或要求先開 PR（我就不能直推了，而且 CodeReview 那項仍是 0 分）。尚未啟用，等主人選。
+**Scorecard BranchProtection（#1）— 已啟用（2026-08-14，主人核可）。** 這項可以做，但每個做法都會動到目前「直推 main」的授權:只要求 CI 綠燈且允許管理員繞過（流程不變，能擋掉 2026-07-22 那種紅燈照推的實錯）、不允許繞過（緊急修復也得等 CI）、或要求先開 PR（我就不能直推了，而且 CodeReview 那項仍是 0 分）。選的是**只要求 CI 綠燈、允許管理員繞過**（`required_status_checks: check-windows`、`enforce_admins: false`、不要求 PR）:直推 main 的流程完全不變，但 GitHub 會擋掉沒跑過 CI 的推送——正是 2026-07-22 那次「紅燈照推」的實錯。另關掉 force push 與分支刪除。`strict` 刻意設 false:要求分支必須與 main 同步對單人直推只是額外摩擦，擋不到任何真實問題。
