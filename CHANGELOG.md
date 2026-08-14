@@ -5,9 +5,15 @@
 本檔記錄 agentdeck 所有重要變更。格式參考 [Keep a Changelog](https://keepachangelog.com/)，
 版號遵循[語意化版本 2.0.0](https://semver.org/lang/zh-TW/)。
 
-## [0.41.1] - 2026-08-14
+## [0.41.2] - 2026-08-14
 
 ### 修正
+- **面板尺寸與位置改由 UI 執行緒統一處理**:pywebview 把每一則 JS 訊息都丟到新的工作執行緒上跑（`js_bridge_call` 裡是 `Thread(target=_call).start()`）,而它的 `resize()`／`move()` 會直接讀 WinForms 的 `Location`／`Width`／`Handle` 再呼叫 `SetWindowPos`,中間沒有任何跨執行緒封送。面板持續回報自己的高度走的就是這條路,等於視窗幾何整天被任意執行緒讀寫。
+  - WinForms 只在**接了偵錯器**時才會對跨執行緒存取拋例外,平常是未定義行為——不會報錯、不會留 log,只是偶爾尺寸不對或移動沒生效,正是那種「重現不出來」的災情。
+  - 現在幾何變更一律排進佇列、由 `BeginInvoke` 丟回 UI 執行緒執行,關閉後一律 no-op。在真實 WinForms 視窗上實測確認:工作執行緒上 `InvokeRequired` 是 True、進到 mutation 裡是 False,resize 確實生效（444×333 邏輯 → 999×749 實體,225% 縮放）。
+  - 實測時另外發現 pywebview 自己的 `loaded` 事件**也不在 UI 執行緒上**,所以 `on_loaded()` 的重新定位原本是同一個 bug 的第二個現場,一併涵蓋。
+- **Codex 額度不再每次刷新都重掃一次 `~/.codex`**:`codex_rows()` 拿不到掃描結果時會自己遞迴列舉所有 jsonl,控制器接著又掃第二次。本機 54 個 session 檔實測:冷啟動 237 ms 對 142 ms。
+
 - **Codex 服務狀態橫幅先前一直是 unknown**:狀態改讀 `components.json`。OpenAI 的 `summary.json` 只回傳前 25 個 component,實際有 34 個,`Codex API` 排在第 27——查不到,而「元件不存在」與「元件正常」對呼叫端長得一模一樣,所以沒有任何東西會報錯。Claude 端一併改用同一個端點。
   - 另加一條**直接打真實 feed** 的測試。既有測試全部餵手寫 payload,這正是白名單能與供應商悄悄脫節的原因。feed 連不上時 skip——別人的故障不該讓我們的 CI 紅燈。
 - **中文系統從 Git Bash 啟動會變成英文介面**:Git Bash 與 MSYS 會塞一個 `LANG=en_US.UTF-8` 進環境變數,那是殼層的設定、不是使用者的,卻蓋過了系統 UI 語言。本機重現:系統是 zh-TW,`detect_lang()` 回 `en`。現在只認 `AGENTDECK_LANG` 與 `TT_LANG` 兩個明確覆寫,其餘交給系統設定。

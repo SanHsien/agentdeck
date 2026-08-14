@@ -33,7 +33,7 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
     "main": {
       "last_reviewed": "4eb0e5e",
       "last_merged": "0014773",
-      "note": "審視至 4eb0e5e。上游隨後合入 PR #96「Windows 大改版」，尚有 57 筆待審——那是他們自己的 Windows 實作，與本 fork 平行演化，必須逐筆比對而非整包合併，因此 last_reviewed 暫不推進。已先挑出三筆與本 fork 共用程式碼的錯誤修正處理（db6e34a／8e5e574＋ea59b60／9d573bd，見 Skipped）。"
+      "note": "審視至 4eb0e5e。上游隨後合入 PR #96「Windows 大改版」，尚有 57 筆待審——那是他們自己的 Windows 實作，與本 fork 平行演化，必須逐筆比對而非整包合併，因此 last_reviewed 暫不推進。已先挑出五筆與本 fork 共用程式碼的錯誤修正處理（db6e34a／8e5e574＋ea59b60／9d573bd／6901504／e720255，見 Skipped）。"
     }
   }
 }
@@ -62,6 +62,8 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
 
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
+| main | `6901504` | fix: Windows 視窗定位改用邏輯座標,幾何操作收斂到 UI 執行緒 | 2026-08-14 | **一半早已自行修好,一半採用**。座標那半本 fork 先前已獨立解決（`_to_logical_rect`／`_monitor_dpi_scale`／`_work_area_for_point`），且做得更多（扣標題列高度、右上角錨定、面板可捲動），不回頭照抄。執行緒那半是真的:實測本機安裝的 pywebview 6.2.1,`js_bridge_call` 對每一則 JS 訊息都跑 `Thread(target=_call).start()`,而 `resize()`／`move()` 直接讀 WinForms 的 `Location`／`Width`／`Handle` 再呼叫 `SetWindowPos`,完全沒有封送——面板回報高度走的就是這條路。在真實 WinForms 視窗上實測:工作執行緒 `InvokeRequired=True`、mutation 內 `False`,resize 生效（444×333 邏輯 → 999×749 實體）。同一次量測另外發現 pywebview 的 `loaded` 事件也不在 UI 執行緒上,`on_loaded()` 的重新定位是同一個 bug 的第二個現場。實作放進新的 leaf module `win_ui_thread.py`（`wintray.py` 已逼近 1900 行上限）,並比上游多一步:明確 `import clr` 再取 `System`,不倚賴 pywebview 先載入 pythonnet 的隱含順序——否則失敗形式是被吞掉的 ImportError 加一個永遠不執行的 mutation。 |
+| main | `e720255` | perf: Windows 刷新不再重複遞迴掃描 Codex sessions | 2026-08-14 | **已採用**。先量再改:本機 54 個 session 檔,冷啟動 `load_rate_limits()` 自己走一次 237 ms、傳入掃描結果 142 ms。`HistorySourceScan.codex_rate_limit_candidates` 與 `jsonl_candidates` 參數本 fork 早就有,只是 `wintray.py` 沒接上,等於每次刷新遞迴走兩趟 `~/.codex`。加測試釘住呼叫路徑（只測 dispatcher 會漏掉這種回歸）。 |
 | main | `db6e34a`／`352bed8` | fix: 服務狀態改讀 components.json | 2026-08-14 | **已採用**。對實際 feed 驗證後才動手:OpenAI 的 `summary.json` 只回前 25 個 component，實際有 34 個，`Codex API` 排在第 27——橫幅因此永遠是 unknown，而「元件不存在」與「元件正常」對呼叫端長得一模一樣。上游改測試斷言，本 fork 另加一條直接打真實 feed 的測試:白名單再度脫節就會紅燈，feed 連不上則 skip（別人的故障不該讓我們的 CI 紅）。 |
 | main | `8e5e574`／`ea59b60`／`45b43ad`／`d9441fe` | fix(lang): Windows 忽略殼層繼承的 LANG | 2026-08-14 | **已採用，做得比上游更徹底**。本機重現:`LANG=en_US.UTF-8`（Git Bash／MSYS 會塞這個）讓 `detect_lang()` 回 `en`，但系統 UI 語言是 `zh-TW`——中文使用者從 Git Bash 啟動就是英文介面。上游以 `sys.platform` 分支保留非 Windows 的 LANG；本 fork 只跑 Windows、CI 也只有 windows-latest，那條分支永遠走不到，因此六個檔案一律拿掉 LANG。另加一條掃描測試:五個獨立 hook 腳本各有一份複製的語言判斷，漏改一份就會出現「app 與 hook 講不同語言」而其他測試都看不到。 |
 | main | `9d573bd` | fix: hook 找不到可用 Python 時明確報錯 | 2026-08-14 | **一半採用，一半實測後否決**。採用的一半:找不到 Python 時原本回傳字面上的 `"python"`，裝出一條跑不起來的 statusLine——Claude Code 只會顯示空白、兩端都看不到錯誤。但上游 `raise SystemExit`，而 `SystemExit` 不是 `Exception`，本 fork 的 GUI 只接 `Exception`，照抄會讓例外從系統匣 callback 直接逃出去；且 `is_*_setup()` 這些述詞也會呼叫同一條路徑，等於「沒裝 Python 就連選單都開不出來」，比原本的 bug 更糟。改法:新增 `HookSetupError`，只在**安裝進入點**檢查，述詞維持不拋。否決的一半:上游同時讓非 ASCII 路徑直接報錯。本機實測 Windows 11 建立中文目錄，裝出的指令在 cmd.exe／sh（Git Bash）／PowerShell 三種殼層下**都跑得起來**（rc=0），而 `GetShortPathNameW` 回傳的仍是原長路徑（8.3 短檔名已停用），根本沒有 ASCII 形式可退。照抄會把所有帳號名非 ASCII 的使用者——正是本 fork 服務的繁中族群——擋在門外，理由還是一個重現不出來的故障。已為此加測試釘住。 |

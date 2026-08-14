@@ -6,9 +6,15 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
-## [0.41.1] - 2026-08-14
+## [0.41.2] - 2026-08-14
 
 ### Fixed
+- **Window size and position are now applied on the UI thread**: pywebview runs every JS message on a fresh worker thread (`js_bridge_call` does `Thread(target=_call).start()`), and its `resize()`/`move()` read WinForms `Location`/`Width`/`Handle` and call `SetWindowPos` with nothing marshalling them. The panel reports its own height along that path continuously, so the window's geometry was being read and written from arbitrary threads all day.
+  - WinForms raises on a cross-thread access only when **a debugger is attached**; otherwise it is simply undefined behaviour — no exception, no log line, just an occasional wrong size or a move that does not take. Exactly the shape of a bug nobody can reproduce.
+  - Geometry changes are now queued and run on the UI thread via `BeginInvoke`, and become no-ops once shutdown starts. Verified against a real WinForms window: `InvokeRequired` is True on the worker thread and False inside the mutation, and the resize takes effect (444×333 logical → 999×749 physical at 225% scaling).
+  - That measurement also revealed pywebview's own `loaded` event does **not** fire on the UI thread either, so `on_loaded()`'s re-placement was a second instance of the same bug. It is covered too.
+- **Codex quota no longer rescans `~/.codex` twice per refresh**: `codex_rows()` enumerated every jsonl itself when it had no scan to work from, and the controller then walked the same tree again. Measured on 54 session files here: 237 ms cold versus 142 ms.
+
 - **The Codex service banner had always read unknown**: status now comes from `components.json`. OpenAI's `summary.json` returns only the first 25 components; there are 34, and `Codex API` sits at 27 — so it was never found, and a missing component is indistinguishable from a healthy one to the caller, which is why nothing ever reported an error. The Claude side moved to the same endpoint.
   - A test that **asks the real feed** came with it. Every existing test fed a hand-written payload, which is exactly how the whitelist drifted away from the provider unnoticed. It skips when the feed is unreachable — somebody else's outage should not turn our CI red.
 - **A Chinese system launched from Git Bash came up in English**: Git Bash and MSYS inject `LANG=en_US.UTF-8`, which describes the shell rather than the user, and it outranked the system UI language. Reproduced locally: the system is zh-TW and `detect_lang()` returned `en`. Only the two explicit overrides, `AGENTDECK_LANG` and `TT_LANG`, are consulted now; everything else defers to the system setting.

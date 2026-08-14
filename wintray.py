@@ -12,6 +12,7 @@ import threading
 import time
 import tomllib
 import webbrowser
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from importlib import metadata
@@ -23,6 +24,7 @@ import autoresume_scheduler
 import update_checker
 import win_login_item
 import win_modal
+import win_ui_thread
 import window_keeper
 from burn_rate import BurnRateTracker
 from i18n import _t
@@ -622,6 +624,9 @@ class _WindowsTrayController:
         self._history_scan: menubar_state.HistorySourceScan | None = None
         self._history_scan_at: float | None = None
         self._content_height: int | None = None
+        self._window_mutations = win_ui_thread.WindowMutationQueue(
+            window=lambda: self.window, stopping=self.stopping
+        )
 
     def _empty_state(self) -> menubar_state.PopoverState:
         missing = menubar_state._missing_row
@@ -667,7 +672,14 @@ class _WindowsTrayController:
         return self._content_height or PANEL_HEIGHTS[self.active_panel_id]
 
     def _apply_content_height(self, value: object) -> None:
-        work_area = self._working_area()
+        self._dispatch_window_mutation(lambda: self._apply_content_height_on_ui_thread(value))
+
+    def _apply_content_height_on_ui_thread(self, value: object) -> None:
+        if self.stopping.is_set():
+            return
+        work_area = self._work_area_for_point(self._current_window_position())
+        if work_area is None:
+            work_area = self._working_area()
         maximum = (
             float(work_area[3] - work_area[1] - 24)
             if work_area is not None
@@ -681,7 +693,7 @@ class _WindowsTrayController:
             return
         self._content_height = rounded
         if self.visible:
-            self._place_window()
+            self._place_window_on_ui_thread()
 
     def attach(self, icon: Any, window: Any) -> None:
         self.icon = icon
@@ -704,9 +716,13 @@ class _WindowsTrayController:
         # so placing the window while it is hidden would drag the bare panel
         # onto the screen. Placement happens in show_panel() instead; here it
         # only re-applies after a visible panel switch reloads the document.
-        if self.visible:
+        if self.visible and not self.stopping.is_set():
             self._place_window()
             self.inject_state(force=True)
+        else:
+            # A tray click can land before pywebview has built its Form, in
+            # which case the mutation stayed queued with nothing to run it.
+            self._schedule_window_mutation_drain()
 
     def _working_area(self) -> tuple[int, int, int, int] | None:
         """Return the primary monitor work area (without taskbar), in logical pixels."""
@@ -858,7 +874,12 @@ class _WindowsTrayController:
         return (x, y)
 
     def _place_window(self, *, force_default: bool = False) -> None:
-        if self.window is None:
+        self._dispatch_window_mutation(
+            lambda: self._place_window_on_ui_thread(force_default=force_default)
+        )
+
+    def _place_window_on_ui_thread(self, *, force_default: bool = False) -> None:
+        if self.window is None or self.stopping.is_set():
             return
         primary_work_area = self._working_area()
         if primary_work_area is None:
@@ -892,6 +913,12 @@ class _WindowsTrayController:
         )
         self.window.move(*self._clamp_window_position(position, work_area, height + chrome))
         self._positioned_this_show = True
+
+    def _dispatch_window_mutation(self, mutation: Callable[[], None]) -> None:
+        self._window_mutations.dispatch(mutation)
+
+    def _schedule_window_mutation_drain(self) -> bool:
+        return self._window_mutations.schedule_drain()
 
     def _save_window_position(self) -> None:
         position = self._current_window_position()
@@ -984,10 +1011,15 @@ class _WindowsTrayController:
         debug_timing: bool = False,
     ) -> menubar_state.PopoverState:
         started_at = time.monotonic() if debug_timing else 0.0
+        # Taken before codex_rows, not after. Without the candidates, it
+        # recursively enumerates every jsonl under ~/.codex on its own, and the
+        # scan below then walks the same tree a second time on every refresh.
+        scan = self._history_source_scan()
         codex_rows, _codex_pct, _model, codex_stale, codex_credits = menubar_state.codex_rows(
             mock=self.mock,
             language=self.language,
             burn_rate_trackers=self.burn_rate_trackers,
+            jsonl_candidates=scan.codex_rate_limit_candidates,
         )
         measure("codex_load", started_at)
         started_at = time.monotonic() if debug_timing else 0.0
@@ -995,7 +1027,6 @@ class _WindowsTrayController:
         agy = agy_result.projection or menubar_agy.fallback_projection(self.language)
         measure("agy_load", started_at)
         started_at = time.monotonic() if debug_timing else 0.0
-        scan = self._history_source_scan()
         if menubar_state.history_cache_needs_reload(
             self._history_fingerprint,
             scan.fingerprint,

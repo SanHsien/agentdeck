@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import sys
 import threading
+from collections.abc import Callable
 from pathlib import Path
 from types import SimpleNamespace
 from typing import cast
@@ -17,6 +18,7 @@ import win_login_item
 import win_modal
 import wintray
 from i18n import _t
+from providers import codex_loader
 from state import menubar_prefs, menubar_state
 from usage_notifications import NotificationEvent
 
@@ -207,9 +209,15 @@ def test_content_height_message_resizes_visible_panel_with_work_area_clamp(
 ) -> None:
     controller = wintray._WindowsTrayController(mock=True, interval=60)
     controller.visible = True
+    # A window without a `native` attribute drains the mutation queue inline,
+    # which is the only way a test can observe work that is now marshalled onto
+    # the WinForms UI thread.
+    controller.window = SimpleNamespace()
     calls: list[str] = []
     monkeypatch.setattr(controller, "_working_area", lambda: (0, 0, 1000, 800))
-    monkeypatch.setattr(controller, "_place_window", lambda: calls.append("place"))
+    monkeypatch.setattr(
+        controller, "_place_window_on_ui_thread", lambda **_kwargs: calls.append("place")
+    )
 
     controller.handle_panel_message(
         json.dumps({"action": "content_height", "height": 510.4})
@@ -220,6 +228,127 @@ def test_content_height_message_resizes_visible_panel_with_work_area_clamp(
 
     assert controller.panel_height() == 776
     assert calls == ["place", "place"]
+
+
+def test_the_panel_height_message_never_touches_the_window_off_thread(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """This is the path that actually mattered. pywebview runs every JS bridge
+    message on a fresh worker thread (js_bridge_call does
+    ``Thread(target=_call).start()``) and its resize()/move() read WinForms
+    Location/Width/Handle and call SetWindowPos with nothing marshalling them.
+    The panel reports its height on that path continuously. WinForms raises on
+    a cross-thread access only when a debugger is attached, so the rest of the
+    time it is undefined behaviour — the shape of a bug nobody can reproduce.
+
+    Asserting the dispatcher in isolation is not enough: it stays green when
+    the height path stops calling it, which is exactly the regression to catch.
+    """
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+    controller.visible = True
+    posted: list[Callable[[], None]] = []
+
+    class Native:
+        InvokeRequired = True
+
+        @staticmethod
+        def BeginInvoke(action: Callable[[], None]) -> None:
+            posted.append(action)  # captured, deliberately not run
+
+    controller.window = SimpleNamespace(native=Native())
+    monkeypatch.setattr(controller, "_working_area", lambda: (0, 0, 1000, 800))
+    monkeypatch.setattr(controller, "_place_window_on_ui_thread", lambda **_kwargs: None)
+    fake_system = SimpleNamespace(Action=lambda fn: fn)
+    monkeypatch.setattr(
+        "win_ui_thread.importlib.import_module",
+        lambda name: fake_system if name == "System" else SimpleNamespace(),
+    )
+
+    controller.handle_panel_message(json.dumps({"action": "content_height", "height": 510.4}))
+
+    assert controller._content_height is None, (
+        "the height was applied on the calling thread instead of being posted to the UI thread"
+    )
+    assert len(posted) == 1, "nothing was posted to the UI thread"
+
+    posted[0]()
+
+    assert controller._content_height == 510
+
+
+def test_a_tray_menu_click_never_moves_the_window_off_thread(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """pystray runs menu callbacks on its own thread, so "reset position" calls
+    move()/resize() from there just as the panel's height message did.
+    """
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+    controller.visible = True
+    posted: list[Callable[[], None]] = []
+
+    class Native:
+        InvokeRequired = True
+
+        @staticmethod
+        def BeginInvoke(action: Callable[[], None]) -> None:
+            posted.append(action)
+
+    controller.window = SimpleNamespace(native=Native())
+    placed: list[bool] = []
+    monkeypatch.setattr(
+        controller,
+        "_place_window_on_ui_thread",
+        lambda *, force_default=False: placed.append(force_default),
+    )
+    monkeypatch.setattr(wintray, "_load_preferences", dict)
+    monkeypatch.setattr(wintray, "_save_preferences", lambda _prefs: None)
+    fake_system = SimpleNamespace(Action=lambda fn: fn)
+    monkeypatch.setattr(
+        "win_ui_thread.importlib.import_module",
+        lambda name: fake_system if name == "System" else SimpleNamespace(),
+    )
+
+    controller.reset_panel_position()
+
+    assert placed == [], "the window was moved on the pystray callback thread"
+    assert len(posted) == 1
+
+    posted[0]()
+
+    assert placed == [True]
+
+
+def test_a_mutation_survives_a_window_that_does_not_exist_yet(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The tray can be clicked before pywebview has built its Form. Dropping
+    the mutation there would lose the panel's reported height, so it stays
+    queued and on_loaded drains it.
+    """
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+    controller.window = None
+    ran: list[str] = []
+
+    controller._dispatch_window_mutation(lambda: ran.append("placed"))
+    assert ran == []
+
+    controller.window = SimpleNamespace()
+    controller.on_loaded()
+
+    assert ran == ["placed"]
+
+
+def test_mutations_are_dropped_once_shutdown_starts() -> None:
+    """Quit tears the window down. A geometry change landing after that would
+    resurrect it or touch a destroyed handle."""
+    controller = wintray._WindowsTrayController(mock=True, interval=60)
+    controller.window = SimpleNamespace()
+    ran: list[str] = []
+    controller.stopping.set()
+
+    controller._dispatch_window_mutation(lambda: ran.append("placed"))
+
+    assert ran == []
 
 
 def test_invalid_content_height_keeps_registered_fallback(
@@ -858,6 +987,36 @@ def test_build_state_reuses_history_until_fingerprint_changes(
     controller._build_state()
 
     assert calls == [1, 1]
+
+
+def test_codex_rate_limits_reuse_the_history_scan(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """codex_rows used to be called before the scan existed, so it enumerated
+    every jsonl under ~/.codex itself and the scan then walked the same tree
+    again — a full recursive directory walk twice per refresh. Measured cold on
+    a 54-session machine: 237 ms versus 142 ms. Nothing else would notice the
+    regression; a duplicated scan is invisible except as sluggishness.
+    """
+    controller = wintray._WindowsTrayController(mock=False, interval=60)
+    candidates = ((Path("C:/codex/sessions/session.jsonl"), 123.0),)
+    scan = menubar_state.HistorySourceScan((("history", 1, 10.0),), (), (), candidates)
+    seen: list[tuple[tuple[Path, float], ...] | None] = []
+
+    def recent_jsonl_files(
+        *, jsonl_candidates: tuple[tuple[Path, float], ...] | None = None
+    ) -> list[Path]:
+        seen.append(jsonl_candidates)
+        return []
+
+    monkeypatch.setattr(controller, "_history_source_scan", lambda: scan)
+    monkeypatch.setattr(controller, "_load_entries", lambda _scan: wintray._RefreshData([], None))
+    monkeypatch.setattr(codex_loader, "_load_sqlite_rate_limits", lambda: None)
+    monkeypatch.setattr(codex_loader, "_recent_jsonl_files", recent_jsonl_files)
+
+    controller._build_state()
+
+    assert seen == [candidates], "codex_rows walked ~/.codex itself instead of reusing the scan"
 
 
 def test_history_source_scan_is_cached_between_tray_ticks(
