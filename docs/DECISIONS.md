@@ -555,4 +555,16 @@ CodeQL 指的是 `tests/test_fork_identity.py` 用 `"github.com" in url` 判斷�
 
 **Scorecard CIIBestPractices（#7）— 需要主人本人。** 要到 OpenSSF Best Practices 網站以具名身分申請 badge，跟 SignPath 一樣是 AI 助理做不完的一步。
 
-**Scorecard BranchProtection（#1）— 已啟用（2026-08-14，主人核可）。** 這項可以做，但每個做法都會動到目前「直推 main」的授權:只要求 CI 綠燈且允許管理員繞過（流程不變，能擋掉 2026-07-22 那種紅燈照推的實錯）、不允許繞過（緊急修復也得等 CI）、或要求先開 PR（我就不能直推了，而且 CodeReview 那項仍是 0 分）。選的是**只要求 CI 綠燈、允許管理員繞過**（`required_status_checks: check-windows`、`enforce_admins: false`、不要求 PR）:直推 main 的流程完全不變，但 GitHub 會擋掉沒跑過 CI 的推送——正是 2026-07-22 那次「紅燈照推」的實錯。另關掉 force push 與分支刪除。`strict` 刻意設 false:要求分支必須與 main 同步對單人直推只是額外摩擦，擋不到任何真實問題。
+**Scorecard BranchProtection（#1）— 已啟用（2026-08-14，主人核可）。** 這項可以做，但每個做法都會動到目前「直推 main」的授權:只要求 CI 綠燈且允許管理員繞過（流程不變，能擋掉 2026-07-22 那種紅燈照推的實錯）、不允許繞過（緊急修復也得等 CI）、或要求先開 PR（我就不能直推了，而且 CodeReview 那項仍是 0 分）。選的是 `required_status_checks: check-windows`、`enforce_admins: false`、不要求 PR，另關掉 force push 與分支刪除。**直推 main 不受影響**（實測 rc=0）。
+
+**但要誠實記下這個設定擋不到什麼。** 提案當時我說它「能擋掉紅燈照推」——**那是錯的**。`enforce_admins: false` 的定義就是管理員不受 status check 約束，而本 repo 唯一的推送者就是管理員，所以對「紅燈照推」的實質阻擋是零。證據:`cc29a72` 是全新 commit，推送當下 `check-windows` 尚未執行過，照樣推成功。
+
+而「要求 CI 綠燈、又能直推」這個組合在 GitHub 上**不存在**:開 `enforce_admins: true` 之後，新 commit 因為還沒有 check 紀錄會直接被拒，等於強制走 PR。主人明確要求直推不能被影響，所以現行設定是兩者之中唯一站得住的取捨。
+
+那它還剩什麼作用:對**非管理員**的貢獻者仍然要求 CI 綠燈；force push 與分支刪除是分支層級設定，不走 status-check 那條豁免。真正在擋紅燈照推的仍然是本機那道 `PreToolUse(Bash)` hook `hooks/test-gate-guard.py`，不是這裡。
+
+`strict` 刻意設 false:要求分支必須與 main 同步對單人直推只是額外摩擦，擋不到任何真實問題。
+
+**AI agent 直推必須不受影響——已驗證。** 主人日常用 claude／codex／agy／cursor 等多個 agent 代表他直推，這是硬需求。查證:main 最近 30 筆推送身分**全是 `SanHsien`**，唯一協作者也是 `SanHsien`（admin），且**沒有任何 workflow 推 main**（不存在會被擋的 bot 身分）。這些 agent 都在主人機器上用同一份 git 認證，身分即 admin，正好落在 `enforce_admins: false` 的豁免內。實測 `git push origin main` rc=0。
+
+**這也是這個設定唯一站得住的理由**:它換來的是對未來非管理員貢獻者的 CI 要求、以及 force push／分支刪除的封鎖，而不是對主人自己的任何約束。哪天若有 agent 改用不同認證（fine-grained PAT、GitHub App 等非 admin 身分），它會被 status check 擋下——屆時要嘛把該身分加為 admin，要嘛取消這個保護。
