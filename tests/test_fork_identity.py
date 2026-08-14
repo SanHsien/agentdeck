@@ -96,11 +96,39 @@ def test_every_link_the_menu_opens_belongs_to_this_fork() -> None:
     """
     source = (ROOT / "wintray.py").read_text(encoding="utf-8")
 
+    # Every literal, not just the GitHub-looking ones. Filtering on
+    # `"github.com" in url` first meant a link to anywhere else was skipped
+    # entirely rather than caught -- the check exempted exactly the URLs most
+    # worth objecting to. (It is also what CodeQL flags as incomplete URL
+    # substring sanitization, for the same underlying reason.)
     opened = re.findall(r'webbrowser\.open\(\s*f?"([^"]+)"', source)
-    ours = [url for url in opened if "github.com" in url or "github.io" in url]
 
-    assert ours, "no GitHub link found in the menu; this guard has gone stale"
-    for url in ours:
+    assert opened, "no literal link found in the menu; this guard has gone stale"
+    for url in opened:
         assert url.startswith((REPO_URL, PAGES_URL)), (
             f"{url} points outside this fork ({REPO_URL} / {PAGES_URL})"
         )
+
+
+def test_every_link_the_menu_opens_from_a_variable_is_validated() -> None:
+    """A literal URL is auditable by reading it; one built at run time is not.
+
+    webbrowser.open(release.html_url) hands an address that arrived over the
+    network straight to the browser, and the update prompt shows it to the user
+    as the thing to trust. update_checker pins it to this repository's releases
+    prefix -- but only that one call is accounted for here, so a new
+    variable-valued call has to come with its own validation and be added below.
+    """
+    import update_checker
+
+    source = (ROOT / "wintray.py").read_text(encoding="utf-8")
+
+    non_literal = re.findall(r'webbrowser\.open\(\s*(?!f?")([^)\s][^)]*)\)', source)
+
+    assert set(non_literal) <= {"release.html_url"}, (
+        f"unaccounted-for dynamic link(s) passed to webbrowser.open: {non_literal}. "
+        "Validate the value at its source and list it here."
+    )
+    assert update_checker.RELEASE_URL_PREFIX.startswith(REPO_URL + "/"), (
+        "update_checker no longer pins release URLs to this fork"
+    )

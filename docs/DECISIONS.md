@@ -527,3 +527,32 @@ self-heal 新增一條分支，只升級**我們自己裝過的**組合；使用
 ### SignPath
 
 需要向 SignPath Foundation 提出**由人工審核的 OSS 申請**，並由具名自然人擔任送件者與批准者——這一步 AI 助理做不完。完整步驟寫成 [`SIGNING.zh-TW.md`](SIGNING.zh-TW.md)：步驟 1～3 需主人本人執行，4～5（workflow 接線與 README 政策段落）可以交給我。文件裡也記下兩個本 repo 的既有規定:Action 用 SHA 釘選、`${{ }}` 不可進 `run:`。
+
+### Code scanning 警告的處置（2026-08-14）
+
+八個 open alert，分成三類：**真的修**、**本質上做不到**、**需要主人本人**。
+
+**CodeQL `py/incomplete-url-substring-sanitization`（#9／#10）— 誤報，但循線找到一個真的洞。**
+
+CodeQL 指的是 `tests/test_fork_identity.py` 用 `"github.com" in url` 判斷網域。以它自己的說法（子字串可以出現在 URL 任意位置）這裡是誤報:輸入來自本 repo 自己的原始碼字面字串，真正的檢查是下一行的 `startswith`。
+
+但讀那段時發現**篩選邏輯是反的**:它只檢查「看起來像 GitHub 的連結」，指向其他任何地方的連結會被 `in` 篩掉、完全不受檢查——等於豁免了最該被反對的那些 URL。改成檢查**全部**字面 URL，順帶也讓 CodeQL 的抱怨消失。
+
+更要緊的是正則 `webbrowser\.open\(\s*f?"` 只抓字面字串，所以 `webbrowser.open(release.html_url)` **從來沒被任何測試看過**——而那是從網路來的值。`update_checker` 當時只驗 `startswith("https://")`。實測放行了:
+
+- `https://evil.example.com/phish`
+- `https://github.com.evil.example/SanHsien/agentdeck`（look-alike 網域）
+
+那個網址**同時會顯示在更新提示對話框裡**當作可信來源，使用者按「開啟」就會被帶走。端點是硬編碼的本 repo API，前綴完全已知，收緊成 `RELEASE_URL_PREFIX` 後四種攻擊路徑全部擋下。另加一條測試盯住非字面的 `webbrowser.open` 呼叫:新增一個就必須連同它的驗證一起交代。
+
+既有測試用 `https://example.test/release` 當假 URL——現實中不可能從那個端點回來的形狀，正是它掩護了「只驗 scheme」的原因。已改成真實的 release URL 形狀。
+
+**Scorecard PinnedDependencies（#3／#4）— 已修。** 只有 `upstream-check.yml` 漏釘，改用其他 workflow 已在用的同一個 checkout SHA，只有一個版本要追。`setup-python` 釘 v5 的 SHA（就是原本的版本，不藉機升 major）。
+
+**Scorecard Maintained（#6）— 無法修，會自己消失。** 訊息是「repository was created within the last 90 days」。repo 建立於 2026-07-31。這是時間問題，不是缺陷。
+
+**Scorecard CodeReview（#5）— 單人專案的固有狀況。** 「Found 0/30 approved changesets」。自己不能 approve 自己的 PR，開再多 PR 也拿不到分。這項在單人 repo 上永遠是 0，記錄下來比假裝能修誠實。
+
+**Scorecard CIIBestPractices（#7）— 需要主人本人。** 要到 OpenSSF Best Practices 網站以具名身分申請 badge，跟 SignPath 一樣是 AI 助理做不完的一步。
+
+**Scorecard BranchProtection（#1）— 待主人決定。** 這項可以做，但每個做法都會動到目前「直推 main」的授權:只要求 CI 綠燈且允許管理員繞過（流程不變，能擋掉 2026-07-22 那種紅燈照推的實錯）、不允許繞過（緊急修復也得等 CI）、或要求先開 PR（我就不能直推了，而且 CodeReview 那項仍是 0 分）。尚未啟用，等主人選。

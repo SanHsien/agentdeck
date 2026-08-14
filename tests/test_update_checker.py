@@ -64,13 +64,13 @@ def test_check_latest_release_offers_final_to_beta_user(
         urllib.request,
         "urlopen",
         lambda request, *, timeout: FakeResponse(
-            b'{"tag_name":"v0.11.0","html_url":"https://example.test/release","body":"notes"}'
+            b'{"tag_name":"v0.11.0","html_url":"https://github.com/SanHsien/agentdeck/releases/tag/v0.11.0","body":"notes"}'
         ),
     )
 
     assert update_checker.check_latest_release("0.11.0-beta.1") == update_checker.ReleaseInfo(
         version="0.11.0",
-        html_url="https://example.test/release",
+        html_url="https://github.com/SanHsien/agentdeck/releases/tag/v0.11.0",
     )
 
 
@@ -81,7 +81,7 @@ def test_check_latest_release_parses_newer_release(monkeypatch: pytest.MonkeyPat
         captured["request"] = request
         captured["timeout"] = timeout
         return FakeResponse(
-            b'{"tag_name":"v0.10.2","html_url":"https://example.test/release","body":"notes"}'
+            b'{"tag_name":"v0.10.2","html_url":"https://github.com/SanHsien/agentdeck/releases/tag/v0.11.0","body":"notes"}'
         )
 
     monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
@@ -90,7 +90,7 @@ def test_check_latest_release_parses_newer_release(monkeypatch: pytest.MonkeyPat
 
     assert release == update_checker.ReleaseInfo(
         version="0.10.2",
-        html_url="https://example.test/release",
+        html_url="https://github.com/SanHsien/agentdeck/releases/tag/v0.11.0",
     )
     assert captured["timeout"] == 1.5
     assert captured["request"].full_url == (
@@ -106,7 +106,7 @@ def test_check_latest_release_returns_none_when_remote_is_not_newer(
         urllib.request,
         "urlopen",
         lambda request, *, timeout: FakeResponse(
-            b'{"tag_name":"v0.10.1","html_url":"https://example.test/release","body":"notes"}'
+            b'{"tag_name":"v0.10.1","html_url":"https://github.com/SanHsien/agentdeck/releases/tag/v0.11.0","body":"notes"}'
         ),
     )
 
@@ -118,7 +118,7 @@ def test_check_latest_release_returns_none_when_remote_is_not_newer(
     "response_body",
     [
         b"not json",
-        b'{"tag_name":"vX.Y","html_url":"https://example.test/release"}',
+        b'{"tag_name":"vX.Y","html_url":"https://github.com/SanHsien/agentdeck/releases/tag/v0.11.0"}',
     ],
 )
 def test_check_latest_release_returns_none_for_invalid_payloads(
@@ -154,8 +154,14 @@ def test_a_non_https_release_url_is_refused() -> None:
         "tag_name": "v99.0.0",
         "html_url": "javascript:alert(document.cookie)//github.com/x/releases",
     }
-    plain_http = {"tag_name": "v99.0.0", "html_url": "http://github.com/x/releases/tag/v99"}
-    good = {"tag_name": "v99.0.0", "html_url": "https://github.com/x/releases/tag/v99"}
+    plain_http = {
+        "tag_name": "v99.0.0",
+        "html_url": "http://github.com/SanHsien/agentdeck/releases/tag/v99",
+    }
+    good = {
+        "tag_name": "v99.0.0",
+        "html_url": "https://github.com/SanHsien/agentdeck/releases/tag/v99",
+    }
 
     assert update_checker._release_from_payload(hostile) is None
     assert update_checker._release_from_payload(plain_http) is None
@@ -182,3 +188,48 @@ def test_an_oversized_release_response_is_refused(monkeypatch: pytest.MonkeyPatc
 
     assert result.release is None
     assert result.failed is True
+
+
+@pytest.mark.parametrize(
+    "html_url",
+    [
+        "https://evil.example.com/phish",
+        "https://github.com.evil.example/SanHsien/agentdeck",
+        "https://github.com/SanHsien/agentdeck-evil/releases/tag/v1",
+        "https://github.com/SomeoneElse/agentdeck/releases/tag/v1",
+        "javascript:alert(1)",
+        "http://github.com/SanHsien/agentdeck/releases/tag/v1",
+    ],
+)
+def test_a_release_url_outside_this_repository_is_refused(html_url: str) -> None:
+    """This URL is printed in the update prompt and then handed to
+    webbrowser.open() if the user says yes. Checking only the scheme let an
+    arbitrary address appear under this app's name and open on one click.
+    The endpoint it comes from is hard-coded to this repository, so the prefix
+    is known exactly and there is no reason to accept anything else.
+    """
+    assert (
+        update_checker._release_from_payload({"tag_name": "v9.9.9", "html_url": html_url}) is None
+    )
+
+
+def test_this_repositorys_own_release_url_is_accepted() -> None:
+    release = update_checker._release_from_payload(
+        {
+            "tag_name": "v9.9.9",
+            "html_url": "https://github.com/SanHsien/agentdeck/releases/tag/v9.9.9",
+        }
+    )
+
+    assert release is not None
+    assert release.version == "9.9.9"
+
+
+def test_the_release_prefix_matches_the_api_endpoint() -> None:
+    """The two constants name the same repository. If a fork edits one and not
+    the other, every update check silently returns nothing -- the app simply
+    stops offering updates, with no error to notice.
+    """
+    owner_repo = update_checker.GITHUB_RELEASES_API.split("/repos/")[1].rsplit("/releases", 1)[0]
+
+    assert f"https://github.com/{owner_repo}/releases/" == update_checker.RELEASE_URL_PREFIX

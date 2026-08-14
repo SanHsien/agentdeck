@@ -6,6 +6,16 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
+## [0.41.4] - 2026-08-14
+
+### Security
+- **The update prompt's URL can no longer point outside this repository**: `update_checker` checked only for `https://`, which measurably let through `https://evil.example.com/phish` and the look-alike `https://github.com.evil.example/SanHsien/agentdeck`. That address is **shown in the update dialog** as the thing to trust, and one click hands it to `webbrowser.open()`.
+  - The endpoint it comes from is hard-coded to this repository, so the prefix is known exactly; pinning it to `RELEASE_URL_PREFIX` blocks all four attack shapes.
+  - Why no test caught it: the guard's regex only matches **literal** strings, and this URL is a variable. A new test now accounts for every non-literal `webbrowser.open` call — adding one means declaring its validation.
+  - The existing tests used `https://example.test/release`, a shape that endpoint can never actually return, which is exactly what hid the scheme-only check. They now use the real shape.
+- **The menu-link guard checks every URL**: it used to filter on "contains github.com" before checking, so a link pointing anywhere else was skipped entirely — exempting precisely the URLs most worth objecting to. (Same root cause CodeQL flags as `py/incomplete-url-substring-sanitization`.)
+- **Every CI action is pinned to a commit SHA**: `upstream-check.yml` was the last one unpinned; it now uses the same checkout SHA the other workflows already carry.
+
 ## [0.41.3] - 2026-08-14
 
 ### Fixed

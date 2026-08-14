@@ -5,6 +5,16 @@
 本檔記錄 agentdeck 所有重要變更。格式參考 [Keep a Changelog](https://keepachangelog.com/)，
 版號遵循[語意化版本 2.0.0](https://semver.org/lang/zh-TW/)。
 
+## [0.41.4] - 2026-08-14
+
+### 安全性
+- **更新提示的網址不再可能指向本 repo 以外的地方**:`update_checker` 原本只驗 `https://`,實測放行了 `https://evil.example.com/phish` 與 look-alike 網域 `https://github.com.evil.example/SanHsien/agentdeck`。那個網址**會顯示在更新對話框裡**當作可信來源,使用者按「開啟」就會被 `webbrowser.open()` 帶走。
+  - 端點是硬編碼的本 repo API,前綴完全已知,收緊成 `RELEASE_URL_PREFIX` 後四種攻擊路徑全部擋下。
+  - 這個洞之所以沒被任何測試看到:守門的測試用正則只抓**字面**字串,而這個網址是變數。已補一條測試盯住非字面的 `webbrowser.open` 呼叫——新增一個就必須連同它的驗證一起交代。
+  - 既有測試用的 `https://example.test/release` 是那個端點現實中不可能回傳的形狀,正是它掩護了「只驗 scheme」。已改成真實形狀。
+- **選單連結守門改為檢查全部網址**:原本先用「網址含 github.com」篩過再檢查,等於指向其他任何地方的連結完全不受檢查——豁免了最該被反對的那些。（這也是 CodeQL `py/incomplete-url-substring-sanitization` 抱怨的同一個根因。）
+- **CI 的 action 全部釘到 commit SHA**:`upstream-check.yml` 是最後一個漏釘的,改用其他 workflow 已在用的同一個 checkout SHA。
+
 ## [0.41.3] - 2026-08-14
 
 ### 修正

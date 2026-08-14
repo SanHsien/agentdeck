@@ -14,6 +14,14 @@ from dataclasses import dataclass
 from typing import Any
 
 GITHUB_RELEASES_API = "https://api.github.com/repos/SanHsien/agentdeck/releases/latest"
+# The only prefix a release page from the endpoint above can legitimately
+# have. The URL is both shown in the update prompt and handed to
+# webbrowser.open(), so a payload that named any other host would put an
+# arbitrary address in front of the user under this app's name and open it
+# on request. Checking the scheme alone let through both
+# https://evil.example.com/phish and the look-alike
+# https://github.com.evil.example/SanHsien/agentdeck.
+RELEASE_URL_PREFIX = "https://github.com/SanHsien/agentdeck/releases/"
 # A release payload is tens of KB; cap the read so a broken or hostile endpoint
 # cannot make us buffer an unbounded response.
 MAX_RESPONSE_BYTES = 4 * 1024 * 1024
@@ -142,9 +150,10 @@ def _release_from_payload(payload: Any) -> ReleaseInfo | None:
     html_url = payload.get("html_url")
     if not isinstance(tag_name, str) or not isinstance(html_url, str):
         return None
-    # This URL is handed to webbrowser.open(). Anything but https is not a
-    # release page -- a javascript: value would execute rather than navigate.
-    if not html_url.startswith("https://"):
+    # This URL is shown to the user and handed to webbrowser.open(). It comes
+    # from a hard-coded endpoint on this repository, so its prefix is known
+    # exactly; anything else is not our release page.
+    if not html_url.startswith(RELEASE_URL_PREFIX):
         return None
 
     version = tag_name.removeprefix("v")
