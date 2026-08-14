@@ -553,7 +553,9 @@ CodeQL 指的是 `tests/test_fork_identity.py` 用 `"github.com" in url` 判斷�
 
 **Scorecard CodeReview（#5）— 單人專案的固有狀況。** 「Found 0/30 approved changesets」。自己不能 approve 自己的 PR，開再多 PR 也拿不到分。這項在單人 repo 上永遠是 0，記錄下來比假裝能修誠實。
 
-**Scorecard CIIBestPractices（#7）— 需要主人本人。** 要到 OpenSSF Best Practices 網站以具名身分申請 badge，跟 SignPath 一樣是 AI 助理做不完的一步。
+**Scorecard CIIBestPractices（#7）— 需要主人本人，步驟已寫成文件。** badge 是**自我認證**:要用具名 GitHub 帳號登入 bestpractices.dev 並逐題聲明，跟 SignPath 一樣是 AI 助理做不完的一步（那邊卡人工審核，這邊卡具名聲明）。
+
+但問卷可以事前準備，這才是文件的用處:[`OPENSSF_BADGE.zh-TW.md`](OPENSSF_BADGE.zh-TW.md) 把六大類準則對照本 repo 實查了一遍，逐條附上憑據，主人登入後照著填即可。查證過程另外撈出兩件送件前該補的:`SECURITY.md` 的漏洞回應時限寫的是「合理時間內」，對不上準則要求的**明確 ≤14 天**;GitHub 內建的私下漏洞回報管道實查為 `enabled: false`（email 管道已足夠，這項非必須）。兩件都可以交給我做。
 
 **Scorecard BranchProtection（#1）— 已啟用（2026-08-14，主人核可）。** 這項可以做，但每個做法都會動到目前「直推 main」的授權:只要求 CI 綠燈且允許管理員繞過（流程不變，能擋掉 2026-07-22 那種紅燈照推的實錯）、不允許繞過（緊急修復也得等 CI）、或要求先開 PR（我就不能直推了，而且 CodeReview 那項仍是 0 分）。選的是 `required_status_checks: check-windows`、`enforce_admins: false`、不要求 PR，另關掉 force push 與分支刪除。**直推 main 不受影響**（實測 rc=0）。
 

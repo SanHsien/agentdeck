@@ -99,6 +99,7 @@ breaks every installed hook, and nothing in the test suite would notice.
 | `usage_statusline_agy.py` | Antigravity CLI status line. **Stdlib-only**, same rule as the other hooks: Antigravity runs it with whatever interpreter `setup_hook._find_system_python()` resolved at install time. Upstream hardcodes `/usr/bin/python3`; on Windows that would install a command that can never run. |
 | `usage_session_resume.py` | SessionStart hook script — injects "where you left off" context into a new Claude Code session. **Stdlib-only** so it runs under whatever `python3` the user's Claude Code finds, not this project's venv. The `UP017` ruff exemption is a leftover of the old macOS 3.9 floor and can be revisited. |
 | `docs/SIGNING.zh-TW.md` | How to get the Windows executable code-signed through SignPath. Steps 1–3 need the maintainer personally (the OSS application is reviewed by a human); 4–5 are repo changes. |
+| `docs/OPENSSF_BADGE.zh-TW.md` | How to earn the OpenSSF Best Practices badge — the last open code-scanning alert. The badge is self-certified, so only a named human can submit it; what the doc contributes is the questionnaire answered ahead of time against this repo, with evidence per criterion. |
 | `update_checker.py` | GitHub Releases update check added in v0.11.0. |
 | `adapters/`, `analyzer/`, `ui/` | HTML report subsystem. |
 
