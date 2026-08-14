@@ -111,3 +111,30 @@ def test_a_malformed_new_tag_is_refused(monkeypatch: pytest.MonkeyPatch) -> None
 
 def test_bad_arguments_report_usage() -> None:
     assert guard.main(["only-one"]) == 2
+
+
+def test_the_windows_version_resource_tracks_pyproject() -> None:
+    """The exe's version comes from pyproject, not a second copy that can drift.
+
+    A blank or stale version on a downloaded binary is unfalsifiable from the
+    outside: the properties dialog simply shows nothing.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import make_version_file
+
+    rendered = make_version_file.render("1.2.3")
+
+    assert "filevers=(1, 2, 3, 0)" in rendered
+    assert "StringStruct('ProductVersion', '1.2.3')" in rendered
+    assert "StringStruct('ProductName', 'agentdeck')" in rendered
+
+
+def test_a_version_that_is_not_semver_is_refused() -> None:
+    """Truncating a four-part or pre-release tag here would make the exe claim
+    a version that was never released."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import make_version_file
+
+    for bad in ("1.2", "1.2.3.4", "1.2.3-rc1"):
+        with pytest.raises(ValueError):
+            make_version_file.version_tuple(bad)

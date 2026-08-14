@@ -6,6 +6,14 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
+## [0.40.1] - 2026-08-13
+
+### Fixed
+- **One large message could destroy the "time left" forecast**: the slope was computed per interval and merged with an EMA, giving the newest interval half the weight regardless of how long it lasted. Claude's percentage moves in steps, so one big message landing in a short polling gap produced an enormous instantaneous rate. **Measured**: after ten minutes of steady 0.5%/min, a single message adding 7% inside five seconds dropped the forecast from 32 minutes to **0.9 minutes** — the panel shouting that the quota was about to run out. It now uses the window's average slope. The same data reads 28 minutes, while a genuinely accelerating burn still warns early (measured: 10 minutes). (Ported from upstream `4eb0e5e`.)
+
+### Changed
+- **The executable now carries its version**: `agentdeck.exe` previously shipped with no version resource at all, so Windows' file properties tab was blank and a downloaded binary could not be identified without running it. The number comes straight from `pyproject.toml` rather than a second copy that can drift. (Concept from upstream `07812bb`; the SignPath signing itself was not adopted — it needs the maintainer's own application to the OSS programme, and upstream states the flow has not yet run in CI.)
+
 ## [0.40.0] - 2026-08-12
 
 ### Changed

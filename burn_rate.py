@@ -15,9 +15,6 @@ RESET_DROP_PERCENT = 5.0
 MIN_FORECAST_SAMPLES = 5
 MIN_FORECAST_SPAN_SECONDS = 5 * 60
 WARNING_PERCENT_FLOOR = 50.0
-# A 0.5 alpha gives the newest interval meaningful influence while still
-# dampening single-interval endpoint noise in the irregular polling stream.
-BURN_EMA_ALPHA = 0.5
 
 
 @dataclass(slots=True)
@@ -63,19 +60,16 @@ class BurnRateTracker:
         if elapsed <= 0:
             return None
 
-        ema_rate: float | None = None
-        for previous, current in zip(selected, selected[1:], strict=False):
-            interval_seconds = current.timestamp - previous.timestamp
-            if interval_seconds <= 0:
-                continue
-            rate = (current.percent - previous.percent) / interval_seconds
-            if ema_rate is None:
-                ema_rate = rate
-            else:
-                ema_rate = (
-                    BURN_EMA_ALPHA * rate + (1.0 - BURN_EMA_ALPHA) * ema_rate
-                )
-        slope_per_second = ema_rate if ema_rate is not None else 0.0
+        # The average slope across the window's endpoints, which is the same as
+        # weighting each interval's rate by how long that interval lasted.
+        #
+        # The previous EMA gave the newest interval half the weight regardless
+        # of its length, and Claude's percentage moves in steps: one large
+        # message landing in a short polling gap produced an enormous
+        # instantaneous rate that then dominated. Measured here -- ten minutes
+        # of steady 0.5%/min followed by 7% inside a five-second gap forecast
+        # 0.9 minutes to empty, where the window slope says 32.
+        slope_per_second = (latest.percent - first.percent) / elapsed
         if slope_per_second <= 0:
             return None
 

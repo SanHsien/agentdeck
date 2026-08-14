@@ -31,9 +31,9 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "49a0dfa",
-      "last_merged": "d92f683",
-      "note": "審視至 49a0dfa。移植燃燒速率的短跨度誤判修正。**本 fork 與上游的面板架構已分家**：上游 3e0fc4e 之後所有面板（含 classic）都不再定義 window.usageApplyState，改吃共用核心；因此上游此後的每一張新面板都無法直接移植，三張（Catppuccin／彩繪玻璃／摺紙）一併列為同一項後續工作。"
+      "last_reviewed": "4eb0e5e",
+      "last_merged": "4eb0e5e",
+      "note": "審視至 4eb0e5e。面板架構已於 v0.40.0 對齊上游（panel_core.js），三張新主題一併移植、舊九張移除。此輪另移植用量預估的窗口斜率修正與 Windows 版本資源。SignPath 簽章需維護者自行申請，見 Skipped。"
     }
   }
 }
@@ -62,13 +62,21 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
 
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
+| main | `4eb0e5e` | fix: 用量預估改用窗口平均斜率 | 2026-08-13 | **已採用**。本機重現:穩定 0.5%/分鐘燒十分鐘後，一則大訊息在 5 秒輪詢間隔內加 7%，EMA 預估 **0.9 分鐘**用完，窗口斜率是 32 分鐘。 |
+| main | `07812bb` | feat: Windows 執行檔接上 SignPath 簽章流程 | 2026-08-13 | **部分採用**。其中的版本資源產生器已移植——本 fork 的 exe 先前完全沒有版本資訊（檔案內容顯示空白，下載者無從辨識版本）。**SignPath 本身不採用**:需要維護者自行向 SignPath Foundation 申請 OSS 方案並設定機密，我無法代辦；且上游自陳「整條流程尚未在 CI 實跑過」，簽章政策仍是 test-signing。 |
+| main | `99d143c`／`ed9bedb`／`17e8c46` | feat+fix: Antigravity CLI 狀態列 | 2026-08-13 | 待評估:需先確認 Antigravity CLI 在 Windows 上是否有等價的狀態列設定點。列為後續工作，避免在未驗證平台支援前寫入使用者的設定檔。 |
+| main | `0014773` | feat: Codex 狀態列加 git-branch 與 used-tokens | 2026-08-13 | 待評估:段位從 5 加到 7 會改寫使用者的 Codex 設定，必須連同其中的備份／升級安全機制一起移植，否則移除時會「還原」出我們自己裝的舊值。要做就整包做。 |
+| main | `f74bbe0` | refactor: 合併選單開關分組 | 2026-08-13 | 上游 `menubar_menu.py` 的分組取捨；本 fork 的選單已於 v0.40.0 抽成 `win_tray_menu.py`，項目組成與上游不同（多了人才市場與 Catppuccin 配色）。 |
+| main | `7fa4b6c` | fix: 自癒測試明確模擬 macOS | 2026-08-13 | 針對 `tests/test_usage_statusline_agy.py`（本 fork 沒有）。概念（測試不該依賴執行平台）本 fork 已在用 `sys.platform` 明確 skip。 |
+| main | `bc26c6a` | docs: 記錄 window keeper 開窗不穩定的實測證據 | 2026-08-13 | 上游對自家 macOS 開窗行為的觀測；本 fork 的 window keeper 走 Windows 路徑，該證據不適用。 |
+| main | `112bef4` | chore: 發布 v0.29.25 | 2026-08-13 | 純上游版號（D-05）。 |
 | main | `d01f38a`／`49a0dfa` | feat+docs: Catppuccin 面板主題與四款 flavor 截圖 | 2026-08-12 | **想要，但不能直接複製**。實測 `catppuccin.html` 完全沒有 JS 狀態入口（`applyState` 出現 0 次），因為上游 `3e0fc4e` 之後面板狀態由共用核心供應——上游連 `classic.html` 都已經不定義 `window.usageApplyState`，而本 fork 的九張面板都還定義它。照抄會得到一張畫得出來、但永遠收不到額度資料、也永遠不回報高度的主題。與 `3e0fc4e`／`7743649`／`417ff01` 合併為同一項後續工作。 |
 | main | `2a03853` | fix: 新面板同步測試在 Windows CI 誤觸 PyObjC import | 2026-08-12 | 為他們的 `panels.panel_ids()`（延遲 import PyObjC 的 HTMLPanel）加 macOS-only skip；本 fork 沒有那條測試，也沒有 PyObjC 路徑。 |
 | main | `efce61a` | docs: 修正鐵則措辭矛盾、標註 codex_otel 舊格式相容路徑 | 2026-08-10 | 文件本身是上游 CLAUDE.md，但其中的事實已採用並**自行量測驗證**後寫進本 fork 的 CLAUDE.md：`codex_otel.trace_safe` 在本機 35,250 筆紀錄中只佔 47 筆，全部集中在 2026-08-05 的 52 分鐘視窗內，而該表至今仍在寫入。 |
 | main | `7a8f8f6` | fix: 補 ruff lint（import 排序、Yoda condition） | 2026-08-10 | 修的是上游當時的 lint 紅燈；本 fork 的 ruff gate 一直是綠的。 |
 | main | `bd89d98`／`fe0d547`／`236ff02`／`483e635` | docs/style: 官網與主題文案 | 2026-08-10 | 上游自家官網的內容與視覺；本 fork 的 `docs/index.html` 已獨立改寫，主題清單也因移除 World Cup 而不同。 |
 | main | `60d11fe` | feat: 年度熱力圖加入貪食蛇彩蛋 | 2026-08-10 | 純娛樂性彩蛋，不影響任何額度資料；本 fork 目前優先處理正確性與資安，未來要加也應以本 fork 自己的報告版面為準。 |
-| main | `3e0fc4e`／`7743649`／`417ff01` | refactor+feat: 共用面板核心 `panel_core.js` 與彩繪玻璃、摺紙兩張新面板 | 2026-08-10 | **值得做，但不在這次**。三者互相耦合：兩張新面板建立在 `panel_core.js` 之上，而本 fork 的面板已與上游分歧（去品牌、移除最小化按鈕、i18n 兩語、World Cup 已移除）。先確認過兩張新面板**都有** Antigravity 欄位（13／17 處），不是 World Cup 那種缺一整個來源的問題。列為後續獨立工作。 |
+| main | `3e0fc4e`／`7743649`／`417ff01`／`d01f38a` | refactor+feat: 共用面板核心與三張新主題 | 2026-08-12 | **已於 v0.40.0 採用**（此列保留以免記錄斷裂）。九張舊主題移除，改為 Classic＋Catppuccin＋彩繪玻璃＋摺紙。移植前逐張確認 Antigravity 支援（19／13／17 處）。詳見 D-23。 |
 | main | `67eb3bb`／`3192874` | chore(release): v0.29.22／v0.29.23 | 2026-08-10 | 純上游版號（D-05）。 |
 | main | `410ba88` | docs: CLAUDE.md 補上 codex 雙 sqlite 與 agy 配額端點的實際行為 | 2026-08-10 | 上游 CLAUDE.md 的內部說明；本 fork 的對應段落已自行改寫，且對外連線已在 `SECURITY.md` 逐條列出（D-18）。 |
 | main | `d57e7c3` | refactor: 抽掉磁碟快取與 session hook 的三處逐字重複 | 2026-08-10 | 去重的三處在本 fork 的檔案結構下並非逐字重複（磁碟快取已分成 history／codex／agy 三個模組，session hook 在 `session_hooks.py`）；為了對齊上游而重構，風險大於收益。 |

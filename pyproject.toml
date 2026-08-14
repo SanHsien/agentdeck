@@ -1,6 +1,6 @@
 [project]
 name = "agentdeck"
-version = "0.40.0"
+version = "0.40.1"
 description = "Windows 系統匣與終端機 TUI 的 Claude Code、Codex 與 Antigravity 本機用量工具"
 readme = "README.md"
 requires-python = ">=3.13"

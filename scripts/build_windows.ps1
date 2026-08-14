@@ -27,11 +27,18 @@ foreach ($stale in Get-ChildItem -Path $RepoRoot -Filter "*.egg-info" -Directory
 # well as under assets/ — see tests/test_packaged_resources.py.
 Push-Location $RepoRoot
 try {
+    # Without this the shipped exe has no product name and no version: the file
+    # properties dialog is blank and a downloaded binary cannot be identified
+    # without running it.
+    $VersionFile = Join-Path $SpecDir "agentdeck-version-info.txt"
+    uv run --no-sync python scripts/make_version_file.py $VersionFile
+
     uv run --no-sync python -m PyInstaller `
         --noconfirm `
         --clean `
         --windowed `
         --onedir `
+        --version-file $VersionFile `
         --name agentdeck `
         --distpath $DistRoot `
         --workpath $BuildDir `
