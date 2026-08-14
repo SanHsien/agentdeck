@@ -559,7 +559,14 @@ CodeQL 指的是 `tests/test_fork_identity.py` 用 `"github.com" in url` 判斷�
 
 **Scorecard BranchProtection（#1）— 已啟用（2026-08-14，主人核可）。** 這項可以做，但每個做法都會動到目前「直推 main」的授權:只要求 CI 綠燈且允許管理員繞過（流程不變，能擋掉 2026-07-22 那種紅燈照推的實錯）、不允許繞過（緊急修復也得等 CI）、或要求先開 PR（我就不能直推了，而且 CodeReview 那項仍是 0 分）。選的是 `required_status_checks: check-windows`、`enforce_admins: false`、不要求 PR，另關掉 force push 與分支刪除。**直推 main 不受影響**（實測 rc=0）。
 
-**但要誠實記下這個設定擋不到什麼。** 提案當時我說它「能擋掉紅燈照推」——**那是錯的**。`enforce_admins: false` 的定義就是管理員不受 status check 約束，而本 repo 唯一的推送者就是管理員，所以對「紅燈照推」的實質阻擋是零。證據:`cc29a72` 是全新 commit，推送當下 `check-windows` 尚未執行過，照樣推成功。
+**但要誠實記下這個設定擋不到什麼。** 提案當時我說它「能擋掉紅燈照推」——**那是錯的**。`enforce_admins: false` 的定義就是管理員不受 status check 約束，而本 repo 唯一的推送者就是管理員，所以對「紅燈照推」的實質阻擋是零。證據是 GitHub 自己說的——設定啟用後推送 `a5552bc`，remote 回:
+
+```
+remote: Bypassed rule violations for refs/heads/main:
+remote: - Required status check "check-windows" is expected.
+```
+
+推送照樣成功，GitHub 只是把「你繞過了規則」印出來。這同時也是**agent 直推不受影響**最直接的證據:規則存在、被違反、推送仍然完成。
 
 而「要求 CI 綠燈、又能直推」這個組合在 GitHub 上**不存在**:開 `enforce_admins: true` 之後，新 commit 因為還沒有 check 紀錄會直接被拒，等於強制走 PR。主人明確要求直推不能被影響，所以現行設定是兩者之中唯一站得住的取捨。
 
