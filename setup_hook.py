@@ -85,6 +85,10 @@ BACKUP_KEY = "agentdeck"
 LEGACY_TT_BACKUP_KEY = "tokenTracker"
 LEGACY_BACKUP_KEY = LEGACY_NAME
 PREV_SL_KEY = "previousStatusLine"
+# Every character the shells that run our hooks treat specially. Claude Code
+# uses Git Bash when present, Antigravity hands its command to cmd.exe, and a
+# path may legitimately contain any of these -- C:/Users/R&D/ is not exotic.
+_SHELL_UNSAFE_CHARACTERS = "&|^<>()$`;'"
 HOOK_VERSION = "1.0"
 _SL_REGEX = re.compile(r"(?m)^[ \t]*status_line\s*=\s*\[.*?\]", re.DOTALL)
 _TABLE_REGEX = re.compile(r"(?m)^[ \t]*\[[^\]\n]+\][ \t]*(?:#.*)?$")
@@ -224,6 +228,15 @@ def _shell_arg(value: str) -> str:
         # installed.  Backslashes are escape characters there, while forward
         # slashes also work in PowerShell, so emit the portable Windows form.
         value = value.replace("\\", "/")
+        if any(character in value for character in _SHELL_UNSAFE_CHARACTERS):
+            # list2cmdline only quotes for spaces and quotes, so a path like
+            # C:/Users/R&D/... came out bare and the command was cut in half at
+            # the ampersand. Measured on all three shells that run these hooks:
+            # unquoted gives cmd.exe rc=1, Git Bash rc=127 ("D/.gemini/hook.py:
+            # No such file or directory") and PowerShell rc=1; quoted gives rc=0
+            # everywhere. Windows filenames cannot contain a double quote, so
+            # wrapping in one is always safe here.
+            return f'"{value}"'
         return subprocess.list2cmdline([value])
     return shlex.quote(value)
 

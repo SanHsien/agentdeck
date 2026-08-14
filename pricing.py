@@ -32,6 +32,15 @@ CACHE_TTL_DAYS = 7
 FALLBACK_RETRY_SECONDS = 600
 MISSING_MODEL_REFRESH_SECONDS = FALLBACK_RETRY_SECONDS
 USER_AGENT = "agentdeck"
+# When the hard-coded fallback table below was last checked against upstream.
+# Without a date the table is unfalsifiable: a vendor price change makes every
+# cost silently wrong and nothing in the code can tell you how stale it is.
+FALLBACK_PRICING_AS_OF: str = "2026-08-14"
+# Anthropic's published cache write/read prices as multiples of input pricing.
+# These only fill in fields the upstream table omits, and are not guaranteed
+# correct for other providers.
+CACHE_WRITE_COST_MULTIPLIER = 1.25
+CACHE_READ_COST_MULTIPLIER = 0.1
 PROVIDER_PREFIXES = (
     "openai/",
     "anthropic/",
@@ -79,9 +88,11 @@ def calculate_cost(entry: _CostEntry) -> float:
     output_cost = model_pricing.get("output_cost_per_token", 0.0)
     cache_creation_cost = model_pricing.get(
         "cache_creation_input_token_cost",
-        input_cost * 1.25,
+        input_cost * CACHE_WRITE_COST_MULTIPLIER,
     )
-    cache_read_cost = model_pricing.get("cache_read_input_token_cost", input_cost * 0.1)
+    cache_read_cost = model_pricing.get(
+        "cache_read_input_token_cost", input_cost * CACHE_READ_COST_MULTIPLIER
+    )
 
     cost = (
         entry.input_tokens * input_cost

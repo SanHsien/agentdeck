@@ -6,6 +6,22 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
+## [0.41.3] - 2026-08-14
+
+### Fixed
+- **Alert suppression could never clear an alert (a regression this project introduced one release ago)**: after the move to `components.json` the payload no longer carries `incidents` at the top level, so the "clear the alert once every incident has sat in monitoring for four hours" rule was unreachable and only the 24-hour fallback remained — the banner stayed up about twenty hours too long. Verified against the live feed: `components.json` has only `['components']`.
+  - On the Codex side it had **never worked at all**: OpenAI's `summary.json` is `['components','page','status']` and has never carried `incidents`.
+  - The incident endpoint is now called only when that refresh went to the network *and* a component is already abnormal; an all-operational refresh stays a single request. It uses `incidents.json` rather than the more obvious `incidents/unresolved.json`, which OpenAI answers with a **404** (verified).
+  - The test double now splits the payload across two endpoints the way the provider actually does. Serving both from one response is exactly why this regression passed every test.
+- **A path containing `&` (or similar) cut the hook command in half**: `list2cmdline` only quotes for spaces and quotes, so `C:/Users/R&D/...` came out bare. Measured across all three shells that run these hooks: unquoted gives cmd.exe rc=1, Git Bash rc=127 and PowerShell rc=1; quoted gives rc=0 in all three.
+  - This path is shared by **every** hook (statusLine, forwarder, resume, terse, Antigravity), and the only symptom is a status line that silently never appears. An account or company folder named "R&D" is enough to trigger it.
+
+### Changed
+- **The offline pricing table now records when it was checked**: it is hard-coded with no version information, so a vendor price change makes every cost silently wrong with nothing able to say how stale the numbers are. Adds `FALLBACK_PRICING_AS_OF` and names the bare 1.25 / 0.1 constants in `calculate_cost()` (they are Anthropic's ratios and are not guaranteed correct for other providers).
+
+### Documentation
+- **All 57 pending upstream commits reviewed and recorded**: 16 are merge commits carrying no independent change; the remaining 41 each have a decision and a reason in the Skipped table in [`docs/UPSTREAM.md`](docs/UPSTREAM.md). Seven items are explicitly recorded as wanted future work: taskbar progress, Action Center notifications, a Per-Monitor-v2 DPI manifest, file-event-driven refresh, the system accent colour, SLSA/SBOM, and the `usage status` subcommand.
+
 ## [0.41.2] - 2026-08-14
 
 ### Fixed

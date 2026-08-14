@@ -31,9 +31,9 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "4eb0e5e",
-      "last_merged": "0014773",
-      "note": "審視至 4eb0e5e。上游隨後合入 PR #96「Windows 大改版」，尚有 57 筆待審——那是他們自己的 Windows 實作，與本 fork 平行演化，必須逐筆比對而非整包合併，因此 last_reviewed 暫不推進。已先挑出五筆與本 fork 共用程式碼的錯誤修正處理（db6e34a／8e5e574＋ea59b60／9d573bd／6901504／e720255，見 Skipped）。"
+      "last_reviewed": "63509f5",
+      "last_merged": "3d44b80",
+      "note": "審視至 63509f5（upstream/main 的 tip）——上游 PR #96「Windows 大改版」與其後續 57 筆已**逐筆審完並記錄**（16 筆 merge commit 不帶獨立變更、其餘 41 筆全數在 Skipped 表有列）。本輪採用 8 筆（db6e34a／8e5e574＋ea59b60／9d573bd 半／6901504 半／e720255／d9e0935／3d44b80）。明確列為後續功能的有 7 項：工作列進度條、Action Center 通知、Per-Monitor-v2 DPI manifest、檔案事件驅動刷新、系統強調色、SLSA/SBOM、usage status 子指令。last_merged 推進到本輪採用的最新一筆 3d44b80。兩個標記在此分岔是正常的：中間那些是看過而決定不採用的。"
     }
   }
 }
@@ -62,6 +62,28 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
 
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
+| main | `d9e0935` | fix: 補回警示抑制的事件來源,並擋掉 cmd.exe 特殊字元路徑 | 2026-08-14 | **已採用,兩半都做,第二半做得比上游廣**。第一半是**本 fork 自己上一筆 `db6e34a` 造成的回歸**:`components.json` 頂層沒有 `incidents`,`_apply_alert_suppression()` 的「事件停在 monitoring 超過 4 小時就收警示」永遠進不去,只剩 24 小時兜底,警示多掛約 20 小時。實測頂層鍵確認:`components.json` 只有 `['components']`,OpenAI `summary.json` 是 `['components','page','status']`——**Codex 側那條抑制從未生效過**。端點選 `incidents.json`:實測 `incidents/unresolved.json` 對 OpenAI 回 **404**。測試替身一併改成照現實拆成兩個端點——原本一個 payload 供兩用,正是這個回歸能溜過去的原因。第二半上游只修 agy 路徑且靠「拒絕安裝＋轉 8.3 短路徑」;本 fork 的 `_shell_arg` 被所有 hook 共用（statusLine／forwarder／resume／terse／agy）,`list2cmdline` 只為空格與引號加引號,`C:/Users/R&D/` 原樣輸出。實測三種殼層全掛(cmd.exe rc=1、Git Bash rc=127「D/.gemini/hook.py: No such file or directory」、PowerShell rc=1),加雙引號後三種全 rc=0。改為偵測 shell 元字元就加引號——能修就修,不把使用者擋在門外。 |
+| main | `3d44b80` | chore(pricing): 標註離線價目表核對日期 | 2026-08-14 | **已採用**。離線 fallback 價目表寫死且無版本資訊,廠商調價後會**無聲算錯成本**,而且沒有任何東西能告訴你表有多舊。加 `FALLBACK_PRICING_AS_OF`,並把 `calculate_cost()` 裡裸露的 1.25／0.1 抽成具名常數(是 Anthropic 的比例,對其他供應商不保證正確)。上游的 `scripts/check_fallback_pricing.py` 對帳腳本未移植——它比對的是上游 LiteLLM 表的取用方式,列為後續。 |
+| main | `4bb717c` | fix(release): Windows 版本號解析改用 binary 讀取 | 2026-08-14 | **不適用,但已回頭確認本 fork 沒有同一個洞**。上游是 `read_text()` 在 Windows runner 上用 cp1252 讀含中文的 `pyproject.toml` 而炸。本 fork 的 `release.yml` 沒有那個步驟(改用 `check_release_version.py` 與 exe `--doctor` 對帳),`scripts/make_version_file.py` 讀同一個檔時本來就帶 `encoding="utf-8"`。 |
+| main | `ef4dcbf`／`c30d043` | feat+fix: Windows 工作列進度條顯示配額（含 ITaskbarList3 IID 修正） | 2026-08-14 | **想要,列為後續功能**。本 fork 目前沒有任何 `ITaskbarList`／`SetProgressValue` 程式碼,屬新增功能而非錯誤修正。兩筆必須一起移植——`c30d043` 揭露上游的 IID 寫錯、進度條先前完全沒作用,只移植 `ef4dcbf` 會複製一個不會動的功能。 |
+| main | `4a59670` | feat: Windows 配額通知改用可互動的 Action Center 快顯 | 2026-08-14 | **想要,列為後續功能**。本 fork 目前沒有 Action Center／ToastNotification 程式碼。會動到打包設定與相依套件,屬獨立的一輪工作。 |
+| main | `60f9f5d` | feat: Windows 執行檔宣告 Per-Monitor-v2 DPI 感知 | 2026-08-14 | **想要,優先度較高的後續**。本 fork 沒有 manifest 也沒有 DPI 宣告,而開發機是 225% 縮放——這正是 DPI 問題最容易現形的環境。本輪已先把座標與執行緒問題處理完(見 `6901504` 列),manifest 屬打包層變更,另開一輪並要在多螢幕不同縮放下實測。 |
+| main | `25b0979` | feat: Windows 刷新請求排隊,並補上檔案事件驅動刷新 | 2026-08-14 | **部分想要,列為後續**。上游新增 `windows_watch.py`(本 fork 沒有)。刷新排隊的動機與本輪 `6901504` 的 UI 執行緒佇列相近,但那是刷新流程而非視窗幾何,兩者不能混做。檔案事件驅動刷新會改變輪詢模型,需先量測本機實際效益。 |
+| main | `0d5f05f` | feat: Windows 補上每日健檢、服務狀態橫幅與自動更新檢查 | 2026-08-14 | **多數本 fork 早已有**。實查:`_maybe_auto_check_update` 在 `wintray.py`、服務狀態橫幅有完整的 `service_status.py`(本輪還修了兩筆)。僅每日健檢是本 fork 沒有的,列為後續。 |
+| main | `db42060` | feat: Windows 系統主題色同步成 CSS 變數 | 2026-08-14 | **想要,列為後續功能**。本 fork 的四張面板主題(預設／Catppuccin／彩繪玻璃／摺紙)是刻意選定的配色,接系統強調色要先決定它跟既有主題怎麼共存,不是單純移植。 |
+| main | `75f8f66`／`87e3147` | refactor+fix: Windows 選單收斂成單一來源／分組跟 macOS 對齊 | 2026-08-14 | **不採用**。本 fork 已於 v0.40.0 自行把選單抽成 `win_tray_menu.py`(同樣是單一來源),項目組成與上游不同(多了人才市場、圓桌討論、四張主題),分組照抄反而會錯。 |
+| main | `fdc89ac`／`d9625ce` | feat+fix: Antigravity 狀態列支援 Windows／改用無引號路徑 | 2026-08-14 | **已在 v0.41.0 自行移植,且本輪把引號問題修得更廣**。上游 `d9625ce` 的無引號路徑處理只涵蓋 agy;本 fork 的修正落在共用的 `_shell_arg`,涵蓋全部五種 hook,見 `d9e0935` 列。 |
+| main | `5bb2c2b` | ci(release): 加上 SLSA build provenance 與 CycloneDX SBOM | 2026-08-14 | **想要,列為後續**。供應鏈安全,與已寫好的 SignPath 簽章步驟(`SIGNING.zh-TW.md`)屬同一批工作,一起做比較合理。本 fork 目前沒有 provenance／SBOM 產出。 |
+| main | `58f4228` | feat(cli): 新增 usage status 指令與 JSON 輸出 | 2026-08-14 | **列為後續**。本 fork 有 `usage_cli.py` 但沒有 `status` 子指令。屬新功能;打包白名單那半本 fork 已有等價的`test_every_stdlib_hook_script_is_bundled` 閘門。 |
+| main | `a1ce980`／`0a67ac1`／`dcd716c` | feat+style: 水墨貓新圖示、Windows app 圖示、readme logo 裁圓 | 2026-08-14 | **不採用**。上游的品牌識別;本 fork 是獨立分支,有自己的圖示與 README 視覺。 |
+| main | `184fb74` | fix(menubar): 更新通知彈窗清乾淨 Markdown 符號 | 2026-08-14 | **不採用,本 fork 已用更徹底的做法解決**。動的是上游的 `menubar.py`／`update_release_notes.py`(本 fork 沒有)。本 fork 的更新提示已依需求縮到只顯示版本號與下載網址,連 release notes 本體都不呈現,自然沒有 Markdown 符號問題。 |
+| main | `63509f5`／`7e07a1c` | chore: sync AI updates | 2026-08-14 | 只動 `ai_updates.json`;本 fork 已移除該功能。 |
+| main | `eb896b0` | fix(menubar): forwarder 提示函式搬進 leaf module | 2026-08-14 | 動的是上游 `menubar.py`／`menubar_actions.py`(本 fork 沒有)。同樣的檔案大小紀律本 fork 有自己的閘門,本輪就因此把視窗佇列抽成 `win_ui_thread.py`。 |
+| main | `8c4e3a9` | test: 放寬 shutdown 有界性測試的時間門檻 | 2026-08-14 | **不採用**。放寬的是上游 CI runner 上的時間門檻;本 fork 的 `test_discussion_bridge.py` 在 windows-latest 上一直是綠的,沒有理由先放寬一個沒有失敗過的門檻。 |
+| main | `af313b8`／`3340aaa` | test+fix: 修 macOS runner 上失敗的測試／CI 的 mypy 失誤 | 2026-08-14 | **不採用**。前者是為上游的 macOS runner 加 skip(本 fork CI 只有 windows-latest);後者修的是上游當時的 mypy 紅燈,且動到 `windows_watch.py`／`test_usage_statusline_agy.py`(本 fork 沒有)。本 fork 的 mypy 一直是綠的。 |
+| main | `9548705`／`ecabd3a`／`342f526` | build(deps): dependabot 升版 | 2026-08-14 | **不採用**。本 fork 有自己的 dependabot,版本由本 fork 的 `uv.lock` 決定。 |
+| main | `d55bac3`／`b6e55b4`／`2f474ee` | chore+docs+release: 上游 0.29.27／0.29.28 版號與五語文件 | 2026-08-14 | 純上游版號與文件(D-05)。本 fork 走自己的 SemVer,文件只維護 zh-TW／en 兩語並有 `check_doc_parity.py` 閘門。 |
+| main | 16 筆 merge commit | Merge branch 'codex/win-*' / PR #96 等 | 2026-08-14 | **不逐筆審視**。merge commit 不帶獨立變更,內容已由其父 commit 涵蓋,全數列在上方各列中。 |
 | main | `6901504` | fix: Windows 視窗定位改用邏輯座標,幾何操作收斂到 UI 執行緒 | 2026-08-14 | **一半早已自行修好,一半採用**。座標那半本 fork 先前已獨立解決（`_to_logical_rect`／`_monitor_dpi_scale`／`_work_area_for_point`），且做得更多（扣標題列高度、右上角錨定、面板可捲動），不回頭照抄。執行緒那半是真的:實測本機安裝的 pywebview 6.2.1,`js_bridge_call` 對每一則 JS 訊息都跑 `Thread(target=_call).start()`,而 `resize()`／`move()` 直接讀 WinForms 的 `Location`／`Width`／`Handle` 再呼叫 `SetWindowPos`,完全沒有封送——面板回報高度走的就是這條路。在真實 WinForms 視窗上實測:工作執行緒 `InvokeRequired=True`、mutation 內 `False`,resize 生效（444×333 邏輯 → 999×749 實體）。同一次量測另外發現 pywebview 的 `loaded` 事件也不在 UI 執行緒上,`on_loaded()` 的重新定位是同一個 bug 的第二個現場。實作放進新的 leaf module `win_ui_thread.py`（`wintray.py` 已逼近 1900 行上限）,並比上游多一步:明確 `import clr` 再取 `System`,不倚賴 pywebview 先載入 pythonnet 的隱含順序——否則失敗形式是被吞掉的 ImportError 加一個永遠不執行的 mutation。 |
 | main | `e720255` | perf: Windows 刷新不再重複遞迴掃描 Codex sessions | 2026-08-14 | **已採用**。先量再改:本機 54 個 session 檔,冷啟動 `load_rate_limits()` 自己走一次 237 ms、傳入掃描結果 142 ms。`HistorySourceScan.codex_rate_limit_candidates` 與 `jsonl_candidates` 參數本 fork 早就有,只是 `wintray.py` 沒接上,等於每次刷新遞迴走兩趟 `~/.codex`。加測試釘住呼叫路徑（只測 dispatcher 會漏掉這種回歸）。 |
 | main | `db6e34a`／`352bed8` | fix: 服務狀態改讀 components.json | 2026-08-14 | **已採用**。對實際 feed 驗證後才動手:OpenAI 的 `summary.json` 只回前 25 個 component，實際有 34 個，`Codex API` 排在第 27——橫幅因此永遠是 unknown，而「元件不存在」與「元件正常」對呼叫端長得一模一樣。上游改測試斷言，本 fork 另加一條直接打真實 feed 的測試:白名單再度脫節就會紅燈，feed 連不上則 skip（別人的故障不該讓我們的 CI 紅）。 |

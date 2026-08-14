@@ -898,3 +898,42 @@ def test_a_non_ascii_hook_path_is_still_installed(monkeypatch: pytest.MonkeyPatc
 
     assert "王小明" in arg
     assert "\\" not in arg
+
+
+def test_an_ampersand_in_the_path_does_not_cut_the_command_in_half(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """list2cmdline only quotes for spaces and quotes, so C:/Users/R&D/... came
+    out bare and every shell that runs our hooks cut the command at the
+    ampersand. Measured with a real R&D directory: unquoted gives cmd.exe rc=1,
+    Git Bash rc=127 and PowerShell rc=1; quoted gives rc=0 in all three.
+
+    This is not exotic -- an account or company folder named "R&D" is enough,
+    and the only symptom is a status line that silently never appears.
+    """
+    monkeypatch.setattr(sys, "platform", "win32")
+
+    arg = setup_hook._shell_arg(r"C:\Users\R&D\.claude\agentdeck-statusline.py")
+
+    assert arg.startswith('"') and arg.endswith('"'), f"left unquoted: {arg}"
+    assert "R&D" in arg
+    assert "\\" not in arg
+
+
+@pytest.mark.parametrize("character", ["&", "|", "^", "<", ">", "(", ")", "$", "`", ";", "'"])
+def test_every_shell_metacharacter_in_a_path_is_quoted(
+    monkeypatch: pytest.MonkeyPatch, character: str
+) -> None:
+    monkeypatch.setattr(sys, "platform", "win32")
+
+    arg = setup_hook._shell_arg(f"C:/Users/a{character}b/.claude/hook.py")
+
+    assert arg.startswith('"'), f"{character!r} was left unquoted: {arg}"
+
+
+def test_an_ordinary_path_is_not_gratuitously_quoted(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Quoting everything would churn every installed command on upgrade and
+    make the self-heal migration compare unequal against its own past output."""
+    monkeypatch.setattr(sys, "platform", "win32")
+
+    assert setup_hook._shell_arg(r"C:\Users\Sam\.claude\hook.py") == "C:/Users/Sam/.claude/hook.py"

@@ -5,6 +5,22 @@
 本檔記錄 agentdeck 所有重要變更。格式參考 [Keep a Changelog](https://keepachangelog.com/)，
 版號遵循[語意化版本 2.0.0](https://semver.org/lang/zh-TW/)。
 
+## [0.41.3] - 2026-08-14
+
+### 修正
+- **警示抑制先前收不掉警示（本專案上一版自己造成的回歸）**:改讀 `components.json` 之後,payload 頂層不再有 `incidents`,「所有事件停在 monitoring 超過 4 小時就收警示」那條永遠進不去,只剩 24 小時的兜底,警示會多掛約 20 小時。實測頂層鍵確認:`components.json` 只有 `['components']`。
+  - Codex 側則是**本來就壞的**:OpenAI 的 `summary.json` 頂層是 `['components','page','status']`,從來就沒有 `incidents`——那條抑制在 Codex 上從未生效過。
+  - 只在該次走網路、且元件已判定異常時才多打一次事件端點;元件全部正常時維持單一請求。端點選 `incidents.json` 而非看起來更對的 `incidents/unresolved.json`——後者 OpenAI 回 **404**（實測）。
+  - 測試替身一併改成照現實把 payload 拆成兩個端點。原本一個 payload 供兩用,正是這個回歸能溜過去而沒有任何測試變紅的原因。
+- **路徑含 `&` 之類字元時,hook 指令會被殼層從中間切斷**:`list2cmdline` 只為空格與引號加引號,所以 `C:/Users/R&D/...` 原樣輸出。實測三種殼層全掛（cmd.exe rc=1、Git Bash rc=127、PowerShell rc=1）,加雙引號後三種全部 rc=0。
+  - 這條路徑被**所有** hook 共用（statusLine、forwarder、resume、terse、Antigravity）,而唯一的症狀是狀態列安靜地不出現。一個叫「R&D」的帳號或公司資料夾就足以觸發。
+
+### 變更
+- **離線價目表補上核對日期**:表寫死且無版本資訊,廠商調價後會**無聲算錯成本**,而且沒有任何東西能說出這張表有多舊。新增 `FALLBACK_PRICING_AS_OF`,並把 `calculate_cost()` 裡裸露的 1.25／0.1 抽成具名常數（那是 Anthropic 的比例,對其他供應商不保證正確）。
+
+### 文件
+- **上游 57 筆 commit 逐筆審完並記錄**:16 筆 merge commit 不帶獨立變更,其餘 41 筆全數在 [`docs/UPSTREAM.md`](docs/UPSTREAM.md) 的 Skipped 表留下決定與理由。明確列為後續功能的有 7 項:工作列進度條、Action Center 通知、Per-Monitor-v2 DPI manifest、檔案事件驅動刷新、系統強調色、SLSA/SBOM、`usage status` 子指令。
+
 ## [0.41.2] - 2026-08-14
 
 ### 修正

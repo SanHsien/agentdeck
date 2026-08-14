@@ -895,3 +895,25 @@ def test_an_oversized_pricing_response_is_refused(monkeypatch: pytest.MonkeyPatc
     monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **k: Endless())
 
     assert pricing._fetch_pricing() is None
+
+
+def test_the_fallback_table_carries_a_checked_date() -> None:
+    """A hard-coded price table with no date is unfalsifiable: when a vendor
+    changes prices every cost silently goes wrong and nothing in the code can
+    say how stale the numbers are. The date is the only thing that makes the
+    table auditable before a release.
+    """
+    import datetime as _dt
+
+    checked = _dt.date.fromisoformat(pricing.FALLBACK_PRICING_AS_OF)
+
+    assert checked <= _dt.date.today(), "the fallback table claims to be checked in the future"
+
+
+def test_the_cache_multipliers_are_the_published_anthropic_ratios() -> None:
+    """These were bare 1.25 and 0.1 in the middle of an expression. Naming them
+    is what lets a reader see they are Anthropic's ratios and therefore not
+    guaranteed right for another provider whose fields happen to be missing.
+    """
+    assert pricing.CACHE_WRITE_COST_MULTIPLIER == 1.25
+    assert pricing.CACHE_READ_COST_MULTIPLIER == 0.1
