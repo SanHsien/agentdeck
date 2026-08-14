@@ -138,3 +138,23 @@ def test_a_version_that_is_not_semver_is_refused() -> None:
     for bad in ("1.2", "1.2.3.4", "1.2.3-rc1"):
         with pytest.raises(ValueError):
             make_version_file.version_tuple(bad)
+
+
+def test_every_stdlib_hook_script_is_bundled() -> None:
+    """A hook script missing from the build fails silently: the installer's
+    source lookup returns None and the feature simply never installs, with
+    nothing on screen to say why. Caught exactly that way for the Antigravity
+    status line, which shipped absent from its first build.
+    """
+    root = Path(__file__).resolve().parent.parent
+    build = (root / "scripts" / "build_windows.ps1").read_text(encoding="utf-8")
+
+    missing = [
+        script.name
+        for script in sorted(root.glob("usage_statusline*.py"))
+        + sorted(root.glob("usage_session_resume.py"))
+        + sorted(root.glob("usage_terse*.py"))
+        if f"'{script.name}'" not in build
+    ]
+
+    assert not missing, f"hook scripts absent from the Windows bundle: {missing}"

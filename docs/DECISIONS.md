@@ -491,3 +491,39 @@ PyInstaller **不在 `uv.lock` 裡**，是用 `uv pip install pyinstaller` 另�
 **exe 補上版本資訊（上游 `07812bb` 的一部分）**：本 fork 的 `agentdeck.exe` 先前**完全沒有版本資源**——Windows 檔案內容分頁全空白，拿到一個下載來的 exe 無法在不執行它的情況下辨識版本。版本號從 `pyproject.toml` 讀取，不另開第二個來源。非 SemVer 的版號直接拒絕而不是截斷:截斷會讓 exe 宣稱一個從未發布過的版本。
 
 **SignPath 簽章不採用**：需要維護者自行向 SignPath Foundation 申請 OSS 方案並在 repo 設定機密，我無法代辦；上游也自陳「整條流程尚未在 CI 實跑過」，簽章政策仍停在 test-signing。移植一條沒被驗證過的發版流程，風險大於未簽章的現況。**主人若要做，這是需要主人本人出面申請的事。**
+
+---
+
+## D-25：兩筆會動到使用者設定檔的移植——先驗證平台，才改設定
+
+**日期**：2026-08-13
+
+先前把這兩筆記為「待評估」就收工，那是沒做完。**「會動到使用者的設定檔」是先驗證的理由，不是不做的理由。**
+
+### Codex 狀態列（上游 `0014773`）
+
+**先驗證段位是否存在，才改設定**：直接讀安裝的 `codex-cli 0.146.0` 執行檔，確認七個識別字（`project`／`git-branch`／`five-hour-limit`／`weekly-limit`／`context-remaining`／`used-tokens`／`model-with-reasoning`）全部存在。若某個段位不被支援，狀態列會安靜地少一塊，沒有任何錯誤。
+
+**升級安全機制是整包的一部分，不能只加段位**：`_setup_codex()` 原本對任何既有設定都會備份。段位一改，升級時它會把**我們自己上一版寫進去的那份**當成使用者的原始設定存進備份，之後使用者移除時就「還原」出一個他從沒選過的狀態列——而且那是他真正設定的唯一副本。`LEGACY_CODEX_STATUS_LINES` 讓程式認得自己過去的輸出，就地升級、不碰既有備份。
+
+`is_codex_setup()` 與 `_unsetup_codex()` 也要認得舊組合，否則還沒升級的人會被判成「外來設定」而拒絕移除。
+
+self-heal 新增一條分支，只升級**我們自己裝過的**組合；使用者自訂值與已是新值都不碰。沒有這條，既有使用者除非重跑安裝，否則永遠停在舊段位。
+
+**測試證明它會擋**：把 `LEGACY_CODEX_STATUS_LINES` 的判斷關掉，「升級不得覆蓋使用者備份」那條立刻紅。
+
+### Antigravity CLI 狀態列（上游 `99d143c`／`ed9bedb`／`17e8c46`）
+
+**平台支援先查證**：`agy.exe` 內含 `"statusLine"`、`Statusline Error`、`statusline command` 等字串，且 `~/.gemini/antigravity-cli/settings.json` 在 Windows 上是同一個路徑、確實存在。功能是真的。
+
+**上游把 `/usr/bin/python3` 寫死**——在 Windows 上那個路徑不存在，照抄會寫進一條**永遠跑不起來**的指令，使用者的 CLI 整個生命週期掛著 `Statusline Error`。改用 `_find_system_python()`，與 Claude hook 同一條已驗證的解析路徑。
+
+腳本另有兩處違反本 fork 規則：五語（縮為兩語，並讓所有中文 locale 都解析到 zh-TW）、讀 `USAGE_LANG`（改為 `AGENTDECK_LANG`，否則語言設定對我們的使用者完全失效）。
+
+**端到端驗證，不是只跑單元測試**：把 `_setup_agy()` 實際寫進設定檔的那條指令取出來執行，餵真實的 fixture JSON——exit code 0，輸出正確的繁中狀態列，`is_agy_setup()` 為 True。
+
+**刻意不刪腳本檔**：Antigravity 只在啟動時讀一次設定，移除時刪檔會跟正在啟動的 CLI 搶時間，中獎的那個視窗整個生命週期都掛著錯誤。一份沒人引用的副本不花什麼成本。
+
+### SignPath
+
+需要向 SignPath Foundation 提出**由人工審核的 OSS 申請**，並由具名自然人擔任送件者與批准者——這一步 AI 助理做不完。完整步驟寫成 [`SIGNING.zh-TW.md`](SIGNING.zh-TW.md)：步驟 1～3 需主人本人執行，4～5（workflow 接線與 README 政策段落）可以交給我。文件裡也記下兩個本 repo 的既有規定:Action 用 SHA 釘選、`${{ }}` 不可進 `run:`。

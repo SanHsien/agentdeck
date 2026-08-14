@@ -32,7 +32,7 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "branches": {
     "main": {
       "last_reviewed": "4eb0e5e",
-      "last_merged": "4eb0e5e",
+      "last_merged": "0014773",
       "note": "審視至 4eb0e5e。面板架構已於 v0.40.0 對齊上游（panel_core.js），三張新主題一併移植、舊九張移除。此輪另移植用量預估的窗口斜率修正與 Windows 版本資源。SignPath 簽章需維護者自行申請，見 Skipped。"
     }
   }
@@ -63,9 +63,9 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
 | main | `4eb0e5e` | fix: 用量預估改用窗口平均斜率 | 2026-08-13 | **已採用**。本機重現:穩定 0.5%/分鐘燒十分鐘後，一則大訊息在 5 秒輪詢間隔內加 7%，EMA 預估 **0.9 分鐘**用完，窗口斜率是 32 分鐘。 |
-| main | `07812bb` | feat: Windows 執行檔接上 SignPath 簽章流程 | 2026-08-13 | **部分採用**。其中的版本資源產生器已移植——本 fork 的 exe 先前完全沒有版本資訊（檔案內容顯示空白，下載者無從辨識版本）。**SignPath 本身不採用**:需要維護者自行向 SignPath Foundation 申請 OSS 方案並設定機密，我無法代辦；且上游自陳「整條流程尚未在 CI 實跑過」，簽章政策仍是 test-signing。 |
-| main | `99d143c`／`ed9bedb`／`17e8c46` | feat+fix: Antigravity CLI 狀態列 | 2026-08-13 | 待評估:需先確認 Antigravity CLI 在 Windows 上是否有等價的狀態列設定點。列為後續工作，避免在未驗證平台支援前寫入使用者的設定檔。 |
-| main | `0014773` | feat: Codex 狀態列加 git-branch 與 used-tokens | 2026-08-13 | 待評估:段位從 5 加到 7 會改寫使用者的 Codex 設定，必須連同其中的備份／升級安全機制一起移植，否則移除時會「還原」出我們自己裝的舊值。要做就整包做。 |
+| main | `07812bb` | feat: Windows 執行檔接上 SignPath 簽章流程 | 2026-08-13 | **部分採用**。版本資源產生器已移植（v0.40.1）。SignPath 本體需要維護者親自申請 OSS 方案——申請與接線步驟已完整寫成 [`SIGNING.zh-TW.md`](SIGNING.zh-TW.md)，步驟 1～3 需本人執行，4～5 可交給我。 |
+| main | `99d143c`／`ed9bedb`／`17e8c46` | feat+fix: Antigravity CLI 狀態列 | 2026-08-13 | **已採用**。先驗證平台支援才動手:`agy.exe` 內含 `"statusLine"`／`Statusline Error`／`statusline command` 字串，`~/.gemini/antigravity-cli/settings.json` 在 Windows 上同路徑存在。上游把 `/usr/bin/python3` 寫死——在 Windows 上會裝出一條永遠跑不起來的指令，改用 `_find_system_python()`。腳本另從五語縮為兩語、`USAGE_LANG` 改為 `AGENTDECK_LANG`。 |
+| main | `0014773` | feat: Codex 狀態列加 git-branch 與 used-tokens | 2026-08-13 | **已採用，整包做**。先對安裝的 codex-cli 0.146.0 執行檔驗證七個段位識別字全部存在，才改設定。含 `LEGACY_CODEX_STATUS_LINES` 升級安全機制與 self-heal 就地升級。 |
 | main | `f74bbe0` | refactor: 合併選單開關分組 | 2026-08-13 | 上游 `menubar_menu.py` 的分組取捨；本 fork 的選單已於 v0.40.0 抽成 `win_tray_menu.py`，項目組成與上游不同（多了人才市場與 Catppuccin 配色）。 |
 | main | `7fa4b6c` | fix: 自癒測試明確模擬 macOS | 2026-08-13 | 針對 `tests/test_usage_statusline_agy.py`（本 fork 沒有）。概念（測試不該依賴執行平台）本 fork 已在用 `sys.platform` 明確 skip。 |
 | main | `bc26c6a` | docs: 記錄 window keeper 開窗不穩定的實測證據 | 2026-08-13 | 上游對自家 macOS 開窗行為的觀測；本 fork 的 window keeper 走 Windows 路徑，該證據不適用。 |

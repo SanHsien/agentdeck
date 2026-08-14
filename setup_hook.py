@@ -48,11 +48,35 @@ CODEX_BACKUP = codex_home() / "agentdeck-backup.json"
 LEGACY_CODEX_BACKUP = codex_home() / "tt-backup.json"
 CODEX_STATUS_LINE = [
     "project",
+    "git-branch",
     "five-hour-limit",
     "weekly-limit",
     "context-remaining",
+    "used-tokens",
     "model-with-reasoning",
 ]
+# Every combination this project has ever installed. Without it, an upgrade
+# looks at the list *we* wrote, mistakes it for the user's own configuration,
+# saves it to the backup, and then "restores" our old value over the only copy
+# of their real setting when they uninstall. Recognising our own past output is
+# what makes an in-place upgrade safe.
+LEGACY_CODEX_STATUS_LINES: list[list[str]] = [
+    [
+        "project",
+        "five-hour-limit",
+        "weekly-limit",
+        "context-remaining",
+        "model-with-reasoning",
+    ]
+]
+AGY_SETTINGS = Path(os.path.expanduser("~/.gemini/antigravity-cli/settings.json"))
+AGY_HOOK_TARGET = Path(
+    os.path.expanduser("~/.gemini/antigravity-cli/agentdeck-statusline-agy.py")
+)
+AGY_PREVIOUS_STATUSLINE = Path(
+    os.path.expanduser("~/.gemini/antigravity-cli/agentdeck-previous-statusline.json")
+)
+
 LEGACY_NAME = "usag"
 LEGACY_HOOK_TARGET = Path(os.path.expanduser(f"~/.claude/{LEGACY_NAME}-statusline.py"))
 LEGACY_STATUS_FILE = Path(os.path.expanduser(f"~/.claude/{LEGACY_NAME}-status.json"))
@@ -536,6 +560,140 @@ def _codex_status_line(parsed: dict[str, Any]) -> object:
     return tui.get("status_line") if isinstance(tui, dict) else None
 
 
+def _is_our_codex_status_line(value: object) -> bool:
+    """Whether this status line is one we installed, current or from an older version."""
+    return value == CODEX_STATUS_LINE or value in LEGACY_CODEX_STATUS_LINES
+
+
+def _resolve_agy_hook_source() -> Path | None:
+    paths = [
+        Path(__file__).resolve().parent / "usage_statusline_agy.py",
+        Path(sys.executable).resolve().parent.parent / "Resources" / "usage_statusline_agy.py",
+    ]
+    return next((path for path in paths if path.exists()), None)
+
+
+def _agy_statusline_command() -> str:
+    """The command Antigravity runs for its status line.
+
+    Upstream hardcodes /usr/bin/python3, which does not exist on Windows --
+    installing that verbatim would write a status line that can never run and
+    leave "Statusline Error" in the CLI. _find_system_python() is the same
+    resolution the Claude Code hook uses, and this script is stdlib-only for
+    exactly that reason.
+    """
+    python = _find_system_python()
+    return f"{_shell_arg(python)} {_shell_arg(str(AGY_HOOK_TARGET))}"
+
+
+def _is_agy_usage_hook(status_line: object) -> bool:
+    if not isinstance(status_line, dict):
+        return False
+    command = status_line.get("command")
+    return isinstance(command, str) and "agentdeck-statusline-agy.py" in command
+
+
+def _load_agy_json(path: Path) -> object | None:
+    try:
+        return cast(object, json.loads(path.read_text(encoding="utf-8")))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return None
+
+
+def _setup_agy() -> bool:
+    """Install Antigravity's status line without creating an absent settings file."""
+    if not AGY_SETTINGS.is_file():
+        return False
+    settings = _load_agy_json(AGY_SETTINGS)
+    if not isinstance(settings, dict):
+        return False
+    source = _resolve_agy_hook_source()
+    if source is None:
+        return False
+
+    existing = settings.get("statusLine")
+    if AGY_PREVIOUS_STATUSLINE.exists():
+        if _load_agy_json(AGY_PREVIOUS_STATUSLINE) is None:
+            return False
+    elif existing is not None and not _is_agy_usage_hook(existing):
+        try:
+            _atomic_write_text(
+                AGY_PREVIOUS_STATUSLINE,
+                json.dumps(existing, indent=2, ensure_ascii=False) + "\n",
+            )
+        except OSError:
+            return False
+
+    try:
+        AGY_HOOK_TARGET.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, AGY_HOOK_TARGET)
+        AGY_HOOK_TARGET.chmod(
+            AGY_HOOK_TARGET.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+        )
+        settings["statusLine"] = {
+            "type": "command",
+            "command": _agy_statusline_command(),
+            "enabled": True,
+        }
+        _atomic_write_text(
+            AGY_SETTINGS,
+            json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
+        )
+    except OSError:
+        return False
+    return True
+
+
+def _unsetup_agy() -> bool:
+    """Remove agentdeck's Antigravity status line and restore its sidecar backup."""
+    if not AGY_SETTINGS.is_file():
+        return False
+    settings = _load_agy_json(AGY_SETTINGS)
+    if not isinstance(settings, dict):
+        return False
+    if not _is_agy_usage_hook(settings.get("statusLine")):
+        return False
+
+    previous: object | None = None
+    if AGY_PREVIOUS_STATUSLINE.exists():
+        previous = _load_agy_json(AGY_PREVIOUS_STATUSLINE)
+        if previous is None:
+            return False
+        settings["statusLine"] = previous
+    else:
+        settings.pop("statusLine", None)
+
+    try:
+        _atomic_write_text(
+            AGY_SETTINGS,
+            json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
+        )
+        AGY_PREVIOUS_STATUSLINE.unlink(missing_ok=True)
+    except OSError:
+        return False
+    # AGY_HOOK_TARGET is deliberately left in place. Antigravity reads its
+    # settings once at startup, so deleting the script races with any CLI that
+    # is launching, and that session shows "Statusline Error: No such file"
+    # for its whole lifetime. An unreferenced copy costs nothing.
+    return True
+
+
+def is_agy_setup() -> bool:
+    """Return whether agentdeck's Antigravity status line is fully installed."""
+    if not AGY_SETTINGS.is_file() or not AGY_HOOK_TARGET.is_file():
+        return False
+    settings = _load_agy_json(AGY_SETTINGS)
+    if not isinstance(settings, dict):
+        return False
+    status_line = settings.get("statusLine")
+    return (
+        isinstance(status_line, dict)
+        and status_line.get("type") == "command"
+        and status_line.get("command") == _agy_statusline_command()
+        and status_line.get("enabled") is True
+    )
+
+
 def _setup_codex() -> None:
     result = _read_codex_config()
     if not result:
@@ -549,7 +707,13 @@ def _setup_codex() -> None:
         print(_t("setup_codex_already_configured"))
         return
 
-    if old is not None:
+    if old in LEGACY_CODEX_STATUS_LINES:
+        # Ours, from an earlier version: upgrade in place and leave any existing
+        # backup untouched. Backing this up would overwrite the user's real
+        # setting with our own previous output, and uninstalling would then
+        # "restore" a value they never chose.
+        content = _replace_tui_status_line(content, _status_line_toml(CODEX_STATUS_LINE))
+    elif old is not None:
         CODEX_BACKUP.parent.mkdir(parents=True, exist_ok=True)
         CODEX_BACKUP.write_text(
             json.dumps({"status_line": old}, indent=2, ensure_ascii=False) + "\n",
@@ -563,7 +727,7 @@ def _setup_codex() -> None:
 
     _atomic_write_text(CODEX_CONFIG, content)
     print(_t("setup_codex_configured"))
-    if old is not None:
+    if old is not None and old not in LEGACY_CODEX_STATUS_LINES:
         print(_t("setup_codex_backup_written", path=CODEX_BACKUP))
     print(_t("setup_codex_restart_required"))
 
@@ -634,7 +798,7 @@ def is_setup() -> bool:
         if not result:
             return False
         _, parsed = result
-        if _codex_status_line(parsed) != CODEX_STATUS_LINE:
+        if not _is_our_codex_status_line(_codex_status_line(parsed)):
             return False
 
     return True
@@ -655,7 +819,7 @@ def is_codex_setup() -> bool:
     if not result:
         return False
     _, parsed = result
-    return _codex_status_line(parsed) == CODEX_STATUS_LINE
+    return _is_our_codex_status_line(_codex_status_line(parsed))
 
 
 def _install_forwarder(settings: dict[str, Any]) -> None:

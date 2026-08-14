@@ -1100,6 +1100,26 @@ def _debug_self_heal_failure(action: str, exc: BaseException) -> None:
         print(f"agentdeck self-heal {action} failed: {type(exc).__name__}: {exc}", file=sys.stderr)
 
 
+def _upgrade_codex_status_line_if_ours() -> None:
+    """Move an older agentdeck Codex status line onto the current segments.
+
+    Only a list this project shipped is touched. A user's own arrangement and
+    an already-current one are both left exactly as they are, so the upgrade
+    reaches people who never press a button without ever overwriting a choice
+    somebody made.
+    """
+    result = setup_hook._read_codex_config()
+    if not result:
+        return
+    _content, parsed = result
+    old = setup_hook._codex_status_line(parsed)
+    if old is None or old not in setup_hook.LEGACY_CODEX_STATUS_LINES:
+        return
+    _run_quietly(setup_hook._setup_codex)
+    detail = f"{len(old)} -> {len(setup_hook.CODEX_STATUS_LINE)} segments"
+    _append_self_heal_log("upgrade_codex_status_line", detail)
+
+
 def self_heal() -> None:
     """Best-effort startup repair for agentdeck-owned Claude statusLine hooks."""
     try:
@@ -1118,6 +1138,13 @@ def self_heal() -> None:
         if isinstance(exc, KeyboardInterrupt):
             raise
         _debug_self_heal_failure("install_hook", exc)
+
+    try:
+        _upgrade_codex_status_line_if_ours()
+    except BaseException as exc:
+        if isinstance(exc, KeyboardInterrupt):
+            raise
+        _debug_self_heal_failure("upgrade_codex_status_line", exc)
 
     try:
         state = _detect_current_state()

@@ -51,6 +51,7 @@ try {
         --add-data "$(Join-Path $RepoRoot 'personas');personas" `
         --add-data "$(Join-Path $RepoRoot 'usage_statusline.py');." `
         --add-data "$(Join-Path $RepoRoot 'usage_statusline_forwarder.py');." `
+        --add-data "$(Join-Path $RepoRoot 'usage_statusline_agy.py');." `
         --add-data "$(Join-Path $RepoRoot 'usage_session_resume.py');." `
         --add-data "$(Join-Path $RepoRoot 'usage_terse_mode.py');." `
         --add-data "$(Join-Path $RepoRoot 'usage_terse_reminder.py');." `

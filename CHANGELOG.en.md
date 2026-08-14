@@ -6,6 +6,20 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
+## [0.41.0] - 2026-08-13
+
+### Added
+- **The Antigravity CLI has a status line too**: the panel's existing "Terminal" switch now controls Claude Code and Antigravity together rather than gaining a second button. It shows the 5-hour and weekly quota, context usage and the model, and **makes no network calls** — agy feeds it the data on stdin.
+  - Platform support was verified before touching anything: `agy.exe` contains the `"statusLine"` strings and the settings file lives at the same path on Windows. **Upstream hardcodes `/usr/bin/python3`**, which on Windows installs a command that can never run; the interpreter is resolved the same way the Claude hook resolves it.
+  - Uninstalling **deliberately leaves the script on disk**: Antigravity reads its settings once at startup, so deleting it races any CLI that is launching, and that session shows a status line error for its whole life.
+
+### Changed
+- **The Codex status line gained the git branch and used tokens**: five segments become seven. Before touching the config, the installed codex-cli binary was checked for all seven segment identifiers — an unsupported segment renders as nothing at all rather than as an error.
+  - The **upgrade-safety machinery** came with it: the installer used to treat *our own previous output* as the user's original setting, back it up, and then "restore" a status line they never chose on uninstall — overwriting the only copy of what they actually had. It now recognises its own past output, upgrades in place, and leaves an existing backup alone. Installed users are upgraded on next launch.
+
+### Documentation
+- Added [`docs/SIGNING.zh-TW.md`](docs/SIGNING.zh-TW.md): how to get the Windows executable code-signed through SignPath. Steps 1–3 need the maintainer personally (SignPath Foundation reviews the OSS application by hand and requires a named individual); 4–5 are repo changes.
+
 ## [0.40.1] - 2026-08-13
 
 ### Fixed

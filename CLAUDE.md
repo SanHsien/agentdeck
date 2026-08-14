@@ -96,7 +96,9 @@ breaks every installed hook, and nothing in the test suite would notice.
 | `session_hooks.py` | Install/enable/disable/self-heal for the session companion hooks (session resume, terse mode, terse reminder, Codex terse) — split out of `setup_hook.py`. Depends one-way on `setup_hook.py`; never the reverse. |
 | `usage_statusline.py` | The hook itself. **Stdlib-only** so it runs under whatever `python3` the user's Claude Code finds, not this project's venv. The `UP017` ruff exemption is a leftover of the old macOS 3.9 floor and can be revisited. |
 | `usage_statusline_forwarder.py` | Multi-hook fan-out. **Stdlib-only** so it runs under whatever `python3` the user's Claude Code finds, not this project's venv. The `UP017` ruff exemption is a leftover of the old macOS 3.9 floor and can be revisited. |
+| `usage_statusline_agy.py` | Antigravity CLI status line. **Stdlib-only**, same rule as the other hooks: Antigravity runs it with whatever interpreter `setup_hook._find_system_python()` resolved at install time. Upstream hardcodes `/usr/bin/python3`; on Windows that would install a command that can never run. |
 | `usage_session_resume.py` | SessionStart hook script — injects "where you left off" context into a new Claude Code session. **Stdlib-only** so it runs under whatever `python3` the user's Claude Code finds, not this project's venv. The `UP017` ruff exemption is a leftover of the old macOS 3.9 floor and can be revisited. |
+| `docs/SIGNING.zh-TW.md` | How to get the Windows executable code-signed through SignPath. Steps 1–3 need the maintainer personally (the OSS application is reviewed by a human); 4–5 are repo changes. |
 | `update_checker.py` | GitHub Releases update check added in v0.11.0. |
 | `adapters/`, `analyzer/`, `ui/` | HTML report subsystem. |
 

@@ -7,6 +7,8 @@
 from __future__ import annotations
 
 import json
+import os
+import shlex
 import shutil
 import sys
 import tomllib
@@ -690,3 +692,148 @@ def test_writing_through_a_symlink_keeps_the_link(tmp_path: Path) -> None:
 
     assert link.is_symlink(), "the link was replaced by a regular file"
     assert real.read_text(encoding="utf-8") == '{"new": true}'
+
+
+def _codex_config_with(status_line: list[str]) -> str:
+    body = ",\n".join(f'  "{segment}"' for segment in status_line)
+    return f'[tui]\nstatus_line = [\n{body},\n]\n'
+
+
+def test_upgrading_our_own_codex_status_line_keeps_the_users_backup(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The upgrade must not treat our own previous output as the user's setting.
+
+    Backing it up would overwrite the only record of what they actually had, and
+    uninstalling would then hand them a status line they never chose.
+    """
+    config = tmp_path / "config.toml"
+    backup = tmp_path / "agentdeck-backup.json"
+    config.write_text(_codex_config_with(setup_hook.LEGACY_CODEX_STATUS_LINES[0]), encoding="utf-8")
+    backup.write_text('{"status_line": ["their", "own", "choice"]}\n', encoding="utf-8")
+    monkeypatch.setattr(setup_hook, "CODEX_CONFIG", config)
+    monkeypatch.setattr(setup_hook, "CODEX_BACKUP", backup)
+
+    setup_hook._setup_codex()
+
+    assert "git-branch" in config.read_text(encoding="utf-8")
+    assert json.loads(backup.read_text(encoding="utf-8")) == {
+        "status_line": ["their", "own", "choice"]
+    }, "the upgrade overwrote the user's real backup with our own old value"
+
+
+def test_a_users_own_codex_status_line_is_still_backed_up(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = tmp_path / "config.toml"
+    backup = tmp_path / "agentdeck-backup.json"
+    config.write_text(_codex_config_with(["project", "model"]), encoding="utf-8")
+    monkeypatch.setattr(setup_hook, "CODEX_CONFIG", config)
+    monkeypatch.setattr(setup_hook, "CODEX_BACKUP", backup)
+
+    setup_hook._setup_codex()
+
+    assert json.loads(backup.read_text(encoding="utf-8")) == {
+        "status_line": ["project", "model"]
+    }
+
+
+def test_an_older_agentdeck_status_line_still_counts_as_installed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Someone who has not upgraded yet must not be told the hook is foreign --
+    that is what would refuse to uninstall it for them."""
+    config = tmp_path / "config.toml"
+    config.write_text(_codex_config_with(setup_hook.LEGACY_CODEX_STATUS_LINES[0]), encoding="utf-8")
+    monkeypatch.setattr(setup_hook, "CODEX_CONFIG", config)
+
+    assert setup_hook.is_codex_setup() is True
+
+
+def test_the_new_segments_are_ones_codex_actually_supports() -> None:
+    """Every segment name has to exist in Codex CLI or the status line silently
+    renders nothing for it. Verified against the installed binary on 2026-08-13
+    (codex-cli 0.146.0): all seven identifiers are present."""
+    assert setup_hook.CODEX_STATUS_LINE == [
+        "project",
+        "git-branch",
+        "five-hour-limit",
+        "weekly-limit",
+        "context-remaining",
+        "used-tokens",
+        "model-with-reasoning",
+    ]
+
+
+def _agy_paths(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path, Path]:
+    settings = tmp_path / "settings.json"
+    hook = tmp_path / "agentdeck-statusline-agy.py"
+    sidecar = tmp_path / "agentdeck-previous-statusline.json"
+    monkeypatch.setattr(setup_hook, "AGY_SETTINGS", settings)
+    monkeypatch.setattr(setup_hook, "AGY_HOOK_TARGET", hook)
+    monkeypatch.setattr(setup_hook, "AGY_PREVIOUS_STATUSLINE", sidecar)
+    return settings, hook, sidecar
+
+
+def test_the_antigravity_command_runs_on_this_platform(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Upstream hardcodes /usr/bin/python3. Installing that on Windows writes a
+    status line that can never run and leaves "Statusline Error" in the CLI, so
+    the interpreter has to be resolved the same way the Claude hook resolves it.
+    """
+    settings, hook, _sidecar = _agy_paths(tmp_path, monkeypatch)
+    settings.write_text('{"theme": "dark"}\n', encoding="utf-8")
+
+    assert setup_hook._setup_agy() is True
+
+    command = json.loads(settings.read_text(encoding="utf-8"))["statusLine"]["command"]
+    assert "/usr/bin/python3" not in command
+    interpreter = shlex.split(command, posix=False)[0].strip('"')
+    assert Path(os.path.expanduser(interpreter)).exists() or shutil.which(interpreter)
+    assert hook.is_file(), "the hook script was not copied next to the settings"
+
+
+def test_installing_antigravity_keeps_the_users_own_status_line(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    settings, _hook, sidecar = _agy_paths(tmp_path, monkeypatch)
+    settings.write_text(
+        json.dumps({"statusLine": {"type": "command", "command": "their-own"}}) + "\n",
+        encoding="utf-8",
+    )
+
+    assert setup_hook._setup_agy() is True
+    assert json.loads(sidecar.read_text(encoding="utf-8"))["command"] == "their-own"
+
+    assert setup_hook._unsetup_agy() is True
+    restored = json.loads(settings.read_text(encoding="utf-8"))["statusLine"]
+    assert restored["command"] == "their-own"
+    assert not sidecar.exists()
+
+
+def test_uninstalling_antigravity_leaves_the_script_on_disk(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Antigravity reads its settings once at startup, so deleting the script
+    races any CLI that is launching -- and that session shows a status line
+    error for its whole life. An unreferenced copy costs nothing."""
+    settings, hook, _sidecar = _agy_paths(tmp_path, monkeypatch)
+    settings.write_text("{}\n", encoding="utf-8")
+    setup_hook._setup_agy()
+
+    setup_hook._unsetup_agy()
+
+    assert "statusLine" not in json.loads(settings.read_text(encoding="utf-8"))
+    assert hook.is_file()
+
+
+def test_antigravity_is_not_installed_when_its_cli_never_was(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A missing ~/.gemini means Antigravity's CLI is not set up here. Creating
+    the file would leave configuration for a tool the user does not run."""
+    settings, _hook, _sidecar = _agy_paths(tmp_path, monkeypatch)
+
+    assert setup_hook._setup_agy() is False
+    assert not settings.exists()
