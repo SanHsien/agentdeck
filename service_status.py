@@ -43,6 +43,14 @@ _SEVERITY = {
 }
 
 
+# Statuspage's summary.json returns only the first 25 components by position.
+# OpenAI now publishes 34 and "Codex API" sits at 27, so it was never in the
+# payload and the Codex banner read "unknown" forever -- a missing component and
+# a healthy one are indistinguishable to the caller, which is why nobody noticed.
+# Verified against the live feed 2026-08-13: summary.json 25 components without
+# "Codex API", components.json 34 with it. The full list lives under the same
+# "components" key, so the parsing is unchanged. Claude's components fit today;
+# it uses the same endpoint so a future addition cannot repeat the silence.
 @dataclass(frozen=True)
 class ServiceStatusConfig:
     """The public status-page details for one tool."""
@@ -55,13 +63,13 @@ class ServiceStatusConfig:
 
 CLAUDE_STATUS = ServiceStatusConfig(
     service_name="Claude",
-    status_url="https://status.claude.com/api/v2/summary.json",
+    status_url="https://status.claude.com/api/v2/components.json",
     component_names=("Claude Code", "Claude API (api.anthropic.com)"),
     cache_path=Path(os.path.expanduser("~/.agentdeck/anthropic_status_cache.json")),
 )
 CODEX_STATUS = ServiceStatusConfig(
     service_name="Codex",
-    status_url="https://status.openai.com/api/v2/summary.json",
+    status_url="https://status.openai.com/api/v2/components.json",
     # Do not include shared OpenAI API components (for example Responses): they
     # affect all API users and do not necessarily affect the Codex CLI.
     component_names=("Codex API",),

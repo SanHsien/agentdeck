@@ -5,6 +5,16 @@
 本檔記錄 agentdeck 所有重要變更。格式參考 [Keep a Changelog](https://keepachangelog.com/)，
 版號遵循[語意化版本 2.0.0](https://semver.org/lang/zh-TW/)。
 
+## [0.41.1] - 2026-08-14
+
+### 修正
+- **Codex 服務狀態橫幅先前一直是 unknown**:狀態改讀 `components.json`。OpenAI 的 `summary.json` 只回傳前 25 個 component,實際有 34 個,`Codex API` 排在第 27——查不到,而「元件不存在」與「元件正常」對呼叫端長得一模一樣,所以沒有任何東西會報錯。Claude 端一併改用同一個端點。
+  - 另加一條**直接打真實 feed** 的測試。既有測試全部餵手寫 payload,這正是白名單能與供應商悄悄脫節的原因。feed 連不上時 skip——別人的故障不該讓我們的 CI 紅燈。
+- **中文系統從 Git Bash 啟動會變成英文介面**:Git Bash 與 MSYS 會塞一個 `LANG=en_US.UTF-8` 進環境變數,那是殼層的設定、不是使用者的,卻蓋過了系統 UI 語言。本機重現:系統是 zh-TW,`detect_lang()` 回 `en`。現在只認 `AGENTDECK_LANG` 與 `TT_LANG` 兩個明確覆寫,其餘交給系統設定。
+  - 語言判斷在五個獨立 hook 腳本裡各有一份複製(它們必須能在沒有本專案任何 import 的系統 Python 上執行),漏改一份就是「app 與 hook 講不同語言」。已加掃描測試釘住六個檔案。
+- **沒有 Python 時安裝 hook 會靜靜裝出一條跑不起來的指令**:找不到可用直譯器時原本回傳字面上的 `python`,Claude Code 顯示空白狀態列、不報錯,兩端都看不出問題。現在安裝時直接說明原因並中止。
+  - 只在**安裝進入點**檢查。`is_*_setup()` 這類述詞會呼叫同一條路徑,若也拋例外,沒裝 Python 的機器連選單都開不出來——使用者反而讀不到那句叫他裝 Python 的訊息。
+
 ## [0.41.0] - 2026-08-13
 
 ### 新增

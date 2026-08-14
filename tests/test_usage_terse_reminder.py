@@ -66,7 +66,7 @@ class _FakeStdin:
 def test_main_reads_sidecar_reminder(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     monkeypatch.setattr("sys.stdin", _FakeStdin(json.dumps({"prompt": "hi"})))
 
@@ -79,7 +79,7 @@ def test_main_reads_sidecar_reminder(
 def test_main_falls_back_to_default_when_sidecar_missing(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     monkeypatch.setattr(mod, "PROMPT_SIDECAR", tmp_path / "missing.json")
     monkeypatch.setattr("sys.stdin", _FakeStdin(json.dumps({"prompt": "hi"})))
 
@@ -106,7 +106,7 @@ def test_main_uses_detected_language(
 def test_main_reads_utf8_bytes_when_stdin_uses_cp950(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     payload = json.dumps(
         {"cwd": r"C:\\Users\\USER\\Desktop\\GitHub專案\\usage"}, ensure_ascii=False
@@ -131,7 +131,7 @@ def test_main_is_silent_on_invalid_json(
 def test_main_emits_reminder_for_empty_payload(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     monkeypatch.setattr("sys.stdin", _FakeStdin("{}"))
 

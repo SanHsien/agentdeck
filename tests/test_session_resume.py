@@ -227,7 +227,7 @@ def test_build_prompt_reads_previous_session(
 ) -> None:
     monkeypatch.delenv("AGENTDECK_LANG", raising=False)
     monkeypatch.delenv("TT_LANG", raising=False)
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     project = _project_dir(tmp_path)
     now = datetime.now().astimezone()
@@ -253,7 +253,7 @@ def test_build_prompt_reads_previous_session(
 def test_build_prompt_includes_uncommitted_git_changes(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     monkeypatch.setattr(
         mod,
@@ -283,7 +283,7 @@ def test_build_prompt_includes_uncommitted_git_changes(
 def test_build_prompt_omits_uncommitted_line_when_git_dirty_returns_none(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     monkeypatch.setattr(mod, "_git_dirty", lambda cwd: None)
     project = _project_dir(tmp_path)
@@ -311,7 +311,7 @@ def test_build_prompt_omits_uncommitted_line_when_git_dirty_returns_none(
 def test_build_prompt_includes_pending_todos(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     project = _project_dir(tmp_path)
     _write_session(
@@ -333,7 +333,7 @@ def test_build_prompt_includes_pending_todos(
 def test_build_prompt_reads_last_prompt_entry(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     project = _project_dir(tmp_path)
     when = datetime.now().astimezone() - timedelta(hours=1)
@@ -366,7 +366,7 @@ def test_build_prompt_reads_last_prompt_entry(
 def test_build_prompt_uses_first_substantive_task_not_trailing_reaction(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     project = _project_dir(tmp_path)
     when = datetime.now().astimezone() - timedelta(hours=1)
@@ -410,7 +410,7 @@ def test_build_prompt_uses_first_substantive_task_not_trailing_reaction(
 def test_build_prompt_greets_when_only_current_transcript(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     project = _project_dir(tmp_path)
     current = project / "current.jsonl"
@@ -427,7 +427,7 @@ def test_build_prompt_greets_when_only_current_transcript(
 def test_build_prompt_greets_when_previous_is_stale(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     project = _project_dir(tmp_path)
     _write_session(
@@ -448,7 +448,7 @@ def test_build_prompt_greets_when_previous_is_stale(
 def test_build_prompt_greets_when_no_signal(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     project = _project_dir(tmp_path)
     # No user request, no commits, no todos → nothing to report, so the butler just greets.
@@ -469,7 +469,7 @@ def test_build_prompt_greets_when_no_signal(
 def test_build_prompt_falls_back_to_default_when_sidecar_missing(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     monkeypatch.setattr(mod, "PROMPT_SIDECAR", tmp_path / "does-not-exist.json")
     project = _project_dir(tmp_path)
     _write_session(
@@ -538,7 +538,7 @@ def test_build_prompt_uses_detected_language(
 def test_main_emits_additional_context(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     project = _project_dir(tmp_path)
     _write_session(
@@ -561,7 +561,7 @@ def test_main_emits_additional_context(
 def test_main_emits_greeting_when_no_progress(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     project = _project_dir(tmp_path)
     # Brand-new project: only the current transcript, nothing previous to report.
@@ -578,7 +578,7 @@ def test_main_emits_greeting_when_no_progress(
 def test_main_reads_utf8_bytes_when_stdin_uses_cp950(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     project = _project_dir(tmp_path)
     current = project / "current.jsonl"
@@ -634,7 +634,7 @@ def test_build_prompt_skips_corrupt_latest_and_uses_previous(
 ) -> None:
     # The freshest log is empty; the butler must fall back to the older valid session
     # instead of going silent.
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     project = _project_dir(tmp_path)
     now = datetime.now().astimezone()
@@ -663,7 +663,7 @@ def test_build_prompt_handles_naive_timestamp(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     # A transcript whose timestamps carry no UTC offset must not crash the cutoff check.
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     project = _project_dir(tmp_path)
     naive = (datetime.now() - timedelta(hours=1)).replace(microsecond=0)
@@ -696,7 +696,7 @@ def test_done_falls_back_to_edited_files_when_no_commits(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """When a session has Edit/Write but no git commit, the done field shows basenames."""
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     project = _project_dir(tmp_path)
     _write_session(
@@ -728,7 +728,7 @@ def test_done_prefers_commits_over_edited_files(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """When a session has both git commits and Edit/Write, only commits appear in done."""
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     project = _project_dir(tmp_path)
     _write_session(
@@ -753,7 +753,7 @@ def test_build_prompt_surfaces_recent_requests_newest_first(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """A session that drifts topics: the most recent request leads, the opening one trails."""
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     project = _project_dir(tmp_path)
     when = datetime.now().astimezone() - timedelta(hours=1)
@@ -793,7 +793,7 @@ def test_build_prompt_skips_meta_entries_and_dedupes_non_adjacent_repeats(
 ) -> None:
     """isMeta entries (skill/command expansions) are noise, not requests; repeats separated
     by such noise are still the same request and shouldn't eat a second handoff slot."""
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     project = _project_dir(tmp_path)
     when = datetime.now().astimezone() - timedelta(hours=1)
@@ -833,7 +833,7 @@ def test_build_prompt_skips_meta_entries_and_dedupes_non_adjacent_repeats(
 def test_build_prompt_skips_diagnosis_reminder_when_waste_below_threshold(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     snapshot, _state = _diagnosis_paths(tmp_path, monkeypatch)
     _write_diagnosis_snapshot(
@@ -861,7 +861,7 @@ def test_build_prompt_skips_diagnosis_reminder_when_waste_below_threshold(
 def test_build_prompt_skips_diagnosis_reminder_during_cooldown(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     snapshot, state = _diagnosis_paths(tmp_path, monkeypatch)
     now = datetime.now().astimezone()
@@ -886,7 +886,7 @@ def test_build_prompt_skips_diagnosis_reminder_during_cooldown(
 def test_build_prompt_injects_diagnosis_reminder_when_fingerprint_changes(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     snapshot, state = _diagnosis_paths(tmp_path, monkeypatch)
     now = datetime.now().astimezone()
@@ -918,7 +918,7 @@ def test_build_prompt_injects_diagnosis_reminder_when_fingerprint_changes(
 def test_build_prompt_uses_explain_reminder_when_nothing_fixable(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     snapshot, state = _diagnosis_paths(tmp_path, monkeypatch)
     now = datetime.now().astimezone()
@@ -957,7 +957,7 @@ def test_build_prompt_uses_explain_reminder_when_nothing_fixable(
 def test_build_prompt_skips_diagnosis_reminder_when_snapshot_is_stale(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
     _sidecar(tmp_path, monkeypatch)
     snapshot, _state = _diagnosis_paths(tmp_path, monkeypatch)
     _write_diagnosis_snapshot(

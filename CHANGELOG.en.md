@@ -6,6 +6,16 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
+## [0.41.1] - 2026-08-14
+
+### Fixed
+- **The Codex service banner had always read unknown**: status now comes from `components.json`. OpenAI's `summary.json` returns only the first 25 components; there are 34, and `Codex API` sits at 27 — so it was never found, and a missing component is indistinguishable from a healthy one to the caller, which is why nothing ever reported an error. The Claude side moved to the same endpoint.
+  - A test that **asks the real feed** came with it. Every existing test fed a hand-written payload, which is exactly how the whitelist drifted away from the provider unnoticed. It skips when the feed is unreachable — somebody else's outage should not turn our CI red.
+- **A Chinese system launched from Git Bash came up in English**: Git Bash and MSYS inject `LANG=en_US.UTF-8`, which describes the shell rather than the user, and it outranked the system UI language. Reproduced locally: the system is zh-TW and `detect_lang()` returned `en`. Only the two explicit overrides, `AGENTDECK_LANG` and `TT_LANG`, are consulted now; everything else defers to the system setting.
+  - The language lookup is copy-pasted into five standalone hook scripts (they must run on a bare system Python with none of our imports), so one missed copy means the app and the hooks disagree about what language the user reads. A sweep test now pins all six files.
+- **Installing a hook with no Python quietly wrote a command that could not run**: with no usable interpreter the resolver returned the literal word `python`, and Claude Code showed an empty status line without reporting anything — invisible from both ends. Setup now stops and says why.
+  - The check runs at the **install entry points only**. The `is_*_setup` predicates call the same resolver, and raising there would mean a machine without Python could not even open the menu — leaving the user unable to read the message telling them to install Python.
+
 ## [0.41.0] - 2026-08-13
 
 ### Added

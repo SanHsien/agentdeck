@@ -837,3 +837,64 @@ def test_antigravity_is_not_installed_when_its_cli_never_was(
 
     assert setup_hook._setup_agy() is False
     assert not settings.exists()
+
+
+def test_install_refuses_when_no_python_can_run(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Without this the fallback installs the bare word ``python``. Claude Code
+    then runs a command that cannot start, shows an empty status line, and
+    reports nothing — the failure is invisible from both ends.
+    """
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr("setup_hook.shutil.which", lambda _name: None)
+    monkeypatch.setattr(setup_hook, "_is_working_python", lambda _path: False)
+
+    with pytest.raises(setup_hook.HookSetupError):
+        setup_hook._require_system_python()
+
+
+def test_a_bare_python_that_actually_runs_is_accepted(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Upstream refuses on the fallback itself. That is one assumption too many:
+    PATH is resolved by the shell at run time, so a machine where shutil.which
+    came up empty can still have a working ``python``. Only a fallback proven
+    not to run is a reason to refuse.
+    """
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr("setup_hook.shutil.which", lambda _name: None)
+    monkeypatch.setattr(setup_hook, "_is_working_python", lambda _path: True)
+
+    assert setup_hook._require_system_python() == setup_hook.PYTHON_FALLBACK
+
+
+def test_the_menu_still_renders_without_python(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The is_*_setup predicates build the same command to compare against what
+    is installed. Raising from there would take the whole menu down on a machine
+    that merely lacks Python, which is worse than the bug being fixed: the user
+    could no longer even read the message telling them what to install.
+    """
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr("setup_hook.shutil.which", lambda _name: None)
+    monkeypatch.setattr(setup_hook, "_is_working_python", lambda _path: False)
+
+    assert setup_hook._find_system_python() == setup_hook.PYTHON_FALLBACK
+    assert isinstance(setup_hook._statusline_command(), str)
+    assert setup_hook.is_setup() in (True, False)
+
+
+def test_a_non_ascii_hook_path_is_still_installed(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Upstream refuses these outright. Measured on Windows 11 with a
+    non-ASCII directory, the installed command ran under cmd.exe, sh (Git Bash)
+    and PowerShell alike, and GetShortPathNameW returned the long path
+    unchanged, so there is no ASCII form to fall back to. Refusing would lock
+    out every user whose account name is not ASCII — a large share of the
+    Traditional Chinese audience this fork exists for — over a failure that
+    could not be reproduced.
+    """
+    monkeypatch.setattr(sys, "platform", "win32")
+
+    arg = setup_hook._shell_arg(r"C:\Users\王小明\.claude\agentdeck-statusline.py")
+
+    assert "王小明" in arg
+    assert "\\" not in arg

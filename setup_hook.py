@@ -154,6 +154,13 @@ def _statusline_command_target_exists() -> bool:
     return True
 
 
+PYTHON_FALLBACK = "python"
+
+
+class HookSetupError(RuntimeError):
+    """Setup cannot proceed. The message is written to be shown to the user."""
+
+
 def _is_working_python(path: str) -> bool:
     """Return whether ``path`` can run as a Python interpreter."""
     try:
@@ -178,13 +185,33 @@ def _find_system_python() -> str:
         for candidate in (shutil.which("python"), shutil.which("py")):
             if candidate and _is_ascii_path(candidate) and _is_working_python(candidate):
                 return candidate
-        return "python"
+        return PYTHON_FALLBACK
     if os.path.exists("/usr/bin/python3"):
         return "/usr/bin/python3"
     executable = sys.executable
     if ".app/Contents" not in executable:
         return executable
     return shutil.which("python3") or "python3"
+
+
+def _require_system_python() -> str:
+    """Resolve the interpreter for a hook we are about to install, or refuse.
+
+    The hook scripts are stdlib-only precisely so they can run on whatever
+    Python the machine already has, but the app ships its own interpreter
+    inside the exe and cannot lend it out. With nothing on PATH the fallback is
+    the bare word ``python``, and installing that writes a status line that
+    never runs: Claude Code shows an empty status line and no error, so the
+    failure is invisible from both ends.
+
+    Only the install paths call this. The ``is_*_setup`` predicates keep using
+    the total :func:`_find_system_python`, because a machine without Python
+    should still be able to open the menu and read what it says.
+    """
+    python = _find_system_python()
+    if python == PYTHON_FALLBACK and not _is_working_python(python):
+        raise HookSetupError(_t("setup_windows_python_missing"))
+    return python
 
 
 def _is_ascii_path(value: str) -> bool:
@@ -604,6 +631,7 @@ def _setup_agy() -> bool:
     """Install Antigravity's status line without creating an absent settings file."""
     if not AGY_SETTINGS.is_file():
         return False
+    _require_system_python()
     settings = _load_agy_json(AGY_SETTINGS)
     if not isinstance(settings, dict):
         return False
@@ -839,6 +867,9 @@ def setup(force_forwarder: bool = False) -> int:
     if not has_claude and not has_codex:
         print(_t("setup_no_agents"), file=sys.stderr)
         return 1
+    # Fail before touching anything, so a machine without Python is told why
+    # instead of ending up with a half-written settings file.
+    _require_system_python()
 
     if has_claude:
         settings = _load_settings()

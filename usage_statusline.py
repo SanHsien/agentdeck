@@ -173,7 +173,12 @@ def _windows_system_lang() -> str:
 def _statusline_detect_lang(env: Optional[Dict[str, str]] = None) -> str:
     source = os.environ if env is None else env
     raw = ""
-    for key in ("AGENTDECK_LANG", "TT_LANG", "LANG"):
+    # LANG is deliberately not consulted. Git Bash and MSYS inject one (usually
+    # en_US.UTF-8) that reflects the shell, not the user, and it silently
+    # outranked the system UI language: a zh-TW machine launched from Git Bash
+    # got an English UI. This is a Windows-only application, so the shell's
+    # LANG has no claim the system setting does not already answer better.
+    for key in ("AGENTDECK_LANG", "TT_LANG"):
         value = source.get(key, "").strip()
         if value:
             raw = value
@@ -461,7 +466,8 @@ def safe_text(value: str) -> str:
 
     A repository's ``.git/HEAD`` is attacker-controlled text: unzip a repo, cd
     in, open Claude Code, and everything after the ref name lands in the status
-    line unescaped. ``[2K`` erases the whole line and prints whatever the
+    line unescaped. ``[2K
+`` erases the whole line and prints whatever the
     repo wants in its place -- a forged quota reading, for instance. No prior
     code execution is needed.
 

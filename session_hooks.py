@@ -715,6 +715,7 @@ def enable_session_resume() -> int:
     if not CLAUDE_SETTINGS.parent.exists():
         print(_t("setup_no_agents"), file=sys.stderr)
         return 1
+    setup_hook._require_system_python()
     _copy_resume_script()
     _write_resume_sidecar()
     settings = _load_settings()
@@ -741,6 +742,7 @@ def enable_terse_mode() -> int:
     if not CLAUDE_SETTINGS.parent.exists():
         print(_t("setup_no_agents"), file=sys.stderr)
         return 1
+    setup_hook._require_system_python()
     _copy_terse_script()
     _copy_terse_reminder_script()
     _write_terse_sidecar()

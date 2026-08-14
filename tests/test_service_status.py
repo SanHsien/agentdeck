@@ -370,3 +370,34 @@ def test_corrupt_alert_state_is_treated_as_first_observation(
     assert json.loads(state_path.read_text(encoding="utf-8"))["Codex"]["status"] == (
         "degraded_performance"
     )
+
+
+@pytest.mark.parametrize("config", [service_status.CLAUDE_STATUS, service_status.CODEX_STATUS])
+def test_the_whitelisted_components_still_exist_upstream(
+    config: service_status.ServiceStatusConfig,
+) -> None:
+    """Every other test here feeds a hand-written payload, which is exactly how
+    the whitelist drifted away from the provider without anyone noticing: OpenAI
+    grew past summary.json's 25-component limit, "Codex API" fell off the end,
+    and the banner read unknown forever because a missing component and a
+    healthy one look identical to the caller.
+
+    This one asks the real feed. An unreachable feed is somebody else's outage
+    and skips; a reachable feed that no longer carries the name we filter on is
+    our problem and fails.
+    """
+    payload = service_status._fetch_status(config)
+    if payload is None:
+        pytest.skip(f"{config.service_name} status feed unreachable from here")
+
+    names = {
+        component.get("name")
+        for component in payload.get("components", [])
+        if isinstance(component, dict)
+    }
+
+    missing = [name for name in config.component_names if name not in names]
+    assert not missing, (
+        f"{config.service_name} no longer publishes {missing}; "
+        f"the banner would read unknown forever. Feed carries {len(names)} components."
+    )

@@ -101,7 +101,12 @@ def _windows_system_lang() -> str:
 
 
 def _detect_lang() -> str:
-    for key in ("AGENTDECK_LANG", "TT_LANG", "LANG"):
+    # LANG is deliberately not consulted. Git Bash and MSYS inject one (usually
+    # en_US.UTF-8) that reflects the shell, not the user, and it silently
+    # outranked the system UI language: a zh-TW machine launched from Git Bash
+    # got an English UI. This is a Windows-only application, so the shell's
+    # LANG has no claim the system setting does not already answer better.
+    for key in ("AGENTDECK_LANG", "TT_LANG"):
         value = os.environ.get(key, "").strip()
         if value:
             return _normalize_lang(value)
