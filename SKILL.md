@@ -1,42 +1,52 @@
 ---
 name: agentdeck
-description: 在 Windows system tray / 終端機 TUI 顯示 Claude Code、Codex 與 Antigravity 的配額用量，並維護 AI Council、人才市場與報告功能。Claude Code 與 Codex 數字讀本機檔案，不呼叫它們的用量 API。此 skill 用於維護 SanHsien/agentdeck。
+description: 維護 SanHsien/agentdeck。Windows-only AI coding cockpit：監看 Claude Code、Codex、Antigravity 額度，並提供 AI Council、persona 部署、工作續接與本機報告。Claude Code / Codex quota 讀本機資料，不呼叫 Anthropic / OpenAI usage API。
 ---
 
 # agentdeck
 
-## 何時使用
+## 適用情境
 
-- 要看／解讀 Claude Code 或 Codex 的 5 小時、7 天配額用量與燃燒率。
-- 要維護 `SanHsien/agentdeck`：修 bug、補測試、調 Windows 相容性、選擇性撿上游更新。
-- 要安裝或排除 statusLine hook（`~/.claude/agentdeck-status.json` 沒更新之類）的問題。
+- 修復或調整 Windows tray / WebView2 / TUI。
+- 維護 Claude Code、Codex、Antigravity quota 資料來源。
+- 維護 AI Council、persona 安裝、auto-resume、報告功能。
+- 處理 statusLine / companion hook 安裝與診斷。
+- 審視並選擇性移植 `aqua5230/usage` 的上游更新。
 
-不適合的任務：
+## 先讀
 
-- 想「接 API 拿更準的用量」——本專案的核心不變式就是不呼叫任何 LLM 用量 API，這條不能破。
-- macOS 專屬的 menu bar / `.app` 工作——本 fork 已移除 macOS 支援；要比對行為請讀 `reference/upstream-macos/`，不要把 macOS 程式碼接回建置。
+1. [`AGENTS.md`](AGENTS.md)：產品邊界、fork / AGPL、Windows-only 與驗證規則。
+2. [`CLAUDE.md`](CLAUDE.md)：高風險模組與常用技術入口。
+3. 任務相關文件：
+   - Windows 開發：`docs/DEVELOPMENT.zh-TW.md`
+   - 移植：`docs/PORTING.zh-TW.md`
+   - upstream：`docs/UPSTREAM.md`
+   - attribution / 資料：`NOTICE.md`
 
-## 前置
+## 不可破壞的邊界
+
+- 不重新加入 macOS 正式 build / menu bar 路徑。
+- 不為 Claude Code / Codex 接 Anthropic / OpenAI usage API。
+- 測試不可碰真實 `~/.claude/`、`~/.codex/`、`~/.cursor/` 或 Windows 排程。
+- 安裝到使用者環境的 hook 維持 root / stdlib-only。
+- 不移除 AGPL-3.0-only 與上游 attribution。
+
+## 常用指令
 
 ```powershell
 uv sync --frozen --group dev --extra windows
+uv run --no-sync python main.py --mock
+uv run --no-sync python main.py --doctor
+uv run --no-sync python main.py --tui
+uv run --no-sync python usage_cli.py report
+pwsh tools/dev_check.ps1
 ```
 
-需要 Python 3.13（`uv python install 3.13`）。本機預設 `python` 是 3.14，不要拿來建環境。
+## 完成回報
 
-## 常用
+列出：
 
-```powershell
-uv run --no-sync python main.py --tui        # 終端機 TUI
-uv run --no-sync python main.py --mock       # 假資料預覽
-uv run --no-sync python main.py --doctor     # 診斷 hook 與環境
-uv run --no-sync python usage_cli.py report  # 終端機分析報告
-pwsh tools/dev_check.ps1                     # ruff + mypy + pytest 三道 gate
-```
-
-## 注意
-
-- 改 code 前先讀 [`CLAUDE.md`](CLAUDE.md)（架構）與 [`AGENTS.md`](AGENTS.md)（fork 規則與已分叉之處）。
-- 測試不可碰真實 `~/.claude/`、`~/.codex/`。
-- README 是繁中為預設（`README.md`）、英文在 `README.en.md`，兩邊章節數要一致，CI 會擋。
-- Windows 上有兩個測試會因環境（符號連結權限、Claude Code SDK 注入的環境變數）失敗，不是 code bug——根因與處理見 [`REVIEW_Claude.md`](REVIEW_Claude.md)。
+- 修改檔案與使用者可見影響。
+- 是否碰 provider credential、hook / persona 設定、Windows Scheduler、DPI / WebView2 或 release packaging。
+- 自動驗證結果。
+- 若需要 Windows 實機 smoke，但本輪沒有實測，明確列為未驗證，不用把它寫成產品失敗。
