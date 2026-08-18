@@ -577,3 +577,19 @@ remote: - Required status check "check-windows" is expected.
 **AI agent 直推必須不受影響——已驗證。** 主人日常用 claude／codex／agy／cursor 等多個 agent 代表他直推，這是硬需求。查證:main 最近 30 筆推送身分**全是 `SanHsien`**，唯一協作者也是 `SanHsien`（admin），且**沒有任何 workflow 推 main**（不存在會被擋的 bot 身分）。這些 agent 都在主人機器上用同一份 git 認證，身分即 admin，正好落在 `enforce_admins: false` 的豁免內。實測 `git push origin main` rc=0。
 
 **這也是這個設定唯一站得住的理由**:它換來的是對未來非管理員貢獻者的 CI 要求、以及 force push／分支刪除的封鎖，而不是對主人自己的任何約束。哪天若有 agent 改用不同認證（fine-grained PAT、GitHub App 等非 admin 身分），它會被 status check 擋下——屆時要嘛把該身分加為 admin，要嘛取消這個保護。
+
+### GitHub 上只保留最新一個 release（2026-08-18 確認）
+
+**這是刻意的，不是資料損毀。** 發新版後就刪掉前一版的 tag 與 release，所以任何時刻 GitHub 上只有一個 release。這個做法從 2026-07-29 起一直在執行（事件紀錄有 33 次刪 tag，全部由維護者身分執行）。
+
+記下來的理由是**它看起來很像事故**:本機有 198 個 tag，遠端只有 1 個。第一次看到的人——包括我——會判定成 force push 或誤刪。查 `repos/.../events` 的 `DeleteEvent` 才能看出那是橫跨三週的規律行為，不是單一事件。
+
+與 [`SECURITY.md`](../SECURITY.md) 的支援政策一致:安全修復只針對最新發布版。
+
+**已驗證不受影響的:** `scripts/check_release_version.py` 用 `gh release list` 取比對基準，清單被清空看似會讓它失效。實測不會——它比的是「最新已發布版」,只要那一個還在就夠了:
+
+```
+只剩 0.41.5 時：誤發 v0.30.0 → 擋下；v0.41.3 → 擋下；v0.41.6 → 放行
+```
+
+**真正的代價（接受）:** 使用者無法下載舊版，出問題不能退版;CHANGELOG 裡舊版本的 release 連結會指向不存在的頁面。本機 198 個 tag 仍在，真要補回推上去即可。
