@@ -135,9 +135,42 @@ def test_the_talent_market_is_reachable_but_is_not_a_theme() -> None:
 
 def test_every_panel_has_a_registered_height() -> None:
     # A panel without a height entry raises KeyError in panel_height() the moment
-    # the user switches to it.
-    for panel_id, _key, _filename in wintray.available_panels():
+    # the user switches to it. renderable_panels(), not available_panels(): the
+    # talent market is rendered by the same window and looks its height up the
+    # same way, but is reached from the tray menu rather than the theme list.
+    for panel_id, _key, _filename in wintray.renderable_panels():
         assert panel_id in wintray.PANEL_HEIGHTS, panel_id
+
+
+def test_every_registered_panel_file_exists() -> None:
+    """The registry names a file; nothing checks the file is there.
+
+    A typo or a rename leaves a panel that raises only when the user switches to
+    it -- the registry is the single source of truth for the id, the i18n key,
+    the filename and the height, so the one thing it cannot verify about itself
+    is whether the filename still points at something.
+    """
+    panels_dir = Path(wintray.__file__).resolve().parent / "assets" / "panels"
+
+    missing = [
+        filename
+        for _panel_id, _key, filename in wintray.renderable_panels()
+        if not (panels_dir / filename).is_file()
+    ]
+
+    assert not missing, f"registered panels with no file: {missing}"
+
+
+def test_no_panel_height_is_registered_for_a_panel_that_does_not_exist() -> None:
+    """A leftover height entry is how a removed panel half-survives: the id is
+    gone from the registry but still carries a number, which reads as if the
+    panel were still supported. Nine themes were removed in v0.40.0.
+    """
+    registered = {panel_id for panel_id, _key, _filename in wintray.renderable_panels()}
+
+    orphans = set(wintray.PANEL_HEIGHTS) - registered
+
+    assert not orphans, f"heights registered for panels that no longer exist: {orphans}"
 
 
 def test_system_background_color_dark(monkeypatch: pytest.MonkeyPatch) -> None:

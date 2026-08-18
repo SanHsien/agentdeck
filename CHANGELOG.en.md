@@ -6,6 +6,16 @@ All notable changes to agentdeck are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
+## [0.41.5] - 2026-08-18
+
+### Fixed
+- **The burn rate never decayed after you stopped working**: the denominator spanned first-to-last entry, which leaves out every idle minute after the last one. Reproduced locally: ten busy minutes (56,100 tokens) followed by a forty-minute pause still read 5,610 tokens/min (**Active**) when the true rate was 1,122 (Normal) — and it stayed there until the entries aged out of the one-hour window. It is now measured from *now*.
+  - The existing tests never pinned "now" and so silently depended on the old denominator; they now freeze it to preserve what they were actually testing. Two new tests pin **the same data** read two ways — mid-burst and forty minutes later — because guarding only one side would let the fix degrade into "never reports a busy machine".
+- **The origami panel's reset time was unreadable over the bottom-right fold**: measured **WCAG contrast 1.63** between the text colour and the darkest part of the fold (AA wants 4.5 for small text). A dark glyph over three stacked light shadows measures **12.11** and stays readable over anything.
+
+### Changed
+- **A consistency gate for the panel registry**: panel id, i18n key, HTML filename and initial height all live in one source, `panels/registry.py` — but the one thing it cannot verify about itself is whether the filename still points at a real file. Three tests now cover it: heights extended to the talent market, every registered HTML file must exist, and no orphan height may survive for a panel that no longer exists (removing nine themes in v0.40.0 is exactly that risk).
+
 ## [0.41.4] - 2026-08-14
 
 ### Security

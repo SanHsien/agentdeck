@@ -1,6 +1,6 @@
 [project]
 name = "agentdeck"
-version = "0.41.4"
+version = "0.41.5"
 description = "Windows AI coding cockpit for Claude Code, Codex, and Antigravity quota, council, personas, and local reports"
 readme = "README.md"
 requires-python = ">=3.13"

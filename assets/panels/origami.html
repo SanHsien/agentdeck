@@ -323,7 +323,17 @@
 
     .reset {
       margin-top: 4px;
-      color: var(--muted);
+      /* The bottom-right fold is a dark blue (#205779) and --muted is #55778e:
+         measured contrast 1.63, against WCAG AA's 4.5 for small text. The card
+         children already sit above the fold via z-index, so this was never a
+         stacking problem -- the text was simply the same colour as what it
+         landed on. The halo is what fixes it: a dark glyph over three stacked
+         light shadows measures 12.11 whatever it overlaps. */
+      color: #14324a;
+      text-shadow:
+        0 0 3px #eef6fa,
+        0 0 3px #eef6fa,
+        0 0 6px #eef6fa;
       font-size: 11px;
       line-height: 13px;
       font-weight: 600;

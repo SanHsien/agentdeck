@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 import time
 from collections.abc import Callable
+from datetime import UTC, datetime
 
 from burn_rate import MIN_FORECAST_SPAN_SECONDS
 from providers.history_loader import UsageEntry, load_entries
@@ -18,6 +19,11 @@ BURN_RATE_THRESH_ACTIVE = 2500.0
 BURN_RATE_THRESH_HEAVY = 6000.0
 
 GROUP_NAMES = ["Idle", "Normal", "Active", "Heavy"]
+
+
+def _utc_now() -> datetime:
+    """Seam so tests can freeze "now"; the rate depends on it."""
+    return datetime.now(UTC)
 
 
 class UsageRateTracker:
@@ -56,7 +62,14 @@ class UsageRateTracker:
             return result
 
         active_tokens = sum(entry.active_tokens for entry in entries)
-        elapsed_seconds = (entries[-1].timestamp - entries[0].timestamp).total_seconds()
+        # Measured from now, not from the last entry. Spanning first-to-last
+        # leaves out the idle time after the last message, so ten busy minutes
+        # followed by forty idle ones kept dividing by ten and the sprite stayed
+        # pinned at Heavy until the entries aged out of the one-hour window.
+        # Reproduced here: 56,100 tokens over ten minutes then a forty-minute
+        # pause still read 5,610 tokens/min (Active) when the true rate was
+        # 1,122 (Normal).
+        elapsed_seconds = (_utc_now() - entries[0].timestamp).total_seconds()
         # Match burn_rate.MIN_FORECAST_SPAN_SECONDS: over a shorter span than
         # this, one message's cache_creation -- a fat system prompt at the start
         # of a session -- divides into a rate that reads as sustained Heavy

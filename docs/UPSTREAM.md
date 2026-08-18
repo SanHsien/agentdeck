@@ -31,9 +31,9 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "63509f5",
-      "last_merged": "3d44b80",
-      "note": "審視至 63509f5（upstream/main 的 tip）——上游 PR #96「Windows 大改版」與其後續 57 筆已**逐筆審完並記錄**（16 筆 merge commit 不帶獨立變更、其餘 41 筆全數在 Skipped 表有列）。本輪採用 8 筆（db6e34a／8e5e574＋ea59b60／9d573bd 半／6901504 半／e720255／d9e0935／3d44b80）。明確列為後續功能的有 7 項：工作列進度條、Action Center 通知、Per-Monitor-v2 DPI manifest、檔案事件驅動刷新、系統強調色、SLSA/SBOM、usage status 子指令。last_merged 推進到本輪採用的最新一筆 3d44b80。兩個標記在此分岔是正常的：中間那些是看過而決定不採用的。"
+      "last_reviewed": "903c34a",
+      "last_merged": "ac01760",
+      "note": "審視至 903c34a（upstream/main 的 tip）。issue #7 開出時是 5 筆，實際處理時已累積 17 筆，全數逐筆審完並記錄。本輪採用 3 筆:`92f536f`（速率分類的閒置衰減，本機重現 Active vs Normal 的差別）、`3039745`（摺紙面板 `.reset` 對比實算 1.63，加光暈後 12.11）、`ac01760` 的精神（本 fork 面板定義已是單一來源，改為補三道自己該有的一致性測試）。`2607850`／`6bd05ad` 兩筆面板樣式想要但需視覺驗證，排後續。前一輪列的 7 項後續功能仍未動。"
     }
   }
 }
@@ -62,6 +62,15 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
 
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
+| main | `92f536f` | fix(rate): 速率分類改用真實經過時間，停手後會自然衰減 | 2026-08-18 | **已採用**。本機重現:分母原本是「最後一筆減第一筆 entry」，不含最後一筆之後的閒置時間。餵 56,100 active tokens、密集 10 分鐘後停手 40 分鐘——舊算法仍是 5,610 tokens/min（**Active**），真實速率只有 1,122（Normal），而且會一路卡著直到 entry 滑出 1 小時窗。改成從 `_utc_now()` 起算。既有測試原本沒固定「現在」、隱含依賴舊分母，補上 `_pin_now_to_last_entry()` 維持它們原本要測的語意;另加兩條新測試把「停手會衰減」與「進行中仍讀得到高負載」同一份資料的兩種答案釘住。 |
+| main | `3039745` | fix(panels): 摺紙面板重置文字改深色加光暈 | 2026-08-18 | **已採用，並先量了才做**。本 fork 的摺紙面板同樣有這個問題:`.reset` 是 `--muted`（`#55778e`），右下摺角最深處是 `#205779`，實算 **WCAG 對比 1.63**（AA 小字要 4.5）。值得記的是**上游的說法只對了一半**:本 fork 早有 `.card > * { z-index: 1 }`，字並沒有被摺角蓋住，它只是跟腳下的顏色一樣。真正有效的是**光暈**——深色字配三層淺色 text-shadow 實算 **12.11**，疊在什麼底色上都讀得到。上游同時把 margin-top 收 2px，那是為了它自己的卡片高度，本 fork 面板可捲動、高度另有處理，不跟。警示紅疊光暈底實算 3.24，對小字仍不足 AA 但遠優於疊深藍摺角，且紅色本身帶語意。 |
+| main | `ac01760` | ci: 加面板定義一致性檢查 | 2026-08-18 | **精神採用，實作不照抄**。上游要同步的是 `panels/all_panels()` 與 Windows 的 `WINDOWS_PANELS`／`PANEL_HEIGHTS` **三處**人工同步;本 fork 於 v0.40.0 已把面板定義收斂成單一來源 `panels/registry.py`，那個問題不存在，一支 141 行的守門腳本沒有對應的東西可守。但單一來源仍有它驗不了自己的部分——**檔名是否還指向存在的檔案**。實查目前四張主題＋人才市場全部一致，隨即補上三道測試:高度涵蓋從 `available_panels()` 擴到 `renderable_panels()`（人才市場走同一條查表路徑）、登記的 HTML 檔必須存在、不得有指向已移除面板的孤兒高度（v0.40.0 移除九張主題正是這種風險）。三道都注入缺陷確認會紅燈。 |
+| main | `2607850`／`6bd05ad` | style+feat: 預設面板 80% 門檻線與 90% 警示光 | 2026-08-18 | **想要，但需視覺驗證，列後續**。`2607850` 裡有一項本 fork 也有:`.card::before` 的 accent 條同時吃 `linear-gradient(..., transparent 72%)` 與 `opacity: 0.72`，兩層淡相乘。但這跟摺紙那筆不同——**沒有可量測的門檻可以判定它算不算缺陷**，是視覺取捨;而本 fork 的 `classic.html` 自 v0.40.0 起已與上游分歧，照抄需要實際看渲染結果才負責任。`6bd05ad` 的 conic-gradient 邊框環同理。兩筆一起排後續，屆時要在真實面板上截圖比對。 |
+| main | `2128240` | fix(cli): usage status 百分比格式化 | 2026-08-18 | **不適用**。修的是 `usage status` 子指令的浮點數尾巴;本 fork 沒有這個子指令（`58f4228` 已於上一輪決定列為後續功能）。日後若移植 `usage status`，這筆要一起帶。 |
+| main | `1be0540`／`367ca52` | style(panels): 駭客任務／雲圖觀測面板調透明 | 2026-08-18 | **不採用**。這兩張主題已於 v0.40.0 隨舊九張一併移除，本 fork 只維護預設＋Catppuccin＋彩繪玻璃＋摺紙。 |
+| main | `1fbdea2`／`60c1bf4` | fix+design(site): 官網無障礙與社群預覽圖 | 2026-08-18 | **不採用**。上游自家官網的內容與視覺;本 fork 的 `docs/index.html` 已獨立改寫，主題數量也不同。 |
+| main | `ef4af4e`／`1ddf5a7`／`afcd508`／`6724fba`／`903c34a` | docs(readme): 狀態列章節與 VHS 動圖（含簡中／日文／韓文） | 2026-08-18 | **不採用**。上游五語 README 的截圖與章節重整;本 fork 只維護 zh-TW／en 兩語，簡中／日文／韓文 README 已移除（見 CLAUDE.md 的 i18n 規則，明文寫著不要重新引入）。動圖本身是上游用 VHS 錄自家 macOS 狀態列，與本 fork 的 Windows 呈現不同。 |
+| main | `867acf9`／`bb0e692` | chore: 發布 0.29.29／0.29.30 | 2026-08-18 | 純上游版號（D-05）。 |
 | main | `d9e0935` | fix: 補回警示抑制的事件來源,並擋掉 cmd.exe 特殊字元路徑 | 2026-08-14 | **已採用,兩半都做,第二半做得比上游廣**。第一半是**本 fork 自己上一筆 `db6e34a` 造成的回歸**:`components.json` 頂層沒有 `incidents`,`_apply_alert_suppression()` 的「事件停在 monitoring 超過 4 小時就收警示」永遠進不去,只剩 24 小時兜底,警示多掛約 20 小時。實測頂層鍵確認:`components.json` 只有 `['components']`,OpenAI `summary.json` 是 `['components','page','status']`——**Codex 側那條抑制從未生效過**。端點選 `incidents.json`:實測 `incidents/unresolved.json` 對 OpenAI 回 **404**。測試替身一併改成照現實拆成兩個端點——原本一個 payload 供兩用,正是這個回歸能溜過去的原因。第二半上游只修 agy 路徑且靠「拒絕安裝＋轉 8.3 短路徑」;本 fork 的 `_shell_arg` 被所有 hook 共用（statusLine／forwarder／resume／terse／agy）,`list2cmdline` 只為空格與引號加引號,`C:/Users/R&D/` 原樣輸出。實測三種殼層全掛(cmd.exe rc=1、Git Bash rc=127「D/.gemini/hook.py: No such file or directory」、PowerShell rc=1),加雙引號後三種全 rc=0。改為偵測 shell 元字元就加引號——能修就修,不把使用者擋在門外。 |
 | main | `3d44b80` | chore(pricing): 標註離線價目表核對日期 | 2026-08-14 | **已採用**。離線 fallback 價目表寫死且無版本資訊,廠商調價後會**無聲算錯成本**,而且沒有任何東西能告訴你表有多舊。加 `FALLBACK_PRICING_AS_OF`,並把 `calculate_cost()` 裡裸露的 1.25／0.1 抽成具名常數(是 Anthropic 的比例,對其他供應商不保證正確)。上游的 `scripts/check_fallback_pricing.py` 對帳腳本未移植——它比對的是上游 LiteLLM 表的取用方式,列為後續。 |
 | main | `4bb717c` | fix(release): Windows 版本號解析改用 binary 讀取 | 2026-08-14 | **不適用,但已回頭確認本 fork 沒有同一個洞**。上游是 `read_text()` 在 Windows runner 上用 cp1252 讀含中文的 `pyproject.toml` 而炸。本 fork 的 `release.yml` 沒有那個步驟(改用 `check_release_version.py` 與 exe `--doctor` 對帳),`scripts/make_version_file.py` 讀同一個檔時本來就帶 `encoding="utf-8"`。 |
