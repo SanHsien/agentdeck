@@ -33,3 +33,7 @@ SESSION.md
 
 # Misplaced Claude auto-memory (real location is ~/.claude/projects/.../memory/)
 /memory/
+
+# 依賴新鮮度報告（每次執行重新產生，不追蹤）
+dependency-freshness-report.md
+upstream-check-report.md

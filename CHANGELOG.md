@@ -5,6 +5,11 @@
 本檔記錄 agentdeck 所有重要變更。格式參考 [Keep a Changelog](https://keepachangelog.com/)，
 版號遵循[語意化版本 2.0.0](https://semver.org/lang/zh-TW/)。
 
+## [Unreleased]
+
+### 新增
+- **依賴新鮮度排程檢查**：`tools/check_dependency_freshness.py` 把 `pyproject.toml` 宣告的每一筆直接依賴（runtime、extras、dependency groups、build backend）拿去對 PyPI 現行版本，`.github/workflows/dependency-freshness.yml` 每月 1 日 11:00（Asia/Taipei）跑一次，需要處理時開／更新單一提醒 issue，全部最新就把它關掉。Dependabot 看的是 lock 的移動，看不到悄悄落後的宣告下限——首次執行就抓到 pillow、pywebview、pyinstaller、ruff、mypy 五筆下限已落後 PyPI。腳本不改任何檔案，也不看已安裝環境，只比對宣告。
+
 ## [0.41.5] - 2026-08-18
 
 ### 修正
