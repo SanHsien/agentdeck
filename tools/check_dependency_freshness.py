@@ -54,11 +54,21 @@ def release_key(version: str) -> tuple[int, ...] | None:
 
 
 def is_newer_version(latest: str, declared: str) -> bool:
+    """Is `latest` newer than `declared` at the precision `declared` states?
+
+    A floor of ``pywebview>=5.4`` claims nothing about the patch, so reporting
+    5.4.1 against it would be a standing false alarm -- and a monthly report that
+    cries wolf is a report nobody opens. The comparison happens at the depth the
+    declaration commits to: ``>=6`` on the major alone, ``>=5.4`` on major and
+    minor, ``>=11.0.0`` on all three.
+    """
     latest_key = release_key(latest)
     declared_key = release_key(declared)
     if latest_key is None or declared_key is None:
         return False
-    return latest_key > declared_key
+    depth = len(declared_key)
+    padded = latest_key + (0,) * (depth - len(latest_key))
+    return padded[:depth] > declared_key
 
 
 def _parse_requirements(requirements: Iterable[str], group: str) -> list[dict[str, str]]:

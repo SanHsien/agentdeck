@@ -9,7 +9,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ## [Unreleased]
 
 ### Added
-- **Scheduled dependency freshness check.** `tools/check_dependency_freshness.py` takes every direct requirement declared in `pyproject.toml` -- runtime, extras, dependency groups, build backend -- and compares it against the current PyPI release. `.github/workflows/dependency-freshness.yml` runs it on the 1st of each month at 11:00 Asia/Taipei, opening or updating a single reminder issue when something needs attention and closing it when nothing does. Dependabot watches the lock move; it cannot see a declared floor that has quietly aged -- the first run found five (pillow, pywebview, pyinstaller, ruff, mypy). The script changes no files and never inspects the installed environment; it compares declarations only.
+- **Scheduled dependency freshness check.** `tools/check_dependency_freshness.py` takes every direct requirement declared in `pyproject.toml` -- runtime, extras, dependency groups, build backend -- and compares it against the current PyPI release. `.github/workflows/dependency-freshness.yml` runs it on the 1st of each month at 11:00 Asia/Taipei, opening or updating a single reminder issue when something needs attention and closing it when nothing does. Dependabot watches the lock move; it cannot see a declared floor that has quietly aged -- the first run found five (pillow, pywebview, pyinstaller, ruff, mypy). The script changes no files and never inspects the installed environment; it compares declarations only, at the precision each one states -- `>=5.4` is compared on major and minor, so 5.4.1 is not a standing false alarm. Contract tests live in `tests/test_dependency_freshness.py`.
 
 ## [0.41.5] - 2026-08-18
 
