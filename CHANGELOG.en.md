@@ -8,6 +8,9 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- **Declared dependency floors now match what is actually tested.** The first freshness run found five stale floors, of two different kinds. `pillow` (declared `>=11.0.0`, locked at 12.3.0) and `pywebview` (declared `>=5.4`, locked at 6.2.1) were declarations lagging reality rather than missed upgrades; they become `>=12.3` and `>=6.2`, so the declaration names the version the suite actually runs against. `ruff` 0.16.0 -> 0.16.4, `mypy` 2.3.0 -> 2.3.1, and `pyinstaller` 6.21.0 -> 6.22.2 were genuinely behind and move in the lock as well. The newer ruff and mypy report nothing new across 189 files, and `dev_check.ps1` passes (1446 tests).
+
 ### Added
 - **Scheduled dependency freshness check.** `tools/check_dependency_freshness.py` takes every direct requirement declared in `pyproject.toml` -- runtime, extras, dependency groups, build backend -- and compares it against the current PyPI release. `.github/workflows/dependency-freshness.yml` runs it on the 1st of each month at 11:00 Asia/Taipei, opening or updating a single reminder issue when something needs attention and closing it when nothing does. Dependabot watches the lock move; it cannot see a declared floor that has quietly aged -- the first run found five (pillow, pywebview, pyinstaller, ruff, mypy). The script changes no files and never inspects the installed environment; it compares declarations only, at the precision each one states -- `>=5.4` is compared on major and minor, so 5.4.1 is not a standing false alarm. Contract tests live in `tests/test_dependency_freshness.py`.
 

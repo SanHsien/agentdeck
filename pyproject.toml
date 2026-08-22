@@ -13,8 +13,8 @@ dependencies = [
 [project.optional-dependencies]
 windows = [
     "pystray>=0.19.5; sys_platform == 'win32'",
-    "pillow>=11.0.0; sys_platform == 'win32'",
-    "pywebview>=5.4; sys_platform == 'win32'",
+    "pillow>=12.3; sys_platform == 'win32'",
+    "pywebview>=6.2; sys_platform == 'win32'",
 ]
 
 [tool.uv]
@@ -28,8 +28,8 @@ environments = [
 
 [dependency-groups]
 dev = [
-    "ruff>=0.16.0",
-    "mypy>=2.3.0",
+    "ruff>=0.16.4",
+    "mypy>=2.3.1",
     "pytest>=9.1.1",
     # PyInstaller belongs in the lock, not beside it. It used to be installed
     # out of band with `uv pip install pyinstaller`, which meant every
@@ -37,7 +37,7 @@ dev = [
     # -- reinstalling the whole build toolchain on each sync, and leaving a
     # half-removed environment whenever one of those deletions lost a race with
     # a filesystem filter driver.
-    "pyinstaller>=6.21.0",
+    "pyinstaller>=6.22.2",
 ]
 
 [tool.ruff]
