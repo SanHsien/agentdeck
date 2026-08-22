@@ -31,9 +31,9 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "5269fd4",
+      "last_reviewed": "6d74e58",
       "last_merged": "2588cc0",
-      "note": "審視至 5269fd4（upstream/main 的 tip，2026-08-22）。issue #9 開出時列 2 筆，實際處理時已累積 24 筆，全數逐筆審完並記錄於下方 Skipped 表。本輪採用 2 筆：`5391aad`（系統匣提示文字：已用%／Antigravity 段落／Claude 併行，本 fork 三個問題全中）與 `2588cc0` 的**遮罩三項**（分享報告的未遮罩 CSV 內嵌、圓餅圖圖例 lg-name、insights 句中專案名——本 fork 同樣全中，屬實質資料外洩）。`2588cc0` 的檔案權限半部為 POSIX chmod，Windows-only fork 以 ACL 為機制，不適用；JSONL 上限與 RecursionError 保護列候選。"
+      "note": "審視至 6d74e58（upstream/main 的 tip，2026-08-23）。issue #9 開出時列 2 筆，實際處理時已累積 24 筆，全數逐筆審完並記錄於下方 Skipped 表。本輪採用 2 筆：`5391aad`（系統匣提示文字：已用%／Antigravity 段落／Claude 併行，本 fork 三個問題全中）與 `2588cc0` 的**遮罩三項**（分享報告的未遮罩 CSV 內嵌、圓餅圖圖例 lg-name、insights 句中專案名——本 fork 同樣全中，屬實質資料外洩）。`2588cc0` 的檔案權限半部為 POSIX chmod，Windows-only fork 以 ACL 為機制，不適用；JSONL 上限與 RecursionError 保護已於 2026-08-23 補做（見下方同日段落）。"
     }
   }
 }
@@ -52,6 +52,43 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
 
 水位：**PR ≤（無）、issue ≤（無）、分支盤點日 2026-08-22**。下次只要確認「有沒有新的 PR／issue 出現」，
 不必重讀已經看過的清單。commit 的水位仍由上面 sync-points 的 `last_reviewed` 管。
+
+## 2026-08-23：把「列候選」的解析韌性補完，並確認增量水位
+
+### 已引用：`2588cc0` 的 JSONL 韌性半部
+
+上一輪把 `2588cc0` 的遮罩三項採用、權限半部判為不適用，剩下的 JSONL 上限與 RecursionError
+保護寫成「**列候選**」。回頭實查，這個「候選」沒有站得住的理由——它與平台無關，而本 fork
+讀的正是同一批 session log：
+
+- `jsonl_utils.py`、`providers/history_loader.py:301`、`providers/codex_loader.py:1112`
+  全部是無上限的 `readline()`；
+- 四個 `json.loads` 呼叫點只捕捉 `json.JSONDecodeError`，而深層巢狀丟的是 `RecursionError`；
+- `grep -rn "RecursionError"` 在本 fork 的產品碼是 **0 命中**。
+
+亦即缺陷全中，只是沒人回頭做。本輪落地：新增 `jsonl_limits.py`（64 MiB 上限），五個讀取點
+改走 `read_bounded_jsonl_line`，四個解析點補 `RecursionError`，另補 `_websocket_event_payload`
+——它同樣對不可信內容做 `json.loads`，上游沒改，但那是同一類缺陷。
+
+**照抄會壞掉的那一段**：`history_loader` 與 `codex_loader` 的增量快取對「已確認前綴」做滾動
+雜湊，下次執行從 offset 0 重算比對。上游的版本在跳過超長行時推進 confirmed offset，卻沒把
+排掉的位元組餵進雜湊，於是 digest 與檔案永遠對不起來——解析結果仍正確，但增量路徑會**靜默
+退化成每次全量重解**。因此 `read_bounded_jsonl_line` 多一個 `on_skipped_bytes` 參數，由這兩個
+呼叫點傳入 `digest.update`。`test_skipped_oversized_line_keeps_the_incremental_cache_usable`
+就是釘這件事的：拿掉參數實跑會紅（`_confirmed_prefix_hasher` 回 `None`）。
+
+驗證：新增 8 條測試，`tools/dev_check.ps1` 全綠。
+
+### 增量：`5269fd4` → `6d74e58`
+
+兩筆 `chore: sync AI updates`（`a3574b5`、`6d74e58`），只動 `ai_updates.json`；該檔已在本 fork
+移除，`tools/check_upstream_updates.py:157` 的過濾器正是為此而設。**不適用**。
+
+### 分支／PR／issue
+
+`upstream/main` 之外仍是同 7 條分支、0 個 open PR、0 個 open issue。今天重驗兩條相對 `main`
+有獨佔 commit 的 Windows 分支，結論與 2026-08-22 相同，且本 fork 的 `_encoded_path_root()`
+比上游多接受裸磁碟字母（Claude Code 把 `C:\` 編成 `C--`，上游只認 `C:`），**本 fork 較完整**。
 
 ## 自動分流：哪些 commit 不需要人看
 
@@ -76,7 +113,7 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
 | main | `5391aad` | fix(wintray): 系統匣提示文字三處修復 | 2026-08-22 | **採用**。三個子項在本 fork 全中：(1) `build_tooltip` 顯示 `100 - percent`，而面板走 `percent_used`——同一個問題兩處給不同數字；(2) 完全沒有 Antigravity 段落，儘管本 fork 支援它；(3) Claude 的 Session／Weekly 各佔一行，與 Codex 的併行格式不一致。第四個子項（更新彈窗清理 Markdown）**已涵蓋且做法更好**：本 fork 的 MessageBoxW 刻意完全不放 release notes（沒有捲軸、notes 就在對話框願意開的那一頁），程式碼裡已有註解說明。另補兩條測試：`hide_claude` 開啟時 tooltip 不得把 Claude 放回來、`percent is None` 不得編造數字。 |
-| main | `2588cc0` | fix(security): 修補分享報告遮罩失效與本機檔案權限 | 2026-08-22 | **遮罩三項採用，權限半部不適用，JSONL 上限列候選**。遮罩失效在本 fork 同樣成立且是實質外洩：勾了「遮罩專案名稱」匯出的 HTML，`downloadHtml` 直接序列化整份 DOM，而未遮罩的 `csvData` 就內嵌在報告自己的 script 裡跟著送出去，收檔者按報告內建的 CSV 鈕即可取回真實專案路徑。修法比照上游拆成獨立 `application/json` 節點、遮罩匯出時移除未遮罩節點、JS 端 fallback；但**遮罩標記改用排名而非名稱**（`data-mask-index`），因為把真名放進屬性一樣會跟著匯出檔外流。圖例 `lg-name` 與 insights 句中專案名同樣補上遮罩，且三處編號一致。新增 `tests/test_html_report_masking.py` 8 條把這些性質釘住。權限半部（0700／0600、copy2→copy+chmod、quarantine mode）是 POSIX chmod，本 fork 為 Windows-only、使用者目錄由 ACL 隔離，**不適用**；`3cb368d` 的 Windows 權限守衛測試隨之不適用。JSONL 單行上限與 RecursionError 保護與平台無關，**列候選**，需自帶測試另行處理。 |
+| main | `2588cc0` | fix(security): 修補分享報告遮罩失效與本機檔案權限 | 2026-08-22 | **遮罩三項採用，權限半部不適用，JSONL 上限列候選**。遮罩失效在本 fork 同樣成立且是實質外洩：勾了「遮罩專案名稱」匯出的 HTML，`downloadHtml` 直接序列化整份 DOM，而未遮罩的 `csvData` 就內嵌在報告自己的 script 裡跟著送出去，收檔者按報告內建的 CSV 鈕即可取回真實專案路徑。修法比照上游拆成獨立 `application/json` 節點、遮罩匯出時移除未遮罩節點、JS 端 fallback；但**遮罩標記改用排名而非名稱**（`data-mask-index`），因為把真名放進屬性一樣會跟著匯出檔外流。圖例 `lg-name` 與 insights 句中專案名同樣補上遮罩，且三處編號一致。新增 `tests/test_html_report_masking.py` 8 條把這些性質釘住。權限半部（0700／0600、copy2→copy+chmod、quarantine mode）是 POSIX chmod，本 fork 為 Windows-only、使用者目錄由 ACL 隔離，**不適用**；`3cb368d` 的 Windows 權限守衛測試隨之不適用。JSONL 單行上限與 RecursionError 保護與平台無關，**已於 2026-08-23 引用**（見同日段落：本 fork 的增量快取需要額外的 `on_skipped_bytes` 才不會退化）。 |
 | main | `90000a9`／`1c8e82d`／`5269fd4` | chore: 發布 0.29.31／0.29.32／0.29.33 | 2026-08-22 | **不適用**。上游自己的發版 commit，本 fork 有獨立版號。 |
 | main | `6e43f4d`／`f445f5b` | feat(panel): 昨日用量與一般 Codex 限額選擇、切換鈕移入 Codex header | 2026-08-22 | **候選**。功能面沒有邊界衝突，但本 fork 的面板自 v0.40.0 起已收斂成 `panels/registry.py` 單一來源且樣式分歧，屬移植而非套用，需實際渲染驗證。 |
 | main | `28a982d`／`709cb9d` | feat(agy): 用 session 的 Cwd 推導 Antigravity 用量的實際專案 | 2026-08-22 | **候選（優先）**。這是真實的歸屬錯誤修正，本 fork 同樣支援 Antigravity；需比對本 fork 的 agy loader 實作後再移植，並補歸屬測試。 |

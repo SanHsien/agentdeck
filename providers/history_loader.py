@@ -20,6 +20,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from jsonl_limits import read_bounded_jsonl_line
 from project_resolver import project_from_encoded_path, resolve_project_name
 from providers.history_disk_cache import flush_caches, seed_caches
 from time_utils import parse_optional_iso8601_utc
@@ -298,7 +299,14 @@ def _parse_complete_lines(
 ) -> int:
     while True:
         line_start = int(file.tell())
-        line = file.readline()
+        # The drained bytes still go through the digest: the confirmed prefix is
+        # re-hashed from offset 0 next run, so skipping them would make the cache
+        # miss forever (see jsonl_limits.read_bounded_jsonl_line).
+        line, too_long = read_bounded_jsonl_line(file, on_skipped_bytes=digest.update)
+        if too_long:
+            logger.warning("skipping oversized JSONL line in Claude project log %s", project)
+            confirmed_offset = int(file.tell())
+            continue
         if not line:
             return confirmed_offset
         parsed_entry = _parse_line(line.decode("utf-8", errors="replace"), project)
@@ -313,7 +321,7 @@ def _parse_complete_lines(
 def _parse_line(line: str, project: str) -> UsageEntry | None:
     try:
         data = json.loads(line)
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, RecursionError):
         return None
 
     if not isinstance(data, dict) or data.get("type") != "assistant":
