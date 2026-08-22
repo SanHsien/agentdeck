@@ -48,7 +48,7 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
 | --- | --- | --- |
 | Open PR | **0** | 上游不用 PR 流程，改動直接進 `main`。所以本 fork 的審查單位就是 commit，PR 這條線沒有東西可追。 |
 | Open issue | **0** | 沒有待處理的上游 issue。下次檢查時若出現，判準是：**只有會改變「本 fork 要驗什麼」的才追**（Windows 行為、資料外洩、授權），純功能請求會隨 commit 進來。 |
-| 分支 | 7 個 | 都是上游自己的工作分支，`main` 以外沒有本 fork 追蹤的線。fetch 只取 `main`。 |
+| 分支 | 7 個（6 個不是任何 open PR 的 head） | **逐一比對過，不是只數數量。** 只有兩個相對 `main` 有獨佔 commit，而且兩個都是 Windows 修正——本 fork 正是 Windows 線，所以特別查了：<br>• `fix/windows-project-resolver-drive-root`（ahead 2）：把編碼過的專案路徑錨定在磁碟根。本 fork `project_resolver.py:100` 已有同名的 `_encoded_path_root()`，內容一致。<br>• `fix/windows-claude-quota-fallback`（ahead 2）：`~/.claude.json` 配額回退與 ASCII hook 路徑。本 fork `usage_client.py:29` 有 `CLAUDE_JSON_FILE`、`session_hooks.py:66,80` 有 `_RESUME_MARKERS`／`_TERSE_MARKERS`，內容一致。<br>兩者都已涵蓋，無須引用。其餘分支相對 `main` 沒有獨佔 commit。 |
 
 水位：**PR ≤（無）、issue ≤（無）、分支盤點日 2026-08-22**。下次只要確認「有沒有新的 PR／issue 出現」，
 不必重讀已經看過的清單。commit 的水位仍由上面 sync-points 的 `last_reviewed` 管。
