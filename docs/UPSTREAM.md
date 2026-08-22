@@ -40,6 +40,19 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
 ```
 <!-- sync-points:end -->
 
+## 2026-08-22：上游的 PR、issue、分支盤點
+
+一次盤點，之後只看增量，不要每次重新評估。
+
+| 面向 | 當時狀態 | 結論 |
+| --- | --- | --- |
+| Open PR | **0** | 上游不用 PR 流程，改動直接進 `main`。所以本 fork 的審查單位就是 commit，PR 這條線沒有東西可追。 |
+| Open issue | **0** | 沒有待處理的上游 issue。下次檢查時若出現，判準是：**只有會改變「本 fork 要驗什麼」的才追**（Windows 行為、資料外洩、授權），純功能請求會隨 commit 進來。 |
+| 分支 | 7 個 | 都是上游自己的工作分支，`main` 以外沒有本 fork 追蹤的線。fetch 只取 `main`。 |
+
+水位：**PR ≤（無）、issue ≤（無）、分支盤點日 2026-08-22**。下次只要確認「有沒有新的 PR／issue 出現」，
+不必重讀已經看過的清單。commit 的水位仍由上面 sync-points 的 `last_reviewed` 管。
+
 ## 自動分流：哪些 commit 不需要人看
 
 上游幾乎每天 commit，而且多數與本 fork 無關——`chore: sync AI updates` 只動 `ai_updates.json`（本 fork 已移除該功能），macOS 專屬修正只動 `menubar.py`、`panel_window_state.py` 之類本 fork 沒有的檔案。若全部照列，真正該看的 commit 會被埋掉，而**一份沒人看的報告等於沒有報告**。
