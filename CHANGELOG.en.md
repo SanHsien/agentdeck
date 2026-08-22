@@ -8,6 +8,11 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- **A share export with "mask project names" ticked still carried every real project name.** `downloadHtml` serializes the whole DOM, and the unmasked CSV was a constant inside the report's own script -- so it left with the supposedly masked file, and the report's built-in CSV button handed the real paths back to whoever received it. Both payloads now live in their own `application/json` nodes; a masked export drops the unmasked one and the script falls back to the masked payload.
+- **The donut legend and the insight sentences were out of reach of masking.** The legend is `.lg-name` and an insight names a project mid-sentence; neither is a `.name`. They are now marked at render time with their **rank** (`data-mask-index`) rather than their name -- a name parked in an attribute leaves with the export just as surely. Table, legend and insights now number the same project the same way.
+- **The tray tooltip disagreed with the panel.** `build_tooltip` showed `100 - used%` while the panel shows used%: hovering the icon and opening the panel answered the same question with different numbers. The long-missing Antigravity section is in, Claude's session and weekly rows are merged onto one line like Codex, and `hide_claude` now hides Claude from the tooltip too.
+
 ### Changed
 - **Declared dependency floors now match what is actually tested.** The first freshness run found five stale floors, of two different kinds. `pillow` (declared `>=11.0.0`, locked at 12.3.0) and `pywebview` (declared `>=5.4`, locked at 6.2.1) were declarations lagging reality rather than missed upgrades; they become `>=12.3` and `>=6.2`, so the declaration names the version the suite actually runs against. `ruff` 0.16.0 -> 0.16.4, `mypy` 2.3.0 -> 2.3.1, and `pyinstaller` 6.21.0 -> 6.22.2 were genuinely behind and move in the lock as well. The newer ruff and mypy report nothing new across 189 files, and `dev_check.ps1` passes (1446 tests).
 

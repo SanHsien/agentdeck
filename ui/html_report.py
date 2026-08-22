@@ -314,9 +314,13 @@ def _donut_svg(items: list[tuple[str, int]], lang: str) -> str:
             f'stroke-dashoffset="{-offset:.2f}" transform="rotate(-90 {cx} {cy})"/>'
         )
         offset += seg_len
+        # The legend is built from by_project in table order, so entry N is row N.
+        # Masking carries the rank, never the name: an exported report must not
+        # ship the real project name in an attribute either.
+        mask_attr = f' data-mask-index="{idx + 1}"' if idx < len(data[:6]) else ""
         legend.append(
             f'<li><span class="dot" style="background:{color}"></span>'
-            f'<span class="lg-name">{html.escape(name)}</span>'
+            f'<span class="lg-name"{mask_attr}>{html.escape(name)}</span>'
             f'<span class="lg-pct">{frac * 100:.1f}%</span></li>'
         )
     center = (
@@ -524,23 +528,29 @@ def _render_tools_section(data: Mapping[str, Any], lang: str) -> str:
     return _section(_t(lang, "tools_section"), tools_body, "tools-section")
 
 
-def _render_insight_note(component: dict[str, Any], lang: str) -> str:
+def _render_insight_note(
+    component: dict[str, Any], lang: str, ranks: Mapping[str, int] | None = None
+) -> str:
     return (
         '<div class="insight-note">'
-        f'{_t(lang, component["key"], **_insight_kwargs(component))}'
+        f'{_t(lang, component["key"], **_insight_kwargs(component, ranks))}'
         '</div>'
     )
 
 
-def _render_insight_action(component: dict[str, Any], lang: str) -> str:
+def _render_insight_action(
+    component: dict[str, Any], lang: str, ranks: Mapping[str, int] | None = None
+) -> str:
     return (
         '<div class="insight-action">'
-        f'{_t(lang, component["key"], **_insight_kwargs(component))}'
+        f'{_t(lang, component["key"], **_insight_kwargs(component, ranks))}'
         '</div>'
     )
 
 
-def _insight_kwargs(component: dict[str, Any]) -> dict[str, object]:
+def _insight_kwargs(
+    component: dict[str, Any], ranks: Mapping[str, int] | None = None
+) -> dict[str, object]:
     kwargs: dict[str, object] = {}
     for key, value in component.items():
         if key in {"key", "type", "direction", "delta_pct"}:
@@ -549,11 +559,36 @@ def _insight_kwargs(component: dict[str, Any]) -> dict[str, object]:
             kwargs[key] = _fmt_tokens(int(value))
         elif key == "cost_usd":
             kwargs[key] = _fmt_cost(float(value))
-        elif key in {"project", "model", "date"}:
+        elif key == "project":
+            # Insights name projects inside a sentence, so masking has to reach
+            # the name without blanking the sentence around it. The span carries
+            # the rank only -- putting the real name in an attribute would ship
+            # it inside a masked export.
+            escaped = _escape(value)
+            rank = (ranks or {}).get(str(value))
+            kwargs[key] = (
+                f'<span class="masked-name" data-mask-index="{rank}">{escaped}</span>'
+                if rank is not None
+                else f'<span class="masked-name" data-mask>{escaped}</span>'
+            )
+        elif key in {"model", "date"}:
             kwargs[key] = _escape(value)
         else:
             kwargs[key] = value
     return kwargs
+
+
+def _project_ranks(data: Mapping[str, Any]) -> dict[str, int]:
+    """Map each project to its 1-based row in the project table.
+
+    The legend, the table and the insight sentences all number projects the same
+    way, so a masked report reads consistently instead of calling the same
+    project Project 2 in one place and Project 5 in another.
+    """
+    return {
+        str(project.get("project")): index
+        for index, project in enumerate(data.get("by_project", [])[:6], start=1)
+    }
 
 
 def _render_insight_surface(data: Mapping[str, Any], lang: str) -> str:
@@ -571,8 +606,9 @@ def _render_insight_surface(data: Mapping[str, Any], lang: str) -> str:
         "pace_note": _render_insight_note,
         "action": _render_insight_action,
     }
+    ranks = _project_ranks(data)
     body = "".join(
-        renderer(component, lang)
+        renderer(component, lang, ranks)
         for component in components
         if (renderer := renderers.get(str(component.get("type")))) is not None
     )
@@ -808,16 +844,23 @@ def _render_styles() -> str:
     return REPORT_CSS
 
 
-def _render_scripts(share_config_json: str, csv_data_json: str, masked_csv_data_json: str) -> str:
+def _render_scripts(share_config_json: str) -> str:
     return f"{HTML_TO_IMAGE_UMD}\n" + REPORT_JS_TEMPLATE.replace(
         "__SHARE_CONFIG_JSON__",
         share_config_json,
-    ).replace(
-        "__CSV_DATA_JSON__",
-        csv_data_json,
-    ).replace(
-        "__MASKED_CSV_DATA_JSON__",
-        masked_csv_data_json,
+    )
+
+
+def _render_csv_nodes(csv_data_json: str, masked_csv_data_json: str) -> str:
+    """Both CSV payloads as data nodes, so a masked export can drop one.
+
+    While these were constants inside the report script, "mask project names"
+    produced an HTML file that still carried every real name, and the report's
+    own CSV button in that file handed them straight back.
+    """
+    return (
+        f'<script type="application/json" data-report-csv>{csv_data_json}</script>\n'
+        f'<script type="application/json" data-report-csv-masked>{masked_csv_data_json}</script>'
     )
 
 
@@ -856,8 +899,9 @@ def generate_html(data: ReportData | Mapping[str, Any], language: str | None = N
   {_render_session_section(report_data, lang)}
   {_render_sponsor_section(lang)}
 </main>
+{_render_csv_nodes(csv_data_json, masked_csv_data_json)}
 <script>
-{_render_scripts(share_config_json, csv_data_json, masked_csv_data_json)}
+{_render_scripts(share_config_json)}
 </script>
 </body>
 </html>

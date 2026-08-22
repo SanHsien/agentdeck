@@ -113,11 +113,43 @@ def test_draw_tray_icon_and_tooltip(monkeypatch: pytest.MonkeyPatch) -> None:
     icon_image = wintray.draw_tray_icon(25.0)
 
     assert icon_image.size == (64, 64)
+    # The panel renders percent through the `percent_used` string, so the tray
+    # must show the same used share -- 25 and 60, not 75 and 40.
     assert wintray.build_tooltip(_state()).splitlines() == [
-        "Claude Session: 75%",
-        "Claude Weekly: 40%",
-        "Codex Session: 75% · Weekly: 40%",
+        "Claude Session: 25% · Weekly: 60%",
+        "Codex Session: 25% · Weekly: 60%",
+        "Antigravity Session: 25% · Weekly: 60%",
     ]
+
+
+def test_tooltip_hides_claude_when_the_panel_does() -> None:
+    """The preference removes the Claude section; the tray must not put it back."""
+    state = _state()
+    state.hide_claude = True
+
+    lines = wintray.build_tooltip(state).splitlines()
+
+    assert lines == [
+        "Codex Session: 25% · Weekly: 60%",
+        "Antigravity Session: 25% · Weekly: 60%",
+    ]
+
+
+def test_tooltip_reports_unavailable_quota_without_inventing_a_number() -> None:
+    unavailable = menubar_state.QuotaRowState(
+        title="Session",
+        percent=None,
+        percent_text="--",
+        reset_text="",
+        color=menubar_state.CLAUDE_COLOR,
+        available=False,
+    )
+    state = _state()
+    state.claude_session = unavailable
+
+    assert wintray.build_tooltip(state).splitlines()[0] == (
+        "Claude Session: -- · Weekly: 60%"
+    )
 
 
 def test_the_talent_market_is_reachable_but_is_not_a_theme() -> None:

@@ -31,9 +31,9 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "903c34a",
-      "last_merged": "ac01760",
-      "note": "審視至 903c34a（upstream/main 的 tip）。issue #7 開出時是 5 筆，實際處理時已累積 17 筆，全數逐筆審完並記錄。本輪採用 3 筆:`92f536f`（速率分類的閒置衰減，本機重現 Active vs Normal 的差別）、`3039745`（摺紙面板 `.reset` 對比實算 1.63，加光暈後 12.11）、`ac01760` 的精神（本 fork 面板定義已是單一來源，改為補三道自己該有的一致性測試）。`2607850`／`6bd05ad` 兩筆面板樣式想要但需視覺驗證，排後續。前一輪列的 7 項後續功能仍未動。"
+      "last_reviewed": "5269fd4",
+      "last_merged": "2588cc0",
+      "note": "審視至 5269fd4（upstream/main 的 tip，2026-08-22）。issue #9 開出時列 2 筆，實際處理時已累積 24 筆，全數逐筆審完並記錄於下方 Skipped 表。本輪採用 2 筆：`5391aad`（系統匣提示文字：已用%／Antigravity 段落／Claude 併行，本 fork 三個問題全中）與 `2588cc0` 的**遮罩三項**（分享報告的未遮罩 CSV 內嵌、圓餅圖圖例 lg-name、insights 句中專案名——本 fork 同樣全中，屬實質資料外洩）。`2588cc0` 的檔案權限半部為 POSIX chmod，Windows-only fork 以 ACL 為機制，不適用；JSONL 上限與 RecursionError 保護列候選。"
     }
   }
 }
@@ -62,6 +62,16 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
 
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
+| main | `5391aad` | fix(wintray): 系統匣提示文字三處修復 | 2026-08-22 | **採用**。三個子項在本 fork 全中：(1) `build_tooltip` 顯示 `100 - percent`，而面板走 `percent_used`——同一個問題兩處給不同數字；(2) 完全沒有 Antigravity 段落，儘管本 fork 支援它；(3) Claude 的 Session／Weekly 各佔一行，與 Codex 的併行格式不一致。第四個子項（更新彈窗清理 Markdown）**已涵蓋且做法更好**：本 fork 的 MessageBoxW 刻意完全不放 release notes（沒有捲軸、notes 就在對話框願意開的那一頁），程式碼裡已有註解說明。另補兩條測試：`hide_claude` 開啟時 tooltip 不得把 Claude 放回來、`percent is None` 不得編造數字。 |
+| main | `2588cc0` | fix(security): 修補分享報告遮罩失效與本機檔案權限 | 2026-08-22 | **遮罩三項採用，權限半部不適用，JSONL 上限列候選**。遮罩失效在本 fork 同樣成立且是實質外洩：勾了「遮罩專案名稱」匯出的 HTML，`downloadHtml` 直接序列化整份 DOM，而未遮罩的 `csvData` 就內嵌在報告自己的 script 裡跟著送出去，收檔者按報告內建的 CSV 鈕即可取回真實專案路徑。修法比照上游拆成獨立 `application/json` 節點、遮罩匯出時移除未遮罩節點、JS 端 fallback；但**遮罩標記改用排名而非名稱**（`data-mask-index`），因為把真名放進屬性一樣會跟著匯出檔外流。圖例 `lg-name` 與 insights 句中專案名同樣補上遮罩，且三處編號一致。新增 `tests/test_html_report_masking.py` 8 條把這些性質釘住。權限半部（0700／0600、copy2→copy+chmod、quarantine mode）是 POSIX chmod，本 fork 為 Windows-only、使用者目錄由 ACL 隔離，**不適用**；`3cb368d` 的 Windows 權限守衛測試隨之不適用。JSONL 單行上限與 RecursionError 保護與平台無關，**列候選**，需自帶測試另行處理。 |
+| main | `90000a9`／`1c8e82d`／`5269fd4` | chore: 發布 0.29.31／0.29.32／0.29.33 | 2026-08-22 | **不適用**。上游自己的發版 commit，本 fork 有獨立版號。 |
+| main | `6e43f4d`／`f445f5b` | feat(panel): 昨日用量與一般 Codex 限額選擇、切換鈕移入 Codex header | 2026-08-22 | **候選**。功能面沒有邊界衝突，但本 fork 的面板自 v0.40.0 起已收斂成 `panels/registry.py` 單一來源且樣式分歧，屬移植而非套用，需實際渲染驗證。 |
+| main | `28a982d`／`709cb9d` | feat(agy): 用 session 的 Cwd 推導 Antigravity 用量的實際專案 | 2026-08-22 | **候選（優先）**。這是真實的歸屬錯誤修正，本 fork 同樣支援 Antigravity；需比對本 fork 的 agy loader 實作後再移植，並補歸屬測試。 |
+| main | `01c86f7`／`ed76d12`／`4fd5bd8` | feat(packaging): 以 usage-cli 發行名提供零安裝 uvx 入口 | 2026-08-22 | **不適用**。綁上游的 PyPI 發行名 `usage-cli`；本 fork 的發行識別是 agentdeck，且 `[tool.uv] package = false`。 |
+| main | `a0fb415`／`60bc262`／`facec9b`／`a86a44d`／`f6421c9`／`ecce186` | build(deps): mypy／ruff／codeql-action／setup-uv／signpath 版本更新 | 2026-08-22 | **不適用（各自處理）**。本 fork 有自己的 dependabot 與依賴新鮮度檢查；mypy 2.3.1 與 ruff 的更新本輪已在本 fork 獨立完成。`setup-uv` v9.0.0→v10.0.1 交給本 fork 的 dependabot 依既有 pin-by-SHA 流程處理。 |
+| main | `7d495ae` | test(ci): 驗證 Linux 上的 Claude Code 狀態列 | 2026-08-22 | **不適用**。本 fork 的 CI 是 windows-latest，正式產品只支援 Windows。 |
+| main | `cf49d7a`／`557c201` | chore: sync AI updates | 2026-08-22 | **不適用**。只動 `ai_updates.json`，該檔已在本 fork 移除（upstream-check 的過濾器正是為此而設）。 |
+| main | `5ad2b3f` | fix(tests): 修 mypy 對 test_agy_loader 的 func-returns-value 誤判 | 2026-08-22 | **不適用**。修的是上游該檔的寫法；本 fork 的 `tests/test_agy_loader.py` 已獨立演進，且 `mypy .`（189 個檔案）目前零錯誤。 |
 | main | `92f536f` | fix(rate): 速率分類改用真實經過時間，停手後會自然衰減 | 2026-08-18 | **已採用**。本機重現:分母原本是「最後一筆減第一筆 entry」，不含最後一筆之後的閒置時間。餵 56,100 active tokens、密集 10 分鐘後停手 40 分鐘——舊算法仍是 5,610 tokens/min（**Active**），真實速率只有 1,122（Normal），而且會一路卡著直到 entry 滑出 1 小時窗。改成從 `_utc_now()` 起算。既有測試原本沒固定「現在」、隱含依賴舊分母，補上 `_pin_now_to_last_entry()` 維持它們原本要測的語意;另加兩條新測試把「停手會衰減」與「進行中仍讀得到高負載」同一份資料的兩種答案釘住。 |
 | main | `3039745` | fix(panels): 摺紙面板重置文字改深色加光暈 | 2026-08-18 | **已採用，並先量了才做**。本 fork 的摺紙面板同樣有這個問題:`.reset` 是 `--muted`（`#55778e`），右下摺角最深處是 `#205779`，實算 **WCAG 對比 1.63**（AA 小字要 4.5）。值得記的是**上游的說法只對了一半**:本 fork 早有 `.card > * { z-index: 1 }`，字並沒有被摺角蓋住，它只是跟腳下的顏色一樣。真正有效的是**光暈**——深色字配三層淺色 text-shadow 實算 **12.11**，疊在什麼底色上都讀得到。上游同時把 margin-top 收 2px，那是為了它自己的卡片高度，本 fork 面板可捲動、高度另有處理，不跟。警示紅疊光暈底實算 3.24，對小字仍不足 AA 但遠優於疊深藍摺角，且紅色本身帶語意。 |
 | main | `ac01760` | ci: 加面板定義一致性檢查 | 2026-08-18 | **精神採用，實作不照抄**。上游要同步的是 `panels/all_panels()` 與 Windows 的 `WINDOWS_PANELS`／`PANEL_HEIGHTS` **三處**人工同步;本 fork 於 v0.40.0 已把面板定義收斂成單一來源 `panels/registry.py`，那個問題不存在，一支 141 行的守門腳本沒有對應的東西可守。但單一來源仍有它驗不了自己的部分——**檔名是否還指向存在的檔案**。實查目前四張主題＋人才市場全部一致，隨即補上三道測試:高度涵蓋從 `available_panels()` 擴到 `renderable_panels()`（人才市場走同一條查表路徑）、登記的 HTML 檔必須存在、不得有指向已移除面板的孤兒高度（v0.40.0 移除九張主題正是這種風險）。三道都注入缺陷確認會紅燈。 |

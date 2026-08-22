@@ -1,7 +1,9 @@
 """JS template for the HTML usage report. Extracted verbatim from html_report.
 
-Braces are doubled for str.format(); the three placeholders below are filled
-by html_report._render_scripts.
+The template is substituted with str.replace, not str.format, so braces stay
+single. One placeholder remains, `__SHARE_CONFIG_JSON__`, filled by
+html_report._render_scripts; the CSV payloads moved out into their own JSON
+nodes so that a masked export can drop the unmasked one.
 """
 
 HTML_TO_IMAGE_UMD = (
@@ -10,8 +12,23 @@ HTML_TO_IMAGE_UMD = (
 )
 
 REPORT_JS_TEMPLATE = """const shareConfig = __SHARE_CONFIG_JSON__;
-const csvData = __CSV_DATA_JSON__;
-const maskedCsvData = __MASKED_CSV_DATA_JSON__;
+// The two CSV payloads live in their own JSON nodes rather than in this script,
+// so a masked export can drop the unmasked one. Inlined here, it travelled
+// inside every "masked" HTML the user shared, and the report's own CSV button
+// handed it back.
+function readJsonNode(selector, fallback) {
+  const node = document.querySelector(selector);
+  if (!node) return fallback;
+  try {
+    return JSON.parse(node.textContent);
+  } catch (error) {
+    console.error(error);
+    return fallback;
+  }
+}
+const maskedCsvData = readJsonNode('[data-report-csv-masked]', '');
+// Falls back to the masked payload: in a masked export the unmasked node is gone.
+const csvData = readJsonNode('[data-report-csv]', maskedCsvData);
 const reportRoot = document.querySelector('.wrap');
 const shareDialog = document.querySelector('[data-share-dialog]');
 const shareFileMask = document.querySelector('[data-share-file-mask]');
@@ -84,9 +101,22 @@ async function withShareableReport(maskProjects, callback) {
       restores.push({el, original: el.textContent});
       el.textContent = `Project ${i + 1}`;
     });
+    // The donut legend and the insight sentences name projects too, and neither
+    // is a .name. They carry their rank so the masked report numbers a project
+    // the same way everywhere -- and so the real name is not sitting in an
+    // attribute of the file being shared.
+    document.querySelectorAll('[data-mask-index]').forEach((el) => {
+      restores.push({el, original: el.textContent});
+      el.textContent = `Project ${el.dataset.maskIndex}`;
+    });
     document.querySelectorAll('[data-mask]').forEach((el) => {
       restores.push({el, original: el.textContent});
       el.textContent = '—';
+    });
+    // Without this the "masked" download still carries every real project name.
+    document.querySelectorAll('[data-report-csv]').forEach((el) => {
+      detached.push({el, parent: el.parentNode, next: el.nextSibling});
+      el.remove();
     });
   }
   document.querySelectorAll('[data-share-dialog], [data-share-open]').forEach((el) => {

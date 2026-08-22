@@ -466,18 +466,34 @@ def tray_icon_style(used_percent: float | None) -> tuple[str, tuple[int, int, in
 
 
 def build_tooltip(state: menubar_state.PopoverState) -> str:
-    def line(name: str, row: menubar_state.QuotaRowState) -> str:
-        remaining = "--" if row.percent is None else str(max(0, round(100 - row.percent)))
-        return f"{name} {row.title}: {remaining}%"
+    """One line per provider, showing the used share of each window.
 
-    return "\n".join(
-        (
-            line("Claude", state.claude_session),
-            line("Claude", state.claude_weekly),
-            f"{line('Codex', state.codex_session)} · "
-            f"{line('Codex', state.codex_weekly).removeprefix('Codex ')}",
-        )
-    )
+    The number is what the panel shows -- `percent` is the used share, which is
+    why `menubar_state` renders it through the `percent_used` string. The tray
+    used to display `100 - percent`, so hovering the icon and opening the panel
+    answered the same question with different numbers.
+    """
+
+    def value(row: menubar_state.QuotaRowState) -> str:
+        if row.percent is None:
+            return "--"
+        return f"{max(0, round(row.percent))}%"
+
+    def merged(
+        name: str,
+        session: menubar_state.QuotaRowState,
+        weekly: menubar_state.QuotaRowState,
+    ) -> str:
+        return f"{name} {session.title}: {value(session)} · {weekly.title}: {value(weekly)}"
+
+    lines = []
+    # The panel hides the Claude section on request; a tooltip that still listed
+    # it would put back exactly what the preference removes.
+    if not state.hide_claude:
+        lines.append(merged("Claude", state.claude_session, state.claude_weekly))
+    lines.append(merged("Codex", state.codex_session, state.codex_weekly))
+    lines.append(merged("Antigravity", state.agy_session, state.agy_weekly))
+    return "\n".join(lines)
 
 
 def draw_tray_icon(used_percent: float | None) -> Image:
