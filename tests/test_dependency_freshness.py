@@ -162,7 +162,7 @@ def test_a_comment_without_the_marker_is_not_a_hold() -> None:
     assert check.parse_holds('x = ["ruff>=0.16"]  # just a note\n') == {}
 
 
-def test_deferral_without_a_reviewed_release_is_ignored(tmp_path) -> None:
+def test_deferral_without_a_reviewed_release_is_ignored(tmp_path: Path) -> None:
     # Otherwise the entry silences the check forever instead of postponing it.
     path = tmp_path / "deferrals.json"
     path.write_text(json.dumps({"deferrals": {"pillow": {"reason": "later"}}}), encoding="utf-8")
@@ -170,7 +170,7 @@ def test_deferral_without_a_reviewed_release_is_ignored(tmp_path) -> None:
     assert check.load_deferrals(path) == {}
 
 
-def test_missing_deferrals_file_defers_nothing(tmp_path) -> None:
+def test_missing_deferrals_file_defers_nothing(tmp_path: Path) -> None:
     assert check.load_deferrals(tmp_path / "absent.json") == {}
 
 
