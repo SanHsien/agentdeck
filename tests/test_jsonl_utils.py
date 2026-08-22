@@ -1,0 +1,88 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 lollapalooza <https://github.com/aqua5230>
+#
+# Part of "usage". Free software licensed under the GNU Affero General Public
+# License v3.0 only; see the LICENSE file for full terms and the warranty disclaimer.
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+import jsonl_limits
+from jsonl_utils import iter_jsonl_dicts
+
+
+def test_iter_jsonl_dicts_reads_dicts_and_skips_junk(tmp_path: Path) -> None:
+    path = tmp_path / "records.jsonl"
+    path.write_text(
+        '{"a": 1}\n\nnot json\n[1, 2]\n{"b": 2}\n',
+        encoding="utf-8",
+    )
+
+    assert list(iter_jsonl_dicts(path)) == [{"a": 1}, {"b": 2}]
+
+
+def test_iter_jsonl_dicts_raises_for_invalid_utf8_by_default(tmp_path: Path) -> None:
+    path = tmp_path / "records.jsonl"
+    path.write_bytes(b'{"a": "\xff"}\n')
+
+    with pytest.raises(UnicodeDecodeError):
+        list(iter_jsonl_dicts(path))
+
+
+def test_iter_jsonl_dicts_replaces_invalid_utf8_when_asked(tmp_path: Path) -> None:
+    path = tmp_path / "records.jsonl"
+    path.write_bytes(b'{"a": "\xff"}\n')
+
+    assert list(iter_jsonl_dicts(path, errors="replace")) == [{"a": "�"}]
+
+
+def test_iter_jsonl_dicts_skips_oversized_line_and_continues(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """One unbounded line must not cost the caller the rest of the file.
+
+    Session logs are written by other programs; before jsonl_limits a single
+    huge line was read whole into memory.
+    """
+    path = tmp_path / "records.jsonl"
+    path.write_bytes(b"x" * 1_025 + b'\n{"kept": true}\n')
+    monkeypatch.setattr(jsonl_limits, "MAX_JSONL_LINE_BYTES", 1_024)
+
+    assert list(iter_jsonl_dicts(path)) == [{"kept": True}]
+    assert "oversized JSONL line" in caplog.text
+
+
+def test_iter_jsonl_dicts_skips_recursively_nested_lines(tmp_path: Path) -> None:
+    """`json.loads` raises RecursionError — not JSONDecodeError — on deep nesting."""
+    path = tmp_path / "records.jsonl"
+    nested = "{" * 2_000 + "0" + "}" * 2_000
+    path.write_bytes(nested.encode() + b'\n{"kept": true}\n')
+
+    assert list(iter_jsonl_dicts(path)) == [{"kept": True}]
+
+
+def test_read_bounded_jsonl_line_reports_drained_bytes(tmp_path: Path) -> None:
+    """Callers keeping a rolling digest need the bytes they never got to see."""
+    path = tmp_path / "records.jsonl"
+    payload = b"x" * 1_025 + b"\n"
+    path.write_bytes(payload + json.dumps({"kept": True}).encode() + b"\n")
+
+    seen: list[bytes] = []
+    original = jsonl_limits.MAX_JSONL_LINE_BYTES
+    try:
+        jsonl_limits.MAX_JSONL_LINE_BYTES = 1_024
+        with path.open("rb") as file:
+            line, too_long = jsonl_limits.read_bounded_jsonl_line(
+                file, on_skipped_bytes=seen.append
+            )
+    finally:
+        jsonl_limits.MAX_JSONL_LINE_BYTES = original
+
+    assert (line, too_long) == (b"", True)
+    assert b"".join(seen) == payload

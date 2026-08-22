@@ -8,6 +8,9 @@
 ## [Unreleased]
 
 ### 修正
+- **測試會讀到操作者本機的真實用量資料。** `test_report_today_uses_codex_token_count_deltas` 斷言 65 tokens，在實際跑 agentdeck 的機器上讀到 **21,786,335**——它只改了 `SESSIONS_DIR`，但 `codex_loader` 還有 `ARCHIVED_SESSIONS_DIR`，而且 `_seed_caches_from_disk()` 會先把 `~/.agentdeck/codex_jsonl_cache.json` 的真實條目載回來。CI 一直是綠的：全新 runner 沒有 `~/.agentdeck`、也沒有 `~/.codex`。`tests/conftest.py` 新增 autouse fixture，把 providers 與 adapters 的每一個來源目錄與磁碟快取（含 adapters 在 import 期就抓死的常數）指向 per-test 暫存目錄並重置 seeded 旗標，漏掉就是空的、不會是別人的資料；`tests/test_operator_data_isolation.py` 逐一釘住這些常數，日後新增一個沒被隔離的路徑會紅燈。
+- **JSONL 單行沒有長度上限，一行壞資料就能把整個行程吃掉。** session log 是別的程式寫的，不是可信輸入；原本每個讀取點都是 `readline()` 讀到底，一行有多長就配置多少記憶體。新增 `jsonl_limits`（上限 64 MiB，依上游實測本機最大單行 23 MB 訂定），超長的行改為排空並記一筆 warning 後跳過，其餘的行照常解析。同時 `json.loads` 遇到深層巢狀會丟 `RecursionError` 而非 `JSONDecodeError`，四個解析點原本只捕捉後者，一行巢狀炸彈就讓整份記錄讀不到——一併補上。取自上游 `2588cc0`。
+  本 fork 多做一件事：`history_loader` 與 `codex_loader` 的增量快取會對「已確認前綴」做滾動雜湊，下次執行時從 offset 0 重算驗證。直接照抄上游的寫法會在跳過超長行時推進 confirmed offset 卻沒把跳過的位元組餵進雜湊，於是儲存的 digest 與檔案永遠對不起來——解析結果仍正確，但增量路徑會靜默退化成每次全量重解。`read_bounded_jsonl_line` 因此多一個 `on_skipped_bytes` 參數，由這兩個呼叫點傳入 `digest.update`；`test_skipped_oversized_line_keeps_the_incremental_cache_usable` 就是為此而寫（拿掉該參數即紅燈）。
 - **只使用 Claude Desktop 時，Claude Code 用量不再停在過期值或 `--`。** Desktop 以 stream-json 執行 Claude Code，不會刷新終端專用的 statusLine hook；agentdeck 因而一直重播舊的 `agentdeck-status.json`，重置時間一過又把百分比歸零。現在會讀 Claude Desktop 持續寫入的本機 `plan-usage-history.json`，只有其 sample 比 hook 新時才接管；該檔沒有 reset timestamp，所以保留真實百分比並顯示 `重置 --`，不猜時間、不呼叫 Anthropic usage API。
 - **分享報告勾了「遮罩專案名稱」，匯出的 HTML 仍夾帶全部真實專案名。** `downloadHtml` 序列化整份 DOM，而未遮罩的 CSV 是報告 script 裡的一個常數——它跟著「已遮罩」的檔案一起送出去，收檔者按報告內建的 CSV 下載鈕就能取回真實專案路徑。兩份資料改放進各自的 `application/json` 節點，遮罩匯出時直接移除未遮罩那個，JS 端 fallback 到遮罩版。
 - **圓餅圖圖例與 insights 句子裡的專案名遮不到。** 圖例是 `.lg-name`、insights 是句中的一個詞，兩者都不在 `.name` 選擇器涵蓋範圍。改為在渲染時標上**排名**（`data-mask-index`）——不是名稱：把真名放進屬性，一樣會跟著匯出檔外流。表格、圖例與 insights 現在對同一個專案給同一個編號。

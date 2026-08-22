@@ -16,6 +16,7 @@ from unittest.mock import Mock
 
 import pytest
 
+import jsonl_limits
 import project_resolver
 from providers import history_disk_cache, history_loader
 
@@ -610,3 +611,60 @@ def test_disk_cache_file_mtime_invalidates_seed(
     assert entries[0].message_id == "fresh-message"
     assert entries[0].input_tokens == 20
     assert entries[0].output_tokens == 30
+
+
+def test_load_entries_skips_oversized_line_and_continues(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    path = tmp_path / "history.jsonl"
+    path.write_bytes(b"x" * 1_025 + b"\n" + _line().encode())
+    monkeypatch.setattr(jsonl_limits, "MAX_JSONL_LINE_BYTES", 1_024)
+
+    entries = history_loader.load_entries(jsonl_paths=[path])
+
+    assert [entry.message_id for entry in entries] == ["message"]
+    assert "oversized JSONL line" in caplog.text
+
+
+def test_load_entries_skips_recursively_nested_lines(tmp_path: Path) -> None:
+    path = tmp_path / "history.jsonl"
+    nested = "{" * 2_000 + "0" + "}" * 2_000
+    path.write_bytes(nested.encode() + b"\n" + _line().encode())
+
+    entries = history_loader.load_entries(jsonl_paths=[path])
+
+    assert [entry.message_id for entry in entries] == ["message"]
+
+
+def test_skipped_oversized_line_keeps_the_incremental_cache_usable(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Draining a line must still feed the confirmed-prefix digest.
+
+    The digest is re-verified by hashing the file from offset 0 on the next run.
+    Advancing the confirmed offset past bytes that were never hashed leaves the
+    stored digest permanently disagreeing with the file: entries stay correct,
+    but `_confirmed_prefix_hasher` returns None every time and the incremental
+    path silently degrades into a full re-parse forever.
+    """
+    path = tmp_path / "history.jsonl"
+    first_line = _line(message_id="m0", request_id="r0").encode()
+    path.write_bytes(b"x" * 1_025 + b"\n" + first_line + b"\n")
+    monkeypatch.setattr(jsonl_limits, "MAX_JSONL_LINE_BYTES", 1_024)
+
+    first = history_loader.load_entries(jsonl_paths=[path])
+    assert [entry.message_id for entry in first] == ["m0"]
+
+    cached = history_loader._file_cache[path]
+    assert cached.confirmed_offset == path.stat().st_size
+    assert history_loader._confirmed_prefix_hasher(path, cached) is not None
+
+    with path.open("ab") as file:
+        file.write(_line(message_id="m1", request_id="r1").encode() + b"\n")
+
+    second = history_loader.load_entries(jsonl_paths=[path])
+
+    assert [entry.message_id for entry in second] == ["m0", "m1"]

@@ -16,6 +16,7 @@ from unittest.mock import Mock
 
 import pytest
 
+import jsonl_limits
 from providers import codex_disk_cache, codex_loader
 from providers.history_loader import UsageEntry
 from tests.helpers import write_codex_session as _write_session
@@ -1000,6 +1001,48 @@ def test_codex_session_with_bad_encoding_is_skipped(tmp_path: Path) -> None:
 
     assert codex_loader._parse_jsonl(path, {}, None) == []
     assert codex_loader._extract_rate_limits(path, {}) is None
+
+
+def test_parse_jsonl_skips_oversized_line_and_continues(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    path = tmp_path / "oversized.jsonl"
+    path.write_bytes(
+        b"x" * 1_025
+        + b"\n"
+        + json.dumps({"type": "session_meta", "payload": {"id": "s1"}}).encode()
+    )
+    monkeypatch.setattr(jsonl_limits, "MAX_JSONL_LINE_BYTES", 1_024)
+
+    assert codex_loader._parse_jsonl(path, {}, None) == []
+    assert "oversized JSONL line" in caplog.text
+
+
+def test_parse_jsonl_skips_recursively_nested_lines(tmp_path: Path) -> None:
+    path = tmp_path / "nested.jsonl"
+    nested = "{" * 2_000 + "0" + "}" * 2_000
+    path.write_bytes(
+        nested.encode()
+        + b"\n"
+        + json.dumps({"type": "session_meta", "payload": {"id": "s1"}}).encode()
+    )
+
+    assert codex_loader._parse_jsonl(path, {}, None) == []
+
+
+def test_extract_rate_limits_skips_oversized_line_and_continues(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    path = tmp_path / "oversized-rate-limits.jsonl"
+    path.write_bytes(b"x" * 1_025 + b"\n")
+    monkeypatch.setattr(jsonl_limits, "MAX_JSONL_LINE_BYTES", 1_024)
+
+    assert codex_loader._extract_rate_limits(path, {}) is None
+    assert "oversized JSONL line" in caplog.text
 
 
 def test_jsonl_cache_evicts_oldest_entry_when_maxsize_exceeded(tmp_path: Path) -> None:
