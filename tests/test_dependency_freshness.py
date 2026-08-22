@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
 from typing import Any
 
@@ -146,3 +147,38 @@ def test_write_github_output_is_a_no_op_outside_actions(monkeypatch: Any) -> Non
     monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
 
     check.write_github_output(True, True, Path("report.md"))
+
+
+def test_hold_marker_binds_to_the_package_on_that_line() -> None:
+    holds = check.parse_holds(
+        'dependencies = ["pillow>=12.3"]  # freshness-hold: 12.x is the floor we want\n'
+        'other = ["pystray>=0.19"]\n'
+    )
+
+    assert holds == {"pillow": "12.x is the floor we want"}
+
+
+def test_a_comment_without_the_marker_is_not_a_hold() -> None:
+    assert check.parse_holds('x = ["ruff>=0.16"]  # just a note\n') == {}
+
+
+def test_deferral_without_a_reviewed_release_is_ignored(tmp_path) -> None:
+    # Otherwise the entry silences the check forever instead of postponing it.
+    path = tmp_path / "deferrals.json"
+    path.write_text(json.dumps({"deferrals": {"pillow": {"reason": "later"}}}), encoding="utf-8")
+
+    assert check.load_deferrals(path) == {}
+
+
+def test_missing_deferrals_file_defers_nothing(tmp_path) -> None:
+    assert check.load_deferrals(tmp_path / "absent.json") == {}
+
+
+def test_aged_floor_needs_review_unless_held_or_deferred() -> None:
+    aged = {"outdated": True, "hold": "", "deferred_reason": ""}
+    held = {"outdated": True, "hold": "policy", "deferred_reason": ""}
+    deferred = {"outdated": True, "hold": "", "deferred_reason": "needs a Windows tray check"}
+
+    assert check.needs_review(aged)
+    assert not check.needs_review(held)
+    assert not check.needs_review(deferred)
