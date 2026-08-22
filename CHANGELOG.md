@@ -8,6 +8,7 @@
 ## [Unreleased]
 
 ### 修正
+- **只使用 Claude Desktop 時，Claude Code 用量不再停在過期值或 `--`。** Desktop 以 stream-json 執行 Claude Code，不會刷新終端專用的 statusLine hook；agentdeck 因而一直重播舊的 `agentdeck-status.json`，重置時間一過又把百分比歸零。現在會讀 Claude Desktop 持續寫入的本機 `plan-usage-history.json`，只有其 sample 比 hook 新時才接管；該檔沒有 reset timestamp，所以保留真實百分比並顯示 `重置 --`，不猜時間、不呼叫 Anthropic usage API。
 - **分享報告勾了「遮罩專案名稱」，匯出的 HTML 仍夾帶全部真實專案名。** `downloadHtml` 序列化整份 DOM，而未遮罩的 CSV 是報告 script 裡的一個常數——它跟著「已遮罩」的檔案一起送出去，收檔者按報告內建的 CSV 下載鈕就能取回真實專案路徑。兩份資料改放進各自的 `application/json` 節點，遮罩匯出時直接移除未遮罩那個，JS 端 fallback 到遮罩版。
 - **圓餅圖圖例與 insights 句子裡的專案名遮不到。** 圖例是 `.lg-name`、insights 是句中的一個詞，兩者都不在 `.name` 選擇器涵蓋範圍。改為在渲染時標上**排名**（`data-mask-index`）——不是名稱：把真名放進屬性，一樣會跟著匯出檔外流。表格、圖例與 insights 現在對同一個專案給同一個編號。
 - **系統匣提示文字與面板對不上。** `build_tooltip` 顯示 `100 - 已用%`，面板顯示已用%；同一個問題，滑過圖示與打開面板得到兩個數字。另補上一直缺席的 Antigravity 段落，並把 Claude 的 Session／Weekly 併成一行，與 Codex 一致；`hide_claude` 開啟時 tooltip 不再把 Claude 放回來。

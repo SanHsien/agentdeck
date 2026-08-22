@@ -28,6 +28,10 @@ LEGACY_STATUS_FILE = os.path.expanduser("~/.claude/usag-status.json")
 TT_STATUS_FILE = os.path.expanduser("~/.claude/tt-status.json")
 CLAUDE_JSON_FILE = os.path.expanduser("~/.claude.json")
 CLAUDE_PROJECTS_DIR = Path(os.path.expanduser("~/.claude/projects"))
+_APPDATA = os.environ.get("APPDATA")
+CLAUDE_DESKTOP_USAGE_FILE = (
+    os.path.join(_APPDATA, "Claude", "plan-usage-history.json") if _APPDATA else ""
+)
 
 # Stale files only affect hints; quota values still render.
 STALE_SECONDS = 6 * 3600
@@ -49,9 +53,9 @@ class PollState(StrEnum):
 @dataclass(slots=True)
 class UsageSnapshot:
     current_percent: int | None
-    current_reset_at: float
+    current_reset_at: float | None
     weekly_percent: int | None
-    weekly_reset_at: float
+    weekly_reset_at: float | None
     current_status: str
     polled_at: float
     is_stale: bool = False
@@ -210,14 +214,66 @@ def _read_claude_json_snapshot() -> UsageSnapshot | None:
     )
 
 
+def _read_desktop_usage_snapshot() -> UsageSnapshot | None:
+    """Read Claude Desktop's local plan-usage history without network access."""
+    try:
+        with open(CLAUDE_DESKTOP_USAGE_FILE, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    samples = data.get("samples")
+    if not isinstance(samples, list):
+        return None
+
+    latest: tuple[float, int | None, int | None] | None = None
+    for sample in samples:
+        if not isinstance(sample, dict):
+            continue
+        sampled_at_ms = _as_finite_float(sample.get("t"))
+        usage = _as_dict(sample.get("u"))
+        five_pct = _pct(usage.get("fh"))
+        seven_pct = _pct(usage.get("sd"))
+        if sampled_at_ms is None or sampled_at_ms <= 0:
+            continue
+        if five_pct is None and seven_pct is None:
+            continue
+        candidate = (sampled_at_ms / 1000, five_pct, seven_pct)
+        if latest is None or candidate[0] > latest[0]:
+            latest = candidate
+
+    if latest is None:
+        return None
+    polled_at, five_pct, seven_pct = latest
+    return UsageSnapshot(
+        current_percent=five_pct,
+        current_reset_at=None,
+        weekly_percent=seven_pct,
+        weekly_reset_at=None,
+        current_status="",
+        polled_at=polled_at,
+        is_stale=(time.time() - polled_at) > STALE_SECONDS,
+        data_source="claude-desktop",
+    )
+
+
 def _time_adjusted(snapshot: UsageSnapshot) -> UsageSnapshot:
     """Re-derive expiry-sensitive fields of a cached snapshot at the current time."""
     now = time.time()
     five_pct = snapshot.current_percent
-    if five_pct is not None and snapshot.current_reset_at < now:
+    if (
+        five_pct is not None
+        and snapshot.current_reset_at is not None
+        and snapshot.current_reset_at < now
+    ):
         five_pct = 0
     seven_pct = snapshot.weekly_percent
-    if seven_pct is not None and snapshot.weekly_reset_at < now:
+    if (
+        seven_pct is not None
+        and snapshot.weekly_reset_at is not None
+        and snapshot.weekly_reset_at < now
+    ):
         seven_pct = 0
     return UsageSnapshot(
         current_percent=five_pct,
@@ -328,8 +384,13 @@ def _build_snapshot(data: dict[str, Any], *, data_source: str = "hook") -> Usage
     )
 
 
+def _newest_snapshot(*snapshots: UsageSnapshot | None) -> UsageSnapshot | None:
+    available = [snapshot for snapshot in snapshots if snapshot is not None]
+    return max(available, key=lambda snapshot: snapshot.polled_at, default=None)
+
+
 class ClaudeUsageClient:
-    """Read quota state from the local JSON written by the Claude Code statusLine hook."""
+    """Read Claude quota from local statusLine and Claude Desktop snapshots."""
 
     def __init__(self, *, interval_seconds: int = 60, mock: bool = False) -> None:
         self.interval_seconds = interval_seconds
@@ -342,6 +403,9 @@ class ClaudeUsageClient:
         self._claude_json_cached_mtime: float | None = None
         self._claude_json_cached_snapshot: UsageSnapshot | None = None
         self._claude_json_cache_valid = False
+        self._desktop_usage_cached_mtime: float | None = None
+        self._desktop_usage_cached_snapshot: UsageSnapshot | None = None
+        self._desktop_usage_cache_valid = False
 
     async def aclose(self) -> None:
         return None
@@ -351,6 +415,7 @@ class ClaudeUsageClient:
             return self._mock_outcome()
 
         claude_json_snapshot = self._read_claude_json_snapshot_cached()
+        desktop_snapshot = self._read_desktop_usage_snapshot_cached()
 
         if (
             (stat_result := _status_file_stat()) is not None
@@ -367,8 +432,9 @@ class ClaudeUsageClient:
                 self._cached_data = None
                 self._cached_path = None
                 self._cached_mtime = None
-                if claude_json_snapshot is not None:
-                    return self._success_outcome(claude_json_snapshot)
+                fallback = _newest_snapshot(claude_json_snapshot, desktop_snapshot)
+                if fallback is not None:
+                    return self._success_outcome(fallback)
                 message_key = "usage_status_missing"
                 if current_hook_state() in {
                     "us-direct",
@@ -385,13 +451,14 @@ class ClaudeUsageClient:
             self._cached_path = source_path
             self._cached_mtime = mtime
 
-        # ``.claude.json`` is Claude Code's cache, not a competing live source.
-        # In particular its fetchedAtMs can be newer than the hook timestamp while
-        # still describing a different/expired session.  A complete statusLine
-        # payload must therefore always win; use the cache only when the hook has
-        # not provided both quota windows yet.
-        if claude_json_snapshot is not None and not _has_complete_rate_limits(data):
-            return self._success_outcome(claude_json_snapshot)
+        # ``.claude.json`` can describe a different or expired session, so it only
+        # fills a missing/incomplete statusLine payload. Claude Desktop's plan history
+        # is global account usage; it may supersede a complete hook only when its own
+        # sample timestamp is newer.
+        if not _has_complete_rate_limits(data):
+            fallback = _newest_snapshot(claude_json_snapshot, desktop_snapshot)
+            if fallback is not None:
+                return self._success_outcome(fallback)
 
         if not _has_complete_rate_limits(data):
             outcome = PollOutcome(
@@ -413,6 +480,9 @@ class ClaudeUsageClient:
             )
             self._last_outcome = outcome
             return outcome
+
+        if desktop_snapshot is not None and desktop_snapshot.polled_at > snapshot.polled_at:
+            return self._success_outcome(desktop_snapshot)
 
         return self._success_outcome(snapshot, mtime=mtime, source_path=source_path)
 
@@ -440,6 +510,24 @@ class ClaudeUsageClient:
         self._claude_json_cached_path = CLAUDE_JSON_FILE
         self._claude_json_cached_mtime = mtime
         self._claude_json_cached_snapshot = snapshot
+        return snapshot
+
+    def _read_desktop_usage_snapshot_cached(self) -> UsageSnapshot | None:
+        try:
+            mtime = os.stat(CLAUDE_DESKTOP_USAGE_FILE).st_mtime
+        except OSError:
+            self._desktop_usage_cache_valid = False
+            self._desktop_usage_cached_mtime = None
+            self._desktop_usage_cached_snapshot = None
+            return None
+        if self._desktop_usage_cache_valid and self._desktop_usage_cached_mtime == mtime:
+            if self._desktop_usage_cached_snapshot is None:
+                return None
+            return _time_adjusted(self._desktop_usage_cached_snapshot)
+        snapshot = _read_desktop_usage_snapshot()
+        self._desktop_usage_cache_valid = True
+        self._desktop_usage_cached_mtime = mtime
+        self._desktop_usage_cached_snapshot = snapshot
         return snapshot
 
     def _success_outcome(

@@ -748,7 +748,7 @@ def build_popover_state(
             warning_max_seconds=24 * 3600,
         )
         status_value = _status_message_value(outcome, "status_synced", language)
-        if snapshot.is_stale or snapshot.data_source != "hook":
+        if snapshot.is_stale or snapshot.data_source not in {"hook", "claude-desktop"}:
             status_value = _status_message_value(outcome, "data_stale_hint", language)
         status_text = _t(
             language,
@@ -758,7 +758,7 @@ def build_popover_state(
         status_long = (
             bool(outcome.message)
             or snapshot.is_stale
-            or snapshot.data_source != "hook"
+            or snapshot.data_source not in {"hook", "claude-desktop"}
         )
     else:
         claude_session = _missing_row(_t(language, "session_label"), CLAUDE_COLOR, language)
@@ -833,36 +833,40 @@ def _quota_row(
     forecast_seconds: float | None = None,
     warning_max_seconds: float | None = None,
 ) -> QuotaRowState:
-    if pct is None or resets_at is None:
+    if pct is None:
         return _missing_row(title, color, language)
     pct = max(0.0, min(100.0, float(pct)))
-    time_to_reset = resets_at - now
-    if time_to_reset < 60:
-        reset_text = _t(language, "reset_imminent")
+    if resets_at is None:
+        reset_text = _t(language, "reset_placeholder")
         warning = False
     else:
-        warning_seconds: float | None = None
-        if (
-            forecast_seconds is not None
-            and 0 < forecast_seconds < time_to_reset
-            and (warning_max_seconds is None or forecast_seconds < warning_max_seconds)
-            and pct >= WARNING_PERCENT_FLOOR
-        ):
-            warning_seconds = forecast_seconds
-        warning = warning_seconds is not None
-        if warning_seconds is not None:
-            reset_text = _t(
-                language,
-                "burn_warning",
-                empty=format_human_time(warning_seconds, language),
-                reset=format_human_time(time_to_reset, language),
-            )
+        time_to_reset = resets_at - now
+        if time_to_reset < 60:
+            reset_text = _t(language, "reset_imminent")
+            warning = False
         else:
-            reset_text = _t(
-                language,
-                "reset_in",
-                time=format_human_time(time_to_reset, language),
-            )
+            warning_seconds: float | None = None
+            if (
+                forecast_seconds is not None
+                and 0 < forecast_seconds < time_to_reset
+                and (warning_max_seconds is None or forecast_seconds < warning_max_seconds)
+                and pct >= WARNING_PERCENT_FLOOR
+            ):
+                warning_seconds = forecast_seconds
+            warning = warning_seconds is not None
+            if warning_seconds is not None:
+                reset_text = _t(
+                    language,
+                    "burn_warning",
+                    empty=format_human_time(warning_seconds, language),
+                    reset=format_human_time(time_to_reset, language),
+                )
+            else:
+                reset_text = _t(
+                    language,
+                    "reset_in",
+                    time=format_human_time(time_to_reset, language),
+                )
     return QuotaRowState(
         title=title,
         percent=pct,

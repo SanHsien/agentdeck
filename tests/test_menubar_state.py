@@ -417,3 +417,19 @@ def test_project_rows_for_windows_matches_window_boundaries() -> None:
         ("week", 3, 3.0),
         ("month", 2, 2.0),
     ]
+
+
+def test_quota_row_keeps_percentage_when_reset_time_is_unknown() -> None:
+    row = menubar_state._quota_row(
+        "Session",
+        29.0,
+        None,
+        1_700_000_000.0,
+        menubar_state.CLAUDE_COLOR,
+        "en",
+    )
+
+    assert row.available is True
+    assert row.percent == 29.0
+    assert row.percent_text == "29% used"
+    assert row.reset_text == "Resets in --"

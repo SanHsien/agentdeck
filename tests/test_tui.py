@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 
 import pytest
+from rich.console import Console
 from rich.panel import Panel
 
 import tui
@@ -96,6 +97,19 @@ def test_render_screen_smoke_with_usage_snapshot(monkeypatch: pytest.MonkeyPatch
     rendered = tui.render_screen(state, frame_index=0)
 
     assert isinstance(rendered, Panel)
+
+
+def test_usage_block_keeps_percentage_when_reset_time_is_unknown(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(tui, "_load_i18n_bundle", _minimal_bundle)
+    console = Console(record=True, width=60)
+
+    console.print(tui._usage_block(29, "5h", None, 1_700_000_000.0, "en"))
+
+    rendered = console.export_text()
+    assert "29%" in rendered
+    assert "--" in rendered
 
 
 def test_render_screen_smoke_without_snapshot(monkeypatch: pytest.MonkeyPatch) -> None:

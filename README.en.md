@@ -43,7 +43,7 @@ agentdeck brings that operational state back into the Windows desktop workflow:
 | Capability | What it does |
 |---|---|
 | **Quota cockpit** | System-tray quota, reset countdowns, burn rate, Context Window warnings, and public Claude/Codex service status. |
-| **Local Claude Code / Codex data** | Claude reads a local statusLine snapshot; Codex reads session / state data under `~/.codex/`. Viewing quota does not consume LLM usage. |
+| **Local Claude Code / Codex data** | Claude reads a local statusLine snapshot or Claude Desktop's local plan-usage history; Codex reads session / state data under `~/.codex/`. Viewing quota does not consume LLM usage. |
 | **Antigravity quota** | Uses the Antigravity CLI's existing local login state to query Google's official quota endpoint; the quota check itself does not consume model usage. |
 | **AI Council** | Choose participants, models, personas, and debate style; run multiple rounds, intervene between rounds, count consensus, and optionally attach a read-only folder. |
 | **Persona Market** | Open persona definitions live in [`personas/`](personas/); install them into Claude Code, Codex, and Cursor with backup-before-overwrite behavior. |
@@ -65,7 +65,7 @@ Four visual themes ship with the app: Classic, Catppuccin, Stained Glass, and Or
 1. Download `agentdeck-windows.zip` from the [Latest Release](https://github.com/SanHsien/agentdeck/releases/latest).
 2. Extract it and run `agentdeck.exe`; there is no installer.
 3. **Codex** — existing local usage history is detected automatically.
-4. **Claude Code** — use **Set Up Status Line** from the menu to install the local statusLine hook, then restart Claude Code.
+4. **Claude Code** — terminal users can install the local hook with **Set Up Status Line** and restart Claude Code; Claude Desktop users are detected through the plan-usage history Desktop already writes locally.
 5. **Antigravity** — install and sign in to the Antigravity CLI first; its quota card appears after a successful quota read.
 
 Left-click the tray icon to open the panel and right-click for the menu. Panels are draggable floating windows that remember their position rather than transient popovers tied to the tray icon.
@@ -76,7 +76,7 @@ agentdeck is local-first, but local-first does not mean fully offline. Each data
 
 | Source | How agentdeck gets it | Network |
 |---|---|---:|
-| Claude Code | Reads `~/.claude/agentdeck-status.json` and local project history | No |
+| Claude Code | Reads `~/.claude/agentdeck-status.json`, Claude Desktop's `plan-usage-history.json`, and local project history | No |
 | Codex | Read-only access to `~/.codex/sessions/` / local state | No |
 | Antigravity | Uses local CLI auth to query Google's official quota endpoint | Yes |
 | Service health | Public Claude / OpenAI Statuspage endpoints | Yes |

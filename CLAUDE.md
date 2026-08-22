@@ -46,6 +46,7 @@ Claude Code statusLine
         │
         ▼
 usage_statusline.py ──> ~/.claude/agentdeck-status.json ─┐
+Claude Desktop ───────> plan-usage-history.json ──────────┤
                                                          │
 Codex ~/.codex/* ───────> providers/codex_loader.py ─────┼─> state / wintray / TUI
                                                          │

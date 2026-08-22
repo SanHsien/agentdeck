@@ -43,7 +43,7 @@ agentdeck 把這些狀態放回 Windows 桌面工作流：
 | 能力 | 說明 |
 |---|---|
 | **Quota cockpit** | Windows 系統匣常駐額度、重置倒數、burn rate、Context Window 提醒與 Claude/Codex 公開服務狀態。 |
-| **Claude Code / Codex 本機取數** | Claude 讀 statusLine hook 產生的本機快照；Codex 讀 `~/.codex/` 的 session / state 資料。查看額度本身不增加 LLM 用量。 |
+| **Claude Code / Codex 本機取數** | Claude 讀 statusLine hook 快照或 Claude Desktop 的本機方案用量紀錄；Codex 讀 `~/.codex/` 的 session / state 資料。查看額度本身不增加 LLM 用量。 |
 | **Antigravity 額度** | 使用 Antigravity CLI 已有的本機登入身分，向 Google 官方額度端點查詢；不消耗模型額度。 |
 | **AI 圓桌討論** | 選擇參與者、模型、角色與辯論風格，多輪討論、插話、共識計票，並可附唯讀資料夾。 |
 | **AI 人才市場** | 開源角色定義放在 [`personas/`](personas/)；可部署到 Claude Code、Codex、Cursor，既有同名檔會先備份。 |
@@ -65,7 +65,7 @@ agentdeck 把這些狀態放回 Windows 桌面工作流：
 1. 從 [Latest Release](https://github.com/SanHsien/agentdeck/releases/latest) 下載 `agentdeck-windows.zip`。
 2. 解壓後執行 `agentdeck.exe`；不需要安裝程式。
 3. **Codex**：只要已有本機使用紀錄，agentdeck 會自動讀取。
-4. **Claude Code**：在選單執行「設定狀態列」，安裝本機 statusLine hook；完成後重新啟動 Claude Code。
+4. **Claude Code**：終端使用者可在選單執行「設定狀態列」並重新啟動 Claude Code；Claude Desktop 使用者則會自動讀取 Desktop 已寫入的本機方案用量紀錄。
 5. **Antigravity**：需先安裝並登入 Antigravity CLI，額度卡才會出現。
 
 系統匣左鍵開面板、右鍵開選單。面板是可自由拖曳、會記住位置的浮動視窗；不是貼齊 tray icon 後點一下就消失的 popover。
@@ -76,7 +76,7 @@ agentdeck 是 local-first，但「local-first」不等於完全不連網。不�
 
 | 來源 | agentdeck 如何取得 | 是否連網 |
 |---|---|---:|
-| Claude Code | 讀 `~/.claude/agentdeck-status.json` 與本機專案紀錄 | 否 |
+| Claude Code | 讀 `~/.claude/agentdeck-status.json`、Claude Desktop 的 `plan-usage-history.json` 與本機專案紀錄 | 否 |
 | Codex | 唯讀 `~/.codex/sessions/` / 本機 state 資料 | 否 |
 | Antigravity | 讀本機 CLI 登入身分後查 Google 官方額度端點 | 是 |
 | 服務狀態 | Claude / OpenAI 公開 Statuspage | 是 |

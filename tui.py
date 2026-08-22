@@ -109,7 +109,7 @@ def _chip(label: str) -> Text:
 def _usage_block(
     percent: int,
     label: str,
-    reset_at: float,
+    reset_at: float | None,
     now: float,
     language: str,
 ) -> RenderableType:
@@ -123,7 +123,12 @@ def _usage_block(
         _chip(label),
     )
 
-    countdown = Text.assemble("    ", (format_countdown(reset_at, language, now), DIM))
+    countdown_text = (
+        _t(language, "resets_in_placeholder")
+        if reset_at is None
+        else format_countdown(reset_at, language, now)
+    )
+    countdown = Text.assemble("    ", (countdown_text, DIM))
     return Group(row, countdown)
 
 

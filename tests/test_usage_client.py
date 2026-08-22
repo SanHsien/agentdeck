@@ -28,6 +28,11 @@ LEGACY_NAME = "usag"
 def isolate_claude_files(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setattr(usage_client, "_recent_activity_cache", None)
     monkeypatch.setattr(usage_client, "CLAUDE_JSON_FILE", str(tmp_path / ".claude.json"))
+    monkeypatch.setattr(
+        usage_client,
+        "CLAUDE_DESKTOP_USAGE_FILE",
+        str(tmp_path / "plan-usage-history.json"),
+    )
 
 
 def _write_claude_json(path: Path, fetched_at: float) -> None:
@@ -51,6 +56,172 @@ def _write_claude_json(path: Path, fetched_at: float) -> None:
         ),
         encoding="utf-8",
     )
+
+
+def _write_desktop_usage(
+    path: Path,
+    *,
+    sampled_at: float,
+    five_hour: object = 29,
+    seven_day: object = 76,
+) -> None:
+    path.write_text(
+        json.dumps(
+            {
+                "version": 2,
+                "samples": [
+                    {
+                        "t": sampled_at * 1000,
+                        "org": "test-org",
+                        "u": {"fh": five_hour, "sd": seven_day},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+def test_read_desktop_usage_snapshot_reads_latest_local_plan_sample(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    now = 1_700_000_100.0
+    path = tmp_path / "plan-usage-history.json"
+    monkeypatch.setattr(usage_client, "CLAUDE_DESKTOP_USAGE_FILE", str(path))
+    monkeypatch.setattr("usage_client.time.time", lambda: now)
+    _write_desktop_usage(path, sampled_at=now - 10)
+
+    snapshot = usage_client._read_desktop_usage_snapshot()
+
+    assert snapshot is not None
+    assert snapshot.current_percent == 29
+    assert snapshot.weekly_percent == 76
+    assert snapshot.current_reset_at is None
+    assert snapshot.weekly_reset_at is None
+    assert snapshot.polled_at == now - 10
+    assert snapshot.is_stale is False
+    assert snapshot.data_source == "claude-desktop"
+
+
+def test_read_desktop_usage_snapshot_skips_invalid_newer_samples(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    now = 1_700_000_100.0
+    path = tmp_path / "plan-usage-history.json"
+    monkeypatch.setattr(usage_client, "CLAUDE_DESKTOP_USAGE_FILE", str(path))
+    monkeypatch.setattr("usage_client.time.time", lambda: now)
+    path.write_text(
+        json.dumps(
+            {
+                "version": 2,
+                "samples": [
+                    {"t": (now - 20) * 1000, "u": {"fh": 12, "sd": 34}},
+                    {"t": (now - 10) * 1000, "u": {"fh": "bad", "sd": True}},
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    snapshot = usage_client._read_desktop_usage_snapshot()
+
+    assert snapshot is not None
+    assert snapshot.current_percent == 12
+    assert snapshot.weekly_percent == 34
+    assert snapshot.polled_at == now - 20
+
+
+@pytest.mark.parametrize("contents", ["{bad json", "[]", '{"samples": {}}'])
+def test_read_desktop_usage_snapshot_rejects_invalid_files(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    contents: str,
+) -> None:
+    path = tmp_path / "plan-usage-history.json"
+    monkeypatch.setattr(usage_client, "CLAUDE_DESKTOP_USAGE_FILE", str(path))
+    path.write_text(contents, encoding="utf-8")
+
+    assert usage_client._read_desktop_usage_snapshot() is None
+
+
+def test_fetch_once_prefers_newer_desktop_usage_over_stale_hook(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    now = 1_700_000_100.0
+    status_path = tmp_path / "agentdeck-status.json"
+    desktop_path = tmp_path / "plan-usage-history.json"
+    monkeypatch.setattr(usage_client, "STATUS_FILE", str(status_path))
+    monkeypatch.setattr(usage_client, "LEGACY_STATUS_FILE", str(tmp_path / "legacy.json"))
+    monkeypatch.setattr(usage_client, "TT_STATUS_FILE", str(tmp_path / "tt-status.json"))
+    monkeypatch.setattr(usage_client, "CLAUDE_DESKTOP_USAGE_FILE", str(desktop_path))
+    monkeypatch.setattr("usage_client.time.time", lambda: now)
+    _write_complete_status(status_path, now - 3600)
+    _write_desktop_usage(desktop_path, sampled_at=now - 10)
+
+    outcome = asyncio.run(usage_client.ClaudeUsageClient(mock=False).fetch_once())
+
+    assert outcome.state is usage_client.PollState.SUCCESS
+    assert outcome.snapshot is not None
+    assert outcome.snapshot.data_source == "claude-desktop"
+    assert outcome.snapshot.current_percent == 29
+    assert outcome.snapshot.weekly_percent == 76
+
+
+def test_fetch_once_keeps_newer_complete_hook_over_desktop_usage(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    now = 1_700_000_100.0
+    status_path = tmp_path / "agentdeck-status.json"
+    desktop_path = tmp_path / "plan-usage-history.json"
+    monkeypatch.setattr(usage_client, "STATUS_FILE", str(status_path))
+    monkeypatch.setattr(usage_client, "LEGACY_STATUS_FILE", str(tmp_path / "legacy.json"))
+    monkeypatch.setattr(usage_client, "TT_STATUS_FILE", str(tmp_path / "tt-status.json"))
+    monkeypatch.setattr(usage_client, "CLAUDE_DESKTOP_USAGE_FILE", str(desktop_path))
+    monkeypatch.setattr("usage_client.time.time", lambda: now)
+    _write_complete_status(status_path, now - 5)
+    _write_desktop_usage(desktop_path, sampled_at=now - 10)
+
+    outcome = asyncio.run(usage_client.ClaudeUsageClient(mock=False).fetch_once())
+
+    assert outcome.state is usage_client.PollState.SUCCESS
+    assert outcome.snapshot is not None
+    assert outcome.snapshot.data_source == "hook"
+    assert outcome.snapshot.current_percent == 12
+    assert outcome.snapshot.weekly_percent == 34
+
+
+def test_fetch_once_reuses_desktop_usage_parse_until_mtime_changes(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    now = 1_700_000_100.0
+    desktop_path = tmp_path / "plan-usage-history.json"
+    monkeypatch.setattr(usage_client, "STATUS_FILE", str(tmp_path / "missing.json"))
+    monkeypatch.setattr(usage_client, "LEGACY_STATUS_FILE", str(tmp_path / "legacy.json"))
+    monkeypatch.setattr(usage_client, "TT_STATUS_FILE", str(tmp_path / "tt-status.json"))
+    monkeypatch.setattr(usage_client, "CLAUDE_DESKTOP_USAGE_FILE", str(desktop_path))
+    monkeypatch.setattr("usage_client.time.time", lambda: now)
+    _write_desktop_usage(desktop_path, sampled_at=now - 10)
+    calls = 0
+    original = usage_client._read_desktop_usage_snapshot
+
+    def counting_read() -> usage_client.UsageSnapshot | None:
+        nonlocal calls
+        calls += 1
+        return original()
+
+    monkeypatch.setattr(usage_client, "_read_desktop_usage_snapshot", counting_read)
+    client = usage_client.ClaudeUsageClient(mock=False)
+
+    first = asyncio.run(client.fetch_once())
+    second = asyncio.run(client.fetch_once())
+    current = desktop_path.stat().st_mtime
+    os.utime(desktop_path, (current + 1, current + 1))
+    third = asyncio.run(client.fetch_once())
+
+    assert first.snapshot is not None
+    assert second.snapshot is not None
+    assert third.snapshot is not None
+    assert calls == 2
 
 
 def test_read_status_file_returns_none_when_both_paths_missing(
