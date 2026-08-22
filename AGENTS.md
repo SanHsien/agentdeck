@@ -69,6 +69,7 @@
 - 純文件、維護規則或 metadata 整理**不需要機械式 bump version 或發 Release**。
 - 真正的使用者可見 runtime / binary 變更，依 [`CONTRIBUTING.md`](CONTRIBUTING.md) 與 release workflow 的 SemVer 規則決定版號。
 - 不為了「更完整」新增新的 governance workflow；現有 CI、CodeQL、ClusterFuzzLite、Scorecard、Release 與 upstream-check 已足夠。
+- **合併任何 PR 前先讀 diff**（包含 Dependabot 開的）：`gh pr diff <編號>`。CI 綠燈證明的是「測試沒紅」，不是「改了什麼、該不該進 main」——lockfile 的連鎖升級、transitive major、跨出宣告範圍的變更，只有讀 diff 看得到。核准或合併訊息要寫出讀到什麼、為什麼可接受。
 
 ## 上游更新
 
