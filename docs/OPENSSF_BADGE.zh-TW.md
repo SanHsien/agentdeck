@@ -10,16 +10,16 @@ badge 本身不會讓程式變安全，它回答的是另一個問題：**這個
 
 ## 為什麼 AI 助理做不完這件事
 
-badge 是**自我認證**（self-certification）:必須用一個具名的 GitHub 帳號登入 <https://www.bestpractices.dev/>，逐題回答 passing 等級的全部準則（六大類、數十條），而每個答案都是以送件者的身分做出的聲明。這不是我能代替主人做的事——跟 [SignPath](SIGNING.zh-TW.md) 同一個道理，只是那邊卡在人工審核，這邊卡在具名聲明。
+badge 是**自我認證**（self-certification）:必須用一個具名的 GitHub 帳號登入 <https://www.bestpractices.dev/>，逐題回答 passing 等級的全部準則（六大類、數十條），而每個答案都是以送件者的身分做出的聲明。這不是我能代替維護者做的事——跟 [SignPath](SIGNING.zh-TW.md) 同一個道理，只是那邊卡在人工審核，這邊卡在具名聲明。
 
-**但問卷可以事前準備。** 下面的對照表是實查本 repo 之後的答案，主人登入後照著填即可；需要先改東西的兩項也標出來了。
+**但問卷可以事前準備。** 下面的對照表是實查本 repo 之後的答案，維護者登入後照著填即可；需要先改東西的兩項也標出來了。
 
 ## 目前狀態
 
 | 項目 | 狀態 |
 |---|---|
 | 專案本身符合 passing 準則 | ✅ 絕大多數已滿足（見下表） |
-| 到 bestpractices.dev 建立專案並填答 | ❌ 需主人本人 |
+| 到 bestpractices.dev 建立專案並填答 | ❌ 需維護者本人 |
 | README 掛上 badge | ❌ 等拿到 badge 才有得掛 |
 | 兩項需要先補的準則 | ⚠️ 見「送件前先補這兩項」 |
 
@@ -113,13 +113,13 @@ badge 是**自我認證**（self-certification）:必須用一個具名的 GitHu
 
 改 `SECURITY.md` 的回應時限；要的話一併啟用 GitHub 私下回報。這兩件我可以做，說一聲即可。
 
-## 步驟 2：登入並建立專案（需主人本人）
+## 步驟 2：登入並建立專案（需維護者本人）
 
 1. 到 <https://www.bestpractices.dev/>，用 GitHub 帳號登入。
 2. 點 **Get Your Badge Now!**，填入 repo 網址 `https://github.com/SanHsien/agentdeck`。
 3. 網站會自動抓取部分資訊（授權、語言、repo 統計），並自動判定一部分準則。
 
-## 步驟 3：逐題填答（需主人本人）
+## 步驟 3：逐題填答（需維護者本人）
 
 照上面的對照表填。幾個提醒：
 

@@ -451,7 +451,7 @@ PyInstaller **不在 `uv.lock` 裡**，是用 `uv pip install pyinstaller` 另�
 
 這個成本已經現形過不只一次：移除最小化按鈕、拖曳區、`data-i18n` 契約，每一項都要改九次；而 **World Cup 面板完全沒有 Antigravity 欄位**，上游和本 fork 一路出貨到有人 grep 才發現。九份幾乎相同的檔案就是這樣漏掉一份的。
 
-**為什麼不是「只留一張」**：主人的偏好檔顯示他實際在用 `cloud_observation`，不是預設的 `classic`——「只留預設」會拿掉他正在用的那張。最後主人選擇留預設加三張新的，等於同時砍掉維護成本又保住可選擇性。
+**為什麼不是「只留一張」**：維護者的偏好檔顯示實際在用的是 `cloud_observation`，不是預設的 `classic`——「只留預設」會拿掉正在用的那張。最後維護者選擇留預設加三張新的，等於同時砍掉維護成本又保住可選擇性。
 
 **移植前先確認新主題沒有 World Cup 的病**：Catppuccin 19 處、彩繪玻璃／摺紙各 13／17 處 `agy`，三張都完整支援 Antigravity。這個檢查現在是移植面板的固定步驟。
 
@@ -490,7 +490,7 @@ PyInstaller **不在 `uv.lock` 裡**，是用 `uv pip install pyinstaller` 另�
 
 **exe 補上版本資訊（上游 `07812bb` 的一部分）**：本 fork 的 `agentdeck.exe` 先前**完全沒有版本資源**——Windows 檔案內容分頁全空白，拿到一個下載來的 exe 無法在不執行它的情況下辨識版本。版本號從 `pyproject.toml` 讀取，不另開第二個來源。非 SemVer 的版號直接拒絕而不是截斷:截斷會讓 exe 宣稱一個從未發布過的版本。
 
-**SignPath 簽章不採用**：需要維護者自行向 SignPath Foundation 申請 OSS 方案並在 repo 設定機密，我無法代辦；上游也自陳「整條流程尚未在 CI 實跑過」，簽章政策仍停在 test-signing。移植一條沒被驗證過的發版流程，風險大於未簽章的現況。**主人若要做，這是需要主人本人出面申請的事。**
+**SignPath 簽章不採用**：需要維護者自行向 SignPath Foundation 申請 OSS 方案並在 repo 設定機密，我無法代辦；上游也自陳「整條流程尚未在 CI 實跑過」，簽章政策仍停在 test-signing。移植一條沒被驗證過的發版流程，風險大於未簽章的現況。**維護者若要做，這是需要維護者本人出面申請的事。**
 
 ---
 
@@ -526,11 +526,11 @@ self-heal 新增一條分支，只升級**我們自己裝過的**組合；使用
 
 ### SignPath
 
-需要向 SignPath Foundation 提出**由人工審核的 OSS 申請**，並由具名自然人擔任送件者與批准者——這一步 AI 助理做不完。完整步驟寫成 [`SIGNING.zh-TW.md`](SIGNING.zh-TW.md)：步驟 1～3 需主人本人執行，4～5（workflow 接線與 README 政策段落）可以交給我。文件裡也記下兩個本 repo 的既有規定:Action 用 SHA 釘選、`${{ }}` 不可進 `run:`。
+需要向 SignPath Foundation 提出**由人工審核的 OSS 申請**，並由具名自然人擔任送件者與批准者——這一步 AI 助理做不完。完整步驟寫成 [`SIGNING.zh-TW.md`](SIGNING.zh-TW.md)：步驟 1～3 需維護者本人執行，4～5（workflow 接線與 README 政策段落）可以交給我。文件裡也記下兩個本 repo 的既有規定:Action 用 SHA 釘選、`${{ }}` 不可進 `run:`。
 
 ### Code scanning 警告的處置（2026-08-14）
 
-八個 open alert，分成三類：**真的修**、**本質上做不到**、**需要主人本人**。
+八個 open alert，分成三類：**真的修**、**本質上做不到**、**需要維護者本人**。
 
 **CodeQL `py/incomplete-url-substring-sanitization`（#9／#10）— 誤報，但循線找到一個真的洞。**
 
@@ -553,11 +553,11 @@ CodeQL 指的是 `tests/test_fork_identity.py` 用 `"github.com" in url` 判斷�
 
 **Scorecard CodeReview（#5）— 單人專案的固有狀況。** 「Found 0/30 approved changesets」。自己不能 approve 自己的 PR，開再多 PR 也拿不到分。這項在單人 repo 上永遠是 0，記錄下來比假裝能修誠實。
 
-**Scorecard CIIBestPractices（#7）— 需要主人本人，步驟已寫成文件。** badge 是**自我認證**:要用具名 GitHub 帳號登入 bestpractices.dev 並逐題聲明，跟 SignPath 一樣是 AI 助理做不完的一步（那邊卡人工審核，這邊卡具名聲明）。
+**Scorecard CIIBestPractices（#7）— 需要維護者本人，步驟已寫成文件。** badge 是**自我認證**:要用具名 GitHub 帳號登入 bestpractices.dev 並逐題聲明，跟 SignPath 一樣是 AI 助理做不完的一步（那邊卡人工審核，這邊卡具名聲明）。
 
-但問卷可以事前準備，這才是文件的用處:[`OPENSSF_BADGE.zh-TW.md`](OPENSSF_BADGE.zh-TW.md) 把六大類準則對照本 repo 實查了一遍，逐條附上憑據，主人登入後照著填即可。查證過程另外撈出兩件送件前該補的:`SECURITY.md` 的漏洞回應時限寫的是「合理時間內」，對不上準則要求的**明確 ≤14 天**;GitHub 內建的私下漏洞回報管道實查為 `enabled: false`（email 管道已足夠，這項非必須）。兩件都可以交給我做。
+但問卷可以事前準備，這才是文件的用處:[`OPENSSF_BADGE.zh-TW.md`](OPENSSF_BADGE.zh-TW.md) 把六大類準則對照本 repo 實查了一遍，逐條附上憑據，維護者登入後照著填即可。查證過程另外撈出兩件送件前該補的:`SECURITY.md` 的漏洞回應時限寫的是「合理時間內」，對不上準則要求的**明確 ≤14 天**;GitHub 內建的私下漏洞回報管道實查為 `enabled: false`（email 管道已足夠，這項非必須）。兩件都可以交給我做。
 
-**Scorecard BranchProtection（#1）— 已啟用（2026-08-14，主人核可）。** 這項可以做，但每個做法都會動到目前「直推 main」的授權:只要求 CI 綠燈且允許管理員繞過（流程不變，能擋掉 2026-07-22 那種紅燈照推的實錯）、不允許繞過（緊急修復也得等 CI）、或要求先開 PR（我就不能直推了，而且 CodeReview 那項仍是 0 分）。選的是 `required_status_checks: check-windows`、`enforce_admins: false`、不要求 PR，另關掉 force push 與分支刪除。**直推 main 不受影響**（實測 rc=0）。
+**Scorecard BranchProtection（#1）— 已啟用（2026-08-14，維護者核可）。** 這項可以做，但每個做法都會動到目前「直推 main」的授權:只要求 CI 綠燈且允許管理員繞過（流程不變，能擋掉 2026-07-22 那種紅燈照推的實錯）、不允許繞過（緊急修復也得等 CI）、或要求先開 PR（我就不能直推了，而且 CodeReview 那項仍是 0 分）。選的是 `required_status_checks: check-windows`、`enforce_admins: false`、不要求 PR，另關掉 force push 與分支刪除。**直推 main 不受影響**（實測 rc=0）。
 
 **但要誠實記下這個設定擋不到什麼。** 提案當時我說它「能擋掉紅燈照推」——**那是錯的**。`enforce_admins: false` 的定義就是管理員不受 status check 約束，而本 repo 唯一的推送者就是管理員，所以對「紅燈照推」的實質阻擋是零。證據是 GitHub 自己說的——設定啟用後推送 `a5552bc`，remote 回:
 
@@ -568,15 +568,15 @@ remote: - Required status check "check-windows" is expected.
 
 推送照樣成功，GitHub 只是把「你繞過了規則」印出來。這同時也是**agent 直推不受影響**最直接的證據:規則存在、被違反、推送仍然完成。
 
-而「要求 CI 綠燈、又能直推」這個組合在 GitHub 上**不存在**:開 `enforce_admins: true` 之後，新 commit 因為還沒有 check 紀錄會直接被拒，等於強制走 PR。主人明確要求直推不能被影響，所以現行設定是兩者之中唯一站得住的取捨。
+而「要求 CI 綠燈、又能直推」這個組合在 GitHub 上**不存在**:開 `enforce_admins: true` 之後，新 commit 因為還沒有 check 紀錄會直接被拒，等於強制走 PR。維護者明確要求直推不能被影響，所以現行設定是兩者之中唯一站得住的取捨。
 
 那它還剩什麼作用:對**非管理員**的貢獻者仍然要求 CI 綠燈；force push 與分支刪除是分支層級設定，不走 status-check 那條豁免。真正在擋紅燈照推的仍然是本機那道 `PreToolUse(Bash)` hook `hooks/test-gate-guard.py`，不是這裡。
 
 `strict` 刻意設 false:要求分支必須與 main 同步對單人直推只是額外摩擦，擋不到任何真實問題。
 
-**AI agent 直推必須不受影響——已驗證。** 主人日常用 claude／codex／agy／cursor 等多個 agent 代表他直推，這是硬需求。查證:main 最近 30 筆推送身分**全是 `SanHsien`**，唯一協作者也是 `SanHsien`（admin），且**沒有任何 workflow 推 main**（不存在會被擋的 bot 身分）。這些 agent 都在主人機器上用同一份 git 認證，身分即 admin，正好落在 `enforce_admins: false` 的豁免內。實測 `git push origin main` rc=0。
+**AI agent 直推必須不受影響——已驗證。** 維護者日常用 claude／codex／agy／cursor 等多個 agent 代表自己直推，這是硬需求。查證:main 最近 30 筆推送身分**全是 `SanHsien`**，唯一協作者也是 `SanHsien`（admin），且**沒有任何 workflow 推 main**（不存在會被擋的 bot 身分）。這些 agent 都在維護者機器上用同一份 git 認證，身分即 admin，正好落在 `enforce_admins: false` 的豁免內。實測 `git push origin main` rc=0。
 
-**這也是這個設定唯一站得住的理由**:它換來的是對未來非管理員貢獻者的 CI 要求、以及 force push／分支刪除的封鎖，而不是對主人自己的任何約束。哪天若有 agent 改用不同認證（fine-grained PAT、GitHub App 等非 admin 身分），它會被 status check 擋下——屆時要嘛把該身分加為 admin，要嘛取消這個保護。
+**這也是這個設定唯一站得住的理由**:它換來的是對未來非管理員貢獻者的 CI 要求、以及 force push／分支刪除的封鎖，而不是對維護者自己的任何約束。哪天若有 agent 改用不同認證（fine-grained PAT、GitHub App 等非 admin 身分），它會被 status check 擋下——屆時要嘛把該身分加為 admin，要嘛取消這個保護。
 
 ### GitHub 上只保留最新一個 release（2026-08-18 確認）
 

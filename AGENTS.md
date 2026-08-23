@@ -62,7 +62,7 @@
 
 ## 開發原則
 
-- 一般變更直接推 `origin/main`，不開功能分支、不開維護 PR（主人 2026-08-22 指示）。只有在需要他人審查、或改動風險高到值得先讓 CI 在 PR 上跑一輪時，才退回 **branch → PR → CI → merge**。
+- 一般變更直接推 `origin/main`，不開功能分支、不開維護 PR（2026-08-22 起）。只有在需要他人審查、或改動風險高到值得先讓 CI 在 PR 上跑一輪時，才退回 **branch → PR → CI → merge**。
 - 修 bug 先做最小修補並補對應測試；不要因為看見歷史命名或長檔案就順手大重構。
 - 新 UI 行為的邏輯優先放可測試的 leaf module；`wintray.py` 維持 UI orchestration，不繼續堆難測判斷。
 - 影響設定檔、persona、hook、排程或 provider credential 的寫入流程要特別檢查 backup / rollback / idempotency。
@@ -121,7 +121,7 @@ uv run --no-sync pytest -q
 ## 對外邊界：PR 只打本 fork
 
 - **PR、push、release 一律指向 `SanHsien/agentdeck`。** 對上游 `aqua5230/usage` 開 PR、push 或發 release
-  需要主人在當次對話明確同意回貢；「fork 一份」「建開發環境」「比照其他 repo」都不是同意。
+  需要維護者在當次對話明確同意回貢；「fork 一份」「建開發環境」「比照其他 repo」都不是同意。
 - 根因是機制不是粗心：`gh` 在 fork clone 的**預設 repo 就是上游**（`gh repo set-default --view` 會回
   `aqua5230/usage`），裸跑 `gh pr create` 必然打上去。每個 clone 先跑一次
   `gh repo set-default SanHsien/agentdeck`。
