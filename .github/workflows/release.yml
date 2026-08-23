@@ -1,0 +1,103 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to (re)build, e.g. v0.1.1'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      # Every ${{ }} below goes through env: rather than into the script text.
+      # Interpolation happens before the shell ever runs, so a tag containing
+      # shell syntax would execute as code in a job that holds a write token --
+      # and on workflow_dispatch the tag is whoever triggered it types.
+      - name: Resolve ref
+        id: ref
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          GIT_REF: ${{ github.ref }}
+          GIT_REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "ref=$INPUT_TAG" >> "$GITHUB_OUTPUT"
+            echo "tag=$INPUT_TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=$GIT_REF" >> "$GITHUB_OUTPUT"
+            echo "tag=$GIT_REF_NAME" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.ref.outputs.ref }}
+
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+
+      - run: uv python install 3.13
+
+      - name: Check lockfile freshness
+        run: uv lock --check
+
+      - name: Install Windows build dependencies
+        run: uv sync --frozen --group dev --extra windows
+
+      # Before the build, not after: a mistyped tag otherwise builds all the way
+      # through and only shows up on the user's machine, where the update check
+      # compares versions and quietly decides there is nothing to install.
+      # Skipped for workflow_dispatch, which exists to rebuild an existing tag.
+      - name: Refuse a version that is not strictly newer
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ steps.ref.outputs.tag }}
+        shell: bash
+        run: uv run python scripts/check_release_version.py "$TARGET_REPO" "$RELEASE_TAG"
+
+      - name: Build Windows executable
+        shell: pwsh
+        run: ./scripts/build_windows.ps1
+
+      # build_windows.ps1 already checks the exe against pyproject.toml. This
+      # closes the last gap: a tag pointing at a commit whose version differs.
+      - name: Check the tag matches the built executable
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ steps.ref.outputs.tag }}
+        run: |
+          $tag = $env:RELEASE_TAG -replace '^v', ''
+          $doctor = & ./dist/agentdeck-windows/agentdeck.exe --doctor 2>&1 | Out-String
+          if ($doctor -notmatch "agentdeck v([0-9]+\.[0-9]+\.[0-9]+)") {
+            throw "agentdeck.exe --doctor did not report a version. Output:`n$doctor"
+          }
+          if ($Matches[1] -ne $tag) {
+            throw "Tag v$tag does not match the built executable, which reports $($Matches[1])."
+          }
+          Write-Host "tag v$tag matches the built executable" -ForegroundColor Green
+
+      - name: Zip Windows bundle
+        shell: pwsh
+        run: ./scripts/package_windows.ps1
+
+      - name: Upload to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.ref.outputs.tag }}
+        shell: bash
+        run: |
+          gh release upload "$RELEASE_TAG"             dist/agentdeck-windows.zip dist/agentdeck-windows.zip.sha256 --clobber
