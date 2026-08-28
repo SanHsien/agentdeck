@@ -45,6 +45,7 @@ def test_quota_card_order_validates_preferences() -> None:
         "agy",
         "claude",
         "codex",
+        "grok",
     )
     # A saved order written before a card existed keeps the part the user
     # arranged and gains the newcomer at the end. Rejecting it would silently
@@ -53,6 +54,7 @@ def test_quota_card_order_validates_preferences() -> None:
         "agy",
         "claude",
         "codex",
+        "grok",
     )
     invalid_values = (
         None,
@@ -66,6 +68,7 @@ def test_quota_card_order_validates_preferences() -> None:
             "claude",
             "codex",
             "agy",
+            "grok",
         )
 
 
@@ -76,6 +79,6 @@ def test_save_quota_card_order_ignores_invalid_values(
     monkeypatch.setattr(prefs, "PREFERENCES_FILE", preferences_file)
 
     assert menubar_prefs._save_quota_card_order(["agy", "claude", "codex"]) is True
-    assert prefs._load_preferences()["quota_card_order"] == ["agy", "claude", "codex"]
+    assert prefs._load_preferences()["quota_card_order"] == ["agy", "claude", "codex", "grok"]
     assert menubar_prefs._save_quota_card_order(["agy", "claude", "claude"]) is False
-    assert prefs._load_preferences()["quota_card_order"] == ["agy", "claude", "codex"]
+    assert prefs._load_preferences()["quota_card_order"] == ["agy", "claude", "codex", "grok"]

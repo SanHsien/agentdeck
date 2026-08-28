@@ -37,7 +37,7 @@ AGPL-3.0 的重點義務（僅為摘要，以 `LICENSE` 全文為準）：
 - 本 fork：<https://github.com/SanHsien/agentdeck>
 - fork 目的：個人使用與 Windows 環境相容性調整，獨立維護、不回貢上游。
 - fork 專屬檔案清單與同步流程見 [`docs/FORK.zh-TW.md`](docs/FORK.zh-TW.md)。
-- 本 fork 與上游維護者、Anthropic、OpenAI 皆無隸屬關係，也未獲其背書。
+- 本 fork 與上游維護者、Anthropic、OpenAI、xAI 皆無隸屬關係，也未獲其背書。
 
 ## 設計參考
 
@@ -65,7 +65,7 @@ AGPL-3.0 的重點義務（僅為摘要，以 `LICENSE` 全文為準）：
 
 ## 隱私與資料
 
-`usage` 不呼叫 Anthropic 或 OpenAI 的用量 API，用量數字全部來自本機檔案。會連外的只有：
+`usage` 不呼叫 Anthropic、OpenAI 或 xAI 的用量 API。Claude Code、Codex 與 Grok CLI 的用量數字全部來自本機檔案（Grok 讀 `~/.grok/logs/unified.jsonl`）。會連外的只有：
 
 - 下載 [LiteLLM](https://github.com/BerriAI/litellm) 的公開價格表，用於成本估算（本機快取）。
 - 讀取 Claude / OpenAI 的**公開服務狀態頁**，用於顯示服務中斷。
@@ -79,4 +79,4 @@ AGPL-3.0 的重點義務（僅為摘要，以 `LICENSE` 全文為準）：
 
 ## 商標
 
-「Claude」「Claude Code」「Anthropic」「OpenAI」「Codex」「macOS」「Windows」等名稱為其各自所有人之商標，於本專案僅作識別與說明用途，與各該公司或專案無任何隸屬或背書關係。
+「Claude」「Claude Code」「Anthropic」「OpenAI」「Codex」「Grok」「xAI」「macOS」「Windows」等名稱為其各自所有人之商標，於本專案僅作識別與說明用途，與各該公司或專案無任何隸屬或背書關係。

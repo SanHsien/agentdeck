@@ -19,6 +19,7 @@ from state.menubar_prefs import (
     _hide_agy_enabled,
     _hide_claude_enabled,
     _hide_codex_enabled,
+    _hide_grok_enabled,
     _panel_flavor,
     _quota_notifications_enabled,
     _window_keeper_enabled,
@@ -93,6 +94,11 @@ def _menu(controller: _WindowsTrayController) -> Any:
                     lambda _icon, _item: controller.toggle_hide_section("hide_agy_section"),
                     checked=lambda _item: _hide_agy_enabled(),
                 ),
+                pystray.MenuItem(
+                    _t(controller.language, "grok_name"),
+                    lambda _icon, _item: controller.toggle_hide_section("hide_grok_section"),
+                    checked=lambda _item: _hide_grok_enabled(),
+                ),
             ),
         ),
         pystray.Menu.SEPARATOR,
@@ -127,3 +133,86 @@ def _menu(controller: _WindowsTrayController) -> Any:
         pystray.MenuItem(_t(controller.language, "check_update"), controller.check_update),
         pystray.MenuItem(_t(controller.language, "quit"), controller.quit),
     )
+
+
+def _panel_menu_data(controller: _WindowsTrayController) -> list[dict[str, object]]:
+    """Return fresh, localized data for the HTML panel menu."""
+    from wintray import (
+        _hide_agy_enabled,
+        _hide_claude_enabled,
+        _hide_codex_enabled,
+        _hide_grok_enabled,
+        _quota_notifications_enabled,
+        _session_resume_enabled,
+        _terse_mode_enabled,
+        _window_keeper_enabled,
+    )
+
+    def item(key: str, action: str, **extra: object) -> dict[str, object]:
+        return {
+            "i18nKey": key,
+            "label": _t(controller.language, key),
+            "action": action,
+            **extra,
+        }
+
+    panels = [
+        item(
+            key,
+            "switch_panel",
+            panelId=panel_id,
+            checked=controller.active_panel_id == panel_id,
+        )
+        for panel_id, key, _filename in available_panels()
+    ]
+    hidden_sections = [
+        item(
+            "claude_name",
+            "toggle_hide_section",
+            preferenceKey="hide_claude_section",
+            checked=_hide_claude_enabled(),
+        ),
+        item(
+            "codex_name",
+            "toggle_hide_section",
+            preferenceKey="hide_codex_section",
+            checked=_hide_codex_enabled(),
+        ),
+        item(
+            "agy_name",
+            "toggle_hide_section",
+            preferenceKey="hide_agy_section",
+            checked=_hide_agy_enabled(),
+        ),
+        item(
+            "grok_name",
+            "toggle_hide_section",
+            preferenceKey="hide_grok_section",
+            checked=_hide_grok_enabled(),
+        ),
+    ]
+    return [
+        item("panel_changelog", "open_changelog"),
+        item("discussion_window_title", "open_discussion"),
+        item("about", "show_about"),
+        {"type": "separator"},
+        item("switch_panel", "", children=panels),
+        item("hide_sections_menu", "", children=hidden_sections),
+        {"type": "separator"},
+        item("launch_at_login", "toggle_login", checked=win_login_item.is_enabled()),
+        item(
+            "quota_notifications_menu",
+            "toggle_quota_notifications",
+            checked=_quota_notifications_enabled(),
+        ),
+        item(
+            "window_keeper_menu",
+            "toggle_window_keeper",
+            checked=_window_keeper_enabled(),
+        ),
+        {"type": "separator"},
+        item("project_butler", "toggle_session_resume", checked=_session_resume_enabled()),
+        item("terse_mode_menu", "toggle_terse_mode", checked=_terse_mode_enabled()),
+        {"type": "separator"},
+        item("refresh_now", "refresh"),
+    ]

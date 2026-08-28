@@ -66,7 +66,14 @@ def _isolate_operator_data(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> N
     from adapters import codex as codex_adapter
     from adapters import rate_limits
     from analyzer import persona_loader, reporter
-    from providers import agy_loader, agy_quota_probe, codex_loader, history_loader
+    from providers import (
+        agy_loader,
+        agy_quota_probe,
+        codex_loader,
+        grok_loader,
+        grok_quota_probe,
+        history_loader,
+    )
 
     home = tmp_path / "isolated-home"
     monkeypatch.setenv("CODEX_HOME", str(home / ".codex"))
@@ -85,6 +92,11 @@ def _isolate_operator_data(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> N
         (history_loader, "CLAUDE_PROJECTS_DIR", ".claude/projects"),
         (persona_loader, "CLAUDE_PROJECTS_DIR", ".claude/projects"),
         (agy_loader, "AGY_SESSIONS_DIR", ".gemini/antigravity-cli/conversations"),
+        (grok_quota_probe, "GROK_HOME", ".grok"),
+        (grok_quota_probe, "GROK_LOG_PATH", ".grok/logs/unified.jsonl"),
+        (grok_loader, "GROK_HOME", ".grok"),
+        (grok_loader, "GROK_LOG_PATH", ".grok/logs/unified.jsonl"),
+        (grok_loader, "GROK_CONFIG_PATH", ".grok/config.toml"),
     ):
         if hasattr(module, name):
             monkeypatch.setattr(module, name, home / relative)

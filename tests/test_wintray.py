@@ -71,6 +71,7 @@ def _state() -> menubar_state.PopoverState:
         agy_session=row,
         agy_weekly=weekly,
         agy_group_name="",
+        grok_weekly=weekly,
         projects=[],
         projects_7d=[],
         projects_30d=[],
@@ -133,6 +134,22 @@ def test_tooltip_hides_claude_when_the_panel_does() -> None:
         "Codex Session: 25% · Weekly: 60%",
         "Antigravity Session: 25% · Weekly: 60%",
     ]
+
+
+def test_tooltip_includes_grok_when_the_card_is_visible() -> None:
+    state = _state()
+    state.hide_grok = False
+
+    lines = wintray.build_tooltip(state).splitlines()
+
+    assert lines[-1] == "Grok Weekly: 60%"
+
+
+def test_tooltip_hides_grok_when_the_panel_does() -> None:
+    state = _state()
+    state.hide_grok = True
+
+    assert all(not line.startswith("Grok ") for line in wintray.build_tooltip(state).splitlines())
 
 
 def test_tooltip_reports_unavailable_quota_without_inventing_a_number() -> None:
@@ -243,6 +260,7 @@ def test_panel_html_installs_webkit_shim_without_changing_asset() -> None:
     assert "overflow-y: auto" in html
     assert "event.stopImmediatePropagation()" in html
     assert "[data-card=\"claude\"]" in html
+    assert "[data-card=\"grok\"]" in html
     assert "usage-card-window-dragging" in html
     assert "card.classList.add('pywebview-drag-region'" in html
     assert "button, a, input, select, textarea, label, summary" in html
@@ -652,6 +670,7 @@ def test_panel_menu_data_is_localized_and_reads_current_checks(
     monkeypatch.setattr(wintray, "_hide_claude_enabled", lambda: True)
     monkeypatch.setattr(wintray, "_hide_codex_enabled", lambda: False)
     monkeypatch.setattr(wintray, "_hide_agy_enabled", lambda: True)
+    monkeypatch.setattr(wintray, "_hide_grok_enabled", lambda: False)
     monkeypatch.setattr(win_login_item, "is_enabled", lambda: True)
     monkeypatch.setattr(wintray, "_quota_notifications_enabled", lambda: False)
     monkeypatch.setattr(wintray, "_window_keeper_enabled", lambda: True)
@@ -686,7 +705,7 @@ def test_panel_menu_data_is_localized_and_reads_current_checks(
     hidden_sections = cast(list[dict[str, object]], menu[5]["children"])
     assert panels[1]["panelId"] == "catppuccin"
     assert panels[1]["checked"] is True
-    assert [item["checked"] for item in hidden_sections] == [True, False, True]
+    assert [item["checked"] for item in hidden_sections] == [True, False, True, False]
     assert menu[7]["checked"] is True
     assert menu[8]["checked"] is False
     assert menu[9]["checked"] is True
@@ -846,7 +865,7 @@ def test_card_order_persists_into_the_next_loaded_panel(
     controller = wintray._WindowsTrayController(mock=True, interval=60)
     controller.window = window
     controller.visible = True
-    order = ["codex", "claude", "agy"]
+    order = ["codex", "claude", "agy", "grok"]
 
     monkeypatch.setattr(wintray, "_load_preferences", lambda: preferences.copy())
     monkeypatch.setattr(menubar_prefs, "_load_preferences", lambda: preferences.copy())

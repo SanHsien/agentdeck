@@ -176,6 +176,10 @@ def _state_payload(state: PopoverState) -> dict[str, object]:
             "groupName": state.agy_group_name,
             "stale": state.agy_stale,
         },
+        "grok": {
+            "weekly": _row_payload(state.grok_weekly),
+            "stale": state.grok_stale,
+        },
         "projects": project_payloads[0],
         "projects7d": project_payloads[1],
         "projects30d": project_payloads[2],
@@ -183,6 +187,7 @@ def _state_payload(state: PopoverState) -> dict[str, object]:
         "hideClaude": state.hide_claude,
         "hideCodex": state.hide_codex,
         "hideAgy": state.hide_agy,
+        "hideGrok": state.hide_grok,
         "cardOrder": list(state.card_order),
         "historyError": state.history_error,
         "statusline": state.statusline,

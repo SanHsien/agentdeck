@@ -6,8 +6,10 @@
 
 from __future__ import annotations
 
+import ast
 import importlib
 import sys
+from pathlib import Path
 from typing import Any
 
 import main
@@ -176,3 +178,100 @@ def test_main_win32_falls_back_to_tui_when_wintray_dependency_is_missing(
 
     assert calls == [{"mock": False, "interval": 60, "force_group": None}]
     assert capsys.readouterr().out == "fallback [objc]\n"
+
+
+def _dynamic_imports(tree: ast.Module) -> dict[str, str]:
+    """Variable name -> module string, for main.py's string-based module loads."""
+    loaders = {"_import_module_with_oserror_retry", "import_module"}
+    found: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign) or not isinstance(node.value, ast.Call):
+            continue
+        func = node.value.func
+        name = func.attr if isinstance(func, ast.Attribute) else getattr(func, "id", None)
+        if name not in loaders or not node.value.args:
+            continue
+        arg = node.value.args[0]
+        if not isinstance(arg, ast.Constant) or not isinstance(arg.value, str):
+            continue
+        for target in node.targets:
+            if isinstance(target, ast.Name):
+                found[target.id] = arg.value
+    return found
+
+
+def _attributes_used(tree: ast.Module, variable: str) -> set[str]:
+    return {
+        node.attr
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Attribute)
+        and isinstance(node.value, ast.Name)
+        and node.value.id == variable
+    }
+
+
+def _top_level_names(path: Path) -> set[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    names: set[str] = set()
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
+            names.add(node.name)
+        elif isinstance(node, ast.Assign):
+            names.update(t.id for t in node.targets if isinstance(t, ast.Name))
+        elif isinstance(node, ast.Import | ast.ImportFrom):
+            names.update(a.asname or a.name.split(".")[0] for a in node.names)
+    return names
+
+
+def test_main_dynamic_module_loads_still_resolve() -> None:
+    # main.py loads tui/wintray by string, which grep can't follow, so a module
+    # move leaves the string pointing at nothing and every test still passes
+    # while the app fails to start. Checked statically so importing PyInstaller
+    # GUI stacks is not required on Linux CI.
+    root = Path(__file__).resolve().parent.parent
+    tree = ast.parse((root / "main.py").read_text(encoding="utf-8"))
+
+    checked = 0
+    first_party: list[str] = []
+    for variable, module in _dynamic_imports(tree).items():
+        path = root.joinpath(*module.split("."))
+        source = path.with_suffix(".py")
+        if not source.exists():
+            source = path / "__init__.py"
+        if not source.exists():
+            continue  # third-party (rich, AppKit); nothing of ours to verify
+        exported = _top_level_names(source)
+        missing = sorted(_attributes_used(tree, variable) - exported)
+        assert not missing, f"main.py calls {module}.{missing} but {source} has no such name"
+        first_party.append(module)
+        checked += 1
+
+    assert checked >= 2, f"expected tui/wintray to be checked, got {checked}"
+    assert "tui" in first_party
+    assert "wintray" in first_party
+
+
+def test_windows_packager_hidden_imports_match_dynamic_entry_modules() -> None:
+    """Upstream 82895b6/c1b8d80: a package rename that leaves hidden-import
+    names stale produces an exe that exists and still dies on launch.
+    This fork still uses top-level wintray.py / tui.py, so those names — not
+    wintray.app / tui.app — must stay in the packager and the archive assert.
+    """
+    root = Path(__file__).resolve().parent.parent
+    build = (root / "scripts" / "build_windows.ps1").read_text(encoding="utf-8")
+    tree = ast.parse((root / "main.py").read_text(encoding="utf-8"))
+    first_party = []
+    for module in _dynamic_imports(tree).values():
+        if (root / f"{module.replace('.', '/')}.py").exists() or (
+            root / module.replace(".", "/") / "__init__.py"
+        ).exists():
+            first_party.append(module)
+
+    missing_hidden = [
+        module for module in first_party if f"--hidden-import {module} `" not in build
+    ]
+    assert not missing_hidden, f"packager hidden-import missing {missing_hidden}"
+    assert "--hidden-import wintray.app" not in build
+    assert "--hidden-import tui.app" not in build
+    assert "$RequiredModules = @('wintray', 'tui')" in build
+    assert "archive_viewer" in build

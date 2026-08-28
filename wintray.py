@@ -43,20 +43,24 @@ from panels.registry import available_panels as available_panels
 from panels.registry import renderable_panels as renderable_panels
 from prefs import _load_preferences, _save_preferences
 from pricing import calculate_cost
-from providers import agy_window_keeper, codex_loader
+from providers import agy_window_keeper, codex_loader, grok_loader
 from providers.history_loader import UsageEntry, load_entries
-from state import menubar_agy, menubar_state
+from state import menubar_agy, menubar_grok, menubar_state
+from state.menubar_prefs import _auto_update_check_enabled as _auto_update_check_enabled
+from state.menubar_prefs import _hide_agy_enabled as _hide_agy_enabled
+from state.menubar_prefs import _hide_claude_enabled as _hide_claude_enabled
+from state.menubar_prefs import _hide_codex_enabled as _hide_codex_enabled
+from state.menubar_prefs import _hide_grok_enabled as _hide_grok_enabled
+from state.menubar_prefs import _quota_card_order as _quota_card_order
 from state.menubar_prefs import (
-    _auto_update_check_enabled,
-    _hide_agy_enabled,
-    _hide_claude_enabled,
-    _hide_codex_enabled,
-    _quota_card_order,
-    _quota_notification_thresholds,
-    _quota_notifications_enabled,
-    _save_panel_flavor,
-    _window_keeper_enabled,
+    _quota_notification_thresholds as _quota_notification_thresholds,
 )
+from state.menubar_prefs import (
+    _quota_notifications_enabled as _quota_notifications_enabled,
+)
+from state.menubar_prefs import _save_panel_flavor as _save_panel_flavor
+from state.menubar_prefs import _valid_quota_card_order as _valid_quota_card_order
+from state.menubar_prefs import _window_keeper_enabled as _window_keeper_enabled
 from statusline_settings import _statusline_enabled, _toggle_statusline_settings
 from usage_client import ClaudeUsageClient, PollState
 from usage_lang import detect_lang
@@ -67,6 +71,7 @@ from win_modal import MB_ICON_INFO, MB_ICON_WARNING, MB_YESNOCANCEL
 # Re-exported so the tray menu keeps its import site while its 96 lines live in
 # a leaf module (the `as` form is what marks a re-export explicit under mypy).
 from win_tray_menu import _menu as _menu
+from win_tray_menu import _panel_menu_data as _panel_menu_payload
 
 if TYPE_CHECKING:
     from PIL.Image import Image
@@ -190,7 +195,7 @@ window.webkit.messageHandlers.usage = {
 document.addEventListener('pointerdown', function(event) {
   var target = event.target;
   var card = target && target.closest && target.closest(
-    '[data-card="claude"], [data-card="codex"], [data-card="agy"]'
+    '[data-card="claude"], [data-card="codex"], [data-card="agy"], [data-card="grok"]'
   );
   var interactive = target && target.closest && target.closest(
     'button, a, input, select, textarea, label, summary, [contenteditable], '
@@ -493,6 +498,8 @@ def build_tooltip(state: menubar_state.PopoverState) -> str:
         lines.append(merged("Claude", state.claude_session, state.claude_weekly))
     lines.append(merged("Codex", state.codex_session, state.codex_weekly))
     lines.append(merged("Antigravity", state.agy_session, state.agy_weekly))
+    if not state.hide_grok:
+        lines.append(f"Grok {state.grok_weekly.title}: {value(state.grok_weekly)}")
     return "\n".join(lines)
 
 
@@ -667,6 +674,9 @@ class _WindowsTrayController:
                 _t(self.language, "weekly_label"), menubar_state.AGY_COLOR, self.language
             ),
             agy_group_name="",
+            grok_weekly=missing(
+                _t(self.language, "weekly_label"), menubar_state.GROK_COLOR, self.language
+            ),
             projects=[],
             projects_7d=[],
             projects_30d=[],
@@ -678,6 +688,7 @@ class _WindowsTrayController:
             hide_claude=_hide_claude_enabled(),
             hide_codex=_hide_codex_enabled(),
             hide_agy=_hide_agy_enabled(),
+            hide_grok=True,
             card_order=_quota_card_order(),
         )
 
@@ -1005,6 +1016,12 @@ class _WindowsTrayController:
             error_key = "history_load_error_file"
         except (ValueError, KeyError, TypeError):
             error_key = "history_load_error_parse"
+        try:
+            entries.extend(grok_loader.load_entries(hours_back=0))
+        except OSError:
+            error_key = "history_load_error_file"
+        except (ValueError, KeyError, TypeError):
+            error_key = "history_load_error_parse"
         return _RefreshData(entries, error_key)
 
     def _history_source_scan(self) -> menubar_state.HistorySourceScan:
@@ -1042,6 +1059,10 @@ class _WindowsTrayController:
         agy_result = menubar_agy.load_refresh_result(self.language)
         agy = agy_result.projection or menubar_agy.fallback_projection(self.language)
         measure("agy_load", started_at)
+        started_at = time.monotonic() if debug_timing else 0.0
+        grok_result = menubar_grok.load_refresh_result(self.language)
+        grok = grok_result.projection or menubar_grok.fallback_projection(self.language)
+        measure("grok_load", started_at)
         started_at = time.monotonic() if debug_timing else 0.0
         if menubar_state.history_cache_needs_reload(
             self._history_fingerprint,
@@ -1081,6 +1102,7 @@ class _WindowsTrayController:
             codex_rows=codex_rows,
             agy_rows=(agy.session, agy.weekly),
             agy_group_name=agy.group_name,
+            grok_row=grok.weekly,
             projects=projects[0],
             projects_7d=projects[1],
             projects_30d=projects[2],
@@ -1098,9 +1120,11 @@ class _WindowsTrayController:
             hide_claude=_hide_claude_enabled(),
             hide_codex=_hide_codex_enabled(),
             hide_agy=agy_result.hide_agy or _hide_agy_enabled(),
+            hide_grok=grok_result.hide_grok or _hide_grok_enabled(),
             codex_stale=codex_stale,
             codex_credits=codex_credits,
             agy_stale=agy.stale,
+            grok_stale=grok.stale,
             card_order=_quota_card_order(),
             history_error=menubar_state.history_load_error_state(
                 history.history_error_key, self.language
@@ -1205,70 +1229,7 @@ class _WindowsTrayController:
         threading.Timer(0.05, lambda: self._deferred_switch_panel(panel_id)).start()
 
     def _panel_menu_data(self) -> list[dict[str, object]]:
-        """Return fresh, localized data for the HTML panel menu."""
-
-        def item(key: str, action: str, **extra: object) -> dict[str, object]:
-            return {
-                "i18nKey": key,
-                "label": _t(self.language, key),
-                "action": action,
-                **extra,
-            }
-
-        panels = [
-            item(
-                key,
-                "switch_panel",
-                panelId=panel_id,
-                checked=self.active_panel_id == panel_id,
-            )
-            for panel_id, key, _filename in available_panels()
-        ]
-        hidden_sections = [
-            item(
-                "claude_name",
-                "toggle_hide_section",
-                preferenceKey="hide_claude_section",
-                checked=_hide_claude_enabled(),
-            ),
-            item(
-                "codex_name",
-                "toggle_hide_section",
-                preferenceKey="hide_codex_section",
-                checked=_hide_codex_enabled(),
-            ),
-            item(
-                "agy_name",
-                "toggle_hide_section",
-                preferenceKey="hide_agy_section",
-                checked=_hide_agy_enabled(),
-            ),
-        ]
-        return [
-            item("panel_changelog", "open_changelog"),
-            item("discussion_window_title", "open_discussion"),
-            item("about", "show_about"),
-            {"type": "separator"},
-            item("switch_panel", "", children=panels),
-            item("hide_sections_menu", "", children=hidden_sections),
-            {"type": "separator"},
-            item("launch_at_login", "toggle_login", checked=win_login_item.is_enabled()),
-            item(
-                "quota_notifications_menu",
-                "toggle_quota_notifications",
-                checked=_quota_notifications_enabled(),
-            ),
-            item(
-                "window_keeper_menu",
-                "toggle_window_keeper",
-                checked=_window_keeper_enabled(),
-            ),
-            {"type": "separator"},
-            item("project_butler", "toggle_session_resume", checked=_session_resume_enabled()),
-            item("terse_mode_menu", "toggle_terse_mode", checked=_terse_mode_enabled()),
-            {"type": "separator"},
-            item("refresh_now", "refresh"),
-        ]
+        return _panel_menu_payload(self)
 
     def toggle_login(self, _icon: Any = None, _item: Any = None) -> None:
         win_login_item.disable() if win_login_item.is_enabled() else win_login_item.enable()
@@ -1298,6 +1259,7 @@ class _WindowsTrayController:
         self.latest_state.hide_claude = _hide_claude_enabled()
         self.latest_state.hide_codex = _hide_codex_enabled()
         self.latest_state.hide_agy = _hide_agy_enabled()
+        self.latest_state.hide_grok = _hide_grok_enabled()
         if self.visible:
             self.inject_state()
 
@@ -1639,15 +1601,12 @@ class _WindowsTrayController:
                 return None
             if action == "set_card_order":
                 order = payload.get("order")
-                if (
-                    isinstance(order, list)
-                    and all(isinstance(item, str) for item in order)
-                    and len(order) == 3
-                    and set(order) == {"agy", "claude", "codex"}
-                ):
-                    preferences = _load_preferences()
-                    preferences["quota_card_order"] = order
-                    _save_preferences(preferences)
+                if isinstance(order, list):
+                    valid_order = _valid_quota_card_order(order)
+                    if valid_order is not None:
+                        preferences = _load_preferences()
+                        preferences["quota_card_order"] = list(valid_order)
+                        _save_preferences(preferences)
             elif action == "switch_panel":
                 panel_id = payload.get("panel_id")
                 if isinstance(panel_id, str):
@@ -1658,6 +1617,7 @@ class _WindowsTrayController:
                     "hide_claude_section",
                     "hide_codex_section",
                     "hide_agy_section",
+                    "hide_grok_section",
                 }:
                     self.toggle_hide_section(preference_key)
             elif action == "open_changelog":

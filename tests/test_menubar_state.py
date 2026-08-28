@@ -146,7 +146,7 @@ def test_history_source_tracker_skips_directory_io_when_unchanged(
 
     assert scan.claude_paths == (claude / "one.jsonl",)
     assert jsonl_calls == 0
-    # Only the sqlite file sources get re-stat'ed; no per-jsonl stats.
+    # File sources (sqlite + Grok's JSONL log) get re-stat'ed; no directory walk.
     assert stat_calls == len(menubar_state._history_file_sources())
 
 
@@ -172,7 +172,9 @@ def test_history_source_tracker_only_stats_dirty_file(
     tracker.record_changes({dirty})
     second = tracker.scan(now=1.0)
 
-    assert [path for path in calls if path.suffix == ".jsonl"] == [dirty]
+    # Directory JSONL is incremental: only the dirty Claude file is re-stat'ed.
+    # Grok's unified.jsonl is a file-source and is always re-stat'ed.
+    assert [path for path in calls if path.parent == claude] == [dirty]
     assert first.fingerprint != second.fingerprint
     assert set(second.claude_paths) == {dirty, unchanged}
 

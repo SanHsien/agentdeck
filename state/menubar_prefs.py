@@ -16,7 +16,7 @@ from state.autoresume import (
     AutoResumeConfig,
 )
 
-DEFAULT_QUOTA_CARD_ORDER = ("claude", "codex", "agy")
+DEFAULT_QUOTA_CARD_ORDER = ("claude", "codex", "agy", "grok")
 # Catppuccin ships four flavours of the same palette; the panel picks one
 # through a data attribute, so this is a preference rather than four panels.
 DEFAULT_PANEL_FLAVOR = "mocha"
@@ -45,6 +45,11 @@ def _hide_codex_enabled(prefs: Mapping[str, object] | None = None) -> bool:
 def _hide_agy_enabled(prefs: Mapping[str, object] | None = None) -> bool:
     data = _resolved_preferences(prefs)
     return data.get("hide_agy_section") is True
+
+
+def _hide_grok_enabled(prefs: Mapping[str, object] | None = None) -> bool:
+    data = _resolved_preferences(prefs)
+    return data.get("hide_grok_section") is True
 
 
 def _panel_flavor(prefs: Mapping[str, object] | None = None) -> str:

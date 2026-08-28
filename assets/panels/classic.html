@@ -19,6 +19,7 @@
       --claude: #f49164;
       --codex: #58d6e6;
       --agy: #6b9aff;
+      --grok: #e9e9ee;
       --projects: #30d158;
       --warn: #ffc439;
       --danger: #ff453a;
@@ -38,6 +39,7 @@
         --button-border: rgba(12, 18, 26, 0.14);
         --button-hover: rgba(12, 18, 26, 0.10);
         --agy: #3f74e8;
+        --grok: #1c1c1f;
       }
     }
 
@@ -99,7 +101,8 @@
     }
 
     .card[data-card="codex"],
-    .card[data-card="agy"] {
+    .card[data-card="agy"],
+    .card[data-card="grok"] {
       overflow: visible;
       z-index: 2;
     }
@@ -145,12 +148,14 @@
       box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent);
     }
 
-    .card[data-card="agy"] .brand-icon svg {
+    .card[data-card="agy"] .brand-icon svg,
+    .card[data-card="grok"] .brand-icon svg {
       width: 22px;
       height: 22px;
     }
 
-    .card[data-card="agy"] .brand-icon {
+    .card[data-card="agy"] .brand-icon,
+    .card[data-card="grok"] .brand-icon {
       color: var(--accent);
     }
 
@@ -190,12 +195,14 @@
       font-weight: 700;
     }
 
-    .card[data-card="agy"] .brand h1 {
+    .card[data-card="agy"] .brand h1,
+    .card[data-card="grok"] .brand h1 {
       flex: none;
       overflow: visible;
     }
 
-    .card[data-card="agy"] .codex-stale {
+    .card[data-card="agy"] .codex-stale,
+    .card[data-card="grok"] .codex-stale {
       margin-left: auto;
     }
 
@@ -585,9 +592,11 @@
     .hide-codex [data-card="codex"] { display: none; }
     .hide-claude [data-card="claude"] { display: none; }
     .hide-agy [data-card="agy"] { display: none; }
+    .hide-grok [data-card="grok"] { display: none; }
     .card[data-card="claude"],
     .card[data-card="codex"],
-    .card[data-card="agy"] { cursor: grab; }
+    .card[data-card="agy"],
+    .card[data-card="grok"] { cursor: grab; }
     .card.is-dragging { cursor: grabbing; opacity: 0.72; box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24); transform: translateY(-2px); }
     .is-card-dragging, .is-card-dragging * { user-select: none; }
   </style>
@@ -633,6 +642,21 @@
         </div>
       </header>
       <div class="row" data-row="session"></div>
+      <div class="row" data-row="weekly"></div>
+    </section>
+
+    <section class="card" data-card="grok" style="--accent: var(--grok)">
+      <header class="brand">
+        <div class="brand-icon" aria-hidden="true"><svg fill="currentColor" fill-rule="evenodd" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9.27 15.29l7.978-5.897c.391-.29.95-.177 1.137.272.98 2.369.542 5.215-1.41 7.169-1.951 1.954-4.667 2.382-7.149 1.406l-2.711 1.257c3.889 2.661 8.611 2.003 11.562-.953 2.341-2.344 3.066-5.539 2.388-8.42l.006.007c-.983-4.232.242-5.924 2.75-9.383.06-.082.12-.164.179-.248l-3.301 3.305v-.01L9.267 15.292M7.623 16.723c-2.792-2.67-2.31-6.801.071-9.184 1.761-1.763 4.647-2.483 7.166-1.425l2.705-1.25a7.808 7.808 0 00-1.829-1A8.975 8.975 0 005.984 5.83c-2.533 2.536-3.33 6.436-1.962 9.764 1.022 2.487-.653 4.246-2.34 6.022-.599.63-1.199 1.259-1.682 1.925l7.62-6.815"></path></svg></div>
+        <h1 data-i18n="grok_name">Grok</h1>
+        <div class="codex-stale" data-grok-stale hidden>
+          <span aria-hidden="true">⚠</span>
+          <span data-grok-stale-age></span>
+          <span class="codex-stale-info" aria-hidden="true">ⓘ
+            <span class="codex-stale-tooltip" data-grok-stale-tooltip></span>
+          </span>
+        </div>
+      </header>
       <div class="row" data-row="weekly"></div>
     </section>
 
