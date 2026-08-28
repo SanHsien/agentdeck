@@ -31,20 +31,55 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "6d74e58",
-      "last_merged": "2588cc0",
-      "note": "審視至 6d74e58（upstream/main 的 tip，2026-08-23）。issue #9 開出時列 2 筆，實際處理時已累積 24 筆，全數逐筆審完並記錄於下方 Skipped 表。本輪採用 2 筆：`5391aad`（系統匣提示文字：已用%／Antigravity 段落／Claude 併行，本 fork 三個問題全中）與 `2588cc0` 的**遮罩三項**（分享報告的未遮罩 CSV 內嵌、圓餅圖圖例 lg-name、insights 句中專案名——本 fork 同樣全中，屬實質資料外洩）。`2588cc0` 的檔案權限半部為 POSIX chmod，Windows-only fork 以 ACL 為機制，不適用；JSONL 上限與 RecursionError 保護已於 2026-08-23 補做（見下方同日段落）。"
+      "last_reviewed": "83f8a4e",
+      "last_merged": "1cc5929",
+      "note": "審視至 83f8a4e（upstream/main 的 tip，2026-08-28，v0.30.2）。issue #12 開出時列 53 筆需人工審視；實際處理時已累積 64 筆，全數逐筆審完並記錄於下方 Skipped 表。本輪採用：`c1b8d80` 的 archive_viewer 打包斷言（模組名改為本 fork 仍在用的頂層 wintray／tui，不照抄 wintray.app／tui.app）；Grok CLI 本機額度卡叢集 `505336f`／`74ad95f`／`5463cd3`／`32da5ab`，以及 `1cc5929` 的 Windows 拖曳區／合約測試缺口。`82895b6` 略過（本 fork 從未把 wintray.py／tui.py 搬進套件，那個 hidden-import bug 不存在）。其餘官網／圖庫／候鳥遷徙／套件搬家／macOS menubar／上游發版／chore: sync AI updates 全部略過；agy burn rate、面板縮放、Codex status_line 無裸 [tui]、session keeper 等列為後續，見 2026-08-28 段落。"
     }
   },
   "tickets": {
-    "reviewed_pr_through": 106,
+    "reviewed_pr_through": 116,
     "reviewed_issue_through": 92,
-    "reviewed_date": "2026-08-23",
-    "note": "以 --state all 查過。未合併就關閉的 PR 不會進 commit 清單，而上游是 macOS 優先、被關掉的幾筆正是 Windows 修正——逐筆結果記在本檔 2026-08-23（補）段落。"
+    "reviewed_date": "2026-08-28",
+    "note": "以 --state all 查過。PR #107／#108 是本輪打包斷言的來源；#115 是 installer 套件路徑（本 fork 未搬家，略過）；#116 是 Codex 無裸 [tui] header（真實缺陷，列後續）。issue 水位仍為 #92。"
   }
 }
 ```
 <!-- sync-points:end -->
+
+## 2026-08-28：Grok 本機額度卡與打包斷言，其餘 backlog 記略過
+
+San-Hsien Yang 指定本輪由 **grok-4.6 high** 處理 issue #12，優先兩件事，其餘略過並留下理由，不整批吞掉、不改本 fork 的套件佈局。
+
+### 採用 1：Windows 打包斷言（`c1b8d80`；`82895b6` 不適用）
+
+上游 v0.29.34 把 `wintray.py`→`wintray/app.py`、`tui.py`→`tui/app.py`，打包腳本的 `--hidden-import` 仍寫舊頂層名，打出來的 exe `Test-Path` 綠燈、一啟動 `ModuleNotFoundError`。`82895b6` 把 hidden-import 改成 `wintray.app`／`tui.app`；`c1b8d80` 再用 `archive_viewer` 斷言封存裡真有這兩個模組。
+
+本 fork **仍是頂層** `wintray.py`／`tui.py`，`main.py` 用字串動態載入。照抄 `wintray.app` 會打出一個缺進入點的 exe。因此：
+
+- `82895b6` **略過**：那個 bug 在此 fork 不存在。
+- `c1b8d80` **採用概念**：`scripts/build_windows.ps1` 斷言封存含 `'wintray'`、`'tui'`；`tests/test_main.py` 釘 hidden-import 必須是頂層名，且禁止 `wintray.app`／`tui.app`。
+
+`49d4df5`（`installer.session_hooks`）隨之不適用：本 fork 沒把 hook 搬進 `installer/`。
+
+Linux cloud agent **沒有**跑 `build_windows.ps1`；archive_viewer 那層要等 Windows 發版／實機打包才算驗完。
+
+### 採用 2：Grok CLI 第四張本機額度卡
+
+來源是 `~/.grok/logs/unified.jsonl`（billing snapshot + `shell.turn.inference_done`），外加 `~/.grok/config.toml` 的預設模型。**沒有新的 usage API**，與 Claude／Codex 同一套 local-file 契約，因此採用：
+
+| 上游 | 內容 |
+|---|---|
+| `505336f` | 第四張週額度卡 |
+| `74ad95f` | WebKit 圖示尺寸 + Hide Sections |
+| `5463cd3` | 單次 token 併入今日成本／用量 |
+| `32da5ab` | 獨立單色 `--grok`，不再借用 agy 紫 |
+| `1cc5929` 的 Grok 缺口 | Windows 拖曳區 selector 補 grok；四張主題的 DOM／payload 合約測試 |
+
+本 fork 沒有 13 張主題、沒有 Cloud Observation，所以 `ba4f690`、`667b038` 略過。`1cc5929` 的文件搬家與五語 README **不採用**。`7065af7` 是上游 `menubar.py` 的去重；本 fork 為過 `wintray.py` 行數閘門而抽出 `_panel_menu_data()`，不是 cherry-pick。
+
+### 其餘 64 筆：逐筆審完，標記推到 tip
+
+`last_reviewed` = `83f8a4e`，`last_merged` = `1cc5929`（最後一筆有採用內容的上游 commit；其「slim repo root」半部仍略過）。未採用的每一筆都在下方 Skipped 表。下列真實功能**列為後續**，不是「不適用」：agy 額度通知／burn rate、面板量高度與縮放、Codex `status_line` 在無裸 `[tui]` 時寫不進去、Claude advisor 成本對帳、Codex 5h session keeper。issue #12 保持開啟，因為這些後續候選還在。
 
 ## 2026-08-22：上游的 PR、issue、分支盤點
 
@@ -118,6 +153,29 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
 
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
+| main | `c1b8d80` | ci(build): Windows 打包後斷言 exe 內含 wintray.app 與 tui.app | 2026-08-28 | **採用概念，不照抄模組名**。本 fork 仍用頂層 `wintray.py`／`tui.py`，`archive_viewer` 斷言改驗 `'wintray'`／`'tui'`；測試禁止 hidden-import 寫成 `wintray.app`／`tui.app`。Windows 實機打包尚未跑。 |
+| main | `505336f`／`74ad95f`／`5463cd3`／`32da5ab` | feat+fix: Grok CLI 第四張本機額度卡、Hide Sections、今日 token、獨立 --grok 色 | 2026-08-28 | **採用**。讀 `~/.grok/logs/unified.jsonl`，無 usage API。接進 `providers/grok_*`、`state/menubar_grok.py`、四張主題、payload、tooltip、選單。 |
+| main | `1cc5929` | chore: slim the repo root and close the Grok CLI gaps | 2026-08-28 | **Grok 缺口採用，搬家不採用**。Windows 拖曳區 selector 與 DOM／payload 合約測試已補。九份文件搬出根目錄、五語 README 補 Grok——本 fork 根目錄契約與兩語 README 不同，不跟。`last_merged` 設於此 SHA，因為這是最後一筆有採用內容的上游 commit。 |
+| main | `cf90198` | test(main): 守住以字串動態載入的模組 | 2026-08-28 | **精神採用**。本 fork `tests/test_main.py` 已守 `tui`／`wintray` 動態載入，並把 hidden-import 與 archive 斷言綁在同一條測試。 |
+| main | `82895b6` | fix(build): Windows 打包補回 wintray.app 與 tui.app 的 hidden-import | 2026-08-28 | **不採用**。那個 bug 的前提是模組已搬進 `wintray/app.py`／`tui/app.py`；本 fork 從未搬家，照抄會打出缺進入點的 exe。守門改由 `c1b8d80` 的斷言（本 fork 模組名）負責。 |
+| main | `49d4df5` | fix(build): point Windows hidden-imports at their post-refactor package paths | 2026-08-28 | **不適用**。上游把 `session_hooks`／`setup_hook` 搬進 `installer/`；本 fork 仍是根目錄 stdlib hook，hidden-import 維持頂層名。 |
+| main | `f839c0a`／`ef3ef23`／`974b6c4`／`1f64331`／`b724d45`／`ca5487a`／`aeb4b46`／`da03ca7`／`978a4a4`／`59bd475`／`79fb52f`／`960a775` | chore: sync AI updates | 2026-08-28 | **不適用**。只動 `ai_updates.json`，該檔已在本 fork 移除。 |
+| main | `e0d27b2`／`08c2c44`／`375bfc9`／`8ddd193`／`7065af7` | feat+revert+fix: macOS 選單列粗體／兩行堆疊／單色 template／去重 | 2026-08-28 | **不採用**。macOS menubar；本 fork 已移除該平台。`08c2c44` 隨後被 `8ddd193` 還原。`7065af7` 的檔案大小去重，本 fork 以抽出 `_panel_menu_data()` 過閘門，不 cherry-pick 上游 menubar。 |
+| main | `dff85ee`／`5bbdcf6`／`6ed1f06`／`2e83796`／`0a98175`／`4f18573`／`2328bae` | refactor: menubar／loaders／wintray／discussion／tui／installer／quota 套件搬家 | 2026-08-28 | **不採用**。本輪明確不把樹改成上游套件佈局；hook 必須留在根目錄 stdlib-only。搬家正是 `82895b6`／`49d4df5` 那些打包事故的源頭。 |
+| main | `e8b4bd3`／`69d0e1f`／`e422a65`／`b3e4613`／`20a6f10`／`655488d`／`8c72373`／`2b8b284`／`ba4f690` | docs(site/readme): 官網活面板、十三張圖庫、favicon、footer 翻譯、WebP、README 示範圖補 Grok | 2026-08-28 | **不採用**。上游官網與 13 張主題圖庫；本 fork 的 `docs/index.html` 已獨立、只維護四張主題、兩語 README。 |
+| main | `de72a1d` | feat(panels): 新增候鳥遷徙面板，彩繪玻璃改成會動的萬花筒 | 2026-08-28 | **不採用**。本 fork 自 D-23 只留四張主題；不引入第十五張，也不把既有彩繪玻璃改成萬花筒。 |
+| main | `667b038` | fix: use this panel's own stale classes for Cloud Observation's Grok row | 2026-08-28 | **不採用**。Cloud Observation 已於 v0.40.0 移除。 |
+| main | `bbf642c` | polish: give the yearly Wrapped card a glow, badge, and overflow fix | 2026-08-28 | **不採用（裝飾，列後續若要視覺對齊）**。本 fork Wrapped 卡樣式已分家，照抄需渲染驗證。 |
+| main | `a79b15d`／`c0e1022`／`61ea4ad`／`15fef03`／`31e2246`／`83f8a4e` | chore/release: 上游 0.29.34／0.29.36／0.29.37／0.30.0／0.30.1／0.30.2 | 2026-08-28 | **不適用**。上游自己的發版與版號（D-05）。 |
+| main | `98d26ec` | chore: retrigger CI after GitHub Actions outage | 2026-08-28 | **不適用**。空 commit，重跑上游 CI。 |
+| main | `f64d7a8` | docs(claude): 記下面板量高度會被 flex 1 加 overflow hidden 塌掉 | 2026-08-28 | **不採用**。上游 CLAUDE.md；本 fork 面板量高度問題與 D-23 注入層修法已另記。相關程式修正在 `e3cc667`／`88a3308`／`a12f604`，列後續。 |
+| main | `e3cc667`／`88a3308`／`a12f604` | fix+feat(panels): 還原高度後重測、固定彈性卡片、螢幕放不下改縮放 | 2026-08-28 | **想要，列為後續**。真實裁切問題，但本 fork 自 D-23 已用注入層改 overflow，與上游量測／縮放路徑不同，需 Windows 實機對過再移植，本輪不做半套。 |
+| main | `15df18f`／`f256dcf` | feat(quota): Antigravity 額度通知、Codex 歷史遷移偵測、Claude 成本對帳、agy burn rate 提前警示 | 2026-08-28 | **想要，列為後續（優先）**。與本 fork 的 agy／通知契約相容，但不是本輪指定的兩項優先；半套接入會跟既有 window keeper／quota notifications 纏在一起。 |
+| main | `752416e` | feat: add Codex CLI to auto-start 5-hour session keeper | 2026-08-28 | **想要，列為後續**。本 fork 已有 Claude／agy window keeper；接 Codex 要另驗排程與預設關閉契約。 |
+| main | `ba66338` | fix: count advisor iterations and 1h cache writes in Claude cost | 2026-08-28 | **想要，列為後續**。成本對帳正確性，與 `15df18f` 同批做。 |
+| main | `cd2ff46` | fix(codex): write status_line when config.toml has no bare [tui] header | 2026-08-28 | **想要，列為後續（優先）**。會改使用者 `~/.codex/config.toml` 的寫入路徑，必須連 backup／rollback／idempotency 一起驗，本輪不做半套。 |
+| main | `2551e17` | fix: pin utf-8 decoding on the launchctl and gh subprocess reads | 2026-08-28 | **launchctl 半部不適用**（macOS）。`gh` 讀取編碼本 fork 若有同等 subprocess 應另查，列後續，本輪不順手改。 |
+| main | `df78c34`／`5fa8796` | build(deps): PyObjC 12.2.2、ruff 0.16.4、codeql-action | 2026-08-28 | **不適用（各自處理）**。PyObjC 本 fork 不使用；ruff 0.16.4 已在本 fork；codeql-action 走自己的 Dependabot。 |
 | main | `5391aad` | fix(wintray): 系統匣提示文字三處修復 | 2026-08-22 | **採用**。三個子項在本 fork 全中：(1) `build_tooltip` 顯示 `100 - percent`，而面板走 `percent_used`——同一個問題兩處給不同數字；(2) 完全沒有 Antigravity 段落，儘管本 fork 支援它；(3) Claude 的 Session／Weekly 各佔一行，與 Codex 的併行格式不一致。第四個子項（更新彈窗清理 Markdown）**已涵蓋且做法更好**：本 fork 的 MessageBoxW 刻意完全不放 release notes（沒有捲軸、notes 就在對話框願意開的那一頁），程式碼裡已有註解說明。另補兩條測試：`hide_claude` 開啟時 tooltip 不得把 Claude 放回來、`percent is None` 不得編造數字。 |
 | main | `2588cc0` | fix(security): 修補分享報告遮罩失效與本機檔案權限 | 2026-08-22 | **遮罩三項採用，權限半部不適用，JSONL 上限列候選**。遮罩失效在本 fork 同樣成立且是實質外洩：勾了「遮罩專案名稱」匯出的 HTML，`downloadHtml` 直接序列化整份 DOM，而未遮罩的 `csvData` 就內嵌在報告自己的 script 裡跟著送出去，收檔者按報告內建的 CSV 鈕即可取回真實專案路徑。修法比照上游拆成獨立 `application/json` 節點、遮罩匯出時移除未遮罩節點、JS 端 fallback；但**遮罩標記改用排名而非名稱**（`data-mask-index`），因為把真名放進屬性一樣會跟著匯出檔外流。圖例 `lg-name` 與 insights 句中專案名同樣補上遮罩，且三處編號一致。新增 `tests/test_html_report_masking.py` 8 條把這些性質釘住。權限半部（0700／0600、copy2→copy+chmod、quarantine mode）是 POSIX chmod，本 fork 為 Windows-only、使用者目錄由 ACL 隔離，**不適用**；`3cb368d` 的 Windows 權限守衛測試隨之不適用。JSONL 單行上限與 RecursionError 保護與平台無關，**已於 2026-08-23 引用**（見同日段落：本 fork 的增量快取需要額外的 `on_skipped_bytes` 才不會退化）。 |
 | main | `90000a9`／`1c8e82d`／`5269fd4` | chore: 發布 0.29.31／0.29.32／0.29.33 | 2026-08-22 | **不適用**。上游自己的發版 commit，本 fork 有獨立版號。 |

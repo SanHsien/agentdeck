@@ -7,7 +7,12 @@
 
 ## [Unreleased]
 
+### 新增
+- **Grok CLI 第四張本機額度卡。** 讀 `~/.grok/logs/unified.jsonl` 裡 Grok CLI 自己寫下的週額度快照（`billing: fetched credits config`）與單次推理 token（`shell.turn.inference_done`），不啟動 grok、不呼叫 xAI 用量 API。來源沒有 session／burn-rate，所以這張卡只有一條週額度；單次 token 併入面板「今日」成本／用量。四張主題、Hide Sections、系統匣提示、卡片拖曳區與排序都接上。取自上游 `505336f`／`74ad95f`／`5463cd3`／`32da5ab`，並補上 `1cc5929` 的 Windows 拖曳區缺口。本機沒有 `~/.grok` 或當週快照時卡片隱藏，與 Antigravity 同一套「沒資料就不佔位」契約。
+- **依賴新鮮度排程檢查**：`tools/check_dependency_freshness.py` 把 `pyproject.toml` 宣告的每一筆直接依賴（runtime、extras、dependency groups、build backend）拿去對 PyPI 現行版本，`.github/workflows/dependency-freshness.yml` 每月 1 日 11:00（Asia/Taipei）跑一次，需要處理時開／更新單一提醒 issue，全部最新就把它關掉。Dependabot 看的是 lock 的移動，看不到悄悄落後的宣告下限——首次執行就抓到 pillow、pywebview、pyinstaller、ruff、mypy 五筆下限已落後 PyPI。腳本不改任何檔案，也不看已安裝環境，只比對宣告；版本比較採宣告精度——`>=5.4` 只比到 minor，5.4.1 不會變成每月的假警報。契約測試見 `tests/test_dependency_freshness.py`。
+
 ### 修正
+- **Windows 打包腳本現在會斷言 exe 封存裡真的有 `wintray` 與 `tui`。** 上游 v0.29.34–36 把模組搬進套件後 hidden-import 沒跟上，打出來的 exe 檔案在、一啟動就 `ModuleNotFoundError`，既有 `Test-Path` 照樣綠燈。本 fork 仍用頂層 `wintray.py`／`tui.py`，不能照抄 `wintray.app`／`tui.app`；移植的是 `c1b8d80` 的 archive_viewer 斷言，模組名用本 fork 的。`82895b6` 那筆 bug 在此 fork 不存在，略過。
 - **測試會讀到操作者本機的真實用量資料。** `test_report_today_uses_codex_token_count_deltas` 斷言 65 tokens，在實際跑 agentdeck 的機器上讀到 **21,786,335**——它只改了 `SESSIONS_DIR`，但 `codex_loader` 還有 `ARCHIVED_SESSIONS_DIR`，而且 `_seed_caches_from_disk()` 會先把 `~/.agentdeck/codex_jsonl_cache.json` 的真實條目載回來。CI 一直是綠的：全新 runner 沒有 `~/.agentdeck`、也沒有 `~/.codex`。`tests/conftest.py` 新增 autouse fixture，把 providers 與 adapters 的每一個來源目錄與磁碟快取（含 adapters 在 import 期就抓死的常數）指向 per-test 暫存目錄並重置 seeded 旗標，漏掉就是空的、不會是別人的資料；`tests/test_operator_data_isolation.py` 逐一釘住這些常數，日後新增一個沒被隔離的路徑會紅燈。
 - **JSONL 單行沒有長度上限，一行壞資料就能把整個行程吃掉。** session log 是別的程式寫的，不是可信輸入；原本每個讀取點都是 `readline()` 讀到底，一行有多長就配置多少記憶體。新增 `jsonl_limits`（上限 64 MiB，依上游實測本機最大單行 23 MB 訂定），超長的行改為排空並記一筆 warning 後跳過，其餘的行照常解析。同時 `json.loads` 遇到深層巢狀會丟 `RecursionError` 而非 `JSONDecodeError`，四個解析點原本只捕捉後者，一行巢狀炸彈就讓整份記錄讀不到——一併補上。取自上游 `2588cc0`。
   本 fork 多做一件事：`history_loader` 與 `codex_loader` 的增量快取會對「已確認前綴」做滾動雜湊，下次執行時從 offset 0 重算驗證。直接照抄上游的寫法會在跳過超長行時推進 confirmed offset 卻沒把跳過的位元組餵進雜湊，於是儲存的 digest 與檔案永遠對不起來——解析結果仍正確，但增量路徑會靜默退化成每次全量重解。`read_bounded_jsonl_line` 因此多一個 `on_skipped_bytes` 參數，由這兩個呼叫點傳入 `digest.update`；`test_skipped_oversized_line_keeps_the_incremental_cache_usable` 就是為此而寫（拿掉該參數即紅燈）。
@@ -18,9 +23,6 @@
 
 ### 變更
 - **依賴宣告下限對齊實測版本。** 首次依賴新鮮度檢查抓到五筆落後，分成兩種性質：`pillow`（宣告 `>=11.0.0`，lock 早就跑在 12.3.0）與 `pywebview`（宣告 `>=5.4`，lock 是 6.2.1）是**宣告落後於現實**，不是沒升級——改成 `>=12.3` 與 `>=6.2`，讓宣告說的就是實際測過的版本。`ruff` 0.16.0→0.16.4、`mypy` 2.3.0→2.3.1、`pyinstaller` 6.21.0→6.22.2 則是真的舊，連 lock 一起升。新版 ruff 與 mypy 對現有 189 個檔案零新增發現，`dev_check.ps1` 全綠（1446 passed）。
-
-### 新增
-- **依賴新鮮度排程檢查**：`tools/check_dependency_freshness.py` 把 `pyproject.toml` 宣告的每一筆直接依賴（runtime、extras、dependency groups、build backend）拿去對 PyPI 現行版本，`.github/workflows/dependency-freshness.yml` 每月 1 日 11:00（Asia/Taipei）跑一次，需要處理時開／更新單一提醒 issue，全部最新就把它關掉。Dependabot 看的是 lock 的移動，看不到悄悄落後的宣告下限——首次執行就抓到 pillow、pywebview、pyinstaller、ruff、mypy 五筆下限已落後 PyPI。腳本不改任何檔案，也不看已安裝環境，只比對宣告；版本比較採宣告精度——`>=5.4` 只比到 minor，5.4.1 不會變成每月的假警報。契約測試見 `tests/test_dependency_freshness.py`。
 
 ## [0.41.5] - 2026-08-18
 

@@ -4,7 +4,7 @@
 
 # agentdeck — Windows AI Coding Cockpit
 
-### 把 Claude Code、Codex 與 Antigravity 的額度、協作工具與報告集中到 Windows 系統匣
+### 把 Claude Code、Codex、Antigravity 與 Grok CLI 的額度、協作工具與報告集中到 Windows 系統匣
 
 繁體中文 · [English](README.en.md) &nbsp;|&nbsp; [介紹頁](https://sanhsien.github.io/agentdeck/)
 
@@ -20,9 +20,9 @@
   <img src="docs/hero.png" alt="agentdeck — Windows AI coding cockpit" width="820">
 </p>
 
-**agentdeck** 是 Windows 專用的 AI coding cockpit。它把 Claude Code、Codex 與 Antigravity 的額度狀態常駐在系統匣，也把多模型圓桌討論、可部署的 subagent 角色、工作續接與本機用量報告放在同一個工具裡。
+**agentdeck** 是 Windows 專用的 AI coding cockpit。它把 Claude Code、Codex、Antigravity 與 Grok CLI 的額度狀態常駐在系統匣，也把多模型圓桌討論、可部署的 subagent 角色、工作續接與本機用量報告放在同一個工具裡。
 
-Claude Code 與 Codex 的額度資料來自**本機既有檔案**，不呼叫 Anthropic 或 OpenAI 的用量 API；Antigravity 額度則使用 Antigravity CLI 已有的登入身分查詢 Google 官方額度端點。
+Claude Code、Codex 與 Grok CLI 的額度資料來自**本機既有檔案**，不呼叫 Anthropic、OpenAI 或 xAI 的用量 API；Antigravity 額度則使用 Antigravity CLI 已有的登入身分查詢 Google 官方額度端點。
 
 > **Windows-only fork。** 本 repo 衍生自 [`aqua5230/usage`](https://github.com/aqua5230/usage)，依 AGPL-3.0-only 獨立維護。macOS 支援已移除；需要 macOS 版請使用上游。
 
@@ -32,7 +32,7 @@ Claude Code 與 Codex 的額度資料來自**本機既有檔案**，不呼叫 An
 
 agentdeck 把這些狀態放回 Windows 桌面工作流：
 
-- **看額度**：系統匣常駐 Claude Code、Codex、Antigravity 的額度、重置時間與警戒狀態。
+- **看額度**：系統匣常駐 Claude Code、Codex、Antigravity 與 Grok CLI 的額度、重置時間與警戒狀態。
 - **接續工作**：可選的進度管家、Token Saver、額度重置後自動續跑，減少重新交代上下文。
 - **讓模型協作**：AI 圓桌可讓本機已安裝的 Claude Code、Codex、Antigravity 多輪討論與表決。
 - **重用角色**：人才市場把同一組角色部署到 Claude Code、Codex 與 Cursor，並在覆寫同名角色前備份。
@@ -44,6 +44,7 @@ agentdeck 把這些狀態放回 Windows 桌面工作流：
 |---|---|
 | **Quota cockpit** | Windows 系統匣常駐額度、重置倒數、burn rate、Context Window 提醒與 Claude/Codex 公開服務狀態。 |
 | **Claude Code / Codex 本機取數** | Claude 讀 statusLine hook 快照或 Claude Desktop 的本機方案用量紀錄；Codex 讀 `~/.codex/` 的 session / state 資料。查看額度本身不增加 LLM 用量。 |
+| **Grok CLI 本機取數** | 讀 `~/.grok/logs/unified.jsonl` 裡 Grok CLI 自己寫下的週額度快照與單次推理 token；不啟動 grok、不呼叫 xAI 用量 API。來源沒有 session／burn-rate，所以這張卡只有一條週額度。 |
 | **Antigravity 額度** | 使用 Antigravity CLI 已有的本機登入身分，向 Google 官方額度端點查詢；不消耗模型額度。 |
 | **AI 圓桌討論** | 選擇參與者、模型、角色與辯論風格，多輪討論、插話、共識計票，並可附唯讀資料夾。 |
 | **AI 人才市場** | 開源角色定義放在 [`personas/`](personas/)；可部署到 Claude Code、Codex、Cursor，既有同名檔會先備份。 |
@@ -67,6 +68,7 @@ agentdeck 把這些狀態放回 Windows 桌面工作流：
 3. **Codex**：只要已有本機使用紀錄，agentdeck 會自動讀取。
 4. **Claude Code**：終端使用者可在選單執行「設定狀態列」並重新啟動 Claude Code；Claude Desktop 使用者則會自動讀取 Desktop 已寫入的本機方案用量紀錄。
 5. **Antigravity**：需先安裝並登入 Antigravity CLI，額度卡才會出現。
+6. **Grok CLI**：本機執行過 grok、且 `~/.grok/logs/unified.jsonl` 有當週 billing 快照時，第四張額度卡才會出現。
 
 系統匣左鍵開面板、右鍵開選單。面板是可自由拖曳、會記住位置的浮動視窗；不是貼齊 tray icon 後點一下就消失的 popover。
 
@@ -78,6 +80,7 @@ agentdeck 是 local-first，但「local-first」不等於完全不連網。不�
 |---|---|---:|
 | Claude Code | 讀 `~/.claude/agentdeck-status.json`、Claude Desktop 的 `plan-usage-history.json` 與本機專案紀錄 | 否 |
 | Codex | 唯讀 `~/.codex/sessions/` / 本機 state 資料 | 否 |
+| Grok CLI | 唯讀 `~/.grok/logs/unified.jsonl` 與 `~/.grok/config.toml` | 否 |
 | Antigravity | 讀本機 CLI 登入身分後查 Google 官方額度端點 | 是 |
 | 服務狀態 | Claude / OpenAI 公開 Statuspage | 是 |
 | 成本估算 | 公開價格表，本機快取；離線時可用內建 fallback | 是 |
@@ -93,7 +96,7 @@ agentdeck 是 local-first，但「local-first」不等於完全不連網。不�
 
 - Windows 10 / 11
 - Microsoft Edge WebView2 Runtime（Windows 10 / 11 通常已具備）
-- 至少使用過 Claude Code、Codex 或 Antigravity 其中之一
+- 至少使用過 Claude Code、Codex、Antigravity 或 Grok CLI 其中之一
 - 只有從原始碼執行才需要 Python 3.13 與 `uv`
 
 Release 提供可攜式 Windows zip 與 `.sha256`。正式下載與目前版本一律以 [Latest Release](https://github.com/SanHsien/agentdeck/releases/latest) 為準，不在 README 寫死版本號。

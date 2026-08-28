@@ -28,7 +28,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 CEILINGS = {
-    "wintray.py": 1900,
+    "wintray.py": 1860,
 }
 
 

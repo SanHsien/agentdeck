@@ -19,7 +19,7 @@ from typing import TypedDict
 from burn_rate import WARNING_PERCENT_FLOOR, BurnRateTracker
 from i18n import _t
 from pricing import calculate_cost
-from providers import codex_loader
+from providers import codex_loader, grok_quota_probe
 from providers.history_loader import CLAUDE_PROJECTS_DIR, UsageEntry
 from service_status import ServiceStatus
 from time_utils import parse_iso8601_utc_or_raise
@@ -82,6 +82,7 @@ logger = logging.getLogger(__name__)
 CLAUDE_COLOR = (244 / 255, 145 / 255, 100 / 255)
 CODEX_COLOR = (88 / 255, 214 / 255, 230 / 255)
 AGY_COLOR = (107 / 255, 154 / 255, 1.0)
+GROK_COLOR = (138 / 255, 138 / 255, 144 / 255)
 WARN_COLOR = (255 / 255, 196 / 255, 57 / 255)
 DANGER_COLOR = (255 / 255, 69 / 255, 58 / 255)
 WEEKLY_FORECAST_WINDOW_SECONDS = 30 * 60
@@ -117,6 +118,10 @@ class AgyStaleState(TypedDict):
     ageText: str
 
 
+class GrokStaleState(TypedDict):
+    ageText: str
+
+
 class HistoryLoadErrorState(TypedDict):
     reasonText: str
 
@@ -136,6 +141,7 @@ class PopoverState:
     agy_session: QuotaRowState
     agy_weekly: QuotaRowState
     agy_group_name: str
+    grok_weekly: QuotaRowState
     projects: list[tuple[str, int, float | None]]
     projects_7d: list[tuple[str, int, float | None]]
     projects_30d: list[tuple[str, int, float | None]]
@@ -150,10 +156,12 @@ class PopoverState:
     hide_claude: bool = False
     hide_codex: bool = False
     hide_agy: bool = True
+    hide_grok: bool = True
     codex_stale: CodexStaleState | None = None
     codex_credits: CodexCreditsState | None = None
     agy_stale: AgyStaleState | None = None
-    card_order: tuple[str, ...] = ("claude", "codex", "agy")
+    grok_stale: GrokStaleState | None = None
+    card_order: tuple[str, ...] = ("claude", "codex", "agy", "grok")
     history_error: HistoryLoadErrorState | None = None
     # Talent-market panel payload (None for non-talent panels). Fetched from the
     # external instate-cli by talent_market_bridge, only when the active panel
@@ -257,12 +265,13 @@ def _history_directory_sources() -> tuple[Path, Path, Path]:
     )
 
 
-def _history_file_sources() -> tuple[Path, Path, Path, Path]:
+def _history_file_sources() -> tuple[Path, ...]:
     return (
         codex_loader.LOGS_DB,
         Path.home() / ".codex" / "logs_2.sqlite-wal",
         codex_loader.STATE_DB,
         Path.home() / ".codex" / "state_5.sqlite-wal",
+        grok_quota_probe.GROK_LOG_PATH,
     )
 
 
@@ -685,6 +694,7 @@ def build_popover_state(
     codex_rows: tuple[QuotaRowState, QuotaRowState],
     agy_rows: tuple[QuotaRowState, QuotaRowState],
     agy_group_name: str,
+    grok_row: QuotaRowState,
     projects: list[tuple[str, int, float | None]],
     projects_7d: list[tuple[str, int, float | None]],
     projects_30d: list[tuple[str, int, float | None]],
@@ -698,10 +708,12 @@ def build_popover_state(
     hide_claude: bool,
     hide_codex: bool,
     hide_agy: bool,
+    hide_grok: bool,
     codex_stale: CodexStaleState | None,
     codex_credits: CodexCreditsState | None = None,
     agy_stale: AgyStaleState | None,
-    card_order: tuple[str, ...] = ("claude", "codex", "agy"),
+    grok_stale: GrokStaleState | None = None,
+    card_order: tuple[str, ...] = ("claude", "codex", "agy", "grok"),
     history_error: HistoryLoadErrorState | None = None,
     service_statuses: tuple[ServiceStatus, ...] = (),
 ) -> PopoverState:
@@ -801,6 +813,7 @@ def build_popover_state(
         agy_session=agy_rows[0],
         agy_weekly=agy_rows[1],
         agy_group_name=agy_group_name,
+        grok_weekly=grok_row,
         projects=projects,
         projects_7d=projects_7d,
         projects_30d=projects_30d,
@@ -815,9 +828,11 @@ def build_popover_state(
         hide_claude=hide_claude,
         hide_codex=hide_codex,
         hide_agy=hide_agy,
+        hide_grok=hide_grok,
         codex_stale=codex_stale,
         codex_credits=codex_credits,
         agy_stale=agy_stale,
+        grok_stale=grok_stale,
         card_order=card_order,
         history_error=history_error,
     )

@@ -79,6 +79,19 @@ if (-not (Test-Path $Executable -PathType Leaf)) {
     throw "PyInstaller did not produce $Executable"
 }
 
+# The exe existing is not proof it works: upstream v0.29.34-36 shipped bundles
+# whose hidden-import names still pointed at pre-refactor package paths, so the
+# packages collected nothing and the app died on launch. This fork still uses
+# top-level wintray.py / tui.py (main.py loads them by string), so assert those
+# names — not wintray.app / tui.app — are actually inside the archive.
+$RequiredModules = @('wintray', 'tui')
+$ArchiveToc = uv run --no-sync python -m PyInstaller.utils.cliutils.archive_viewer -l -r $Executable
+foreach ($Module in $RequiredModules) {
+    if (-not ($ArchiveToc | Select-String -SimpleMatch -Quiet "'$Module'")) {
+        throw "packaged exe is missing module: $Module"
+    }
+}
+
 # AGPL-3.0 §4 requires every copy of the program to carry the license text, and
 # §5a requires a notice that this is a modified version. PyInstaller only bundles
 # the *dependencies'* license files, so ship ours next to the executable.

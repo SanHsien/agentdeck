@@ -593,3 +593,15 @@ remote: - Required status check "check-windows" is expected.
 ```
 
 **真正的代價（接受）:** 使用者無法下載舊版，出問題不能退版;CHANGELOG 裡舊版本的 release 連結會指向不存在的頁面。本機 198 個 tag 仍在，真要補回推上去即可。
+
+---
+
+## D-26：上游 6d74e58..83f8a4e 只採用 Grok 本機額度與打包斷言
+
+**日期**：2026-08-28
+
+**決定**：issue #12 的 64 筆 backlog 逐筆審完。採用 Grok CLI 第四張本機額度卡（`505336f` 叢集，讀 `~/.grok/logs/unified.jsonl`，無 usage API）與 `c1b8d80` 的 exe archive 斷言（模組名用本 fork 的 `wintray`／`tui`）。`82895b6` 略過，因為本 fork 從未把進入點搬進套件。其餘官網／圖庫／候鳥遷徙／套件搬家／macOS menubar／chore: sync AI updates 略過；agy burn rate、面板縮放、Codex 無裸 `[tui]` 的 status_line 寫入等列後續，本輪不做半套。
+
+**為什麼不整批對齊上游套件佈局**：那正是上游 v0.29.34–36 Windows exe 無法啟動的根因，而且會把必須留在根目錄的 stdlib hook 一起搬走。
+
+**後果**：`last_reviewed` = `83f8a4e`，`last_merged` = `1cc5929`。逐筆理由見 [`UPSTREAM.md`](UPSTREAM.md) 2026-08-28 段落與 Skipped 表。

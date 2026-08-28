@@ -24,7 +24,14 @@ from adapters import claude as claude_adapter
 from adapters import codex as codex_adapter
 from adapters import rate_limits
 from analyzer import persona_loader, reporter
-from providers import agy_loader, agy_quota_probe, codex_loader, history_loader
+from providers import (
+    agy_loader,
+    agy_quota_probe,
+    codex_loader,
+    grok_loader,
+    grok_quota_probe,
+    history_loader,
+)
 
 _GUARDED = [
     (codex_loader, "SESSIONS_DIR"),
@@ -37,6 +44,11 @@ _GUARDED = [
     (agy_loader, "AGY_SESSIONS_DIR"),
     (agy_loader, "AGY_CACHE_PATH"),
     (agy_quota_probe, "CACHE_PATH"),
+    (grok_quota_probe, "GROK_HOME"),
+    (grok_quota_probe, "GROK_LOG_PATH"),
+    (grok_loader, "GROK_HOME"),
+    (grok_loader, "GROK_LOG_PATH"),
+    (grok_loader, "GROK_CONFIG_PATH"),
     (persona_loader, "CLAUDE_PROJECTS_DIR"),
     (reporter, "YEAR_CACHE_PATH"),
     (reporter, "YEAR_LEDGER_PATH"),

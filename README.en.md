@@ -4,7 +4,7 @@
 
 # agentdeck — Windows AI Coding Cockpit
 
-### Put Claude Code, Codex, and Antigravity quota, collaboration tools, and reports in the Windows system tray
+### Put Claude Code, Codex, Antigravity, and Grok CLI quota, collaboration tools, and reports in the Windows system tray
 
 [繁體中文](README.md) · English &nbsp;|&nbsp; [Project site](https://sanhsien.github.io/agentdeck/)
 
@@ -20,9 +20,9 @@
   <img src="docs/hero.png" alt="agentdeck — Windows AI coding cockpit" width="820">
 </p>
 
-**agentdeck** is a Windows-only AI coding cockpit. It keeps Claude Code, Codex, and Antigravity quota visible in the system tray and puts multi-model council sessions, deployable subagent personas, workflow handoff, and local usage reports in the same tool.
+**agentdeck** is a Windows-only AI coding cockpit. It keeps Claude Code, Codex, Antigravity, and Grok CLI quota visible in the system tray and puts multi-model council sessions, deployable subagent personas, workflow handoff, and local usage reports in the same tool.
 
-Claude Code and Codex quota data comes from **files already on your machine**; agentdeck does not call Anthropic or OpenAI usage APIs. Antigravity quota is fetched from Google's official quota endpoint using the login state already maintained by the Antigravity CLI.
+Claude Code, Codex, and Grok CLI quota data comes from **files already on your machine**; agentdeck does not call Anthropic, OpenAI, or xAI usage APIs. Antigravity quota is fetched from Google's official quota endpoint using the login state already maintained by the Antigravity CLI.
 
 > **Windows-only fork.** This repository is derived from [`aqua5230/usage`](https://github.com/aqua5230/usage) and independently maintained under AGPL-3.0-only. macOS support has been removed; use upstream if you need the macOS menu-bar app.
 
@@ -32,7 +32,7 @@ When several AI coding CLIs are part of the same workflow, the painful failure m
 
 agentdeck brings that operational state back into the Windows desktop workflow:
 
-- **See quota** — keep Claude Code, Codex, and Antigravity quota, reset times, and warning levels in the tray.
+- **See quota** — keep Claude Code, Codex, Antigravity, and Grok CLI quota, reset times, and warning levels in the tray.
 - **Resume work** — optional Progress Concierge, Token Saver, and post-reset auto-resume reduce repeated context handoff.
 - **Let models collaborate** — AI Council can run installed Claude Code, Codex, and Antigravity CLIs in a multi-round discussion with voting.
 - **Reuse roles** — the Persona Market installs the same role set into Claude Code, Codex, and Cursor, backing up name collisions first.
@@ -44,6 +44,7 @@ agentdeck brings that operational state back into the Windows desktop workflow:
 |---|---|
 | **Quota cockpit** | System-tray quota, reset countdowns, burn rate, Context Window warnings, and public Claude/Codex service status. |
 | **Local Claude Code / Codex data** | Claude reads a local statusLine snapshot or Claude Desktop's local plan-usage history; Codex reads session / state data under `~/.codex/`. Viewing quota does not consume LLM usage. |
+| **Local Grok CLI data** | Reads the weekly credit snapshot and per-request tokens Grok CLI already writes to `~/.grok/logs/unified.jsonl`. Does not start grok or call an xAI usage API. That source has no session / burn-rate data, so the card shows a single weekly bar. |
 | **Antigravity quota** | Uses the Antigravity CLI's existing local login state to query Google's official quota endpoint; the quota check itself does not consume model usage. |
 | **AI Council** | Choose participants, models, personas, and debate style; run multiple rounds, intervene between rounds, count consensus, and optionally attach a read-only folder. |
 | **Persona Market** | Open persona definitions live in [`personas/`](personas/); install them into Claude Code, Codex, and Cursor with backup-before-overwrite behavior. |
@@ -67,6 +68,7 @@ Four visual themes ship with the app: Classic, Catppuccin, Stained Glass, and Or
 3. **Codex** — existing local usage history is detected automatically.
 4. **Claude Code** — terminal users can install the local hook with **Set Up Status Line** and restart Claude Code; Claude Desktop users are detected through the plan-usage history Desktop already writes locally.
 5. **Antigravity** — install and sign in to the Antigravity CLI first; its quota card appears after a successful quota read.
+6. **Grok CLI** — the fourth quota card appears when a current-week billing snapshot exists in `~/.grok/logs/unified.jsonl`.
 
 Left-click the tray icon to open the panel and right-click for the menu. Panels are draggable floating windows that remember their position rather than transient popovers tied to the tray icon.
 
@@ -78,6 +80,7 @@ agentdeck is local-first, but local-first does not mean fully offline. Each data
 |---|---|---:|
 | Claude Code | Reads `~/.claude/agentdeck-status.json`, Claude Desktop's `plan-usage-history.json`, and local project history | No |
 | Codex | Read-only access to `~/.codex/sessions/` / local state | No |
+| Grok CLI | Read-only access to `~/.grok/logs/unified.jsonl` and `~/.grok/config.toml` | No |
 | Antigravity | Uses local CLI auth to query Google's official quota endpoint | Yes |
 | Service health | Public Claude / OpenAI Statuspage endpoints | Yes |
 | Cost estimates | Public pricing data cached locally; built-in fallback when offline | Yes |
@@ -93,7 +96,7 @@ See [`NOTICE.md`](NOTICE.md) and the [development guide](docs/DEVELOPMENT.md) fo
 
 - Windows 10 / 11
 - Microsoft Edge WebView2 Runtime (normally already present on Windows 10 / 11)
-- Prior use of at least one of Claude Code, Codex, or Antigravity
+- Prior use of at least one of Claude Code, Codex, Antigravity, or Grok CLI
 - Python 3.13 and `uv` only if running from source
 
 Releases provide a portable Windows zip plus `.sha256`. The [Latest Release](https://github.com/SanHsien/agentdeck/releases/latest) is the source of truth for the current downloadable version; the README intentionally does not hard-code a version number.
