@@ -608,7 +608,7 @@ remote: - Required status check "check-windows" is expected.
 
 ---
 
-## D-27：terse 只採缺陷修復，風格改寫留給維護者
+## D-27：terse 只採缺陷修復，風格改寫留給維護者（`ec89500` 部分已被 D-28 取代）
 
 **日期**：2026-08-29
 
@@ -627,3 +627,25 @@ remote: - Required status check "check-windows" is expected.
 `usage_terse_mode.py` `__version__` 1.0 → 1.1，新增 `TERSE_REMINDER_HOOK_VERSION` = 1.0。
 prompt 文字必須兩份副本一起改（`i18n.json` 那份才是真正送進模型的）。issue #12 保持開啟。
 逐筆理由見 [`UPSTREAM.md`](UPSTREAM.md) 2026-08-29 段落與 Skipped 表。
+
+---
+
+## D-28：plain-language 改寫採用，並把「這類評估自己決定」寫成常規
+
+**日期**：2026-08-29
+
+**決定**：採用上游 `ec89500`（terse 指令加入白話要求）與其 reminder 半部。推翻 D-27 把它列為後續候選的判斷。
+
+**考慮過的替代方案**：維持 D-27，等維護者逐筆點名再動。
+
+**為什麼**：維護者當日授權「plain-language 改寫這類的評估你決定就好」，所以判準從「是不是維護者的風格
+偏好」改成「這筆有沒有對應到實際失效」。它對應得到：只要求短、不要求白話，回覆會靠塞術語變短——短而
+難懂。加進來的三條都是可檢查的具體要求（挑口語詞、術語第一次出現補十字以內白話、收尾講做了什麼／成功
+沒／下一步），不是空泛宣示。成本只有 SessionStart 指令變長；每則都送的 reminder 只多「用白話」三個字。
+
+**後果**：`TERSE_HOOK_VERSION` 1.1 → 1.2、`usage_terse_mode.py` 1.1 → 1.2、
+`usage_terse_reminder.py` 與 `TERSE_REMINDER_HOOK_VERSION` 1.0 → 1.1。reminder 這次真的改了內容，
+是本 repo 第一次實際用到 D-27 修好的自我修復版本比對——修好之前，已安裝的 reminder 會永遠停在 1.0。
+`i18n.json` 的英文字串內含引號，必須寫成 JSON 轉義的 `\"`，直接貼原文會讓整份 i18n 解析失敗（本次實錯，
+由 43 條 terse 測試當場擋下）。`last_reviewed` = `10be369` 不變，`last_merged` 仍為 `1ec6fe4`
+（`ec89500` 較早）。
