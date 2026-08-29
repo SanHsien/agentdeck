@@ -30,7 +30,7 @@ import sys
 from pathlib import Path
 from typing import Any, cast
 
-__version__ = "1.0"
+__version__ = "1.1"
 
 
 def _read_stdin_utf8() -> str:
@@ -44,11 +44,13 @@ PROMPT_SIDECAR = Path(os.path.expanduser("~/.claude/agentdeck-terse-prompt.json"
 
 _DEFAULT_REMINDER: dict[str, str] = {
     "zh-TW": (
-        "[精簡模式仍生效：這則回覆保持精簡；程式碼、指令、路徑、錯誤訊息照舊一字不改；"
+        "[精簡模式仍生效：這則回覆保持精簡、用白話；程式碼、指令、路徑、錯誤訊息照舊一字"
+        "不改；"
         "安全警示與不可逆操作確認仍要講完整。]"
     ),
     "en": (
-        "[Terse mode is still on: keep this reply brief; code, commands, paths, and "
+        "[Terse mode is still on: keep this reply brief and plain-spoken; code, commands, "
+        "paths, and "
         "error messages stay byte-exact; security warnings and irreversible-action "
         "confirmations must still be written out in full.]"
     ),

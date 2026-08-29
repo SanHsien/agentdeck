@@ -73,7 +73,7 @@ _RESUME_DIAGNOSIS_CAUSE_KEYS = (
 )
 TERSE_HOOK_TARGET = Path(os.path.expanduser("~/.claude/agentdeck-terse-mode.py"))
 TERSE_PROMPT_SIDECAR = Path(os.path.expanduser("~/.claude/agentdeck-terse-prompt.json"))
-TERSE_HOOK_VERSION = "1.1"
+TERSE_HOOK_VERSION = "1.2"
 TERSE_MATCHER = "startup|clear"
 TERSE_LANGS = ("zh-TW", "en")
 _TERSE_MARKER = "agentdeck-terse-mode"
@@ -88,9 +88,9 @@ _FEATURES_HOOKS_REGEX = re.compile(r"(?m)^[ \t]*hooks\s*=\s*[A-Za-z0-9_]+")
 # terse hook. Re-injects a one-line nudge on every prompt so the terse style holds across a
 # long conversation. Claude Code only — Codex CLI has no UserPromptSubmit equivalent.
 TERSE_REMINDER_HOOK_TARGET = Path(os.path.expanduser("~/.claude/agentdeck-terse-reminder.py"))
-# The reminder script is unchanged this round, so it stays at 1.0. Self-heal now compares
-# this constant the same way it compares TERSE_HOOK_VERSION.
-TERSE_REMINDER_HOOK_VERSION = "1.0"
+# Self-heal compares this constant the same way it compares TERSE_HOOK_VERSION, so bump it
+# whenever usage_terse_reminder.py changes.
+TERSE_REMINDER_HOOK_VERSION = "1.1"
 TERSE_REMINDER_MATCHER = ""
 _TERSE_REMINDER_MARKER = "agentdeck-terse-reminder"
 _TERSE_REMINDER_MARKERS = (_TERSE_REMINDER_MARKER, "usage_terse_reminder")

@@ -29,7 +29,7 @@ import sys
 from pathlib import Path
 from typing import Any, cast
 
-__version__ = "1.1"
+__version__ = "1.2"
 
 
 def _read_stdin_utf8() -> str:
@@ -49,7 +49,11 @@ _DEFAULT_INSTRUCTION: dict[str, str] = {
         "模式，回覆會盡量簡短，繼續吧！」。從現在起，直到這個對話結束為止，每一則回覆都要"
         "遵守這條規則——不會因為對話變長、話題變多就淡忘或恢復正常語氣。允許用短句、片語"
         "甚至不成句的斷句表達，不必湊成完整句子；去掉虛詞贅字、客套語、重複鋪陳與不必要的"
-        "過渡句；用詞挑簡短的（例如「修」不要「針對這個問題實作解決方案」）。不用裝飾性"
+        "過渡句；用詞挑簡短的（例如「修」不要「針對這個問題實作解決方案」）。精簡是預算，"
+        "白話是風格：短不等於難懂。挑最口語的說法，能用日常字就不要用術語（例如「先存檔」"
+        "不要「先持久化」）。非用不可的技術詞，第一次出現時在後面補十個字以內的白話解釋，"
+        "之後直接用。不要比喻、不要為了親切多寫。收尾就三件事：做了什麼、成功沒、下一步"
+        "做什麼。不用裝飾性"
         "表格；除了開頭那句招呼，內文不放表情符號。不要複述工具名稱或呼叫過程，但開工具前"
         "用一句話說明要做什麼是可以的。不要自創縮寫（例如「設定」別縮成「設」、"
         "「函式」別縮成「函」）——這類縮寫斷詞長度跟完整詞一樣，省不到字數，反而讓讀者要"
@@ -70,7 +74,12 @@ _DEFAULT_INSTRUCTION: dict[str, str] = {
         "fade or drift back to normal verbosity partway through. Drop articles "
         "(a/an/the), filler (just/really/basically/actually), pleasantries (sure/"
         "certainly/happy to), and hedging. Fragments are fine. Prefer short synonyms "
-        "(big, not extensive; fix, not \"implement a solution for\"). No decorative "
+        "(big, not extensive; fix, not \"implement a solution for\"). Terse is the budget; "
+        "plain is the style — short must never mean cryptic. Pick the everyday word over "
+        "the jargon one (\"save it first\", not \"persist it first\"). When a technical term "
+        "is unavoidable, gloss it once on first use in eight words or fewer, then just use "
+        "it. No analogies, no warmth padding. Close with what you did, whether it worked, "
+        "and what to do next. No decorative "
         "tables, and no emoji in the body beyond the opening greeting. Don't recite "
         "tool names or narrate calls — but one line of intent before running a tool "
         "is fine. Never invent abbreviations (cfg/impl/"

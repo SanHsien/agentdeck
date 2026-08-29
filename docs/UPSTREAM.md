@@ -33,7 +33,7 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
     "main": {
       "last_reviewed": "10be369",
       "last_merged": "1ec6fe4",
-      "note": "審視至 10be369（upstream/main 的 tip，2026-08-29）。83f8a4e 之後 8 筆：4 筆 chore: sync AI updates 只動 ai_updates.json（本 fork 已移除），自動分流；beacc12a 是上游發版 v0.30.3，不適用。terse 三筆逐筆判：1ec6fe4 全採（自我修復從不替換已安裝的舊版 reminder script，本 fork 同樣中招）；4222250 只採 prompt 自相矛盾那半（emoji 與工具旁白），語言偵測那半不適用——本 fork 的 _detect_lang() 早已回退到 _windows_system_lang()，沒有預設落到英文的問題；ec89500 的 plain-language 改寫是風格決定，列為後續候選，等維護者點名。上一輪（6d74e58..83f8a4e）的逐筆結果見 2026-08-28 段落與 Skipped 表。"
+      "note": "審視至 10be369（upstream/main 的 tip，2026-08-29）。83f8a4e 之後 8 筆：4 筆 chore: sync AI updates 只動 ai_updates.json（本 fork 已移除），自動分流；beacc12a 是上游發版 v0.30.3，不適用。terse 三筆逐筆判：1ec6fe4 全採（自我修復從不替換已安裝的舊版 reminder script，本 fork 同樣中招）；4222250 只採 prompt 自相矛盾那半（emoji 與工具旁白），語言偵測那半不適用——本 fork 的 _detect_lang() 早已回退到 _windows_system_lang()，沒有預設落到英文的問題；ec89500 的 plain-language 改寫同日稍晚改判採用（維護者授權自行評估，見 D-28）。上一輪（6d74e58..83f8a4e）的逐筆結果見 2026-08-28 段落與 Skipped 表。"
     }
   },
   "tickets": {
@@ -81,11 +81,19 @@ resume。`usage_terse_reminder.py` 本來就有 `__version__`，只是沒人拿�
 （`GetUserDefaultUILanguage`），而且刻意不讀 `LANG`（Git Bash 會塞 en_US 蓋掉系統語言）。
 上游要修的那個洞在這裡本來就沒有，照抄只會多一條 sidecar 相依。
 
-### 後續候選：`ec89500` plain-language 改寫
+### 採用 3（同日稍晚改判）：`ec89500` plain-language 改寫
 
-「精簡是預算，白話是風格」那批指令改寫是真的改進，但它重寫整段 prompt、屬於風格決定，不是缺陷修復。
-維護者點名再做。issue #12 保持開啟，本項與前一輪列出的 agy 額度通知／burn rate、面板量高度與縮放、
-Codex `status_line` 無裸 `[tui]`、Claude advisor 成本對帳、Codex 5h session keeper 都還在候選裡。
+原判「列為後續、等維護者點名」。維護者當日授權「這類評估你決定就好」後改判**採用**。
+
+理由：它針對的是精簡模式的實際失效方式——只要求短，回覆就靠塞術語變短，短而難懂。加入的三條規則（挑口語詞、術語第一次出現補十字以內白話、收尾講做了什麼／成功沒／下一步）都是可檢查的具體要求，
+不是空泛的風格宣示，而且與本 repo 兩語文件一貫的白話取向一致。成本是 SessionStart 指令變長；
+每則都送的 reminder hook 只多「用白話」三個字，逐則的節省不受影響。
+
+`usage_terse_reminder.py` 也跟著改，所以 `TERSE_REMINDER_HOOK_VERSION` 推到 1.1——這正好第一次
+實際用到本輪修好的自我修復：舊版 reminder script 會被換掉，換作修好之前就是永遠停在 1.0。
+
+issue #12 仍保持開啟：前一輪列出的 agy 額度通知／burn rate、面板量高度與縮放、Codex `status_line`
+無裸 `[tui]`、Claude advisor 成本對帳、Codex 5h session keeper 都還在候選裡。
 
 ## 2026-08-28：Grok 本機額度卡與打包斷言，其餘 backlog 記略過
 
@@ -335,7 +343,7 @@ Linux cloud agent **沒有**跑 `build_windows.ps1`；archive_viewer 那層要�
 | main | `e94cd4d` | fix: narrow NSUserDefaults for mypy's Windows platform check | 2026-07-30 | 只改 `panel_window_state.py`——那是上游在 `4dbf916` 新建的檔案，本 fork 沒有；且 `NSUserDefaults` 是 macOS API。 |
 | main | `1ec6fe4` | fix(terse): update a stale reminder hook instead of only backfilling a missing one | 2026-08-29 | **採用**。本 fork 的 `_self_heal_terse_reminder()` 有同一個早退，已補 `TERSE_REMINDER_HOOK_VERSION` 與版本比對，並加回歸測試。 |
 | main | `4222250` | fix(terse): resolve two contradictions in the prompt and stop defaulting to English | 2026-08-29 | **只採 prompt 半部**。emoji 與工具旁白兩處矛盾已在 `usage_terse_mode.py` 與 `i18n.json` 兩份副本改掉，`TERSE_HOOK_VERSION` 推到 1.1。語言偵測半部不適用：本 fork `_detect_lang()` 已回退 `_windows_system_lang()`，不會預設落到英文。 |
-| main | `ec89500` | feat(terse): ask for plain language, not just short replies | 2026-08-29 | **列為後續**，不是不適用。整段 prompt 的風格改寫，屬維護者決定；issue #12 保持開啟。 |
+| main | `ec89500` | feat(terse): ask for plain language, not just short replies | 2026-08-29 | **採用**（同日稍晚，維護者授權自行評估後改判）。加「精簡是預算、白話是風格」與術語加註、收尾三件事；reminder 同步補「用白話」。見 D-28。 |
 | main | `beacc12a` | release: v0.30.3 | 2026-08-29 | **不適用**。上游發版；本 fork 版號獨立。 |
 | main | `4a1ece0`／`64c51aa`／`ff7859d`／`10be369` | chore: sync AI updates | 2026-08-29 | **不適用**。只動 `ai_updates.json`，該檔已在本 fork 移除。 |
 
