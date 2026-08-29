@@ -31,9 +31,9 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "83f8a4e",
-      "last_merged": "1cc5929",
-      "note": "審視至 83f8a4e（upstream/main 的 tip，2026-08-28，v0.30.2）。issue #12 開出時列 53 筆需人工審視；實際處理時已累積 64 筆，全數逐筆審完並記錄於下方 Skipped 表。本輪採用：`c1b8d80` 的 archive_viewer 打包斷言（模組名改為本 fork 仍在用的頂層 wintray／tui，不照抄 wintray.app／tui.app）；Grok CLI 本機額度卡叢集 `505336f`／`74ad95f`／`5463cd3`／`32da5ab`，以及 `1cc5929` 的 Windows 拖曳區／合約測試缺口。`82895b6` 略過（本 fork 從未把 wintray.py／tui.py 搬進套件，那個 hidden-import bug 不存在）。其餘官網／圖庫／候鳥遷徙／套件搬家／macOS menubar／上游發版／chore: sync AI updates 全部略過；agy burn rate、面板縮放、Codex status_line 無裸 [tui]、session keeper 等列為後續，見 2026-08-28 段落。"
+      "last_reviewed": "10be369",
+      "last_merged": "1ec6fe4",
+      "note": "審視至 10be369（upstream/main 的 tip，2026-08-29）。83f8a4e 之後 8 筆：4 筆 chore: sync AI updates 只動 ai_updates.json（本 fork 已移除），自動分流；beacc12a 是上游發版 v0.30.3，不適用。terse 三筆逐筆判：1ec6fe4 全採（自我修復從不替換已安裝的舊版 reminder script，本 fork 同樣中招）；4222250 只採 prompt 自相矛盾那半（emoji 與工具旁白），語言偵測那半不適用——本 fork 的 _detect_lang() 早已回退到 _windows_system_lang()，沒有預設落到英文的問題；ec89500 的 plain-language 改寫是風格決定，列為後續候選，等維護者點名。上一輪（6d74e58..83f8a4e）的逐筆結果見 2026-08-28 段落與 Skipped 表。"
     }
   },
   "tickets": {
@@ -45,6 +45,47 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
 }
 ```
 <!-- sync-points:end -->
+
+## 2026-08-29：terse 兩筆修正採用，plain-language 列後續
+
+`83f8a4e` 之後上游 ahead 8 筆，扣掉 4 筆 `chore: sync AI updates`（只動 `ai_updates.json`，本 fork 已移除）
+與 `beacc12a`（上游發版 v0.30.3），真正要判的是 terse 三筆。三筆都動到本 fork 也有的檔案
+（`usage_terse_mode.py`、`usage_terse_reminder.py`、`session_hooks.py`、`i18n.json`），不能走自動分流。
+
+### 採用 1：`1ec6fe4` — 自我修復不會替換已安裝的舊版 reminder script
+
+本 fork 的 `_self_heal_terse_reminder()` 只檢查「script 或 entry 不存在」，兩者都在就 `return`。
+裝好之後就再也不會被換掉，而同一支檔案裡另外三個 hook 都有版本比對：SessionStart terse、Codex terse、
+resume。`usage_terse_reminder.py` 本來就有 `__version__`，只是沒人拿來比。已補
+`TERSE_REMINDER_HOOK_VERSION` 與 `_installed_terse_reminder_version()`，缺件的還原路徑不變，多一條
+「present but stale → 重新複製並記 `update_terse_reminder_hook`」。回歸測試
+`test_self_heal_updates_old_reminder_version` 拿掉修正即紅燈。
+
+### 採用 2：`4222250` 的 prompt 半部 — 兩處自相矛盾
+
+同一段指令要求開場白帶 🐾，接著又說不要表情符號；工具呼叫旁白也被一竿子禁掉，跟「開工具前說一句要做
+什麼」的用法打架。兩句都改寫：表情符號限縮成「除了開頭那句招呼，內文不放」，工具旁白改成「不要複述工具
+名稱或呼叫過程，但開工具前用一句話說明要做什麼是可以的」。
+
+**兩份副本都要改**。`usage_terse_mode.py` 裡的 `_DEFAULT_INSTRUCTION` 只是退路；真正送進模型的是
+`i18n.json` 的 `terse_mode_instruction`，由 `_write_terse_sidecar()` 寫進
+`~/.claude/agentdeck-terse-prompt.json`，而 `_load_instruction()` 優先讀 sidecar。只改 .py 等於沒改。
+`TERSE_HOOK_VERSION` 因此推到 `1.1`——`_self_heal_terse_mode()` 版本不符時會同時重寫 script 與 sidecar，
+已經開著精簡模式的使用者才拿得到修好的文字。
+
+### 不適用：`4222250` 的語言偵測半部
+
+上游的 `_detect_lang()` 只讀 `USAGE_LANG`／`TT_LANG`／`LANG`，環境變數都沒有就掉到英文，所以它把
+`detect_lang()` 的結果寫進 sidecar 讓 hook 讀回來（跨平台，macOS 要 NSLocale）。本 fork 是 Windows-only，
+`_detect_lang()` 讀完 `AGENTDECK_LANG`／`TT_LANG` 之後回退 `_windows_system_lang()`
+（`GetUserDefaultUILanguage`），而且刻意不讀 `LANG`（Git Bash 會塞 en_US 蓋掉系統語言）。
+上游要修的那個洞在這裡本來就沒有，照抄只會多一條 sidecar 相依。
+
+### 後續候選：`ec89500` plain-language 改寫
+
+「精簡是預算，白話是風格」那批指令改寫是真的改進，但它重寫整段 prompt、屬於風格決定，不是缺陷修復。
+維護者點名再做。issue #12 保持開啟，本項與前一輪列出的 agy 額度通知／burn rate、面板量高度與縮放、
+Codex `status_line` 無裸 `[tui]`、Claude advisor 成本對帳、Codex 5h session keeper 都還在候選裡。
 
 ## 2026-08-28：Grok 本機額度卡與打包斷言，其餘 backlog 記略過
 
@@ -292,6 +333,11 @@ Linux cloud agent **沒有**跑 `build_windows.ps1`；archive_viewer 那層要�
 | main | `c2af3a9` | fix: dismissing the panel menu no longer throws the panel away | 2026-07-30 | 只改 `menubar.py`（已刪除）。Windows 的面板選單是 `JS_SHIM` 自製的 overlay，不共用這條路徑。 |
 | main | `d2d36c8` | chore: release v0.29.9 | 2026-07-30 | 純版號與 CHANGELOG，外加更新本 fork 已刪除的 `README.ja/ko/zh-CN`。本 fork 版號獨立（見 `docs/DECISIONS.md` D-05）。 |
 | main | `e94cd4d` | fix: narrow NSUserDefaults for mypy's Windows platform check | 2026-07-30 | 只改 `panel_window_state.py`——那是上游在 `4dbf916` 新建的檔案，本 fork 沒有；且 `NSUserDefaults` 是 macOS API。 |
+| main | `1ec6fe4` | fix(terse): update a stale reminder hook instead of only backfilling a missing one | 2026-08-29 | **採用**。本 fork 的 `_self_heal_terse_reminder()` 有同一個早退，已補 `TERSE_REMINDER_HOOK_VERSION` 與版本比對，並加回歸測試。 |
+| main | `4222250` | fix(terse): resolve two contradictions in the prompt and stop defaulting to English | 2026-08-29 | **只採 prompt 半部**。emoji 與工具旁白兩處矛盾已在 `usage_terse_mode.py` 與 `i18n.json` 兩份副本改掉，`TERSE_HOOK_VERSION` 推到 1.1。語言偵測半部不適用：本 fork `_detect_lang()` 已回退 `_windows_system_lang()`，不會預設落到英文。 |
+| main | `ec89500` | feat(terse): ask for plain language, not just short replies | 2026-08-29 | **列為後續**，不是不適用。整段 prompt 的風格改寫，屬維護者決定；issue #12 保持開啟。 |
+| main | `beacc12a` | release: v0.30.3 | 2026-08-29 | **不適用**。上游發版；本 fork 版號獨立。 |
+| main | `4a1ece0`／`64c51aa`／`ff7859d`／`10be369` | chore: sync AI updates | 2026-08-29 | **不適用**。只動 `ai_updates.json`，該檔已在本 fork 移除。 |
 
 ## 2026-08-23（補）：PR 那一欄的前提是錯的
 

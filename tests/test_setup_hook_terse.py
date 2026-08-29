@@ -155,7 +155,9 @@ def test_self_heal_updates_old_version(terse_paths: TerseHookPaths) -> None:
 
     data = json.loads(terse_paths.settings.read_text(encoding="utf-8"))
     assert data["agentdeck"]["selfHealLog"][-1]["action"] == "update_terse_hook"
-    assert data["agentdeck"]["selfHealLog"][-1]["detail"] == "0.1 -> 1.0"
+    assert data["agentdeck"]["selfHealLog"][-1]["detail"] == (
+        f"0.1 -> {session_hooks.TERSE_HOOK_VERSION}"
+    )
 
 
 def test_self_heal_noop_when_disabled(terse_paths: TerseHookPaths) -> None:
@@ -341,6 +343,25 @@ def test_self_heal_backfills_reminder_for_legacy_user(terse_paths: TerseHookPath
     heal = json.loads(terse_paths.settings.read_text(encoding="utf-8"))
     assert heal["agentdeck"]["selfHealLog"][-1]["action"] == "restore_terse_reminder_hook"
     assert heal["agentdeck"]["selfHealLog"][-1]["detail"] == "missing=script,entry"
+
+
+def test_self_heal_updates_old_reminder_version(terse_paths: TerseHookPaths) -> None:
+    # Script and entry are both present but the installed copy is stale. Self-heal used to
+    # return early here, so an outdated reminder script was never replaced.
+    session_hooks.enable_terse_mode()
+    terse_paths.terse_reminder_target.write_text('__version__ = "0.9"', encoding="utf-8")
+
+    session_hooks._self_heal_terse_mode()
+
+    assert session_hooks._installed_terse_reminder_version() == (
+        session_hooks.TERSE_REMINDER_HOOK_VERSION
+    )
+    assert len(_reminder_entries(terse_paths.settings)) == 1
+    data = json.loads(terse_paths.settings.read_text(encoding="utf-8"))
+    assert data["agentdeck"]["selfHealLog"][-1]["action"] == "update_terse_reminder_hook"
+    assert data["agentdeck"]["selfHealLog"][-1]["detail"] == (
+        f"0.9 -> {session_hooks.TERSE_REMINDER_HOOK_VERSION}"
+    )
 
 
 def test_self_heal_reminder_noop_when_disabled(terse_paths: TerseHookPaths) -> None:

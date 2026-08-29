@@ -605,3 +605,25 @@ remote: - Required status check "check-windows" is expected.
 **為什麼不整批對齊上游套件佈局**：那正是上游 v0.29.34–36 Windows exe 無法啟動的根因，而且會把必須留在根目錄的 stdlib hook 一起搬走。
 
 **後果**：`last_reviewed` = `83f8a4e`，`last_merged` = `1cc5929`。逐筆理由見 [`UPSTREAM.md`](UPSTREAM.md) 2026-08-28 段落與 Skipped 表。
+
+---
+
+## D-27：terse 只採缺陷修復，風格改寫留給維護者
+
+**日期**：2026-08-29
+
+**決定**：上游 `83f8a4e..10be369` 的 terse 三筆，採用 `1ec6fe4`（自我修復不換舊版 reminder script）與
+`4222250` 的 prompt 矛盾半部；`4222250` 的語言偵測半部判為不適用；`ec89500` 的 plain-language 改寫列為
+後續候選，不在本輪動。
+
+**考慮過的替代方案**：三筆一起記略過、把 `last_reviewed` 推到 tip 收工——這是上游檢查報告最省事的走法。
+
+**為什麼**：那三筆不是官網或 macOS 那類「本 fork 沒有的東西」，它們動到的四個檔案本 fork 全都有，而且其中
+兩個缺陷在這裡是活的：reminder hook 裝上去就永遠不再更新；terse 指令同一段話既要求開場 🐾 又禁止表情
+符號。記略過等於把兩個已知缺陷連同提醒一起關掉。反過來，`ec89500` 是風格決定不是缺陷，替維護者決定
+「回覆該長什麼樣」超出撿上游更新的授權範圍。
+
+**後果**：`last_reviewed` = `10be369`、`last_merged` = `1ec6fe4`。`TERSE_HOOK_VERSION` 1.0 → 1.1，
+`usage_terse_mode.py` `__version__` 1.0 → 1.1，新增 `TERSE_REMINDER_HOOK_VERSION` = 1.0。
+prompt 文字必須兩份副本一起改（`i18n.json` 那份才是真正送進模型的）。issue #12 保持開啟。
+逐筆理由見 [`UPSTREAM.md`](UPSTREAM.md) 2026-08-29 段落與 Skipped 表。
