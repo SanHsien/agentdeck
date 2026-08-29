@@ -29,7 +29,7 @@ import sys
 from pathlib import Path
 from typing import Any, cast
 
-__version__ = "1.0"
+__version__ = "1.1"
 
 
 def _read_stdin_utf8() -> str:
@@ -50,7 +50,8 @@ _DEFAULT_INSTRUCTION: dict[str, str] = {
         "遵守這條規則——不會因為對話變長、話題變多就淡忘或恢復正常語氣。允許用短句、片語"
         "甚至不成句的斷句表達，不必湊成完整句子；去掉虛詞贅字、客套語、重複鋪陳與不必要的"
         "過渡句；用詞挑簡短的（例如「修」不要「針對這個問題實作解決方案」）。不用裝飾性"
-        "表格或表情符號，也不要旁白工具呼叫的過程。不要自創縮寫（例如「設定」別縮成「設」、"
+        "表格；除了開頭那句招呼，內文不放表情符號。不要複述工具名稱或呼叫過程，但開工具前"
+        "用一句話說明要做什麼是可以的。不要自創縮寫（例如「設定」別縮成「設」、"
         "「函式」別縮成「函」）——這類縮寫斷詞長度跟完整詞一樣，省不到字數，反而讓讀者要"
         "多想一下，直接用完整詞更省事也更清楚。程式碼、指令、檔案路徑、錯誤訊息一個字都"
         "不能省略或改寫。遇到安全警示、不可逆操作的確認、或多步驟中省略連接詞會有誤讀風險"
@@ -70,7 +71,9 @@ _DEFAULT_INSTRUCTION: dict[str, str] = {
         "(a/an/the), filler (just/really/basically/actually), pleasantries (sure/"
         "certainly/happy to), and hedging. Fragments are fine. Prefer short synonyms "
         "(big, not extensive; fix, not \"implement a solution for\"). No decorative "
-        "tables, emoji, or tool-call narration. Never invent abbreviations (cfg/impl/"
+        "tables, and no emoji in the body beyond the opening greeting. Don't recite "
+        "tool names or narrate calls — but one line of intent before running a tool "
+        "is fine. Never invent abbreviations (cfg/impl/"
         "req/res) — the tokenizer splits them the same as the full word, so nothing "
         "is saved and the reader still has to decode it; use the full word instead. "
         "Code, commands, file paths, and error messages must stay byte-exact, never "
