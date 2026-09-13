@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(uv run --no-sync ruff check:*)",
+      "Bash(uv run --no-sync mypy:*)",
+      "Bash(uv run --no-sync pytest:*)",
+      "Bash(uv sync --frozen:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git fetch upstream:*)",
+      "Bash(git rev-list:*)",
+      "Bash(git rev-parse:*)"
+    ],
+    "deny": [
+      "Bash(git push upstream:*)",
+      "Bash(uv lock:*)",
+      "Read(./vendor/**)",
+      "Read(./.venv/**)"
+    ]
+  }
+}

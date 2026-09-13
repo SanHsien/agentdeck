@@ -1,0 +1,76 @@
+name: 依賴新鮮度檢查
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - pyproject.toml
+      - tools/check_dependency_freshness.py
+      - .github/workflows/dependency-freshness.yml
+  schedule:
+    # 每月 1 日 11:00（Asia/Taipei）盤點 pyproject.toml 宣告的直接依賴。
+    # Dependabot 顧的是 lock 的移動，這裡顧的是宣告下限有沒有悄悄落後。
+    - cron: '0 3 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: dependency-freshness
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PYTHONUTF8: '1'
+      PYTHONIOENCODING: 'utf-8'
+
+    steps:
+      - name: 檢出程式碼
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: 設定 Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.13'
+
+      - name: 檢查依賴新鮮度
+        id: deps
+        run: |
+          python tools/check_dependency_freshness.py \
+            --github-output \
+            --output dependency-freshness-report.md
+
+      - name: 發佈報告
+        run: cat dependency-freshness-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 建立或更新提醒 issue
+        if: steps.deps.outputs.needs_attention == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # 沿用同一個 issue，避免每月開一張新的把列表淹掉。
+          issue="$(gh issue list --state open --search '依賴新鮮度檢查 in:title' --json number --jq '.[0].number // empty')"
+          if [ -n "$issue" ]; then
+            gh issue edit "$issue" --body-file dependency-freshness-report.md
+          else
+            gh issue create \
+              --title "依賴新鮮度檢查：有宣告下限待審視" \
+              --body-file dependency-freshness-report.md
+          fi
+
+      - name: 關閉已解決的提醒 issue
+        if: steps.deps.outputs.needs_attention == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          issue="$(gh issue list --state open --search '依賴新鮮度檢查 in:title' --json number --jq '.[0].number // empty')"
+          if [ -n "$issue" ]; then
+            gh issue close "$issue" --comment "本次排程檢查確認所有直接依賴的宣告下限皆為最新，關閉提醒。"
+          fi

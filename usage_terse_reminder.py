@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 lollapalooza <https://github.com/aqua5230>
+#
+# Part of "usage". Free software licensed under the GNU Affero General Public
+# License v3.0 only; see the LICENSE file for full terms and the warranty disclaimer.
+
+"""usage UserPromptSubmit hook — re-inject a terse-mode reminder on each user message.
+
+Claude Code runs this every time the user submits a prompt and pipes the session
+JSON on stdin. ``usage_terse_mode.py`` only fires once at SessionStart; over a long
+conversation the terse style drifts back to verbose. This hook appends a one-line
+bracketed nudge — not a request the model must answer — so terseness holds across
+turns. Code, commands, paths, and error messages are explicitly left byte-exact.
+
+Stdlib-only and 3.9-safe — same constraint as ``usage_statusline.py`` and
+``usage_terse_mode.py``: it may run under macOS's bundled ``/usr/bin/python3``
+(3.9), so no third-party imports, no ``datetime.UTC``, no runtime ``X | Y``
+types. The reminder wording lives in the same sidecar written by ``setup_hook``
+(``~/.claude/agentdeck-terse-prompt.json``, the ``reminder`` field per language); if
+that file or field is missing, this script falls back to embedded defaults. Any
+failure exits 0 with no output.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import sys
+from pathlib import Path
+from typing import Any, cast
+
+__version__ = "1.2"
+
+
+def _read_stdin_utf8() -> str:
+    buffer = getattr(sys.stdin, "buffer", None)
+    if buffer is None:
+        return sys.stdin.read()
+    return cast(bytes, buffer.read()).decode("utf-8", "replace")
+
+
+PROMPT_SIDECAR = Path(os.path.expanduser("~/.claude/agentdeck-terse-prompt.json"))
+
+_DEFAULT_REMINDER: dict[str, str] = {
+    "zh-TW": (
+        "[精簡模式仍生效：這則回覆保持精簡、用白話；程式碼、指令、路徑、錯誤訊息照舊一字"
+        "不改；"
+        "安全警示與不可逆操作確認仍要講完整；"
+        "使用者明確要求詳細解說時，以使用者當下的要求為準。]"
+    ),
+    "en": (
+        "[Terse mode is still on: keep this reply brief and plain-spoken; code, commands, "
+        "paths, and "
+        "error messages stay byte-exact; security warnings and irreversible-action "
+        "confirmations must still be written out in full; if the user explicitly asks "
+        "for a detailed walkthrough, follow that instead.]"
+    ),
+}
+
+
+def _windows_system_lang() -> str:
+    if os.name != "nt":
+        return ""
+    try:
+        import ctypes
+        import locale as _locale
+
+        windll = getattr(ctypes, "windll", None)
+        if windll is None:
+            return ""
+        lang_id = int(windll.kernel32.GetUserDefaultUILanguage())
+        return _locale.windows_locale.get(lang_id, "") or ""
+    except Exception:
+        return ""
+
+
+def _detect_lang() -> str:
+    # LANG is deliberately not consulted. Git Bash and MSYS inject one (usually
+    # en_US.UTF-8) that reflects the shell, not the user, and it silently
+    # outranked the system UI language: a zh-TW machine launched from Git Bash
+    # got an English UI. This is a Windows-only application, so the shell's
+    # LANG has no claim the system setting does not already answer better.
+    for key in ("AGENTDECK_LANG", "TT_LANG"):
+        value = os.environ.get(key, "").strip()
+        if value:
+            return _normalize_lang(value)
+    return _normalize_lang(_windows_system_lang())
+
+
+def _normalize_lang(code: str) -> str:
+    normalized = code.split(".")[0].split("@")[0].strip().lower().replace("_", "-")
+    # Traditional Chinese and English are the only shipped languages: every
+    # Chinese variant maps to zh-TW, everything else falls back to English.
+    if normalized == "zh" or normalized.startswith("zh-"):
+        return "zh-TW"
+    return "en"
+
+
+def _load_reminder(lang: str) -> str:
+    try:
+        raw = json.loads(PROMPT_SIDECAR.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        raw = None
+    if isinstance(raw, dict):
+        table = raw.get(lang)
+        if isinstance(table, dict):
+            reminder = table.get("reminder")
+            if isinstance(reminder, str) and reminder:
+                return reminder
+        table = raw.get("en")
+        if isinstance(table, dict):
+            reminder = table.get("reminder")
+            if isinstance(reminder, str) and reminder:
+                return reminder
+    return _DEFAULT_REMINDER.get(lang, _DEFAULT_REMINDER["en"])
+
+
+def main() -> int:
+    try:
+        payload = json.loads(_read_stdin_utf8() or "{}")
+    except (OSError, ValueError, TypeError):
+        return 0
+    if not isinstance(payload, dict):
+        return 0
+    output: dict[str, Any] = {
+        "hookSpecificOutput": {
+            "hookEventName": "UserPromptSubmit",
+            "additionalContext": _load_reminder(_detect_lang()),
+        }
+    }
+    try:
+        print(json.dumps(output, ensure_ascii=True))
+    except OSError:
+        return 0
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,779 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="theme-color" content="#0a0a0a" />
+<title>agentdeck — pin your Claude Code &amp; Codex quota to the Windows tray</title>
+<meta name="description" data-i18n-attr="content:meta_desc" content="Windows tray tracker for Claude Code &amp; Codex quota, tokens, and cost. Reads your local files directly — never connects to Anthropic or OpenAI. HTML reports, 4 visual themes, AGPL-3.0." />
+<meta property="og:title" content="agentdeck — pin your Claude Code & Codex quota to the Windows tray" />
+<meta property="og:description" content="Windows tray tracker for Claude Code & Codex quota, tokens, and cost. Reads your local files directly — never connects to Anthropic or OpenAI." />
+<meta property="og:image" content="https://sanhsien.github.io/agentdeck/hero.png" />
+<meta property="og:url" content="https://sanhsien.github.io/agentdeck/" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="https://sanhsien.github.io/agentdeck/hero.png" />
+<link rel="icon" type="image/png" href="readme-logo.png" />
+<link rel="alternate" hreflang="en" href="https://sanhsien.github.io/agentdeck/#en" />
+<link rel="alternate" hreflang="zh-TW" href="https://sanhsien.github.io/agentdeck/#zh-TW" />
+<link rel="alternate" hreflang="x-default" href="https://sanhsien.github.io/agentdeck/" />
+<style>
+:root {
+  --bg: #0a0a0a;
+  --bg-soft: #141414;
+  --bg-card: #1a1a1a;
+  --fg: #f5f5f5;
+  --fg-dim: #a3a3a3;
+  --fg-dimmer: #6b6b6b;
+  --accent: #ff8c42;
+  --accent-soft: rgba(255, 140, 66, 0.12);
+  --border: #2a2a2a;
+  --green: #4ade80;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans CJK TC", "Noto Sans CJK SC", "Noto Sans JP", "Noto Sans KR", Arial, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; height: auto; display: block; }
+button { font-family: inherit; cursor: pointer; }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+@media (max-width: 640px) { .wrap { padding: 0 16px; } }
+
+/* Aurora glow behind the hero */
+.aurora {
+  position: fixed; top: -240px; left: 50%;
+  transform: translateX(-50%);
+  width: 900px; height: 520px; z-index: 0; pointer-events: none;
+  background: radial-gradient(60% 60% at 38% 42%, rgba(255, 140, 66, 0.10) 0%, transparent 70%),
+              radial-gradient(60% 60% at 66% 55%, rgba(74, 222, 128, 0.10) 0%, transparent 70%);
+  filter: blur(22px);
+}
+
+/* Top bar */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(10, 10, 10, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+}
+.topbar .wrap {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 56px;
+  gap: 16px;
+}
+.brand { font-weight: 600; font-size: 17px; letter-spacing: -0.01em; white-space: nowrap; }
+.brand-dot { color: var(--accent); margin-right: 4px; }
+.topbar nav { display: flex; gap: 24px; font-size: 14px; color: var(--fg-dim); }
+.topbar nav a:hover { color: var(--fg); }
+@media (max-width: 640px) { .topbar nav { display: none; } }
+
+/* Language switcher */
+.lang {
+  position: relative;
+}
+.lang-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+.lang-btn:hover { border-color: var(--fg-dimmer); background: var(--bg-soft); transform: translateY(-1px); }
+.lang-btn:active { transform: translateY(0); }
+.lang-btn[aria-expanded="true"] { border-color: var(--accent); }
+.lang-caret { font-size: 10px; color: var(--fg-dim); }
+.lang-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  list-style: none;
+  padding: 8px;
+  min-width: 160px;
+  box-shadow: 0 12px 36px -12px rgba(0, 0, 0, 0.6);
+  z-index: 60;
+}
+.lang-menu[hidden] { display: none; }
+.lang-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  color: var(--fg);
+  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+.lang-menu button:hover { background: var(--bg-soft); }
+.lang-menu button[aria-current="true"] {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+/* Hero */
+.hero { padding: 80px 0 60px; text-align: center; }
+.eyebrow {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 8px 12px;
+  border-radius: 999px;
+  margin-bottom: 24px;
+  letter-spacing: 0.02em;
+}
+.hero h1 {
+  font-size: clamp(34px, 5.6vw, 56px);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  font-weight: 700;
+  margin-bottom: 24px;
+  background: linear-gradient(180deg, var(--fg) 32%, #b8b8bd 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.hero h1 .accent { color: var(--accent); -webkit-text-fill-color: var(--accent); }
+.hero p.lead {
+  font-size: 19px;
+  color: var(--fg-dim);
+  max-width: 640px;
+  margin: 0 auto 32px;
+}
+.cta { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 48px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 15px; font-weight: 500;
+  min-height: 48px;
+  padding: 0 12px;
+  border-radius: 100px;
+  border: 1px solid transparent;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s, border-color 0.15s;
+}
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.18), 0 8px 16px -8px rgba(0, 0, 0, 0.45);
+}
+.btn:active {
+  transform: translateY(0);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.22);
+}
+.btn-primary { background: var(--accent); color: #0a0a0a; }
+.btn-primary:hover { background: #ff9d5c; }
+.btn-primary:active { background: var(--accent); }
+.btn-secondary { background: transparent; color: var(--fg); border-color: var(--border); }
+.btn-secondary:hover { border-color: var(--fg-dimmer); background: var(--bg-soft); }
+.btn-secondary:active { background: var(--bg-card); }
+.shot {
+  margin: 8px auto 0;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.6), 0 10px 30px -10px rgba(255, 140, 66, 0.12);
+  width: fit-content;
+  max-width: 100%;
+}
+.shot img { max-width: 100%; max-height: 70vh; }
+
+/* Floating mascot pet */
+.mascot-pet {
+  position: fixed;
+  right: clamp(12px, 3vw, 40px);
+  bottom: 0;
+  width: clamp(96px, 12vw, 168px);
+  z-index: 40;
+  pointer-events: none;
+  /* glow lifts the black suit off the near-black background */
+  filter: drop-shadow(0 0 26px rgba(255, 140, 66, 0.32)) drop-shadow(0 8px 18px rgba(0, 0, 0, 0.7));
+  animation: mascot-in 0.6s ease-out 0.4s both;
+}
+@keyframes mascot-in {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 720px) { .mascot-pet { display: none; } }
+@media (prefers-reduced-motion: reduce) { .mascot-pet { animation: none; } }
+
+/* Privacy strip */
+.strip {
+  background: var(--bg-soft);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 32px 0;
+}
+.strip .wrap {
+  display: flex; align-items: center; justify-content: center; gap: 32px;
+  flex-wrap: wrap;
+  font-size: 14px; color: var(--fg-dim);
+}
+.strip .item { display: flex; align-items: center; gap: 8px; }
+.strip .dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; box-shadow: 0 0 12px var(--green); }
+.strip .item strong { color: var(--fg); font-weight: 500; }
+
+/* Sections */
+section { padding: 80px 0; }
+section h2 {
+  font-size: clamp(28px, 4vw, 40px);
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  margin-bottom: 16px;
+  text-align: center;
+}
+section .subtitle {
+  text-align: center;
+  color: var(--fg-dim);
+  max-width: 560px;
+  margin: 0 auto 56px;
+  font-size: 17px;
+}
+
+/* Feature grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+}
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.card:hover { border-color: var(--fg-dimmer); transform: translateY(-2px); }
+.card .icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: linear-gradient(160deg, rgba(74, 222, 128, 0.14), rgba(255, 140, 66, 0.10));
+  border: 1px solid rgba(74, 222, 128, 0.25);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 16px; color: var(--green);
+}
+.card .icon svg { width: 22px; height: 22px; }
+.card h3 { font-size: 17px; margin-bottom: 8px; letter-spacing: -0.01em; }
+.card p { font-size: 14.5px; color: var(--fg-dim); line-height: 1.55; }
+
+/* Install */
+.install { background: var(--bg-soft); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.install-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 720px) { .install-row { grid-template-columns: 1fr; } }
+.install-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px;
+}
+.install-card .label { font-size: 12px; font-family: var(--mono); color: var(--accent); margin-bottom: 8px; letter-spacing: 0.04em; }
+.install-card h3 { font-size: 20px; margin-bottom: 8px; }
+.install-card p { color: var(--fg-dim); font-size: 14px; margin-bottom: 16px; }
+pre {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--fg);
+  line-height: 1.5;
+}
+
+/* Screenshot gallery */
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 16px;
+}
+.tile {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+}
+.tile img { aspect-ratio: 9 / 20; object-fit: cover; width: 100%; display: block; }
+.tile .caption {
+  position: absolute; left: 12px; bottom: 12px;
+  background: rgba(10, 10, 10, 0.78);
+  backdrop-filter: blur(8px);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: var(--mono);
+}
+
+/* Report block */
+.report {
+  text-align: center;
+  background: linear-gradient(180deg, transparent 0%, var(--accent-soft) 100%);
+  border-radius: 16px;
+  padding: 64px 24px;
+  margin-top: 8px;
+  border: 1px solid var(--border);
+}
+.report h3 { font-size: 24px; margin-bottom: 12px; letter-spacing: -0.01em; }
+.report p { color: var(--fg-dim); margin-bottom: 32px; max-width: 540px; margin-left: auto; margin-right: auto; }
+.report img {
+  margin: 0 auto;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  max-width: 760px;
+  box-shadow: 0 20px 60px -16px rgba(0, 0, 0, 0.6);
+}
+
+/* Footer */
+footer {
+  padding: 56px 0 40px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+footer .wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; }
+footer p { color: var(--fg-dimmer); font-size: 13px; }
+footer .links { display: flex; gap: 24px; font-size: 14px; color: var(--fg-dim); flex-wrap: wrap; justify-content: center; }
+footer .links a:hover { color: var(--fg); }
+</style>
+</head>
+<body>
+<div class="aurora" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="wrap">
+    <a href="#" class="brand"><span class="brand-dot">🐾</span> agentdeck</a>
+    <nav>
+      <a href="#features" data-i18n="nav_features">Features</a>
+      <a href="#resume" data-i18n="nav_resume">Resume</a>
+      <a href="#install" data-i18n="nav_install">Install</a>
+      <a href="#screenshots" data-i18n="nav_screenshots">Screenshots</a>
+      <a href="https://github.com/SanHsien/agentdeck" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+    <div class="lang">
+      <button id="lang-btn" class="lang-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
+        <span id="lang-current">EN</span>
+        <span class="lang-caret">▾</span>
+      </button>
+      <ul id="lang-menu" class="lang-menu" role="listbox" hidden>
+        <li><button data-lang="en" role="option">English</button></li>
+        <li><button data-lang="zh-TW" role="option">繁體中文</button></li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <span class="eyebrow" data-i18n="eyebrow">Windows · open source · AGPL-3.0</span>
+    <h1 data-i18n="h1">Pin your <span class="accent">Claude Code</span> &amp; <span class="accent">Codex</span><br>quota to the Windows tray.</h1>
+    <p class="lead" data-i18n="lead">A small Windows tray app that shows how much of your AI quota is left — like a battery percentage for tokens. Reads your local files directly — never phones home to Anthropic or OpenAI.</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="https://github.com/SanHsien/agentdeck/releases/latest" target="_blank" rel="noopener" data-i18n="cta_download">↓ Download for Windows</a>
+      <a class="btn btn-secondary" href="https://github.com/SanHsien/agentdeck" target="_blank" rel="noopener" data-i18n="cta_star">★ Star on GitHub</a>
+    </div>
+    <div class="shot">
+      <img data-shot src="popover.en.png" data-img-en="popover.en.png" data-img-cjk="popover.png" alt="agentdeck panel" />
+    </div>
+  </div>
+</section>
+
+<div class="strip">
+  <div class="wrap">
+    <div class="item"><span class="dot"></span><span data-i18n="strip_1"><strong>Reads your local files</strong> — never connects to Anthropic or OpenAI</span></div>
+    <div class="item"><span class="dot"></span><span data-i18n="strip_2"><strong>Local-only</strong> — reads files on your disk</span></div>
+    <div class="item"><span class="dot"></span><span data-i18n="strip_3"><strong>No telemetry</strong>, no accounts, no cloud</span></div>
+  </div>
+</div>
+
+<section id="features">
+  <div class="wrap">
+    <h2 data-i18n="features_h2">Built for developers who burn tokens.</h2>
+    <p class="subtitle" data-i18n="features_sub">Stop guessing if you're about to hit the rate limit mid-refactor.</p>
+    <div class="grid">
+      <div class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 13a8.5 8.5 0 0 1 17 0"/><path d="M12 13l3.8-2.6"/><circle cx="12" cy="13" r="1.3" fill="currentColor" stroke="none"/></svg></span>
+        <h3 data-i18n="card1_h">5-hour &amp; 7-day quota at a glance</h3>
+        <p data-i18n="card1_p">Both Claude Code session (5h) and weekly (7d) percentages live in the tray. Click for a full panel with per-project usage and cost.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></span>
+        <h3 data-i18n="card2_h">Claude Code + Codex, one app</h3>
+        <p data-i18n="card2_p">Track Anthropic and OpenAI quota side by side. Codex auto-detected from <code>~/.codex/sessions/</code> with no setup.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></span>
+        <h3 data-i18n="card3_h">Local-only by design</h3>
+        <p data-i18n="card3_p">Reads local Claude statusLine or Desktop plan-usage files + Codex session JSONL logs. Never connects to Anthropic or OpenAI to check usage. Doesn't touch your credentials.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M8 17v-5"/><path d="M13 17V8"/><path d="M18 17v-3"/></svg></span>
+        <h3 data-i18n="card4_h">One-click HTML reports</h3>
+        <p data-i18n="card4_p">Today, week, month, or all-time — get a shareable HTML report with token / cost trends, top projects, and model breakdown. Project names hide by default for client-safe sharing.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
+        <h3 data-i18n="card5_h">4 visual panel themes</h3>
+        <p data-i18n="card5_p">Classic, Catppuccin, stained glass, and origami — pick a mood for your tray pop-out.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.5 3.8 5.7 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.7-3.8-9S9.5 5.5 12 3z"/></svg></span>
+        <h3 data-i18n="card6_h">Bilingual interface</h3>
+        <p data-i18n="card6_p">Auto-detects your Windows display language. 繁體中文 and English — every string translated, not just menus.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19"/><circle cx="9.5" cy="8" r="3"/><path d="M20 19v-1.5a3.5 3.5 0 0 0-2.5-3.37"/><path d="M14.5 4.13a3 3 0 0 1 0 5.74"/></svg></span>
+        <h3 data-i18n="card7_h">AI Talent Market</h3>
+        <p data-i18n="card7_p">Install a curated team of Claude Code subagent personas — a one-person law practice, a solo software studio, and more — straight into <code>~/.claude/agents/</code>, then call one by name in your next conversation.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="M14 10l7-7"/><path d="M3 21l7-7"/></svg></span>
+        <h3 data-i18n="card8_h">Terse Mode</h3>
+        <p data-i18n="card8_p">A menu-bar toggle that asks Claude Code — and Codex CLI too, if it's installed — to answer more tersely for the whole session: same substance, fewer words, while code, commands, and error messages stay byte-exact.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg></span>
+        <h3 data-i18n="card9_h">Summon Spirits</h3>
+        <p data-i18n="card9_p">An optional menu-bar critter — phoenix for Claude, dragon for Codex — that speeds up as your local token burn climbs, so you can feel your pace at a glance without reading a single number.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span>
+        <h3 data-i18n="card10_h">Notifications before you hit the wall</h3>
+        <p data-i18n="card10_p">When your context window hits 70%, the status line nudges you to <code>/clear</code> or <code>/compact</code> to prevent token waste. You can also opt-in to system notifications for quota limits and recoveries.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"/><path d="M8 9l3 3-3 3"/><path d="M13 15h3"/></svg></span>
+        <h3 data-i18n="card11_h">TUI &amp; CLI</h3>
+        <p data-i18n="card11_p">Love the terminal? Run the rich TUI dashboard with <code>uv run --no-sync python main.py --tui</code>, or generate deep analytics with <code>uv run --no-sync python usage_cli.py report</code>.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 5v14"/><path d="M13 9l7 7"/><path d="M20 9l-7 7"/></svg></span>
+        <h3 data-i18n="card12_h">Hide Sections</h3>
+        <p data-i18n="card12_p">Only use one tool? Hide the Claude Code or Codex section from the tray and panels completely with a single click.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h9a2 2 0 0 1 2 2V12a2 2 0 0 1-2 2H10l-3 2.5V14H6a2 2 0 0 1-2-2V7.5a2 2 0 0 1 2-2z"/><path d="M17 9h1a2 2 0 0 1 2 2v3.5a2 2 0 0 1-2 2h-.5v2l-2.2-2H13"/></svg></span>
+        <h3 data-i18n="card13_h">AI Council</h3>
+        <p data-i18n="card13_p">Run a multi-round discussion between Claude Code, Codex, and Antigravity on one topic. Pick who joins, which model each one uses, and how many rounds — with a token estimate shown before you start.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="resume">
+  <div class="wrap">
+    <div style="text-align: center;">
+      <span class="eyebrow" data-i18n="resume_label">PROGRESS CONCIERGE</span>
+    </div>
+    <h2 data-i18n="resume_h2">Now your CLI picks up where you left off</h2>
+    <p class="subtitle" data-i18n="resume_lead">The web and desktop apps keep your history — close them, reopen, it's all there. The CLI didn't. Resume hands that power to the CLI: open a new session and it picks up where you left off automatically, no re-explaining. It now also runs a daily health check on your logs — when it spots token waste, the handoff adds a one-line heads-up; say "show me" for the findings and fixes. Reads local files only — never connects to any API.</p>
+    <div class="shot">
+      <img src="hero.png" loading="lazy" data-i18n-attr="alt:resume_img_alt" alt="Resume restoring your last session in the CLI" />
+    </div>
+  </div>
+  <div class="strip" style="margin-top: 40px;">
+    <div class="wrap">
+      <div class="item"><span class="dot"></span><strong data-i18n="resume_point1">Auto-resumes your last progress</strong></div>
+      <div class="item"><span class="dot"></span><strong data-i18n="resume_point4">Daily health check flags token waste</strong></div>
+      <div class="item"><span class="dot"></span><strong data-i18n="resume_point2">Reads local files only</strong></div>
+      <div class="item"><span class="dot"></span><strong data-i18n="resume_point3">One menu toggle (off by default)</strong></div>
+    </div>
+  </div>
+</section>
+
+<section id="install" class="install">
+  <div class="wrap">
+    <h2 data-i18n="install_h2">Install in 10 seconds.</h2>
+    <p class="subtitle" data-i18n="install_sub">Two ways to get it running. Both free, both AGPL-3.0.</p>
+    <div class="install-row">
+      <div class="install-card">
+        <div class="label" data-i18n="install_label_rec">RECOMMENDED</div>
+        <h3 data-i18n="install_h_zip">Download and run</h3>
+        <p data-i18n="install_p_zip">Grab <code>agentdeck-windows.zip</code> from Releases, unzip anywhere, run <code>agentdeck.exe</code>. No installer.</p>
+        <a class="btn btn-secondary" style="width: 100%; justify-content: center;" href="https://github.com/SanHsien/agentdeck/releases/latest" target="_blank" rel="noopener" data-i18n="install_btn_releases">→ Open Releases page</a>
+      </div>
+      <div class="install-card">
+        <div class="label" data-i18n="install_label_dir">FROM SOURCE</div>
+        <h3 data-i18n="install_h_src">Run from source</h3>
+        <p data-i18n="install_p_src">Python 3.13 and uv. See the development docs for the full setup.</p>
+<pre><code>uv sync --frozen --group dev --extra windows
+uv run python main.py</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="screenshots">
+  <div class="wrap">
+    <h2 data-i18n="screen_h2">Pick a panel that fits your mood.</h2>
+    <p class="subtitle" data-i18n="screen_sub">Four built-in themes. Change anytime from the panel toolbar.</p>
+    <div class="gallery">
+      <div class="tile"><img data-shot src="classic.en.png" data-img-en="classic.en.png" data-img-cjk="classic.png" alt="Classic theme" /><span class="caption">classic</span></div>
+      <div class="tile"><img data-shot src="catppuccin.en.png" data-img-en="catppuccin.en.png" data-img-cjk="catppuccin.png" alt="Catppuccin theme" /><span class="caption">catppuccin</span></div>
+      <div class="tile"><img data-shot src="stained_glass.en.png" data-img-en="stained_glass.en.png" data-img-cjk="stained_glass.png" alt="Stained Glass theme" /><span class="caption">stained_glass</span></div>
+      <div class="tile"><img data-shot src="origami.en.png" data-img-en="origami.en.png" data-img-cjk="origami.png" alt="Origami theme" /><span class="caption">origami</span></div>
+    </div>
+    <div class="report" style="margin-top: 56px;">
+      <h3 data-i18n="report_h">Your AI usage, in one shareable page.</h3>
+      <p data-i18n="report_p">Generate an HTML report with token spend, cost, top projects, and model distribution — plus an AI Tool Update Digest summarizing recent changes, and a year-in-review page with a GitHub-style contribution heatmap and a "Wrapped" card. Send to your manager. Use as a client invoice attachment. Project names hide by default.</p>
+      <img data-shot src="report.en.png" data-img-en="report.en.png" data-img-cjk="report.png" alt="HTML usage report" />
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p><span data-i18n="footer_tag_pre">Built by</span> <a href="https://github.com/aqua5230" target="_blank" rel="noopener" style="color: var(--fg-dim);">@aqua5230</a> <span data-i18n="footer_fork_by">· forked by</span> <a href="https://github.com/SanHsien" target="_blank" rel="noopener" style="color: var(--fg-dim);">@SanHsien</a> <span data-i18n="footer_tag_post">· AGPL-3.0 · No cloud. No tracking. Just yours.</span></p>
+    <div class="links">
+      <a href="https://github.com/SanHsien/agentdeck" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/SanHsien/agentdeck/releases" target="_blank" rel="noopener" data-i18n="footer_releases">Releases</a>
+      <a href="https://github.com/SanHsien/agentdeck/blob/main/CHANGELOG.md" target="_blank" rel="noopener" data-i18n="footer_changelog">Changelog</a>
+      <a href="https://github.com/SanHsien/agentdeck/blob/main/LICENSE" target="_blank" rel="noopener" data-i18n="footer_license">License</a>
+    </div>
+  </div>
+</footer>
+
+<img class="mascot-pet" src="mascot.png" loading="lazy" data-i18n-attr="alt:mascot_alt" alt="The agentdeck butler cat, your progress concierge" />
+
+<script>
+const T = {
+  'en': {
+    _label: 'EN',
+    meta_title: 'agentdeck — pin your Claude Code & Codex quota to the Windows tray',
+    meta_desc: 'Windows tray tracker for Claude Code & Codex quota, tokens, and cost. Reads your local files directly — never connects to Anthropic or OpenAI. HTML reports, 4 visual themes, AGPL-3.0.',
+    nav_features: 'Features',
+    nav_resume: 'Resume',
+    nav_install: 'Install',
+    nav_screenshots: 'Panels',
+    eyebrow: 'Windows · open source · AGPL-3.0',
+    h1: 'Pin your <span class="accent">Claude Code</span> &amp; <span class="accent">Codex</span><br>quota to the Windows tray.',
+    lead: 'A small Windows tray app that shows how much of your AI quota is left — like a battery percentage for tokens. Reads your local files directly — never phones home to Anthropic or OpenAI.',
+    cta_download: '↓ Download for Windows',
+    cta_star: '★ Star on GitHub',
+    strip_1: '<strong>Reads your local files</strong> — never connects to Anthropic or OpenAI',
+    strip_2: '<strong>Local-only</strong> — reads files on your disk',
+    strip_3: '<strong>No telemetry</strong>, no accounts, no cloud',
+    features_h2: 'Built for developers who burn tokens.',
+    features_sub: "Stop guessing if you're about to hit the rate limit mid-refactor.",
+    card1_h: '5-hour &amp; 7-day quota at a glance',
+    card1_p: 'Both Claude Code session (5h) and weekly (7d) percentages live in the tray. Click for a full panel with per-project usage and cost.',
+    card2_h: 'Claude Code + Codex, one app',
+    card2_p: 'Track Anthropic and OpenAI quota side by side. Codex auto-detected from <code>~/.codex/sessions/</code> with no setup.',
+    card3_h: 'Local-only by design',
+    card3_p: "Reads local Claude statusLine or Desktop plan-usage files + Codex session JSONL logs. Never connects to Anthropic or OpenAI to check usage. Doesn't touch your credentials.",
+    card4_h: 'One-click HTML reports',
+    card4_p: 'Today, week, month, or all-time — get a shareable HTML report with token / cost trends, top projects, and model breakdown. Project names hide by default for client-safe sharing.',
+    card5_h: '4 visual panel themes',
+    card5_p: 'Classic, Catppuccin, stained glass, and origami — pick a mood for your tray pop-out.',
+    card6_h: 'Bilingual interface',
+    card6_p: 'Auto-detects your Windows display language. 繁體中文 and English — every string translated, not just menus.',
+    card7_h: 'AI Talent Market',
+    card7_p: 'Install a curated team of Claude Code subagent personas — a one-person law practice, a solo software studio, and more — straight into <code>~/.claude/agents/</code>, then call one by name in your next conversation.',
+    card8_h: 'Terse Mode',
+    card8_p: "A menu-bar toggle that asks Claude Code — and Codex CLI too, if it's installed — to answer more tersely for the whole session: same substance, fewer words, while code, commands, and error messages stay byte-exact.",
+    card9_h: 'Summon Spirits',
+    card9_p: 'An optional menu-bar critter — phoenix for Claude, dragon for Codex — that speeds up as your local token burn climbs, so you can feel your pace at a glance without reading a single number.',
+    card10_h: 'Notifications before you hit the wall',
+    card10_p: 'When your context window hits 70%, the status line nudges you to <code>/clear</code> or <code>/compact</code> to prevent token waste. You can also opt-in to system notifications for quota limits and recoveries.',
+    card11_h: 'TUI & CLI',
+    card11_p: 'Love the terminal? Run the rich TUI dashboard with <code>uv run --no-sync python main.py --tui</code>, or generate deep analytics with <code>uv run --no-sync python usage_cli.py report</code>.',
+    card12_h: 'Hide Sections',
+    card12_p: 'Only use one tool? Hide the Claude Code or Codex section from the tray and panels completely with a single click.',
+    card13_h: 'AI Council',
+    card13_p: 'Run a multi-round discussion between Claude Code, Codex, and Antigravity on one topic. Pick who joins, which model each one uses, and how many rounds — with a token estimate shown before you start.',
+    resume_label: 'PROGRESS CONCIERGE',
+    resume_h2: 'Now your CLI picks up where you left off',
+    resume_lead: "The web and desktop apps keep your history — close them, reopen, it's all there. The CLI didn't. Resume hands that power to the CLI: open a new session and it picks up where you left off automatically, no re-explaining. It now also runs a daily health check on your logs — when it spots token waste, the handoff adds a one-line heads-up; say \"show me\" for the findings and fixes. Reads local files only — never connects to any API.",
+    resume_point1: 'Auto-resumes your last progress',
+    resume_point4: 'Daily health check flags token waste',
+    resume_point2: 'Reads local files only',
+    resume_point3: 'One menu toggle (off by default)',
+    resume_img_alt: 'Resume restoring your last session in the CLI',
+    mascot_alt: 'The agentdeck butler cat, your progress concierge',
+    install_h2: 'Install in 10 seconds.',
+    install_sub: 'Two ways to get it running. Both free, both AGPL-3.0.',
+    install_label_rec: 'RECOMMENDED',
+    install_h_zip: 'Download and run',
+    install_p_zip: 'Grab <code>agentdeck-windows.zip</code> from Releases, unzip anywhere, run <code>agentdeck.exe</code>. No installer.',
+    install_label_dir: 'FROM SOURCE',
+    install_h_src: 'Run from source',
+    install_p_src: 'Python 3.13 and uv. See the development docs for the full setup.',
+    install_btn_releases: '→ Open Releases page',
+    screen_h2: 'Pick a panel that fits your mood.',
+    screen_sub: 'Four built-in themes. Change anytime from the panel toolbar.',
+    report_h: 'Your AI usage, in one shareable page.',
+    report_p: 'Generate an HTML report with token spend, cost, top projects, and model distribution — plus an AI Tool Update Digest summarizing recent changes, and a year-in-review page with a GitHub-style contribution heatmap and a "Wrapped" card. Send to your manager. Use as a client invoice attachment. Project names hide by default.',
+    footer_tag_pre: 'Built by',
+    footer_tag_post: '· AGPL-3.0 · No cloud. No tracking. Just yours.',
+    footer_fork_by: '· forked by',
+    footer_releases: 'Releases',
+    footer_changelog: 'Changelog',
+    footer_license: 'License',
+  },
+  'zh-TW': {
+    _label: '繁中',
+    meta_title: 'agentdeck — 把 Claude Code 和 Codex 的用量釘在 Windows 系統匣',
+    meta_desc: 'Windows 系統匣工具，監控 Claude Code 和 Codex 的配額、token 用量與成本。直接讀本機紀錄，不連到 Anthropic 或 OpenAI。HTML 報告、4 款主題、AGPL-3.0。',
+    nav_features: '功能',
+    nav_resume: '進度管家',
+    nav_install: '安裝',
+    nav_screenshots: '面板',
+    eyebrow: 'Windows · 開源 · AGPL-3.0',
+    h1: '把 <span class="accent">Claude Code</span> 和 <span class="accent">Codex</span><br>的用量釘在系統匣。',
+    lead: '一個輕巧的 Windows 系統匣小工具，把你 AI 配額剩多少顯示在工作列右下角——像電池百分比一樣直觀。直接讀本機紀錄，不連到服務端查用量。',
+    cta_download: '↓ 下載 Windows 版',
+    cta_star: '★ 給個星星',
+    strip_1: '<strong>直接讀本機紀錄</strong>，不連 Anthropic 或 OpenAI 查用量',
+    strip_2: '<strong>本地讀取</strong>——只看你磁碟上的檔案',
+    strip_3: '<strong>無遙測</strong>、無帳號、無雲端',
+    features_h2: '為燒 token 的開發者打造。',
+    features_sub: '別再憑感覺猜還剩多少配額了。',
+    card1_h: '5 小時與 7 天配額一覽',
+    card1_p: 'Claude Code 的 5 小時和 7 天百分比同時顯示在系統匣。點開可看完整面板、各專案用量與成本。',
+    card2_h: 'Claude Code + Codex 一個 app 搞定',
+    card2_p: 'Anthropic 跟 OpenAI 的配額並排顯示。Codex 從 <code>~/.codex/sessions/</code> 自動偵測，不需設定。',
+    card3_h: '天生本地優先',
+    card3_p: '讀取 Claude statusLine 或 Desktop 方案用量本機檔案，加上 Codex session JSONL log。不連到 Anthropic 或 OpenAI 查用量，也不碰憑證。',
+    card4_h: '一鍵 HTML 報告',
+    card4_p: '今日、本週、本月或全部——產出可分享的 HTML 報告，內含 token / 成本走勢、各專案排行與模型分布。預設隱藏專案名稱，安全分享給客戶。',
+    card5_h: '4 款視覺面板主題',
+    card5_p: 'Classic、Catppuccin、彩繪玻璃、摺紙——挑個喜歡的氛圍。',
+    card6_h: '雙語介面',
+    card6_p: '自動偵測 Windows 系統語言。繁體中文與 English——每一條訊息都翻譯。',
+    card7_h: 'AI 人才市場',
+    card7_p: '把整套 Claude Code 角色人設檔——律師事務所、軟體工作室等——一次安裝進 <code>~/.claude/agents/</code>，下次對話點名就能用。',
+    card8_h: '精簡模式',
+    card8_p: '系統匣選單開關，讓 Claude Code——連同裝好的 Codex CLI——整個對話回答更簡短：內容不變、字變少，但程式碼、指令、錯誤訊息一個字都不會被縮減。',
+    card9_h: '召喚神獸',
+    card9_p: '系統匣選單可選開關——Claude 是鳳凰、Codex 是肥龍——token 燒得越快牠跑越快，不看數字也能感覺自己的燒錢節奏。',
+    card10_h: '撞牆前先提醒你',
+    card10_p: '上下文窗用到 70% 時，狀態列會提醒你 <code>/clear</code> 或 <code>/compact</code>，避免浪費 token；你也能另外開啟配額門檻與恢復通知的系統提醒。',
+    card11_h: 'TUI 與 CLI',
+    card11_p: '終端機派也照顧到。用 <code>uv run --no-sync python main.py --tui</code> 跑 rich TUI 儀表板，或用 <code>uv run --no-sync python usage_cli.py report</code> 產出深度分析報告。',
+    card12_h: '隱藏區塊',
+    card12_p: '只用其中一個工具？一鍵把 Claude Code 或 Codex 區塊從系統匣選單和面板完全藏掉。',
+    card13_h: 'AI 圓桌討論',
+    card13_p: '讓 Claude Code、Codex、Antigravity 針對同一個題目進行多輪討論。自選誰加入、各自用哪個模型、討論幾輪——開始前就看得到大約會花多少 token。',
+    resume_label: '進度管家',
+    resume_h2: '讓你的 CLI 也接得回上次',
+    resume_lead: '網頁版、桌面 App 關掉再打開，對話都還在；只有 CLI 關掉就沒了。進度管家把這個能力補給 CLI——開新對話時自動接回你上次做到哪，不用再重講一次。現在還會每天對本機紀錄做一次健檢，發現 token 浪費時，開場白會多一行提醒；說「看」，AI 就會解釋發現了什麼、該怎麼改。只讀本機紀錄，不連到服務端。',
+    resume_point1: '自動接回上次進度',
+    resume_point4: '每日健檢，主動提醒 token 浪費',
+    resume_point2: '只讀本機紀錄',
+    resume_point3: '選單一鍵開關（預設關）',
+    resume_img_alt: '進度管家把上次進度接回 CLI 的示意',
+    mascot_alt: 'usage 管家貓，你的進度管家',
+    install_h2: '10 秒安裝完成。',
+    install_sub: '兩種方式都免費、都 AGPL-3.0。',
+    install_label_rec: '推薦',
+    install_h_zip: '下載即用',
+    install_p_zip: '從 Releases 抓 <code>agentdeck-windows.zip</code>，解壓到任何位置，執行 <code>agentdeck.exe</code>。無須安裝程式。',
+    install_label_dir: '從原始碼',
+    install_h_src: '從原始碼執行',
+    install_p_src: '需要 Python 3.13 與 uv。完整設定見開發文件。',
+    install_btn_releases: '→ 開啟 Releases 頁面',
+    screen_h2: '挑一個你喜歡的面板。',
+    screen_sub: '4 款內建主題。隨時從面板工具列切換。',
+    report_h: '你的 AI 用量，一頁可分享。',
+    report_p: '產出 HTML 報告，內含 token 開銷、成本、專案排行、模型分布，外加一份 AI Tool Update Digest 摘要最近工具更新，還有年度回顧頁——GitHub 風格貢獻熱力圖，加一張「Wrapped」卡。傳給主管、附在客戶請款裡都行。預設隱藏專案名稱。',
+    footer_tag_pre: '作者：',
+    footer_tag_post: '· AGPL-3.0 · No cloud. No tracking. Just yours.',
+    footer_fork_by: '· fork 維護：',
+    footer_releases: 'Releases',
+    footer_changelog: 'Changelog',
+    footer_license: 'License',
+  },
+};
+
+const USE_EN_SHOT = ['en']; // English uses the English screenshots; zh-TW uses the Chinese ones
+const SUPPORTED = Object.keys(T);
+
+function detectLang() {
+  const hash = decodeURIComponent(location.hash.slice(1));
+  if (T[hash]) return hash;
+  try {
+    const stored = localStorage.getItem('agentdeck_lang');
+    if (T[stored]) return stored;
+  } catch (e) { /* ignore */ }
+  const b = (navigator.language || 'en');
+  // Traditional Chinese and English only: every Chinese locale maps to zh-TW.
+  if (b.startsWith('zh')) return 'zh-TW';
+  return 'en';
+}
+
+function applyLang(lang) {
+  const t = T[lang];
+  if (!t) return;
+  document.documentElement.lang = lang;
+  document.title = t.meta_title;
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (t[key] !== undefined) el.innerHTML = t[key];
+  });
+  document.querySelectorAll('[data-i18n-attr]').forEach(el => {
+    const spec = el.getAttribute('data-i18n-attr');
+    const idx = spec.indexOf(':');
+    if (idx < 0) return;
+    const attr = spec.slice(0, idx);
+    const key = spec.slice(idx + 1);
+    if (t[key] !== undefined) el.setAttribute(attr, t[key]);
+  });
+
+  const useEn = USE_EN_SHOT.indexOf(lang) >= 0;
+  document.querySelectorAll('[data-shot]').forEach(img => {
+    const src = useEn ? img.dataset.imgEn : img.dataset.imgCjk;
+    if (src && img.getAttribute('src') !== src) img.setAttribute('src', src);
+  });
+
+  const cur = document.getElementById('lang-current');
+  if (cur) cur.textContent = t._label;
+
+  document.querySelectorAll('#lang-menu button').forEach(b => {
+    b.setAttribute('aria-current', b.dataset.lang === lang ? 'true' : 'false');
+  });
+
+  try { localStorage.setItem('agentdeck_lang', lang); } catch (e) { /* ignore */ }
+  const desired = '#' + lang;
+  if (location.hash !== desired) history.replaceState(null, '', desired);
+}
+
+const btn = document.getElementById('lang-btn');
+const menu = document.getElementById('lang-menu');
+function closeMenu() { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); }
+function openMenu() { menu.hidden = false; btn.setAttribute('aria-expanded', 'true'); }
+btn.addEventListener('click', e => {
+  e.stopPropagation();
+  menu.hidden ? openMenu() : closeMenu();
+});
+menu.addEventListener('click', e => {
+  const t = e.target.closest('button[data-lang]');
+  if (!t) return;
+  applyLang(t.dataset.lang);
+  closeMenu();
+});
+document.addEventListener('click', e => {
+  if (!menu.hidden && !e.target.closest('.lang')) closeMenu();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !menu.hidden) closeMenu();
+});
+window.addEventListener('hashchange', () => applyLang(detectLang()));
+
+applyLang(detectLang());
+</script>
+
+</body>
+</html>

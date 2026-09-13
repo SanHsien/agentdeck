@@ -1,0 +1,1816 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 lollapalooza <https://github.com/aqua5230>
+
+from __future__ import annotations
+
+import asyncio
+import contextlib
+import json
+import logging
+import os
+import threading
+import time
+import tomllib
+import webbrowser
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import datetime
+from importlib import metadata
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+import about_info
+import autoresume_scheduler
+import tray_text
+import update_checker
+import win_login_item
+import win_modal
+import win_refresh
+import win_ui_thread
+import window_keeper
+from burn_rate import BurnRateTracker
+from i18n import _t
+from panels import window_visibility
+from panels.dynamic_height import clamp_content_height, inject_content_height_script
+from panels.payload import _load_panel_html, _state_payload
+
+# Re-exported deliberately -- the ``as`` form is what marks a re-export explicit
+# under mypy strict. Callers and tests have always reached these through
+# wintray, and moving the registry into a leaf module for the size ceiling
+# should not move their import site.
+from panels.registry import PANEL_HEIGHTS as PANEL_HEIGHTS
+from panels.registry import TALENT_PANEL as TALENT_PANEL
+from panels.registry import WINDOWS_PANELS as WINDOWS_PANELS
+from panels.registry import available_panels as available_panels
+from panels.registry import renderable_panels as renderable_panels
+from prefs import _load_preferences, _save_preferences
+from pricing import calculate_cost
+from providers import agy_window_keeper, codex_loader, grok_loader
+from providers.history_loader import UsageEntry, load_entries
+from state import menubar_agy, menubar_grok, menubar_state
+from state.menubar_prefs import _auto_update_check_enabled as _auto_update_check_enabled
+from state.menubar_prefs import _hide_agy_enabled as _hide_agy_enabled
+from state.menubar_prefs import _hide_claude_enabled as _hide_claude_enabled
+from state.menubar_prefs import _hide_codex_enabled as _hide_codex_enabled
+from state.menubar_prefs import _hide_grok_enabled as _hide_grok_enabled
+from state.menubar_prefs import _quota_card_order as _quota_card_order
+from state.menubar_prefs import (
+    _quota_notification_thresholds as _quota_notification_thresholds,
+)
+from state.menubar_prefs import (
+    _quota_notifications_enabled as _quota_notifications_enabled,
+)
+from state.menubar_prefs import _save_panel_flavor as _save_panel_flavor
+from state.menubar_prefs import _valid_quota_card_order as _valid_quota_card_order
+from state.menubar_prefs import _window_keeper_enabled as _window_keeper_enabled
+from statusline_settings import _statusline_enabled, _toggle_statusline_settings
+from usage_client import ClaudeUsageClient, PollState
+from usage_lang import detect_lang
+from usage_notifications import NotificationEvent, QuotaNotifier
+from usage_rate import UsageRateTracker
+from win_modal import MB_ICON_INFO, MB_ICON_WARNING, MB_YESNOCANCEL
+
+# Re-exported so the tray menu keeps its import site while its 96 lines live in
+# a leaf module (the `as` form is what marks a re-export explicit under mypy).
+from win_tray_menu import _menu as _menu
+from win_tray_menu import _panel_menu_data as _panel_menu_payload
+
+if TYPE_CHECKING:
+    from PIL.Image import Image
+
+logger = logging.getLogger(__name__)
+
+# MessageBoxW uMSGBOXPARAMS icon flags.
+_TALENT_ACTIONS = frozenset(
+    {"install_role", "restore_role", "ignore_drift", "set_folder", "launch_role"}
+)
+# Matches upstream's UPDATE_ALERT_BODY_LIMIT so both hosts truncate alike.
+
+# The tray's pure text helpers live in a leaf module (see scripts/check_file_size.py);
+# re-exported here because this is the name every caller and test already uses.
+build_tooltip = tray_text.build_tooltip
+tray_icon_style = tray_text.tray_icon_style
+TOOLTIP_MAX_LENGTH = tray_text.TOOLTIP_MAX_LENGTH
+
+SLOW_POLL_INTERVAL_S = 300
+HISTORY_SCAN_CACHE_SECONDS = 30.0
+PANEL_WIDTH = 380
+JS_SHIM = """
+<script>
+window.webkit = window.webkit || {};
+window.webkit.messageHandlers = window.webkit.messageHandlers || {};
+window.webkit.messageHandlers.usage = {
+  postMessage: function(message) { return window.pywebview.api.postMessage(message); }
+};
+
+// The panel assets are shared with macOS.  On Windows, intercept their
+// built-in switch button and provide the equivalent of the native menu here.
+(function() {
+  var menuRoot;
+
+  function closeMenu() {
+    if (menuRoot) {
+      menuRoot.remove();
+      menuRoot = null;
+    }
+  }
+
+  function post(action, extra) {
+    var message = Object.assign({ action: action }, extra || {});
+    return Promise.resolve(
+      window.webkit.messageHandlers.usage.postMessage(JSON.stringify(message))
+    );
+  }
+
+  function menuItem(item) {
+    if (item.type === 'separator') {
+      var separator = document.createElement('div');
+      separator.className = 'usage-panel-menu-separator';
+      separator.setAttribute('role', 'separator');
+      return separator;
+    }
+    if (item.children) {
+      var group = document.createElement('div');
+      group.className = 'usage-panel-menu-accordion';
+      var row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'usage-panel-menu-item usage-panel-menu-parent';
+      row.setAttribute('role', 'menuitem');
+      row.setAttribute('aria-expanded', 'false');
+      row.textContent = item.label + '  ›';
+      var submenu = document.createElement('div');
+      submenu.className = 'usage-panel-menu-submenu';
+      submenu.setAttribute('role', 'menu');
+      item.children.forEach(function(child) { submenu.appendChild(menuItem(child)); });
+      row.addEventListener('click', function() {
+        var expanded = row.getAttribute('aria-expanded') === 'true';
+        row.setAttribute('aria-expanded', String(!expanded));
+        row.textContent = item.label + (!expanded ? '  ˅' : '  ›');
+        submenu.hidden = expanded;
+      });
+      submenu.hidden = true;
+      group.appendChild(row);
+      group.appendChild(submenu);
+      return group;
+    }
+    var row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'usage-panel-menu-item';
+    row.setAttribute('role', 'menuitemcheckbox');
+    row.textContent = (item.checked ? '✓  ' : '    ') + item.label;
+    row.addEventListener('click', function() {
+      var extra = item.panelId ? { panel_id: item.panelId } :
+        item.preferenceKey ? { preference_key: item.preferenceKey } : undefined;
+      post(item.action, extra);
+      closeMenu();
+    });
+    return row;
+  }
+
+  function showMenu(items) {
+    closeMenu();
+    menuRoot = document.createElement('div');
+    menuRoot.className = 'usage-panel-menu-backdrop';
+    menuRoot.setAttribute('aria-hidden', 'false');
+    var menu = document.createElement('div');
+    menu.className = 'usage-panel-menu';
+    menu.setAttribute('role', 'menu');
+    items.forEach(function(item) { menu.appendChild(menuItem(item)); });
+    menuRoot.appendChild(menu);
+    menuRoot.addEventListener('click', function(event) {
+      if (event.target === menuRoot) closeMenu();
+    });
+    document.body.appendChild(menuRoot);
+  }
+
+  document.addEventListener('click', function(event) {
+    var button = event.target.closest && event.target.closest('[data-action="switch"]');
+    if (!button) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    post('open_menu').then(function(items) {
+      if (Array.isArray(items)) showMenu(items);
+    });
+  }, true);
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') closeMenu();
+  });
+})();
+// Panel assets register their card reorder handler in the bubbling phase. This
+// earlier capture listener turns their empty card area into a native drag
+// region without changing the shared macOS HTML.  Add the class only after
+// excluding controls, so pywebview never treats a button click as a window drag.
+document.addEventListener('pointerdown', function(event) {
+  var target = event.target;
+  var card = target && target.closest && target.closest(
+    '[data-card="claude"], [data-card="codex"], [data-card="agy"], [data-card="grok"]'
+  );
+  var interactive = target && target.closest && target.closest(
+    'button, a, input, select, textarea, label, summary, [contenteditable], '
+    + '[role="button"], .codex-stale-info, .stale-info'
+  );
+  if (!card || event.button !== 0 || interactive) return;
+  card.classList.add('pywebview-drag-region', 'usage-card-window-dragging');
+  var clearDragRegion = function() {
+    card.classList.remove('pywebview-drag-region', 'usage-card-window-dragging');
+    document.removeEventListener('pointerup', clearDragRegion, true);
+    document.removeEventListener('pointercancel', clearDragRegion, true);
+  };
+  document.addEventListener('pointerup', clearDragRegion, true);
+  document.addEventListener('pointercancel', clearDragRegion, true);
+  event.stopImmediatePropagation();
+}, true);
+
+// Keep the native drag target deliberately small so it remains distinct from
+// normal panel interaction.
+document.addEventListener('DOMContentLoaded', function() {
+  var handle = document.createElement('div');
+  handle.className = 'usage-window-drag-handle pywebview-drag-region';
+  handle.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(handle);
+});
+</script>
+<style>
+.usage-window-drag-handle {
+  position: fixed;
+  top: 4px;
+  left: 50%;
+  z-index: 2147483647;
+  width: 56px;
+  height: 7px;
+  margin-left: -28px;
+  border-radius: 99px;
+  background: rgba(127, 127, 127, .28);
+  cursor: grab;
+  opacity: .35;
+  transition: opacity .15s ease, background .15s ease;
+}
+.usage-window-drag-handle:hover {
+  background: rgba(127, 127, 127, .65);
+  opacity: 1;
+}
+.usage-window-drag-handle:active,
+.usage-card-window-dragging {
+  cursor: grabbing;
+}
+.usage-window-minimize-button {
+  flex: 0 0 32px !important;
+  min-width: 32px;
+  padding: 0 !important;
+}
+.usage-panel-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646;
+  background: rgba(0, 0, 0, .12);
+}
+.usage-panel-menu {
+  position: absolute;
+  top: 36px;
+  right: 12px;
+  min-width: 220px;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid rgba(127, 127, 127, .55);
+  border-radius: 9px;
+  background: rgba(30, 32, 36, .96);
+  color: #f5f5f5;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .32);
+  font: 13px/1.3 system-ui, sans-serif;
+}
+.usage-panel-menu-item {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.usage-panel-menu-item:hover, .usage-panel-menu-item:focus {
+  background: rgba(120, 160, 255, .32);
+  outline: none;
+}
+.usage-panel-menu-accordion { display: block; }
+.usage-panel-menu-submenu {
+  padding-left: 16px;
+}
+.usage-panel-menu-submenu[hidden] {
+  display: none;
+}
+.usage-panel-menu-separator { height: 1px; margin: 5px 4px; background: rgba(180, 180, 180, .35); }
+/* Scroll rather than squeeze.
+   The shipped panels pin html/body to 100vh with overflow hidden and give
+   .wrap height:100%, so on a screen shorter than the panel every card is
+   flex-shrunk and clips its own last row -- measured: the Claude card lost its
+   whole weekly line, with nothing to scroll to and no sign anything was
+   missing. The window is already capped at the work area by
+   clamp_content_height; past that point the content has to be reachable.
+   Injected here rather than edited into each panel so it also covers panels
+   that arrive later. */
+html, body { height: auto !important; min-height: 100%; overflow-y: auto !important; }
+.wrap { height: auto !important; min-height: 100%; }
+.card, .footer { flex-shrink: 0; }
+</style>
+""".strip()
+
+
+def _monitor_dpi_scale(monitor_handle: Any = None) -> float:
+    """Logical-to-physical pixel ratio for a monitor (``None`` = primary).
+
+    pywebview calls ``SetProcessDPIAware()``, which makes this process system
+    DPI aware — so every rect Win32 hands back (``SPI_GETWORKAREA``,
+    ``GetMonitorInfoW``) is in *physical* pixels. pywebview's own API is the
+    opposite: ``move()``/``resize()`` multiply by ``GetDpiForWindow()/96`` and
+    ``get_position()`` divides by it, so they speak *logical* pixels.
+
+    Feeding a physical rect straight into ``move()`` therefore multiplies the
+    coordinate a second time. At 225% on a 3840x2160 display the panel was sent
+    to x≈7668 — far off the right edge of a 3840px screen, so the window opened
+    completely outside the visible desktop and looked like it never opened at
+    all. Everything derived from a work area is converted here instead.
+
+    Returns 1.0 when the DPI cannot be determined, which keeps the old
+    behaviour on the 100% displays where physical and logical already agree.
+    """
+    if os.name != "nt":
+        return 1.0
+    import ctypes
+
+    class Point(ctypes.Structure):
+        _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+
+    library_name = "windll"
+    try:
+        user32: Any = getattr(ctypes, library_name).user32
+        handle = monitor_handle
+        if handle is None:
+            MONITOR_DEFAULTTOPRIMARY = 1
+            handle = user32.MonitorFromPoint(Point(0, 0), MONITOR_DEFAULTTOPRIMARY)
+        if not handle:
+            return 1.0
+        # MDT_EFFECTIVE_DPI == 0: the scale the user actually picked, which is
+        # what pywebview's GetDpiForWindow reports for a window on this monitor.
+        dpi_x = ctypes.c_uint()
+        dpi_y = ctypes.c_uint()
+        shcore: Any = getattr(ctypes, library_name).shcore
+        if shcore.GetDpiForMonitor(handle, 0, ctypes.byref(dpi_x), ctypes.byref(dpi_y)) != 0:
+            return 1.0
+        if dpi_x.value <= 0:
+            return 1.0
+        return dpi_x.value / 96.0
+    except (AttributeError, OSError, ValueError):
+        # shcore.GetDpiForMonitor is Windows 8.1+; on anything older, or if the
+        # call is unavailable, fall back to "no scaling" rather than guessing.
+        return 1.0
+
+
+def _window_chrome_height(window: Any) -> int:
+    """Logical pixels the title bar and border steal from the content area.
+
+    ``resize()`` sets the *outer* size, so a framed window asked for the content
+    height it needs comes up exactly one title bar short and clips its own last
+    rows. The delta is read from the live form rather than hardcoded: caption
+    height varies with DPI and with the user's title-bar settings, and a wrong
+    constant fails silently as a few missing pixels of panel.
+    """
+    native = getattr(window, "native", None)
+    client = getattr(native, "ClientSize", None)
+    if native is None or client is None:
+        return 0
+    physical = native.Height - client.Height
+    if physical <= 0:
+        return 0
+    return int(round(physical / max(0.1, _monitor_dpi_scale())))
+
+
+def _taskbar_edge() -> str:
+    """Which screen edge the taskbar occupies: top/bottom/left/right.
+
+    Uses ``SHAppBarMessage(ABM_GETTASKBARPOS)`` rather than the tray icon's own
+    rectangle: the icon rect would need pystray's private window handle, while
+    the taskbar edge is enough to pick the right corner and needs no private API.
+    Falls back to "bottom", the overwhelmingly common case, whenever the call is
+    unavailable or fails.
+    """
+    if os.name != "nt":
+        return "bottom"
+    import ctypes
+
+    class Rect(ctypes.Structure):
+        _fields_ = [
+            ("left", ctypes.c_long),
+            ("top", ctypes.c_long),
+            ("right", ctypes.c_long),
+            ("bottom", ctypes.c_long),
+        ]
+
+    class AppBarData(ctypes.Structure):
+        _fields_ = [
+            ("cbSize", ctypes.c_ulong),
+            ("hWnd", ctypes.c_void_p),
+            ("uCallbackMessage", ctypes.c_uint),
+            ("uEdge", ctypes.c_uint),
+            ("rc", Rect),
+            ("lParam", ctypes.c_longlong),
+        ]
+
+    edges = {0: "left", 1: "top", 2: "right", 3: "bottom"}
+    library_name = "windll"
+    try:
+        shell32: Any = getattr(ctypes, library_name).shell32
+        data = AppBarData()
+        data.cbSize = ctypes.sizeof(AppBarData)
+        ABM_GETTASKBARPOS = 0x00000005
+        if not shell32.SHAppBarMessage(ABM_GETTASKBARPOS, ctypes.byref(data)):
+            return "bottom"
+        return edges.get(int(data.uEdge), "bottom")
+    except (AttributeError, OSError, ValueError):
+        return "bottom"
+
+
+def _to_logical_rect(
+    rect: tuple[int, int, int, int], scale: float
+) -> tuple[int, int, int, int]:
+    """Convert a physical-pixel Win32 rect into pywebview's logical pixels."""
+    if scale <= 0 or scale == 1.0:
+        return rect
+    left, top, right, bottom = rect
+    return (round(left / scale), round(top / scale), round(right / scale), round(bottom / scale))
+
+
+def _winreg() -> Any:
+    import winreg
+
+    return winreg
+
+
+def _system_background_color() -> str:
+    try:
+        winreg = _winreg()
+        with winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize",
+        ) as key:
+            value, _value_type = winreg.QueryValueEx(key, "AppsUseLightTheme")
+        if value == 0:
+            return "#080d12"
+    except Exception:
+        pass
+    return "#eef2f7"
+
+
+def draw_tray_icon(used_percent: float | None) -> Image:
+    from PIL import Image, ImageDraw, ImageFont
+
+    text, color = tray_icon_style(used_percent)
+    image = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle((2, 2, 62, 62), radius=14, fill=color)
+    font = ImageFont.load_default(size=24)
+    box = draw.textbbox((0, 0), text, font=font)
+    draw.text(
+        ((64 - (box[2] - box[0])) / 2, (64 - (box[3] - box[1])) / 2 - box[1]),
+        text,
+        font=font,
+        fill=(10, 15, 20, 255),
+    )
+    return image
+
+
+def panel_html(filename: str) -> str:
+    html = inject_content_height_script(_load_panel_html(filename))
+    marker = "<head>"
+    return html.replace(marker, f"{marker}\n{JS_SHIM}", 1)
+
+
+def _active_panel_id() -> str:
+    panel_ids = {panel[0] for panel in available_panels()}
+    value = _load_preferences().get("agentdeck.activePanelId", "classic")
+    return str(value) if value in panel_ids else "classic"
+
+
+def _save_active_panel_id(panel_id: str) -> None:
+    preferences = _load_preferences()
+    preferences["agentdeck.activePanelId"] = panel_id
+    _save_preferences(preferences)
+
+
+def _current_version() -> str:
+    try:
+        return metadata.version("agentdeck")
+    except metadata.PackageNotFoundError:
+        from i18n import packaged_resource_path
+
+        pyproject = packaged_resource_path(
+            "pyproject.toml", Path(__file__).with_name("pyproject.toml")
+        )
+        data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
+        value = data["project"]["version"]
+        return str(value)
+
+
+def _statusline_payload(language: str) -> dict[str, object]:
+    return {
+        "enabled": _statusline_enabled(),
+        "enabledText": _t(language, "cli_enabled"),
+        "disabledText": _t(language, "cli_disabled"),
+    }
+
+
+def _today_text(entries: list[UsageEntry], language: str) -> str:
+    today = datetime.now().astimezone().date()
+    selected = [entry for entry in entries if entry.timestamp.astimezone().date() == today]
+    return _t(
+        language,
+        "today_text",
+        cost=f"{sum(calculate_cost(entry) for entry in selected):.2f}",
+        tokens=f"{sum(entry.total_tokens for entry in selected):,}",
+    )
+
+
+def _mock_projects() -> tuple[
+    list[tuple[str, int, float | None]],
+    list[tuple[str, int, float | None]],
+    list[tuple[str, int, float | None]],
+    list[tuple[str, int, float | None]],
+]:
+    return (
+        [("usage", 11_200_000, 6.47), ("FinMind", 3_100_000, 1.82), ("AI客服", 800_000, 0.48)],
+        [("usage", 78_400_000, 45.20), ("FinMind", 21_700_000, 12.74), ("AI客服", 5_600_000, 3.36)],
+        [
+            ("usage", 312_000_000, 180.50),
+            ("FinMind", 86_400_000, 50.12),
+            ("AI客服", 22_000_000, 13.20),
+        ],
+        [
+            ("usage", 624_000_000, 361.00),
+            ("FinMind", 172_800_000, 100.24),
+            ("AI客服", 44_000_000, 26.40),
+        ],
+    )
+
+
+@dataclass(slots=True)
+class _RefreshData:
+    entries: list[UsageEntry]
+    history_error_key: str | None
+
+
+class _JSApi:
+    def __init__(self, controller: _WindowsTrayController) -> None:
+        # Underscore-private: pywebview serializes every public attribute of a
+        # js_api object into the JS bridge, and walking the controller (and its
+        # WinForms window graph) recurses forever.
+        self._controller = controller
+
+    def postMessage(  # noqa: N802 - JavaScript contract
+        self, message: object
+    ) -> list[dict[str, object]] | None:
+        return self._controller.handle_panel_message(message)
+
+
+class _WindowsTrayController:
+    def __init__(self, mock: bool, interval: int) -> None:
+        self.mock = mock
+        self.interval = max(30, interval)
+        self.language = detect_lang()
+        self.active_panel_id = _active_panel_id()
+        self._switch_pending: bool = False
+        self.latest_state = self._empty_state()
+        self.tracker = UsageRateTracker(mock=mock)
+        self.burn_rate_trackers = {
+            "claude_session": BurnRateTracker(),
+            "claude_weekly": BurnRateTracker(),
+            "codex_session": BurnRateTracker(),
+            "codex_weekly": BurnRateTracker(),
+        }
+        self.icon: Any = None
+        self.window: Any = None
+        self.discussion: Any = None
+        self.visible = False
+        self._minimized = False
+        self._positioned_this_show = False
+        self.stopping = threading.Event()
+        self._refresh_runner = win_refresh.TrailingRefreshRunner(
+            self._refresh_once, self.stopping
+        )
+        self._quota_notifier = QuotaNotifier(_quota_notification_thresholds())
+        self.usage_client = ClaudeUsageClient(mock=mock)
+        self._last_tray_percent: float | None = None
+        self._last_tray_tooltip: str | None = None
+        self._last_injected_state: str | None = None
+        self._history_fingerprint: tuple[tuple[str, int, float], ...] | None = None
+        self._cached_history: _RefreshData | None = None
+        self._cached_projects: tuple[list[tuple[str, int, float | None]], ...] | None = None
+        self._history_scan: menubar_state.HistorySourceScan | None = None
+        self._history_scan_at: float | None = None
+        self._content_height: int | None = None
+        self._window_mutations = win_ui_thread.WindowMutationQueue(
+            window=lambda: self.window, stopping=self.stopping
+        )
+
+    def _empty_state(self) -> menubar_state.PopoverState:
+        missing = menubar_state._missing_row
+        return menubar_state.PopoverState(
+            language=self.language,
+            claude_session=missing(
+                _t(self.language, "session_label"), menubar_state.CLAUDE_COLOR, self.language
+            ),
+            claude_weekly=missing(
+                _t(self.language, "weekly_label"), menubar_state.CLAUDE_COLOR, self.language
+            ),
+            codex_session=missing(
+                _t(self.language, "session_label"), menubar_state.CODEX_COLOR, self.language
+            ),
+            codex_weekly=missing(
+                _t(self.language, "weekly_label"), menubar_state.CODEX_COLOR, self.language
+            ),
+            agy_session=missing(
+                _t(self.language, "session_label"), menubar_state.AGY_COLOR, self.language
+            ),
+            agy_weekly=missing(
+                _t(self.language, "weekly_label"), menubar_state.AGY_COLOR, self.language
+            ),
+            agy_group_name="",
+            grok_weekly=missing(
+                _t(self.language, "weekly_label"), menubar_state.GROK_COLOR, self.language
+            ),
+            projects=[],
+            projects_7d=[],
+            projects_30d=[],
+            projects_all=[],
+            rate_text=_t(self.language, "rate_text", value="--"),
+            status_text=_t(self.language, "status_text", value=_t(self.language, "status_loading")),
+            today_text=_t(self.language, "today_text", cost="0.00", tokens="0"),
+            statusline=_statusline_payload(self.language),
+            hide_claude=_hide_claude_enabled(),
+            hide_codex=_hide_codex_enabled(),
+            hide_agy=_hide_agy_enabled(),
+            hide_grok=True,
+            card_order=_quota_card_order(),
+        )
+
+    def panel_filename(self) -> str:
+        return next(item[2] for item in renderable_panels() if item[0] == self.active_panel_id)
+
+    def panel_height(self) -> int:
+        return self._content_height or PANEL_HEIGHTS[self.active_panel_id]
+
+    def _apply_content_height(self, value: object) -> None:
+        self._dispatch_window_mutation(lambda: self._apply_content_height_on_ui_thread(value))
+
+    def _apply_content_height_on_ui_thread(self, value: object) -> None:
+        if self.stopping.is_set():
+            return
+        work_area = self._work_area_for_point(self._current_window_position())
+        if work_area is None:
+            work_area = self._working_area()
+        maximum = (
+            float(work_area[3] - work_area[1] - 24)
+            if work_area is not None
+            else float(PANEL_HEIGHTS[self.active_panel_id])
+        )
+        height = clamp_content_height(value, maximum)
+        if height is None:
+            return
+        rounded = int(round(height))
+        if rounded == self._content_height:
+            return
+        self._content_height = rounded
+        if self.visible:
+            self._place_window_on_ui_thread()
+
+    def attach(self, icon: Any, window: Any) -> None:
+        self.icon = icon
+        self.window = window
+        self._update_tray()
+        threading.Thread(target=self._poll_loop, daemon=True).start()
+        self.refresh()
+
+    def on_closing(self) -> bool:
+        return bool(window_visibility.on_closing(self))
+
+    def on_minimized(self) -> None:
+        window_visibility.on_native_minimize(self)
+
+    def on_restored(self) -> None:
+        self._minimized = False
+
+    def on_loaded(self) -> None:
+        # pywebview's resize()/move() call SetWindowPos with SWP_SHOWWINDOW,
+        # so placing the window while it is hidden would drag the bare panel
+        # onto the screen. Placement happens in show_panel() instead; here it
+        # only re-applies after a visible panel switch reloads the document.
+        if self.visible and not self.stopping.is_set():
+            self._place_window()
+            self.inject_state(force=True)
+        else:
+            # A tray click can land before pywebview has built its Form, in
+            # which case the mutation stayed queued with nothing to run it.
+            self._schedule_window_mutation_drain()
+
+    def _working_area(self) -> tuple[int, int, int, int] | None:
+        """Return the primary monitor work area (without taskbar), in logical pixels."""
+        if os.name != "nt":
+            return None
+        import ctypes
+
+        class Rect(ctypes.Structure):
+            _fields_ = [
+                ("left", ctypes.c_long),
+                ("top", ctypes.c_long),
+                ("right", ctypes.c_long),
+                ("bottom", ctypes.c_long),
+            ]
+
+        rect = Rect()
+        library_name = "windll"
+        user32: Any = getattr(ctypes, library_name).user32
+        if user32.SystemParametersInfoW(0x0030, 0, ctypes.byref(rect), 0):
+            return _to_logical_rect(
+                (rect.left, rect.top, rect.right, rect.bottom),
+                _monitor_dpi_scale(None),
+            )
+        return None
+
+    def _work_area_for_point(
+        self, point: tuple[int, int] | None
+    ) -> tuple[int, int, int, int] | None:
+        """Work area of the monitor nearest ``point``, falling back to the primary monitor.
+
+        SPI_GETWORKAREA (``_working_area``) only ever reports the primary
+        monitor, so clamping a dragged window against it snaps the window
+        back onto the primary monitor every time the panel is switched,
+        even when the user deliberately dragged it onto a secondary display.
+
+        ``point`` is in logical pixels (that is what pywebview reports), while
+        MonitorFromPoint wants physical ones, so it is scaled on the way in and
+        the resulting rect is scaled back on the way out.
+        """
+        if point is None or os.name != "nt":
+            return self._working_area()
+        import ctypes
+
+        class Rect(ctypes.Structure):
+            _fields_ = [
+                ("left", ctypes.c_long),
+                ("top", ctypes.c_long),
+                ("right", ctypes.c_long),
+                ("bottom", ctypes.c_long),
+            ]
+
+        class MonitorInfo(ctypes.Structure):
+            _fields_ = [
+                ("cbSize", ctypes.c_ulong),
+                ("rcMonitor", Rect),
+                ("rcWork", Rect),
+                ("dwFlags", ctypes.c_ulong),
+            ]
+
+        class Point(ctypes.Structure):
+            _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+
+        MONITOR_DEFAULTTONEAREST = 2
+        library_name = "windll"
+        user32: Any = getattr(ctypes, library_name).user32
+        # The primary monitor's scale is only a first guess for locating the
+        # point; once the monitor is known its own scale is what converts the
+        # rect back, which is what makes mixed-DPI setups land correctly.
+        guess = _monitor_dpi_scale(None)
+        physical = (round(point[0] * guess), round(point[1] * guess))
+        handle = user32.MonitorFromPoint(Point(*physical), MONITOR_DEFAULTTONEAREST)
+        info = MonitorInfo()
+        info.cbSize = ctypes.sizeof(MonitorInfo)
+        if handle and user32.GetMonitorInfoW(handle, ctypes.byref(info)):
+            work = info.rcWork
+            return _to_logical_rect(
+                (work.left, work.top, work.right, work.bottom),
+                _monitor_dpi_scale(handle),
+            )
+        return self._working_area()
+
+    def _saved_window_position(self) -> tuple[int, int] | None:
+        value = _load_preferences().get("agentdeck.windowPosition")
+        if not isinstance(value, dict):
+            return None
+        x, y = value.get("x"), value.get("y")
+        if isinstance(x, bool) or isinstance(y, bool):
+            return None
+        if not isinstance(x, (int, float)) or not isinstance(y, (int, float)):
+            return None
+        return (int(x), int(y))
+
+    def _current_window_position(self) -> tuple[int, int] | None:
+        if self.window is None:
+            return None
+        try:
+            x, y = self.window.x, self.window.y
+        except (AttributeError, TypeError, ValueError):
+            return None
+        if isinstance(x, bool) or isinstance(y, bool):
+            return None
+        if not isinstance(x, (int, float)) or not isinstance(y, (int, float)):
+            return None
+        return (int(x), int(y))
+
+    @staticmethod
+    def _clamp_window_position(
+        position: tuple[int, int], work_area: tuple[int, int, int, int], height: int
+    ) -> tuple[int, int]:
+        left, top, right, bottom = work_area
+        return (
+            min(max(position[0], left + 12), max(left + 12, right - PANEL_WIDTH - 12)),
+            min(max(position[1], top + 12), max(top + 12, bottom - height - 12)),
+        )
+
+    @staticmethod
+    def _default_window_position(
+        work_area: tuple[int, int, int, int],
+        height: int,
+        taskbar_edge: str = "bottom",
+    ) -> tuple[int, int]:
+        """First-run placement: the top corner on the side the tray is on.
+
+        The panel floats freely and remembers wherever the user drags it, so this
+        only decides where it appears before there is a remembered position.
+
+        It anchors to the *top* regardless of where the taskbar is. The panel is
+        a tall column -- taller than the work area on a scaled display -- so
+        anchoring it to the bottom pushed its lower edge onto the taskbar, and
+        the title bar people grab to move it ended up in a different place
+        depending on how tall the current theme happened to be. From the top,
+        the grab handle is always in the same corner and the overflow scrolls.
+
+        The side still follows the taskbar: with the taskbar on the left the
+        tray is on the left, and opening at the far corner from the icon just
+        clicked would be worse than any height concern. Anchoring to the icon's
+        exact rectangle needs pystray's private window handle, and upstream
+        moved away from icon-anchored panels because it blocks manual placement
+        (see docs/DECISIONS.md D-07).
+        """
+        left, top, right, bottom = work_area
+        near_left = taskbar_edge == "left"
+        x = (
+            max(left + 12, min(left + 12, right - PANEL_WIDTH - 12))
+            if near_left
+            else max(left + 12, right - PANEL_WIDTH - 12)
+        )
+        y = max(top + 12, min(top + 12, bottom - height - 12))
+        return (x, y)
+
+    def _place_window(self, *, force_default: bool = False) -> None:
+        self._dispatch_window_mutation(
+            lambda: self._place_window_on_ui_thread(force_default=force_default)
+        )
+
+    def _place_window_on_ui_thread(self, *, force_default: bool = False) -> None:
+        if self.window is None or self.stopping.is_set():
+            return
+        primary_work_area = self._working_area()
+        if primary_work_area is None:
+            return
+
+        # Resolve the *target* anchor point before picking a work area, then
+        # look up the work area of whichever monitor that point is on. The
+        # primary monitor's work area is only a fallback for the "no anchor
+        # yet" (first-ever launch) case — using it unconditionally would
+        # clamp a window the user dragged onto a secondary display back onto
+        # the primary one every time the panel is switched.
+        if force_default:
+            anchor = None
+        elif self._positioned_this_show:
+            anchor = self._current_window_position() or self._saved_window_position()
+        else:
+            anchor = self._saved_window_position()
+
+        work_area = self._work_area_for_point(anchor) or primary_work_area
+        left, top, right, bottom = work_area
+        # Subtract the title bar *before* capping, not after. Adding it on
+        # afterwards made the outer window taller than the work area by exactly
+        # one caption, so its bottom edge sat over the taskbar. The panel scrolls
+        # now, so anything that does not fit is reachable rather than lost.
+        chrome = _window_chrome_height(self.window)
+        available = max(240, bottom - top - 24 - chrome)
+        height = min(self.panel_height(), available)
+        self.window.resize(PANEL_WIDTH, height + chrome)
+        position = anchor if anchor is not None else self._default_window_position(
+            work_area, height + chrome, _taskbar_edge()
+        )
+        self.window.move(*self._clamp_window_position(position, work_area, height + chrome))
+        self._positioned_this_show = True
+
+    def _dispatch_window_mutation(self, mutation: Callable[[], None]) -> None:
+        self._window_mutations.dispatch(mutation)
+
+    def _schedule_window_mutation_drain(self) -> bool:
+        return self._window_mutations.schedule_drain()
+
+    def _save_window_position(self) -> None:
+        position = self._current_window_position()
+        if position is None:
+            return
+        preferences = _load_preferences()
+        preferences["agentdeck.windowPosition"] = {"x": position[0], "y": position[1]}
+        _save_preferences(preferences)
+
+    def reset_panel_position(self, _icon: Any = None, _item: Any = None) -> None:
+        preferences = _load_preferences()
+        preferences.pop("agentdeck.windowPosition", None)
+        _save_preferences(preferences)
+        if self.visible:
+            self._place_window(force_default=True)
+
+    def _poll_loop(self) -> None:
+        while not self.stopping.wait(
+            self.interval if self.visible else max(self.interval, SLOW_POLL_INTERVAL_S)
+        ):
+            self.refresh()
+            self._maybe_auto_check_update()
+
+    def refresh(self) -> None:
+        self._refresh_runner.request()
+
+    def _refresh_once(self) -> None:
+        debug_timing = os.environ.get("AGENTDECK_DEBUG") == "1"
+
+        def measure(stage: str, started_at: float) -> None:
+            if debug_timing:
+                elapsed_ms = (time.monotonic() - started_at) * 1000
+                logger.debug("refresh_timing stage=%s elapsed_ms=%.1f", stage, elapsed_ms)
+
+        try:
+            self.latest_state = self._build_state(measure=measure, debug_timing=debug_timing)
+            self._process_quota_notifications(self.latest_state)
+            autoresume_scheduler.tick(self.icon, self.language)
+            started_at = time.monotonic() if debug_timing else 0.0
+            self._update_tray()
+            measure("update_tray", started_at)
+            if self.visible:
+                started_at = time.monotonic() if debug_timing else 0.0
+                self.inject_state()
+                measure("inject_state", started_at)
+        except Exception:
+            if os.environ.get("AGENTDECK_DEBUG") == "1":
+                logger.warning("Windows tray refresh failed", exc_info=True)
+
+    def _load_entries(self, scan: menubar_state.HistorySourceScan) -> _RefreshData:
+        if self.mock:
+            return _RefreshData([], None)
+        entries: list[UsageEntry] = []
+        error_key = None
+        try:
+            entries.extend(load_entries(hours_back=0, jsonl_paths=scan.claude_paths))
+        except OSError:
+            error_key = "history_load_error_file"
+        except (ValueError, KeyError, TypeError):
+            error_key = "history_load_error_parse"
+        try:
+            entries.extend(codex_loader.load_entries(hours_back=0, jsonl_paths=scan.codex_paths))
+        except OSError:
+            error_key = "history_load_error_file"
+        except (ValueError, KeyError, TypeError):
+            error_key = "history_load_error_parse"
+        try:
+            entries.extend(grok_loader.load_entries(hours_back=0))
+        except OSError:
+            error_key = "history_load_error_file"
+        except (ValueError, KeyError, TypeError):
+            error_key = "history_load_error_parse"
+        return _RefreshData(entries, error_key)
+
+    def _history_source_scan(self) -> menubar_state.HistorySourceScan:
+        """Avoid recursively statting every session JSONL on each tray tick."""
+        now = time.monotonic()
+        if (
+            self._history_scan is not None
+            and self._history_scan_at is not None
+            and now - self._history_scan_at < HISTORY_SCAN_CACHE_SECONDS
+        ):
+            return self._history_scan
+        self._history_scan = menubar_state.history_source_scan()
+        self._history_scan_at = now
+        return self._history_scan
+
+    def _build_state(
+        self,
+        *,
+        measure: Any = lambda _stage, _started_at: None,
+        debug_timing: bool = False,
+    ) -> menubar_state.PopoverState:
+        started_at = time.monotonic() if debug_timing else 0.0
+        # Taken before codex_rows, not after. Without the candidates, it
+        # recursively enumerates every jsonl under ~/.codex on its own, and the
+        # scan below then walks the same tree a second time on every refresh.
+        scan = self._history_source_scan()
+        codex_rows, _codex_pct, _model, codex_stale, codex_credits = menubar_state.codex_rows(
+            mock=self.mock,
+            language=self.language,
+            burn_rate_trackers=self.burn_rate_trackers,
+            jsonl_candidates=scan.codex_rate_limit_candidates,
+        )
+        measure("codex_load", started_at)
+        started_at = time.monotonic() if debug_timing else 0.0
+        agy_result = menubar_agy.load_refresh_result(self.language)
+        agy = agy_result.projection or menubar_agy.fallback_projection(self.language)
+        measure("agy_load", started_at)
+        started_at = time.monotonic() if debug_timing else 0.0
+        grok_result = menubar_grok.load_refresh_result(self.language)
+        grok = grok_result.projection or menubar_grok.fallback_projection(self.language)
+        measure("grok_load", started_at)
+        started_at = time.monotonic() if debug_timing else 0.0
+        if menubar_state.history_cache_needs_reload(
+            self._history_fingerprint,
+            scan.fingerprint,
+            has_cached_result=(
+                self._cached_history is not None and self._cached_projects is not None
+            ),
+        ):
+            self._cached_history = self._load_entries(scan)
+            self._cached_projects = (
+                _mock_projects()
+                if self.mock
+                else menubar_state.project_rows_for_windows(self._cached_history.entries)
+            )
+            # A load error may be transient (e.g. a file locked mid-write); keep the
+            # fingerprint unset so the next poll retries instead of pinning the error.
+            self._history_fingerprint = (
+                scan.fingerprint if self._cached_history.history_error_key is None else None
+            )
+        history = self._cached_history
+        projects = self._cached_projects
+        assert history is not None and projects is not None
+        measure("history_load", started_at)
+        started_at = time.monotonic() if debug_timing else 0.0
+        outcome = asyncio.run(self._fetch())
+        measure("fetch", started_at)
+        if outcome.snapshot is not None:
+            window_keeper.maybe_ping(
+                (
+                    None
+                    if outcome.snapshot.current_reset_estimated
+                    else outcome.snapshot.current_reset_at
+                ),
+                outcome.snapshot.current_percent,
+                outcome.snapshot.data_source,
+                self.mock,
+            )
+        agy_window_keeper.maybe_ping(agy_result, self.mock)
+        state = menubar_state.build_popover_state(
+            outcome=outcome,
+            codex_rows=codex_rows,
+            agy_rows=(agy.session, agy.weekly),
+            agy_group_name=agy.group_name,
+            grok_row=grok.weekly,
+            projects=projects[0],
+            projects_7d=projects[1],
+            projects_30d=projects[2],
+            projects_all=projects[3],
+            language=self.language,
+            group=self.tracker.group(),
+            burn_rate_trackers=self.burn_rate_trackers,
+            today_text=(
+                _t(self.language, "today_text", cost="45.20", tokens="50,193,442")
+                if self.mock
+                else _today_text(history.entries, self.language)
+            ),
+            statusline=_statusline_payload(self.language),
+            show_install_button=outcome.state == PollState.TOKEN_ERROR,
+            hide_claude=_hide_claude_enabled(),
+            hide_codex=_hide_codex_enabled(),
+            hide_agy=agy_result.hide_agy or _hide_agy_enabled(),
+            hide_grok=grok_result.hide_grok or _hide_grok_enabled(),
+            codex_stale=codex_stale,
+            codex_credits=codex_credits,
+            agy_stale=agy.stale,
+            grok_stale=grok.stale,
+            card_order=_quota_card_order(),
+            history_error=menubar_state.history_load_error_state(
+                history.history_error_key, self.language
+            ),
+        )
+        # Only load the talent roster while its panel is showing, so users on the
+        # other panels never pay for reading the persona packs.
+        if self.active_panel_id == "talent_market":
+            import talent_market_bridge
+
+            state.talent = talent_market_bridge.list_state(self.language)
+        return state
+
+    async def _fetch(self) -> Any:
+        return await self.usage_client.fetch_once()
+
+    def _update_tray(self) -> None:
+        if self.icon is None:
+            return
+        percent = self.latest_state.claude_session.percent
+        tooltip = build_tooltip(self.latest_state)
+        if percent == self._last_tray_percent and tooltip == self._last_tray_tooltip:
+            return
+        self.icon.icon = draw_tray_icon(percent)
+        self.icon.title = tooltip
+        self._last_tray_percent = percent
+        self._last_tray_tooltip = tooltip
+
+    def inject_state(self, *, force: bool = False) -> None:
+        if self.window is None:
+            return
+        encoded = json.dumps(
+            _state_payload(self.latest_state), ensure_ascii=False, separators=(",", ":")
+        )
+        if not force and encoded == self._last_injected_state:
+            return
+        self.window.evaluate_js(f"window.usageApplyState({encoded})")
+        self._last_injected_state = encoded
+
+    def show_panel(self, _icon: Any = None, _item: Any = None) -> None:
+        window_visibility.toggle_panel(self)
+
+    def set_panel_flavor(self, flavor: str) -> None:
+        """Pick a Catppuccin flavour and redraw if that panel is on screen.
+
+        The flavour is baked into the page as a data attribute at assembly
+        time, so the panel has to be reloaded to see it -- changing the
+        preference alone would look like the menu did nothing.
+        """
+        if not _save_panel_flavor(flavor):
+            return
+        if self.active_panel_id == "catppuccin" and self.window is not None:
+            self.switch_panel("catppuccin")
+
+    def open_talent_market(self, _icon: Any = None, _item: Any = None) -> None:
+        """Show the talent market and bring the window forward.
+
+        Deliberately not remembered as the active panel: it is somewhere you go
+        to install a role, not a view to live in, and restoring it on launch
+        would hide the quota the app exists to show.
+
+        The refresh is not optional. The roster is only read while this panel is
+        the active one, and a switch reloads the page from ``latest_state`` --
+        which was built while some other panel was active and therefore carries
+        no roster at all. Without rebuilding here, opening the talent market
+        showed "component is not installed" every time until the next poll came
+        around, which reads as a broken feature rather than a slow one.
+        """
+        self.switch_panel(TALENT_PANEL[0], remember=False)
+        if not self.visible:
+            self.show_panel()
+        self.refresh()
+
+    def switch_panel(self, panel_id: str, *, remember: bool = True) -> None:
+        self.active_panel_id = panel_id
+        # Deliberately keep the previous panel's measured height instead of
+        # resetting to None: on_loaded() clamps the window to fit before the
+        # new panel reports its real height, and PANEL_HEIGHTS' fallback
+        # values are near-fullscreen placeholders that would clamp a dragged
+        # window's Y position back up to the top of the screen every switch.
+        if remember:
+            _save_active_panel_id(panel_id)
+        # A panel reload is initialized from ``latest_state`` in ``on_loaded``.
+        # Card order is changed directly by the JS bridge, outside the refresh
+        # worker, so refresh this field from the shared preferences before the
+        # next theme receives that state.
+        self.latest_state.card_order = _quota_card_order()
+        self.window.load_html(panel_html(self.panel_filename()))
+
+    def _deferred_switch_panel(self, panel_id: str) -> None:
+        self._switch_pending = False
+        self.switch_panel(panel_id)
+
+    def _schedule_panel_switch(self, panel_id: str) -> None:
+        if self._switch_pending or panel_id not in {panel[0] for panel in available_panels()}:
+            return
+        self._switch_pending = True
+        # postMessage is a pywebview promise. Reloading the document before
+        # that promise resolves destroys its callback and can leave the Edge
+        # WebView as a blank white window. Keep the existing short deferral,
+        # but now reload the panel explicitly chosen from the HTML menu.
+        threading.Timer(0.05, lambda: self._deferred_switch_panel(panel_id)).start()
+
+    def _panel_menu_data(self) -> list[dict[str, object]]:
+        return _panel_menu_payload(self)
+
+    def toggle_login(self, _icon: Any = None, _item: Any = None) -> None:
+        win_login_item.disable() if win_login_item.is_enabled() else win_login_item.enable()
+
+    def open_changelog(self, _icon: Any = None, _item: Any = None) -> None:
+        """Open this project's changelog, matching the UI language.
+
+        This replaced an "AI Update Daily" page that mirrored a digest upstream
+        curates in a repository we cannot see. Three quarters of it was other
+        projects' release news that we could neither write nor fix, and the
+        remaining quarter was this changelog rendered twice.
+        """
+        # Traditional Chinese is the suffix-less default here, as it is for the
+        # README; English is the one that carries a suffix.
+        suffix = "" if self.language == "zh-TW" else ".en"
+        webbrowser.open(
+            f"https://github.com/SanHsien/agentdeck/blob/main/CHANGELOG{suffix}.md"
+        )
+
+    def show_about(self, _icon: Any = None, _item: Any = None) -> None:
+        self._message_box(about_info.text(self.language, _current_version()), style=MB_ICON_INFO)
+
+    def toggle_hide_section(self, preference_key: str) -> None:
+        preferences = _load_preferences()
+        preferences[preference_key] = preferences.get(preference_key) is not True
+        _save_preferences(preferences)
+        self.latest_state.hide_claude = _hide_claude_enabled()
+        self.latest_state.hide_codex = _hide_codex_enabled()
+        self.latest_state.hide_agy = _hide_agy_enabled()
+        self.latest_state.hide_grok = _hide_grok_enabled()
+        if self.visible:
+            self.inject_state()
+
+    def toggle_quota_notifications(self, _icon: Any = None, _item: Any = None) -> None:
+        preferences = _load_preferences()
+        preferences["quota_notifications"] = not _quota_notifications_enabled(preferences)
+        _save_preferences(preferences)
+
+    def toggle_window_keeper(self, _icon: Any = None, _item: Any = None) -> None:
+        preferences = _load_preferences()
+        enabled = not _window_keeper_enabled(preferences)
+        preferences["window_keeper"] = enabled
+        preferences.pop("agy_window_keeper", None)
+        _save_preferences(preferences)
+        if enabled:
+            self._message_box(
+                f"{_t(self.language, 'window_keeper_sleep_title')}\n\n"
+                f"{_t(self.language, 'window_keeper_sleep_body_windows')}\n\n"
+                f"{_t(self.language, 'window_keeper_tooltip')}"
+            )
+
+    def toggle_session_resume(self, _icon: Any = None, _item: Any = None) -> None:
+        threading.Thread(target=self._toggle_session_resume_in_background, daemon=True).start()
+
+    def _toggle_session_resume_in_background(self) -> None:
+        import session_hooks
+
+        try:
+            if session_hooks.is_resume_enabled():
+                session_hooks.disable_session_resume()
+            else:
+                session_hooks.enable_session_resume()
+                self._explain_feature("project_butler_tooltip")
+        except Exception as exc:
+            logger.warning("toggle session resume failed", exc_info=True)
+            self._report_action_result(
+                _t(self.language, "resume_action_failed"), detail=str(exc), failed=True
+            )
+
+    def toggle_terse_mode(self, _icon: Any = None, _item: Any = None) -> None:
+        threading.Thread(target=self._toggle_terse_mode_in_background, daemon=True).start()
+
+    def _toggle_terse_mode_in_background(self) -> None:
+        import session_hooks
+
+        try:
+            if session_hooks.is_terse_mode_enabled():
+                session_hooks.disable_terse_mode()
+            else:
+                session_hooks.enable_terse_mode()
+                self._explain_feature("terse_mode_tooltip")
+        except Exception as exc:
+            logger.warning("toggle terse mode failed", exc_info=True)
+            self._report_action_result(
+                _t(self.language, "resume_action_failed"), detail=str(exc), failed=True
+            )
+
+    def _process_quota_notifications(self, state: menubar_state.PopoverState) -> None:
+        try:
+            events = self._quota_notifier.update(
+                {
+                    "claude_session": (
+                        state.claude_session.percent,
+                        state.claude_session.available,
+                    ),
+                    "claude_weekly": (
+                        state.claude_weekly.percent,
+                        state.claude_weekly.available,
+                    ),
+                    "codex_session": (state.codex_session.percent, state.codex_session.available),
+                    "codex_weekly": (state.codex_weekly.percent, state.codex_weekly.available),
+                }
+            )
+            if _quota_notifications_enabled() and not self.mock:
+                for event in events:
+                    self._send_quota_notification(event, state)
+        except Exception:
+            if os.environ.get("AGENTDECK_DEBUG") == "1":
+                logger.warning("Windows quota notification processing failed", exc_info=True)
+
+    def _send_quota_notification(
+        self, event: NotificationEvent, state: menubar_state.PopoverState
+    ) -> None:
+        if self.icon is None or not hasattr(self.icon, "notify"):
+            return
+        rows = {
+            "claude_session": state.claude_session,
+            "claude_weekly": state.claude_weekly,
+            "codex_session": state.codex_session,
+            "codex_weekly": state.codex_weekly,
+        }
+        row = rows[event.channel]
+        scope = row.title or _t(
+            self.language, "session_label" if event.channel.endswith("_session") else "weekly_label"
+        )
+        message = _t(
+            self.language,
+            f"notif_{event.kind}_body",
+            tool="Claude" if event.channel.startswith("claude_") else "Codex",
+            scope=scope,
+            pct=f"{round(row.percent or event.threshold or 0.0):g}",
+            reset=row.reset_text,
+        )
+        self.icon.notify(message, _t(self.language, f"notif_{event.kind}_title"))
+
+    def check_update(self, _icon: Any = None, _item: Any = None) -> None:
+        """Manual check from the tray menu: always report, even a skipped version."""
+        threading.Thread(
+            target=self._check_update_in_background,
+            kwargs={"manual": True},
+            daemon=True,
+        ).start()
+
+    def _maybe_auto_check_update(self) -> None:
+        """Daily background check, matching what upstream's menu bar does.
+
+        Windows previously had the manual menu item only, so the "checks GitHub
+        at most once a day" behaviour the README promises never actually ran here.
+        """
+        import update_gate
+
+        preferences = _load_preferences()
+        if not _auto_update_check_enabled(preferences):
+            return
+        if not update_gate.auto_check_is_due(preferences):
+            return
+        self._check_update_in_background(manual=False)
+
+    def _check_update_in_background(self, *, manual: bool) -> None:
+        import update_gate
+
+        preferences = _load_preferences()
+        result = update_checker.check_latest_release_result(_current_version())
+        release = result.release
+
+        preferences = _load_preferences()
+        preferences["last_update_check"] = update_gate.build_check_cache_entry(
+            _current_version(), release
+        )
+        _save_preferences(preferences)
+
+        if release is None:
+            if manual:
+                # An automatic check stays silent here: nagging every day that
+                # there is nothing new is worse than saying nothing.
+                self._message_box(
+                    _t(
+                        self.language,
+                        "update_check_failed" if result.failed else "update_no_new_version",
+                    )
+                )
+            return
+
+        if not manual and not update_gate.should_prompt(preferences, release.version):
+            return
+
+        self._show_update_prompt(release)
+
+    def _show_update_prompt(self, release: Any) -> None:
+        import update_gate
+
+        title = _t(self.language, "update_alert_title", version=release.version)
+        # MessageBoxW cannot relabel its buttons, so the three choices upstream
+        # shows as named buttons are spelled out in the body instead. Without this
+        # legend "No" would read as "don't download" rather than "never ask again
+        # for this version".
+        legend = "\n".join(
+            (
+                f"[{_t(self.language, 'update_btn_download')}]  →  Yes",
+                f"[{_t(self.language, 'update_btn_skip')}]  →  No",
+                f"[{_t(self.language, 'update_btn_later')}]  →  Cancel / Esc",
+            )
+        )
+        # Deliberately not the release notes. A MessageBoxW has no scrollbar, so
+        # a full changelog turned this prompt into a wall of Markdown the user
+        # had to read past to reach the buttons -- and the notes are one click
+        # away on the page this very dialog offers to open. Version and address
+        # are all the prompt has to answer: what is new, and where is it.
+        choice = self._message_box(
+            f"{title}\n\n{release.html_url}\n\n{legend}", style=MB_YESNOCANCEL | MB_ICON_INFO
+        )
+        action, updates = update_gate.resolve_message_box_choice(choice, release.version)
+
+        if action == "open":
+            webbrowser.open(release.html_url)
+            return
+
+        preferences = _load_preferences()
+        preferences.update(updates)
+        if action == "dismiss":
+            preferences["update_dismissed_at"] = time.time()
+        _save_preferences(preferences)
+
+    def _handle_talent_action(self, action: str, payload: dict[str, object]) -> None:
+        """Apply a talent-market button press, then refresh the panel.
+
+        Runs on a worker thread because installing writes to ~/.claude/agents and
+        the panel must not freeze while that happens.
+        """
+        role_id = payload.get("roleId")
+        if not isinstance(role_id, str) or not role_id:
+            return
+        prompt = payload.get("taskPrompt")
+
+        def worker() -> None:
+            import talent_market_bridge
+
+            if action == "install_role":
+                result = talent_market_bridge.install_role(role_id, self.language)
+            elif action == "restore_role":
+                result = talent_market_bridge.restore_role(role_id)
+            elif action == "ignore_drift":
+                result = talent_market_bridge.ignore_drift(role_id)
+            elif action == "set_folder":
+                folder = self._pick_folder()
+                if folder is None:
+                    return
+                result = talent_market_bridge.set_folder(role_id, folder)
+            else:  # launch_role
+                result = self._launch_role(role_id, prompt if isinstance(prompt, str) else None)
+            if not result.get("ok"):
+                self._report_action_result(
+                    _t(self.language, "talent_action_failed"),
+                    detail=str(result.get("error") or ""),
+                    failed=True,
+                )
+            elif result.get("replaced_backup"):
+                # The user already had an agent under this name; say where it went
+                # rather than letting them discover the replacement later.
+                self._report_action_result(
+                    _t(self.language, "talent_replaced_existing", backup=result["replaced_backup"])
+                )
+            self.refresh()
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _launch_role(self, role_id: str, prompt: str | None) -> dict[str, object]:
+        """Open a terminal in the role's folder so Claude Code starts there.
+
+        Upstream launched the role through its private CLI. With the persona
+        installed as a normal subagent, "launch" only has to put the user in the
+        right directory — Claude Code picks the agent up from ~/.claude/agents.
+        """
+        import persona_store
+
+        entry = persona_store.list_state(self.language)
+        folder = ""
+        for pack in entry.get("packs", []):
+            for role in pack.get("roles", []):
+                if role.get("id") == role_id:
+                    folder = str(role.get("selectedFolderLabel") or "")
+        target = Path(folder).expanduser() if folder else Path.home()
+        if not target.is_dir():
+            return {"ok": False, "error": f"folder not found: {target}"}
+        try:
+            os.startfile(target)  # noqa: S606 - opens Explorer at the role's folder
+        except OSError as exc:
+            return {"ok": False, "error": str(exc)}
+        if prompt:
+            with contextlib.suppress(Exception):
+                self._copy_to_clipboard(prompt)
+        return {"ok": True}
+
+    def _copy_to_clipboard(self, text: str) -> None:
+        import subprocess
+
+        subprocess.run(  # noqa: S603 - fixed executable, text passed on stdin
+            ["clip"], input=text.encode("utf-16-le"), check=False, shell=False
+        )
+
+    def _pick_folder(self) -> str | None:
+        window = self.window
+        if window is None:
+            return None
+        import webview
+
+        try:
+            result = window.create_file_dialog(webview.FOLDER_DIALOG)
+        except Exception:  # noqa: BLE001 - a cancelled dialog is not an error
+            logger.debug("folder dialog failed", exc_info=True)
+            return None
+        if not result:
+            return None
+        first = result[0] if isinstance(result, (list, tuple)) else result
+        return str(first) if first else None
+
+    def _explain_feature(self, tooltip_key: str) -> None:
+        """Show what a feature does, at the moment the user switches it on.
+
+        pystray's MenuItem has no tooltip, so the text upstream shows on hover
+        has nowhere to live in the tray menu. Delivering it on enable keeps the
+        explanation instead of dropping it.
+
+        A tray balloon, not a MessageBox: this is information the user did not
+        ask for, so it must not block until dismissed. The toggles run on daemon
+        threads, and a modal dialog there waits forever for a click that may
+        never come — which is exactly how it hung the test suite.
+        """
+        icon = self.icon
+        if icon is None or not hasattr(icon, "notify"):
+            return
+        with contextlib.suppress(Exception):
+            icon.notify(_t(self.language, tooltip_key), _t(self.language, "app_name"))
+
+    def _report_action_result(
+        self, message: str, *, detail: str = "", failed: bool = False
+    ) -> None:
+        """Tell the user how an action they asked for turned out.
+
+        Upstream shows a modal NSAlert for each of these; a MessageBox is the
+        closest Windows equivalent and, unlike a tray balloon, cannot be missed
+        while the user is looking elsewhere. Staying silent — the previous
+        behaviour — made a failed hook install indistinguishable from a panel
+        that simply had no data yet, which is the worst possible outcome for the
+        one action the whole Claude Code integration depends on.
+        """
+        text = f"{message}\n\n{detail}" if detail else message
+        with contextlib.suppress(Exception):
+            self._message_box(text, style=MB_ICON_WARNING if failed else MB_ICON_INFO)
+
+    def _message_box(self, text: str, *, style: int = MB_ICON_INFO) -> int:
+        return win_modal.show(
+            text, style=style, owner=win_modal.owner_handle(self.window, visible=self.visible)
+        )
+
+    def handle_panel_message(self, message: object) -> list[dict[str, object]] | None:
+        payload: object = message
+        if isinstance(message, str) and message.startswith("{"):
+            try:
+                payload = json.loads(message)
+            except ValueError:
+                return None
+        if isinstance(payload, dict):
+            action = payload.get("action")
+            if action == "open_menu":
+                return self._panel_menu_data()
+            if action == "content_height":
+                self._apply_content_height(payload.get("height"))
+                return None
+            if action == "set_card_order":
+                order = payload.get("order")
+                if isinstance(order, list):
+                    valid_order = _valid_quota_card_order(order)
+                    if valid_order is not None:
+                        preferences = _load_preferences()
+                        preferences["quota_card_order"] = list(valid_order)
+                        _save_preferences(preferences)
+            elif action == "switch_panel":
+                panel_id = payload.get("panel_id")
+                if isinstance(panel_id, str):
+                    self._schedule_panel_switch(panel_id)
+            elif action == "toggle_hide_section":
+                preference_key = payload.get("preference_key")
+                if preference_key in {
+                    "hide_claude_section",
+                    "hide_codex_section",
+                    "hide_agy_section",
+                    "hide_grok_section",
+                }:
+                    self.toggle_hide_section(preference_key)
+            elif action == "open_changelog":
+                self.open_changelog()
+            elif action == "open_discussion":
+                self.open_discussion()
+            elif action == "show_about":
+                threading.Thread(target=self.show_about, daemon=True).start()
+            elif action in _TALENT_ACTIONS:
+                self._handle_talent_action(action, payload)
+            elif action == "reset_panel_position":
+                self.reset_panel_position()
+            elif action == "refresh":
+                self.refresh()
+            elif action == "toggle_login":
+                self.toggle_login()
+            elif action == "toggle_quota_notifications":
+                self.toggle_quota_notifications()
+            elif action == "toggle_window_keeper":
+                self.toggle_window_keeper()
+            elif action == "toggle_session_resume":
+                self.toggle_session_resume()
+            elif action == "toggle_terse_mode":
+                self.toggle_terse_mode()
+            elif action == "check_update":
+                self.check_update()
+            elif action == "quit":
+                self.quit()
+            return None
+        action = str(payload)
+        if action == "refresh":
+            self.refresh()
+        elif action == "quit":
+            self.quit()
+        elif action == "switch":
+            # Older panel assets post this action directly. Return menu data
+            # instead of cycling themes so the bridge remains forwards-safe.
+            return self._panel_menu_data()
+        elif action in {"toggle_statusline", "toggle-statusline"}:
+            threading.Thread(target=self._toggle_statusline, daemon=True).start()
+        elif action == "install":
+            threading.Thread(target=self._install_hook, daemon=True).start()
+        elif action == "analyze":
+            project_range = self.window.evaluate_js(
+                "typeof projectRange === 'string' ? projectRange : '30d'"
+            )
+            threading.Thread(
+                target=self._analyze_usage,
+                args=(str(project_range or "30d"),),
+                daemon=True,
+            ).start()
+        return None
+
+    def _toggle_statusline(self) -> None:
+        try:
+            _toggle_statusline_settings()
+        except Exception as exc:
+            logger.warning("statusLine settings toggle failed", exc_info=True)
+            self._report_action_result(
+                _t(self.language, "statusline_action_failed"), detail=str(exc), failed=True
+            )
+        self.refresh()
+
+    def _install_hook(self) -> None:
+        import session_hooks
+        import setup_hook
+
+        try:
+            code = setup_hook.setup()
+        except Exception as exc:
+            logger.warning("statusLine hook install failed", exc_info=True)
+            self._report_action_result(
+                _t(self.language, "hook_install_failed"),
+                detail=str(exc) or _t(self.language, "hook_install_failed_default"),
+                failed=True,
+            )
+            self.refresh()
+            return
+        if code == 0:
+            session_hooks._migrate_bundled_python_commands_if_needed()
+            self._report_action_result(_t(self.language, "hook_installed_restart"))
+        else:
+            self._report_action_result(
+                _t(self.language, "hook_install_failed"),
+                detail=_t(self.language, "hook_install_failed_default"),
+                failed=True,
+            )
+        self.refresh()
+
+    def _analyze_usage(self, project_range: str) -> None:
+        from adapters.registry import detect_agents
+        from analyzer.reporter import build_report_data
+        from ui.html_report import save_and_open
+
+        periods = {"1d": "today", "7d": "last7", "30d": "last30", "all": "all"}
+        period = periods.get(project_range, "month")
+        try:
+            save_and_open(build_report_data(detect_agents(), period), language=self.language)
+        except Exception as exc:
+            logger.warning("analysis report generation failed", exc_info=True)
+            self._report_action_result(
+                _t(self.language, "analysis_failed"), detail=str(exc), failed=True
+            )
+
+    def open_discussion(self, _icon: Any = None, _item: Any = None) -> None:
+        """Open the AI Council window, creating it on first use.
+
+        The controller is built lazily because it starts a DiscussionBridge, and
+        a user who never opens the council should not pay for one. The window it
+        creates joins the pywebview loop `run()` already started, so there is no
+        second GUI loop to manage.
+        """
+        try:
+            if self.discussion is None:
+                from council.discussion_window_win import WindowsDiscussionWindowController
+
+                self.discussion = WindowsDiscussionWindowController()
+            self.discussion.show()
+        except Exception:
+            # A failure here must not take the tray down with it; the tray is
+            # the only way back to every other feature.
+            logger.exception("failed to open the AI Council window")
+
+    def quit(self, _icon: Any = None, _item: Any = None) -> None:
+        self.stopping.set()
+        self._refresh_runner.stop()
+        if self.discussion is not None:
+            with contextlib.suppress(Exception):
+                self.discussion.shutdown()
+            self.discussion = None
+        if self.icon is not None:
+            self.icon.stop()
+        if self.window is not None:
+            self.window.destroy()
+
+
+def _session_resume_enabled() -> bool:
+    try:
+        import session_hooks
+
+        return session_hooks.is_resume_enabled()
+    except Exception:
+        return False
+
+
+def _terse_mode_enabled() -> bool:
+    try:
+        import session_hooks
+
+        return session_hooks.is_terse_mode_enabled()
+    except Exception:
+        return False
+
+
+_SINGLE_INSTANCE_MUTEX = "usage-windows-tray-single-instance"
+_ERROR_ALREADY_EXISTS = 183
+_single_instance_handle: int | None = None
+
+
+def _acquire_single_instance_lock() -> bool:
+    """Hold a named mutex for the process lifetime; False if another tray owns it.
+
+    Two tray instances fight over the same WebView2 user-data directory: the
+    loser's panel fails to initialize and lingers as a bare white window.
+    """
+    global _single_instance_handle
+    import ctypes
+
+    library_name = "windll"
+    windll: Any = getattr(ctypes, library_name)
+    handle = windll.kernel32.CreateMutexW(None, False, _SINGLE_INSTANCE_MUTEX)
+    if not handle:
+        return True
+    if windll.kernel32.GetLastError() == _ERROR_ALREADY_EXISTS:
+        windll.kernel32.CloseHandle(handle)
+        return False
+    _single_instance_handle = handle
+    return True
+
+
+def _release_single_instance_lock() -> None:
+    global _single_instance_handle
+    if _single_instance_handle is None:
+        return
+    import ctypes
+
+    library_name = "windll"
+    windll: Any = getattr(ctypes, library_name)
+    windll.kernel32.CloseHandle(_single_instance_handle)
+    _single_instance_handle = None
+
+
+def _show_already_running_notice() -> None:
+    import ctypes
+
+    library_name = "windll"
+    windll: Any = getattr(ctypes, library_name)
+    windll.user32.MessageBoxW(0, _t(detect_lang(), "wintray_already_running"), "agentdeck", 0x40)
+
+
+def run_app(mock: bool = False, interval: int = 60) -> None:
+    if not _acquire_single_instance_lock():
+        _show_already_running_notice()
+        return
+
+    import pystray
+    import webview
+
+    controller = _WindowsTrayController(mock, interval)
+    window = webview.create_window(
+        "agentdeck",
+        html=panel_html(controller.panel_filename()),
+        js_api=_JSApi(controller),
+        width=PANEL_WIDTH,
+        height=controller.panel_height(),
+        frameless=False,
+        easy_drag=False,
+        resizable=False,
+        on_top=True,
+        hidden=True,
+        background_color=_system_background_color(),
+    )
+    if window is None:
+        raise RuntimeError("pywebview did not create a window")
+    window.events.loaded += controller.on_loaded
+    window.events.closing += controller.on_closing
+    window.events.minimized += controller.on_minimized
+    window.events.restored += controller.on_restored
+    icon = pystray.Icon("agentdeck", draw_tray_icon(None), "agentdeck", _menu(controller))
+    controller.attach(icon, window)
+    icon.run_detached()
+    webview.start(gui="edgechromium", debug=os.environ.get("AGENTDECK_DEBUG") == "1")

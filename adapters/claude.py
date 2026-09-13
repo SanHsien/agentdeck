@@ -1,0 +1,215 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 lollapalooza <https://github.com/aqua5230>
+#
+# Part of "usage". Free software licensed under the GNU Affero General Public
+# License v3.0 only; see the LICENSE file for full terms and the warranty disclaimer.
+
+import math
+import os
+import sys
+from collections import OrderedDict
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+from jsonl_utils import iter_jsonl_dicts
+
+from .types import AgentInfo, UsageEntry
+
+CLAUDE_DIRS = [
+    os.path.expanduser("~/.claude/projects"),
+    os.path.expanduser("~/.config/claude/projects"),
+]
+_FILE_CACHE_MAXSIZE = 512
+_file_cache: OrderedDict[Path, tuple[float, int, list[UsageEntry]]] = OrderedDict()
+
+
+def detect() -> AgentInfo | None:
+    for d in get_claude_dirs():
+        if Path(d).is_dir():
+            return AgentInfo(
+                id="claude-code",
+                name="Claude Code",
+                data_dir=d,
+                installed=True,
+            )
+    return None
+
+
+def load_entries(hours_back: int = 0) -> list[UsageEntry]:
+    entries: list[UsageEntry] = []
+    seen: set[str] = set()
+    cutoff = None
+    if hours_back > 0:
+        from datetime import timedelta
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=hours_back)
+
+    for base_dir in get_claude_dirs():
+        base = Path(base_dir)
+        if not base.is_dir():
+            continue
+        for jsonl_path in base.rglob("*.jsonl"):
+            fallback_project = extract_project_from_dir(jsonl_path, base)
+            parse_jsonl(jsonl_path, fallback_project, entries, seen, cutoff)
+
+    entries.sort(key=lambda e: e.timestamp)
+    return entries
+
+
+def get_claude_dirs() -> list[str]:
+    dirs = list(CLAUDE_DIRS)
+    env = os.environ.get("CLAUDE_CONFIG_DIR")
+    if env:
+        for p in env.split(","):
+            projects_dir = os.path.join(p.strip(), "projects")
+            if projects_dir not in dirs:
+                dirs.insert(0, projects_dir)
+    return dirs
+
+
+def project_from_cwd(cwd: str) -> str:
+    home = os.path.expanduser("~")
+    rel = cwd[len(home):] if cwd.startswith(home) else cwd
+    # Windows sessions read transcripts whose cwd may use either separator
+    # (e.g. POSIX-style paths). POSIX filenames may legitimately contain
+    # backslashes, so only normalize them on Windows.
+    if sys.platform == "win32":
+        rel = rel.replace("\\", "/")
+        sep = "/"
+    else:
+        sep = os.sep
+    rel = rel.strip(sep)
+    parts = rel.split(sep)
+    return parts[-1] if parts and parts[-1] else rel or "unknown"
+
+
+def extract_project_from_dir(jsonl_path: Path, base: Path) -> str:
+    rel = jsonl_path.relative_to(base)
+    project_dir = str(rel.parts[0]) if rel.parts else "unknown"
+    decoded = project_dir.replace("-", os.sep).strip(os.sep)
+    home = os.path.expanduser("~").strip(os.sep)
+    if decoded.startswith(home):
+        decoded = decoded[len(home):].strip(os.sep)
+    parts = decoded.split(os.sep)
+    return parts[-1] if parts else "unknown"
+
+
+def parse_jsonl(
+    path: Path,
+    project: str,
+    entries: list[UsageEntry],
+    seen: set[str],
+    cutoff: datetime | None,
+) -> None:
+    try:
+        st = path.stat()
+    except (OSError, PermissionError) as exc:
+        _debug_file_error("failed to stat Claude log", path, exc)
+        return
+
+    cached = _file_cache.get(path)
+    parsed_entries: list[UsageEntry]
+    if cached is not None and cached[0] == st.st_mtime and cached[1] == st.st_size:
+        _file_cache.move_to_end(path)
+        parsed_entries = cached[2]
+    else:
+        parsed_entries = []
+        try:
+            for data in iter_jsonl_dicts(path):
+                if data.get("type") != "assistant":
+                    continue
+
+                entry = _parse_assistant_entry(data, project)
+                if entry is None:
+                    continue
+                parsed_entries.append(entry)
+        except (OSError, PermissionError, UnicodeDecodeError) as exc:
+            _debug_file_error("failed to read Claude log", path, exc)
+            return
+
+        if path not in _file_cache and len(_file_cache) >= _FILE_CACHE_MAXSIZE:
+            _file_cache.popitem(last=False)
+        _file_cache[path] = (st.st_mtime, st.st_size, parsed_entries)
+
+    for entry in parsed_entries:
+        if cutoff and entry.timestamp < cutoff:
+            continue
+
+        if entry.dedup_key in seen:
+            continue
+        seen.add(entry.dedup_key)
+
+        entries.append(entry)
+
+
+def _parse_assistant_entry(data: dict[str, Any], project: str) -> UsageEntry | None:
+    message = data.get("message")
+    if not message or not isinstance(message, dict):
+        return None
+
+    usage = message.get("usage")
+    if not usage or not isinstance(usage, dict):
+        return None
+
+    input_tokens = _as_int(usage.get("input_tokens"))
+    output_tokens = _as_int(usage.get("output_tokens"))
+    cache_creation = _as_int(usage.get("cache_creation_input_tokens"))
+    cache_read = _as_int(usage.get("cache_read_input_tokens"))
+
+    if input_tokens == 0 and output_tokens == 0 and cache_creation == 0 and cache_read == 0:
+        return None
+
+    timestamp_str = data.get("timestamp", "")
+    try:
+        ts = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return None
+
+    message_id = message.get("id", "")
+    request_id = data.get("requestId") or ""
+    model = message.get("model", "unknown")
+    session_id = data.get("sessionId", "")
+    cost_usd = _as_optional_float(data.get("costUSD"))
+
+    cwd = data.get("cwd", "")
+    if cwd:
+        project = project_from_cwd(cwd)
+
+    return UsageEntry(
+        timestamp=ts,
+        session_id=session_id,
+        message_id=message_id,
+        request_id=request_id,
+        model=model,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        cache_creation_tokens=cache_creation,
+        cache_read_tokens=cache_read,
+        cost_usd=cost_usd,
+        project=project,
+        agent_id="claude-code",
+    )
+
+
+def _debug_file_error(action: str, path: Path, exc: Exception) -> None:
+    if os.environ.get("AGENTDECK_DEBUG") == "1":
+        print(f"{action} {path}: {exc}", file=sys.stderr)
+
+
+def _as_optional_float(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(number):
+        return None
+    return number
+
+
+def _as_int(value: Any) -> int:
+    number = _as_optional_float(value)
+    if number is None:
+        return 0
+    return int(number)

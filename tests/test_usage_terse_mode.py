@@ -1,0 +1,169 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 lollapalooza <https://github.com/aqua5230>
+#
+# Part of "usage". Free software licensed under the GNU Affero General Public
+# License v3.0 only; see the LICENSE file for full terms and the warranty disclaimer.
+
+from __future__ import annotations
+
+import io
+import json
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+
+import usage_terse_mode as mod
+
+
+def test_detect_lang_uses_windows_system_lang_when_env_is_empty(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for key in ("AGENTDECK_LANG", "TT_LANG", "LANG"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setattr(mod, "_windows_system_lang", lambda: "zh_TW")
+
+    assert mod._detect_lang() == "zh-TW"
+
+
+def test_detect_lang_prefers_usage_lang_over_windows_system_lang(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
+    monkeypatch.setattr(mod, "_windows_system_lang", lambda: "zh_TW")
+
+    assert mod._detect_lang() == "en"
+
+
+def test_windows_system_lang_is_empty_off_windows(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(mod, "os", SimpleNamespace(name="posix"))
+
+    assert mod._windows_system_lang() == ""
+
+
+def _sidecar(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    sidecar = tmp_path / "agentdeck-terse-prompt.json"
+    sidecar.write_text(
+        json.dumps(
+            {
+                "en": {"instruction": "TERSE::EN"},
+                "zh-TW": {"instruction": "精簡::繁中"},
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(mod, "PROMPT_SIDECAR", sidecar)
+
+
+class _FakeStdin:
+    def __init__(self, data: str) -> None:
+        self._data = data
+
+    def read(self) -> str:
+        return self._data
+
+
+def test_main_reads_sidecar_instruction(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
+    _sidecar(tmp_path, monkeypatch)
+    monkeypatch.setattr("sys.stdin", _FakeStdin(json.dumps({"cwd": "/tmp/demo"})))
+
+    assert mod.main() == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["hookSpecificOutput"]["hookEventName"] == "SessionStart"
+    assert out["hookSpecificOutput"]["additionalContext"] == "TERSE::EN"
+
+
+def test_main_falls_back_to_default_when_sidecar_missing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
+    monkeypatch.setattr(mod, "PROMPT_SIDECAR", tmp_path / "missing.json")
+    monkeypatch.setattr("sys.stdin", _FakeStdin(json.dumps({"cwd": "/tmp/demo"})))
+
+    assert mod.main() == 0
+    out = json.loads(capsys.readouterr().out)
+    context = out["hookSpecificOutput"]["additionalContext"]
+    assert "Terse mode is on for this entire conversation" in context
+
+
+def test_main_uses_detected_language(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("AGENTDECK_LANG", "zh-TW")
+    _sidecar(tmp_path, monkeypatch)
+    monkeypatch.setattr("sys.stdin", _FakeStdin(json.dumps({"cwd": "/tmp/demo"})))
+
+    assert mod.main() == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["hookSpecificOutput"]["additionalContext"] == "精簡::繁中"
+
+
+def test_main_reads_utf8_bytes_when_stdin_uses_cp950(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
+    _sidecar(tmp_path, monkeypatch)
+    payload = json.dumps(
+        {"cwd": r"C:\\Users\\USER\\Desktop\\GitHub專案\\usage"}, ensure_ascii=False
+    )
+    monkeypatch.setattr(
+        "sys.stdin", io.TextIOWrapper(io.BytesIO(payload.encode("utf-8")), encoding="cp950")
+    )
+
+    assert mod.main() == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["hookSpecificOutput"]["additionalContext"] == "TERSE::EN"
+
+
+def test_main_is_silent_on_invalid_json(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr("sys.stdin", _FakeStdin("{"))
+    assert mod.main() == 0
+    assert capsys.readouterr().out == ""
+
+
+def test_main_emits_instruction_for_empty_payload(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
+    _sidecar(tmp_path, monkeypatch)
+    monkeypatch.setattr("sys.stdin", _FakeStdin("{}"))
+
+    assert mod.main() == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["hookSpecificOutput"]["additionalContext"] == "TERSE::EN"
+
+
+def test_main_handles_codex_style_payload(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The script is tool-agnostic — Codex's SessionStart input uses a different field
+    shape (``source`` as an enum, ``session_id``/``permission_mode`` etc.) than Claude
+    Code's, but the hook ignores the contents and emits the instruction regardless."""
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
+    _sidecar(tmp_path, monkeypatch)
+    monkeypatch.setattr(
+        "sys.stdin",
+        _FakeStdin(
+            json.dumps(
+                {
+                    "hook_event_name": "SessionStart",
+                    "source": "startup",
+                    "cwd": "/tmp/demo",
+                    "model": "gpt-5",
+                    "session_id": "abc-123",
+                    "transcript_path": "/tmp/t.jsonl",
+                    "permission_mode": "default",
+                }
+            )
+        ),
+    )
+
+    assert mod.main() == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["hookSpecificOutput"]["hookEventName"] == "SessionStart"
+    assert out["hookSpecificOutput"]["additionalContext"] == "TERSE::EN"

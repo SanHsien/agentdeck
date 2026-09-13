@@ -1,0 +1,4 @@
+{
+  "_comment": "Stop hook 用的快速層級。完整 gate（含 pytest）跑 186 秒，超過派發器的 90 秒預算而被 SKIP，等於沒有守門；-SkipTests 是 2 秒。pytest 由 commit 前的完整 gate 與 CI 負責，本檔只決定每次結束 turn 要跑什麼。",
+  "cmd": "pwsh -NoProfile -File tools/dev_check.ps1 -SkipTests"
+}

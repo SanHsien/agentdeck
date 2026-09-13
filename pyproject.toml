@@ -1,0 +1,95 @@
+[project]
+name = "agentdeck"
+version = "0.42.0"
+description = "Windows AI coding cockpit for Claude Code, Codex, and Antigravity quota, council, personas, and local reports"
+readme = "README.md"
+requires-python = ">=3.13"
+license = "AGPL-3.0-only"
+license-files = ["LICENSE"]
+dependencies = [
+    "rich>=15.0.0,<16.0.0",
+]
+
+[project.optional-dependencies]
+windows = [
+    "pystray>=0.19.5; sys_platform == 'win32'",
+    "pillow>=12.3; sys_platform == 'win32'",
+    "pywebview>=6.2; sys_platform == 'win32'",
+]
+
+[tool.uv]
+package = false
+# This fork ships Windows only. Linux stays in the list because the TUI and CLI
+# still run there; macOS was dropped along with the PyObjC menu bar.
+environments = [
+    "sys_platform == 'win32'",
+    "sys_platform == 'linux'",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.5",
+    "mypy>=2.3.1",
+    "pytest>=9.1.1",
+    # PyInstaller belongs in the lock, not beside it. It used to be installed
+    # out of band with `uv pip install pyinstaller`, which meant every
+    # `uv sync` saw it and its six dependencies as extraneous and deleted them
+    # -- reinstalling the whole build toolchain on each sync, and leaving a
+    # half-removed environment whenever one of those deletions lost a race with
+    # a filesystem filter driver.
+    "pyinstaller>=6.22.2",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+# reference/ holds the upstream macOS snapshot for porting comparisons; it needs
+# PyObjC and is never imported, built, or shipped, so neither linter should read it.
+extend-exclude = ["release-win", "reference"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+# usage_statusline.py 會安裝到使用者環境並由系統 python3 執行；為保留
+# 舊安裝環境的相容性，避開 3.11+ 才有的 datetime.UTC。
+"usage_statusline.py" = ["UP017"]
+# usage_session_resume.py 同樣裝進 ~/.claude/ 給系統 python3 跑。
+"usage_session_resume.py" = ["UP017"]
+# Imported analytics source is kept with minimal path fixes; keep formatting
+# stable for this integration commit.
+"adapters/**/*.py" = ["E501", "I001", "SIM108", "UP015", "UP017"]
+"analyzer/**/*.py" = ["E501", "I001", "UP015", "UP017"]
+"ui/**/*.py" = ["E501", "I001", "UP017", "UP035"]
+"usage_cli.py" = ["E501", "I001", "UP017"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_unused_configs = true
+pretty = true
+exclude = "^(build|dist|release-win|reference)/"
+
+[[tool.mypy.overrides]]
+module = ["rich.*", "PIL.*", "pystray.*", "webview.*"]
+ignore_missing_imports = true
+
+# usage_cli's key readers pair a POSIX branch (termios/tty) with a Windows
+# branch (msvcrt); each side's `type: ignore` comments are only "used" when
+# mypy runs on the other platform, so unused-ignore warnings must stay off
+# for this module to keep `mypy .` green on both POSIX and Windows CI.
+[[tool.mypy.overrides]]
+module = "usage_cli"
+warn_unused_ignores = false
+
+# discussion_cli's process-group termination pairs a POSIX branch
+# (os.getpgid/killpg) with a Windows branch (Popen.terminate/kill); same
+# reasoning as usage_cli above. tests/test_discussion_cli.py asserts against
+# signal.SIGKILL, which is POSIX-only too.
+[[tool.mypy.overrides]]
+module = ["council.discussion_cli", "tests.test_discussion_cli"]
+warn_unused_ignores = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
