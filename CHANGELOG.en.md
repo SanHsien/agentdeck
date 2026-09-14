@@ -9,6 +9,8 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ## [Unreleased]
 
 ### Fixed
+- **No more console windows flashing during startup and everyday use.** The app has no console of its own, so every call to `git`, `claude`, `clip`, or the Antigravity CLI popped a black window on Windows -- once per project lookup, once per quota poll, adding up across a session. Only 1 of 17 spawn sites suppressed it; all of them now go through `creation_flags()`, and an AST scan test keeps new call sites from slipping through. Ported from upstream `2a1996e`.
+- **Fixes to the status-line forwarder now reach installed copies too.** Self-heal refreshed only the status line; the forwarder updated on reinstall alone.
 - **An over-long tray tooltip no longer stops the panel from updating.** Windows caps `szTip` at 128 characters and pystray raises past that, from inside the refresh path — four provider rows with localized window titles reach it. The tooltip is now truncated to 127 characters with an ellipsis. Ported from upstream `8eacc3b`.
 - **The status line no longer prints a unit that does not exist.** `999,500`–`999,999` used to render as `1000k`. The thresholds are now the actual rounding boundaries (`999,500` for `M`, `999,950,000` for `B`), and a `B` tier was added. `ui/tables.py` was fixed for the same class of bug earlier; this covers the two status-line scripts. Ported from upstream `45b27ee`.
 - **Terse mode no longer overrides an explicit request for detail.** The reminder injected after every message now yields when you ask for a full explanation, and the opening instruction no longer permits sentence fragments, which flattened explanatory answers. Ported from upstream `93b2f19`, with both languages rewritten in this fork's own wording.

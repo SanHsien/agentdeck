@@ -11,6 +11,8 @@ import subprocess
 from functools import lru_cache
 from pathlib import Path
 
+from subprocess_utils import creation_flags
+
 __all__ = ["project_from_encoded_path", "resolve_project_name"]
 
 
@@ -37,6 +39,7 @@ def _resolve_project_name(normalized_cwd: str) -> str:
             encoding="utf-8",
             errors="replace",
             timeout=3,
+            creationflags=creation_flags(),
         )
     except (FileNotFoundError, OSError, subprocess.TimeoutExpired):
         return fallback

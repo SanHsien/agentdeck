@@ -34,6 +34,8 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from subprocess_utils import creation_flags
+
 CACHE_PATH = Path(os.path.expanduser("~/.agentdeck/agy_quota_cache.json"))
 # Legacy OAuth token written by older Antigravity CLI versions. Read-only: we
 # never write back here (that is the CLI's home and could corrupt its login).
@@ -223,6 +225,7 @@ def _read_macos_credential() -> object:
             check=False,
             capture_output=True,
             timeout=5,
+            creationflags=creation_flags(),
         )
     except (OSError, subprocess.SubprocessError):
         return None

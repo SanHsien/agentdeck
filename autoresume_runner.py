@@ -37,6 +37,7 @@ import autoresume_scheduler
 from adapters.rate_limits import load_resume_target
 from adapters.types import ResumeTarget
 from i18n import t as _t
+from subprocess_utils import creation_flags
 from usage_session_resume import _parse_session
 
 LOG_PATH = Path(os.path.expanduser("~/.agentdeck/autoresume-log.txt"))
@@ -136,6 +137,7 @@ def _run_resume() -> int:
             errors="replace",
             timeout=RUN_TIMEOUT_SECONDS,
             check=False,
+            creationflags=creation_flags(),
         )
     except subprocess.TimeoutExpired:
         _log(f"TIMEOUT after {RUN_TIMEOUT_SECONDS}s")

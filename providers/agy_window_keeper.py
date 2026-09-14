@@ -21,6 +21,7 @@ from pathlib import Path
 
 from state.menubar_agy import AgyRefreshResult
 from state.menubar_prefs import _agy_window_keeper_enabled
+from subprocess_utils import creation_flags
 
 logger = logging.getLogger(__name__)
 
@@ -131,6 +132,7 @@ def _run_agy_ping(agy_bin: str) -> None:
         timeout=PING_TIMEOUT_SECONDS,
         cwd=os.path.expanduser("~"),
         check=False,
+        creationflags=creation_flags(),
     )
 
 

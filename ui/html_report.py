@@ -33,6 +33,7 @@ from i18n import _t as _i18n_t, packaged_resource_path
 from usage_lang import detect_lang
 from ui.report_scripts import HTML_TO_IMAGE_UMD, REPORT_JS_TEMPLATE
 from ui.report_styles import REPORT_CSS
+from subprocess_utils import creation_flags
 
 
 
@@ -950,7 +951,11 @@ def save_and_open(
     path.write_text(generate_html(data, language=language), encoding="utf-8")
     if out_path is None:
         if sys.platform == "darwin":
-            subprocess.run(["/usr/bin/open", str(path.resolve())], check=False)
+            subprocess.run(
+                ["/usr/bin/open", str(path.resolve())],
+                check=False,
+                creationflags=creation_flags(),
+            )
         else:
             webbrowser.open(path.resolve().as_uri())
     return display_path

@@ -31,20 +31,82 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "2cdf3a08653dea7841d170fe77908ddfa52c4df3",
-      "last_merged": "8eacc3b5f485948baaf58b91e2ed0fa79c533c00",
-      "note": "2026-09-12 審視 0bd03fb..2cdf3a0 共 19 筆（issue #20 列的 8 筆，加上開審後上游又推的 11 筆）：採用 45b27ee 狀態列單位邊界不再印出不存在的 1000k（同時升 HOOK_VERSION 與 usage_statusline.__version__，並補四組版號配對的契約測試）、93b2f19 精簡模式不再壓過使用者明確要求的詳細解說、8eacc3b 系統匣提示截到 Windows 上限以免卡住面板更新；42d6ad1／c4f0edf 動 ui/ 視覺與 snapshot、2d606b1 高 DPI（上游 PR #134／#135 仍開著）、a2cd93e 設定目錄集中化，四筆列後續；aa07018 下架功能、上游官網與上游自己的 CLAUDE.md、兩次發版、上游專屬檔的測試、4 筆 ai_updates.json 同步不適用。逐筆見 2026-09-12 段落；更早的判定見 2026-09-10／09-08／09-06 段落。"
+      "last_reviewed": "d42496bd2445b604a3a20517dbb41b0b257e6564",
+      "last_merged": "2a1996edb2f2d902f83572ca0403fc9f9ebefbec",
+      "note": "2026-09-14 審視 2cdf3a0..d42496b 共 6 筆：採用 2a1996e 啟動時黑窗連閃（本 fork 17 個 subprocess 呼叫點只有 1 個帶 CREATE_NO_WINDOW；改成 creation_flags() 回傳整數旗標而非上游的 kwargs dict，因為 ** 展開過不了 subprocess.pyi 多載；兩支安裝到使用者環境的 hook 各自內嵌一份；AST 掃描測試釘住每個呼叫點）。連帶修掉 update_hook() 不換新 forwarder 副本，並把剪貼簿寫入下沉成 win_clipboard.py 以守住 wintray.py 的行數上限。d42496b 報表改版列後續（同 ui/ 分岔判準）；e24a5e2 發版、3 筆 ai_updates.json 不適用。逐筆見 2026-09-14 段落；更早的判定見 2026-09-12／09-10／09-08 段落。"
     }
   },
   "tickets": {
-    "reviewed_pr_through": 135,
+    "reviewed_pr_through": 137,
     "reviewed_issue_through": 130,
-    "reviewed_date": "2026-09-12",
-    "note": "以 --state all 查過。PR #131／#132／#133 已合併，就是 2026-09-12 段落判定的三筆 Windows 修正；#134／#135 仍開著，是高 DPI 那條線的後續，與 2d606b1 綁在一起列後續。issue #129 是 CLAUDE_CONFIG_DIR（對應 a2cd93e，本 fork 已部分支援，集中化列後續）、#130 是 250% 縮放下面板開到螢幕邊緣（同高 DPI 線，本 fork 是否重現要自己實機驗）。更早：PR #128 上游 uv.lock 的 ruff 升版，本 fork 自行維護 uv.lock；#126 已由 e32c2f6 採用；issue #127 是 macOS 面板失焦自動關閉，Windows-only 無可移植工作。"
+    "reviewed_date": "2026-09-14",
+    "note": "以 --state all 查過。PR #136 是 2026-09-14 採用的黑窗修正、#137 是列後續的報表改版；#134／#135 仍開著，是高 DPI 那條線的後續，與 2d606b1 綁在一起列後續。#131／#132／#133 見 2026-09-12 段落。issue 仍停在 #130（250% 縮放下面板開到螢幕邊緣，同高 DPI 線，本 fork 是否重現要自己實機驗）；#129 是 CLAUDE_CONFIG_DIR，對應 a2cd93e，本 fork 已部分支援，集中化列後續。"
   }
 }
 ```
 <!-- sync-points:end -->
+
+## 2026-09-14：`2cdf3a0..d42496b` 共 6 筆，`last_reviewed` 推到 `d42496b`
+
+issue #21 列 3 筆需要人工審視，另有 3 筆只同步 `ai_updates.json`。
+
+### 採用：啟動時的黑窗連閃（`2a1996e`）
+
+這是 tray app，自己沒有主控台，所以每一個跑主控台程式的 `subprocess` 呼叫（`git`、`claude`、
+`clip`、Antigravity CLI）在 Windows 上都會彈一個黑窗，存活多久閃多久。一次專案名稱解析或一次額度
+輪詢就是一次閃爍，累積起來是整個工作階段的干擾，面板還可能被蓋在後面。
+
+**本 fork 實查**：17 個呼叫點只有 `autoresume_scheduler.py` 一個帶了 `CREATE_NO_WINDOW`，其餘 16 個
+都沒有——缺陷完全成立，而且打在本 fork 唯一支援的平台上。
+
+**移植方式與上游不同的地方**：上游提供 `hidden_console_kwargs()` 回傳 dict 再 `**` 展開；本 fork 改成
+`creation_flags()` 直接回傳整數旗標，呼叫端寫 `creationflags=creation_flags()`。理由是 `**{...}`
+過不了 `subprocess.pyi` 的多載檢查（mypy 報 12 個錯），而 `creationflags=0` 在每個平台都合法——
+只有**非零值**是 Windows 專屬。既有那個手寫 `getattr(subprocess, "CREATE_NO_WINDOW", 0)` 也一併收斂
+到同一個來源。
+
+**兩支安裝到使用者環境的 hook 各自內嵌一份**（`usage_session_resume.py`、
+`usage_statusline_forwarder.py`）：它們由系統 Python 執行、看不到專案路徑，不能 import。這與 i18n
+locale 對照表在那些檔案裡重複的理由相同。
+
+**擋住回頭路的是 AST 掃描而不是註解**：`tests/test_subprocess_hidden_console.py` 走訪 tray 行程搆得到的
+每個 `.py`，要求每個 `subprocess.run`／`Popen` 的 `creationflags` 來自那兩個 helper 之一——寫死
+`0x08000000` 也不算，因為那在下一次重構時就是同一個缺陷。反向測試釘住「裸呼叫會被抓到」，另外兩條
+釘住兩份內嵌副本與共用版本行為一致。
+
+**連帶修掉的一個既有缺口**：`update_hook()` 只換新狀態列那份副本，不換 forwarder，所以對 forwarder 的
+修正永遠不會進到已經安裝的人手上。已補上「有裝才換新」。四個受影響的版號一起升：`HOOK_VERSION` 與
+`usage_statusline.__version__` 到 1.2、forwarder 到 1.1、`RESUME_HOOK_VERSION` 與
+`usage_session_resume.__version__` 到 1.7。
+
+**連帶的切分**：加完之後 `wintray.py` 超過 1816 行上限，依該檔政策把剪貼簿寫入下沉成
+`win_clipboard.py`（`clip.exe` 讀 UTF-16LE，這個編碼不是隨手寫的），`wintray.py` 降到 1813 行，
+上限一併調降。
+
+### 逐筆判定
+
+| Commit | 判定 | 理由 |
+| --- | --- | --- |
+| `2a1996e` 啟動黑窗連閃 | **採用** | 見上；本 fork 17 個呼叫點裡 16 個重現得到 |
+| `d42496b` 報表改版（網頁內選日期、分組收合、專案展開） | 後續 | 動 `analyzer/reporter.py`、`i18n.json` 與三份 snapshot（每份 +1200 行）；同 `0aef437`／`42d6ad1`／`c4f0edf` 的判準，`ui/` 與報表產生鏈已與上游分岔，需要獨立的渲染與列印驗收 |
+| `e24a5e2` v0.30.14 | 不適用 | 上游發版 chore，本 fork 自行版控 |
+| `b501575`／`65154f6`／`327c9d3` | 不適用 | 三筆都只有 `ai_updates.json`，符合 2026-09-08 段落的整類判準 |
+
+PR／issue 兩軸：以 `--state all` 查過，PR 推進到 `#137`、issue 仍是 `#130`。`#136` 就是上面採用的那筆，
+`#137` 是列後續的報表改版。
+
+### 審視期間上游又推進了，標記刻意停在有證據的地方
+
+開始審的時候上游 tip 是 `d42496b`；寫完這一段時已經多出 18 筆（`153a876..c8aa485`），內容是報表改版那
+條線（`24d2130` 的 merge 加上七、八筆 report 修正與視覺調整）、`d1ea2a7`／`153a876` 的永久用量小計快照、
+`9c82430` v0.30.15，以及數筆 `ai_updates.json` 同步。
+
+`last_reviewed` 因此停在 `d42496b` 而不是 tip：那 18 筆沒有逐筆讀過，推上去等於宣稱看過。下一次排程
+檢查會把它們列出來，issue 因此仍會有內容，那是正確狀態不是漏做（同 D-30 的判準）。報表那條線大機率
+併入既有的「`ui/` 已分岔、需要獨立渲染與列印驗收」判定，但快照那兩筆是新功能，要單獨評估。
+
+**尚未做 Windows 實機驗收**：黑窗屬於「CI 看不到」那一類，CLAUDE.md 對 tray 改動的要求是自動測試與實機
+驗收分開寫。這一輪只有自動測試；下次開 tray 時看一眼專案切換與額度輪詢還會不會閃窗即可。
 
 ## 2026-09-12：`0bd03fb..2cdf3a0` 共 19 筆，`last_reviewed` 推到 `2cdf3a0`
 

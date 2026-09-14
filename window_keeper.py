@@ -36,6 +36,7 @@ from contextlib import suppress
 from pathlib import Path
 
 from state.menubar_prefs import _window_keeper_enabled
+from subprocess_utils import creation_flags
 
 logger = logging.getLogger(__name__)
 
@@ -189,6 +190,7 @@ def _run_claude_ping(claude_bin: str) -> None:
         timeout=PING_TIMEOUT_SECONDS,
         cwd=os.path.expanduser("~"),
         check=False,
+        creationflags=creation_flags(),
     )
 
 

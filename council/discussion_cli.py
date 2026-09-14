@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Literal, Protocol, cast
 
 from council.discussion_usage import TurnUsage
+from subprocess_utils import creation_flags
 
 DetectionSource = Literal["which", "candidate_dir", "user_configured", "not_found"]
 
@@ -537,6 +538,7 @@ def run_streaming(
             invocation.argv,
             shell=False,
             stdin=subprocess.DEVNULL,
+            creationflags=creation_flags(),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,

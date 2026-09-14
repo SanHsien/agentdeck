@@ -780,3 +780,43 @@ tools/dev_check.ps1` → 1571 passed、8 skipped、`PASS: 全部通過`、exit 0
 exit 0**；五種突變（fmt_tokens 門檻退回、agy 同一處、tooltip 不截斷、`HOOK_VERSION` 沒跟上、reminder
 少了讓步句）全部讓對應測試變紅。**尚未做 Windows 實機驗收**：提示截斷與狀態列格式都有單元測試覆蓋，
 但 CLAUDE.md 的原則是 tray 相關改動 CI 綠不等於實機過，下次開 tray 時順手看一眼即可。
+
+---
+
+## D-32：黑窗連閃採用，helper 回傳旗標而不是 kwargs，並用 AST 掃描擋回頭路
+
+**日期**：2026-09-14
+
+**決定**：採用上游 `2a1996e`（Windows 啟動時的主控台黑窗連閃），移植方式與上游不同：本 fork 提供
+`subprocess_utils.creation_flags() -> int`，呼叫端寫 `creationflags=creation_flags()`；上游是
+`hidden_console_kwargs()` 回傳 dict 再 `**` 展開。`last_reviewed` 推到 `d42496b`、`last_merged` 推到
+`2a1996e`；`d42496b` 報表改版列後續。
+
+**考慮過的替代方案**：照抄上游的 kwargs dict 寫法。
+
+**為什麼不**：`**{...}` 展開進 `subprocess.run` 過不了 `subprocess.pyi` 的多載檢查——實測 mypy 報 12 個
+錯。而且 `creationflags=0` 在每個平台都合法，只有**非零值**是 Windows 專屬，所以回傳整數既型別乾淨、
+呼叫端也少一層間接。這是 PLAYBOOK「移植的是做法不是 diff」的一次實例。
+
+**為什麼是 AST 掃描而不是註解或 code review**：本 fork 17 個呼叫點裡有 16 個沒有帶旗標，唯一帶的那個
+還是手寫的 `getattr(subprocess, "CREATE_NO_WINDOW", 0)`。也就是說「記得加」這件事已經失敗過 16 次。
+`tests/test_subprocess_hidden_console.py` 走訪 tray 行程搆得到的每個 `.py`，要求 `creationflags` 來自
+那兩個 helper 之一；寫死 `0x08000000` 不算，因為那是同一個缺陷延後一次重構。反向測試釘住裸呼叫會被抓。
+
+**兩份內嵌副本是刻意的**：`usage_session_resume.py` 與 `usage_statusline_forwarder.py` 會被複製到
+使用者環境、由系統 Python 執行，不能 import 專案模組，所以各自帶一份 `_creation_flags()`，並有測試
+比對三者行為一致。與 i18n locale 表在那些檔案裡重複是同一個理由。
+
+**連帶修掉的既有缺口**：`update_hook()` 只換新狀態列副本，不換 forwarder——對 forwarder 的修正因此
+永遠到不了已安裝的人。已補「有裝才換新」。四個版號一起升（`HOOK_VERSION`／statusline 1.2、
+forwarder 1.1、resume 1.7）。
+
+**限制**：`usage_statusline_agy.py` 仍然沒有版號與自我修復比對（D-31 已記），這一輪沒動它；它也沒有
+subprocess 呼叫，所以不在本次改動範圍。另外，forwarder 自己的 `__version__` **沒有任何程式比對**——
+它能被換新，是因為 `needs_update()` 比對的是 statusline 的版號，而 `update_hook()` 現在順手換 forwarder。
+也就是說只改 forwarder、不動 statusline 版號的話，修正仍然到不了已安裝的副本。契約測試釘的是那四組
+真的會被比對的配對，沒把 forwarder 算進去，因為那會釘一個不存在的機制。真正要修是給 forwarder 自己
+一組比對；觸發條件同 D-31 的 agy 缺口：下次動到 forwarder 安裝路徑時一起做。**Windows 實機驗收未做**：黑窗是 CI 看不到的那一類，下次開
+tray 時看一眼專案切換與額度輪詢是否還會閃窗。
+
+**驗證**：`pwsh -NoProfile -File tools/dev_check.ps1` → 1616 passed、8 skipped、exit 0。

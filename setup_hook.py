@@ -34,6 +34,7 @@ from typing import Any, cast
 
 from codex_paths import codex_home
 from i18n import t as _t
+from subprocess_utils import creation_flags
 
 CLAUDE_SETTINGS = Path(os.path.expanduser("~/.claude/settings.json"))
 HOOK_TARGET = Path(os.path.expanduser("~/.claude/agentdeck-statusline.py"))
@@ -93,7 +94,7 @@ _SHELL_UNSAFE_CHARACTERS = "&|^<>()$`;'"
 # with the `__version__` line of the installed copy, so the two move together or the
 # hook is either never refreshed (bumped file, stale constant) or reported stale on
 # every run (bumped constant, stale file).
-HOOK_VERSION = "1.1"
+HOOK_VERSION = "1.2"
 _SL_REGEX = re.compile(r"(?m)^[ \t]*status_line\s*=\s*\[.*?\]", re.DOTALL)
 _TABLE_REGEX = re.compile(r"(?m)^[ \t]*\[[^\]\n]+\][ \t]*(?:#.*)?$")
 
@@ -172,7 +173,9 @@ class HookSetupError(RuntimeError):
 def _is_working_python(path: str) -> bool:
     """Return whether ``path`` can run as a Python interpreter."""
     try:
-        result = subprocess.run([path, "--version"], capture_output=True, timeout=3)
+        result = subprocess.run(
+            [path, "--version"], capture_output=True, timeout=3, creationflags=creation_flags()
+        )
     except (OSError, subprocess.TimeoutExpired):
         return False
     return result.returncode == 0
@@ -835,6 +838,13 @@ def update_hook() -> None:
     if not HOOK_TARGET.parent.exists():
         return
     _copy_hook_script()
+    # The forwarder is a second installed copy. Refreshing only the status line
+    # leaves a fix to the forwarder reaching nobody who is already set up, which
+    # is the failure `HOOK_VERSION` exists to prevent -- it just was not wired to
+    # this file. Copy it only when one is installed; installing it here would
+    # turn a refresh into a setup change for someone who does not use it.
+    if FORWARDER_TARGET.exists():
+        _copy_forwarder_script()
 
 
 

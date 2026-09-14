@@ -23,6 +23,7 @@ import about_info
 import autoresume_scheduler
 import tray_text
 import update_checker
+import win_clipboard
 import win_login_item
 import win_modal
 import win_refresh
@@ -1488,11 +1489,7 @@ class _WindowsTrayController:
         return {"ok": True}
 
     def _copy_to_clipboard(self, text: str) -> None:
-        import subprocess
-
-        subprocess.run(  # noqa: S603 - fixed executable, text passed on stdin
-            ["clip"], input=text.encode("utf-16-le"), check=False, shell=False
-        )
+        win_clipboard.copy_text(text)
 
     def _pick_folder(self) -> str | None:
         window = self.window

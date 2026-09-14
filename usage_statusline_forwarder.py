@@ -18,7 +18,18 @@ import subprocess
 import sys
 from typing import Any, cast
 
-__version__ = "1.0"
+__version__ = "1.1"
+
+
+def _creation_flags() -> int:
+    """`CREATE_NO_WINDOW` on Windows, `0` elsewhere -- keeps spawned console
+    programs from flashing a window.
+
+    A local copy on purpose: this file is installed into the user's environment
+    and runs under the system Python, so it cannot import the project's
+    `subprocess_utils`. `tests/test_subprocess_hidden_console.py` keeps the two
+    copies in step."""
+    return int(getattr(subprocess, "CREATE_NO_WINDOW", 0))
 TIMEOUT_SECONDS = 5
 HOOK_DIR = os.path.expanduser("~/.claude")
 SELF_NAME = "agentdeck-statusline-forwarder.py"
@@ -52,6 +63,7 @@ def _run_hook(py: str, hook: str, raw: str) -> str:
             check=False,
             capture_output=True,
             timeout=TIMEOUT_SECONDS,
+            creationflags=_creation_flags(),
         )
     except (subprocess.TimeoutExpired, OSError, UnicodeDecodeError):
         return ""

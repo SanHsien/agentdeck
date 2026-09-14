@@ -35,6 +35,7 @@ from adapters.rate_limits import load_rate_limits, load_resume_target
 from i18n import _t
 from state.autoresume import ScheduleDecision, decide
 from state.menubar_prefs import _auto_resume_config
+from subprocess_utils import creation_flags
 
 TASK_NAME = "agentdeck-auto-resume"
 
@@ -125,7 +126,7 @@ def _run(args: list[str]) -> subprocess.CompletedProcess[str]:
         errors="replace",
         timeout=30,
         check=False,
-        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        creationflags=creation_flags(),
     )
 
 

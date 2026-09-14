@@ -70,7 +70,11 @@ msvcrt = _msvcrt
 # Bumped with every change to this file: `setup_hook.py` replaces an installed copy
 # only when this version differs, so a fix that does not bump it never reaches the
 # copy under ~/.claude (upstream 144ecac hit exactly this).
-__version__ = "1.1"
+#
+# It also moves when a *sibling* installed file changes, because `needs_update()`
+# compares this version and nothing else: it is the only trigger that makes
+# `update_hook()` run at all, and that is what refreshes the forwarder copy.
+__version__ = "1.2"
 
 STATUS_FILE = os.path.expanduser("~/.claude/agentdeck-status.json")
 LOCK_FILE = os.path.expanduser("~/.claude/agentdeck-status.lock")

@@ -46,7 +46,18 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, cast
 
-__version__ = "1.6"
+__version__ = "1.7"
+
+
+def _creation_flags() -> int:
+    """`CREATE_NO_WINDOW` on Windows, `0` elsewhere -- keeps spawned console
+    programs from flashing a window.
+
+    A local copy on purpose: this file is installed into the user's environment
+    and runs under the system Python, so it cannot import the project's
+    `subprocess_utils`. `tests/test_subprocess_hidden_console.py` keeps the two
+    copies in step."""
+    return int(getattr(subprocess, "CREATE_NO_WINDOW", 0))
 
 
 def _configure_windows_utf8_output() -> None:
@@ -298,6 +309,7 @@ def _git_dirty(cwd: str) -> tuple[str, int, list[str]] | None:
             timeout=2,
             encoding="utf-8",
             check=False,
+            creationflags=_creation_flags(),
         )
         if branch_proc.returncode != 0:
             return None
@@ -311,6 +323,7 @@ def _git_dirty(cwd: str) -> tuple[str, int, list[str]] | None:
             timeout=2,
             encoding="utf-8",
             check=False,
+            creationflags=_creation_flags(),
         )
         if status_proc.returncode != 0:
             return None

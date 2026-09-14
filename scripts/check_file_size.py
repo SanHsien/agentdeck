@@ -29,9 +29,10 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 CEILINGS = {
     # Lowered from 1860 on 2026-09-12 when the tray's text helpers moved to
-    # `tray_text.py`. The policy above is the reason: a cut that leaves the old
-    # ceiling in place just buys room for the next feature to grow back into.
-    "wintray.py": 1816,
+    # `tray_text.py`, and again on 2026-09-14 when the clipboard write moved to
+    # `win_clipboard.py`. The policy above is the reason: a cut that leaves the
+    # old ceiling in place just buys room for the next feature to grow back into.
+    "wintray.py": 1813,
 }
 
 
