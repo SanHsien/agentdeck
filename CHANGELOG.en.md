@@ -8,6 +8,9 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- **Direct dependency floors aligned with verified releases.** Dependency freshness review upgraded `ruff` (`>=0.16.5` → `>=0.16.8`) and `pyinstaller` (`>=6.22.2` → `>=6.22.3`) alongside lockfile updates, with zero new findings across 208 source files and all gates passing.
+
 ## [0.42.1] - 2026-09-19
 
 ### Fixed
