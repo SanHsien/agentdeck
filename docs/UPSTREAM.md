@@ -31,20 +31,54 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "d42496bd2445b604a3a20517dbb41b0b257e6564",
-      "last_merged": "2a1996edb2f2d902f83572ca0403fc9f9ebefbec",
-      "note": "2026-09-14 審視 2cdf3a0..d42496b 共 6 筆：採用 2a1996e 啟動時黑窗連閃（本 fork 17 個 subprocess 呼叫點只有 1 個帶 CREATE_NO_WINDOW；改成 creation_flags() 回傳整數旗標而非上游的 kwargs dict，因為 ** 展開過不了 subprocess.pyi 多載；兩支安裝到使用者環境的 hook 各自內嵌一份；AST 掃描測試釘住每個呼叫點）。連帶修掉 update_hook() 不換新 forwarder 副本，並把剪貼簿寫入下沉成 win_clipboard.py 以守住 wintray.py 的行數上限。d42496b 報表改版列後續（同 ui/ 分岔判準）；e24a5e2 發版、3 筆 ai_updates.json 不適用。逐筆見 2026-09-14 段落；更早的判定見 2026-09-12／09-10／09-08 段落。"
+      "last_reviewed": "8dce6a6893c7d4f61e23d52c3514e10699fcce93",
+      "last_merged": "f435f13fe4281ad265cb94ecef6ea83042f16a2e",
+      "note": "2026-09-19 審視 d42496b..8dce6a6 共 59 筆：採用 f435f13（換帳號不再沿用舊額度快取）、PR #139（相容含 UTF-8 BOM 之 Claude 設定檔）、PR #138（週額度警示雙速度門檻與餘裕要求）。報表改版與 session 快照（feat/usage-snapshot 等 15 筆）因報表鏈已分岔續列後續；官網網站改版、發版 chore 與 21 筆 ai_updates.json 不適用。逐筆見 2026-09-19 段落。"
     }
   },
   "tickets": {
-    "reviewed_pr_through": 137,
+    "reviewed_pr_through": 144,
     "reviewed_issue_through": 130,
-    "reviewed_date": "2026-09-14",
-    "note": "以 --state all 查過。PR #136 是 2026-09-14 採用的黑窗修正、#137 是列後續的報表改版；#134／#135 仍開著，是高 DPI 那條線的後續，與 2d606b1 綁在一起列後續。#131／#132／#133 見 2026-09-12 段落。issue 仍停在 #130（250% 縮放下面板開到螢幕邊緣，同高 DPI 線，本 fork 是否重現要自己實機驗）；#129 是 CLAUDE_CONFIG_DIR，對應 a2cd93e，本 fork 已部分支援，集中化列後續。"
+    "reviewed_date": "2026-09-19",
+    "note": "以 --state all 查過。PR #138（週額度雙速度門檻）、#139（UTF-8 BOM 設定）、#144（時區釘定）已審視並依適用性處理；#140-#143 為依賴升級；issue 停在 #130。"
   }
 }
 ```
 <!-- sync-points:end -->
+
+## 2026-09-19：`d42496b..8dce6a6` 共 59 筆，`last_reviewed` 推到 `8dce6a6`
+
+issue #21 在 2026-09-14 處理完 `2cdf3a0..d42496b` 後因審視期間上游持續推進而保留未關。本次盤點 `d42496b` 至最新 tip `8dce6a6` 共 59 筆 commit。
+
+### 採用一：換帳號不再沿用舊額度快取（`f435f13`）
+
+Claude Code 會在 `~/.claude.json` 的 `cachedUsageUtilization` 記下抓取時的 `accountUuid`。原本 `usage_client.py` 讀這份快取時沒有比對 `oauthAccount.accountUuid`，在 Windows 上作為主要 fallback 來源時，若使用者以 `/login` 切換帳號，會誤把前一個帳號的額度百分比當成當前帳號。
+比對 `cached_account` 與 `current_account`，不符時丟棄快取。
+
+### 採用二：相容含 UTF-8 BOM 之 Claude 設定檔（PR #139，`96ed3f7`）
+
+Windows 下常見編輯器（如記事本）容易在儲存時自動帶入 UTF-8 BOM（`\xef\xbb\xbf`）。原本 `setup_hook.py` 以 `encoding="utf-8"` 開啟 `settings.json` 會觸發 `JSONDecodeError`。改以 `encoding="utf-8-sig"` 開啟，無論是否有 BOM 皆可正常解析。
+
+### 採用三：週額度警示改雙速度門檻與餘裕要求（PR #138，`d964f8d`、`d99dbbc`）
+
+週額度原本只拿最近 30～60 分鐘的速度外推 7 天，一段短時間密集衝刺即容易誤亮紅字警示。
+引入 `assess_weekly_quota()`：短窗速度與整週平均速度皆預測重置前用完才警示（或短窗預測 1 小時內用完之緊急分支）；且整週平均預測須早於重置時間的 80%（保留 20% 餘裕）才警示，避免僅早數小時即誤報，顯示時間改回傳整週平均預測時間。文案同步為「⚠ 照目前速度 {empty}後用完 · 重置 {reset}」。
+
+### 逐筆判定
+
+| Commit / PR | 判定 | 理由 |
+| --- | --- | --- |
+| `f435f13` 換帳號不再沿用舊額度快取 | **採用** | 修正 Windows 上 Claude 切換帳號後殘留前帳號快取的 bug |
+| PR `#139`（`96ed3f7`）相容 UTF-8 BOM 設定檔 | **採用** | 提升 Windows 環境下讀取帶 BOM 之 Claude settings 的穩健度 |
+| PR `#138`（`d964f8d`、`d99dbbc`）週額度雙速度門檻 | **採用** | 消除短時間編程衝刺造成的週額度誤報，提供更精準預警 |
+| `153a876`、`d1ea2a7` 永久保存 session 顆粒用量小計快照 | 後續 | 屬於新功能，且緊密耦合於報表改版讀取鏈 |
+| `61681a4`、`b1e0c58`、`f6da558`、`29b715e`、`eea3ce1`、`4b63e76`、`d09ddb8`、`8171b68`、`24d2130`、`74c31d2`、`4a1636d`、`5506a84`、`2cffa26`（#144）共 13 筆報表改版與修復 | 後續 | 同 `d42496b` 與 `0aef437` 判準，`ui/` 與報表渲染已分岔，需獨立實機渲染與列印驗收 |
+| `8ac9460`、`f0b29ae`、`ea44158`、`c2f557f`、`911d2de`、`b028148`、`ba5b0ab`、`cc9ae6b`、`2d4e402`、`78e7849` 共 10 筆官網相關 | 不適用 | 上游產品行銷官網與 SEO，本 fork 不維護該網站 |
+| PR `#140`、`#141`、`#142`、`#143` 共 4 筆依賴更新 | 不適用 | 本 fork 之 Actions 與依賴獨立版控 |
+| `9c82430`、`96ed3f7`（發版部分）、`511268d`、`8dce6a6` 共 4 筆發版 chore | 不適用 | 上游發版版本號，本 fork 自行版控 |
+| 21 筆 `ai_updates.json` 同步 | 不適用 | 本 fork 已移除該檔案，符合整類判準 |
+
+PR／issue 兩軸：以 `--state all` 查過，PR 推進到 `#144`、issue 仍是 `#130`。本輪審視完畢後上游 commit 已全部追平，issue #21 可正式關閉。
 
 ## 2026-09-14：`2cdf3a0..d42496b` 共 6 筆，`last_reviewed` 推到 `d42496b`
 

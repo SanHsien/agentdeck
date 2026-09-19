@@ -16,7 +16,11 @@ from datetime import time as datetime_time
 from pathlib import Path
 from typing import TypedDict
 
-from burn_rate import WARNING_PERCENT_FLOOR, BurnRateTracker
+from burn_rate import (
+    WARNING_PERCENT_FLOOR,
+    BurnRateTracker,
+    assess_weekly_quota,
+)
 from i18n import _t
 from pricing import calculate_cost
 from providers import codex_loader, grok_quota_probe
@@ -591,6 +595,7 @@ def codex_rows(
                 language,
                 forecast_seconds=burn_rate_trackers["codex_weekly"].forecast_seconds(),
                 warning_max_seconds=24 * 3600,
+                window_seconds=WEEKLY_WINDOW_SECONDS,
             ),
         )
         return rows, 12, "gpt-5", None, None
@@ -676,6 +681,11 @@ def codex_rows(
                 min_span_seconds=WEEKLY_FORECAST_MIN_SPAN_SECONDS,
             ),
             warning_max_seconds=24 * 3600,
+            window_seconds=(
+                rate_limits.seven_day_window_minutes * 60
+                if rate_limits.seven_day_window_minutes is not None
+                else WEEKLY_WINDOW_SECONDS
+            ),
         ),
     )
     credits: CodexCreditsState | None = (
@@ -762,6 +772,7 @@ def build_popover_state(
             ),
             warning_max_seconds=24 * 3600,
             reset_estimated=snapshot.weekly_reset_estimated,
+            window_seconds=WEEKLY_WINDOW_SECONDS,
         )
         if snapshot.data_source == "claude-desktop" and not outcome.message:
             status_value = _t(
@@ -862,6 +873,8 @@ def _quota_row(
     warning_max_seconds: float | None = None,
     reset_estimated: bool = False,
     inactive_when_zero: bool = False,
+    *,
+    window_seconds: float | None = None,
 ) -> QuotaRowState:
     if pct is None:
         return _missing_row(title, color, language)
@@ -887,13 +900,22 @@ def _quota_row(
             reset_text = _t(language, "reset_imminent")
             warning = False
         else:
-            if (
-                forecast_seconds is not None
-                and 0 < forecast_seconds < time_to_reset
-                and (warning_max_seconds is None or forecast_seconds < warning_max_seconds)
-                and pct >= WARNING_PERCENT_FLOOR
-            ):
-                warning_seconds = forecast_seconds
+            if window_seconds is None:
+                if (
+                    forecast_seconds is not None
+                    and 0 < forecast_seconds < time_to_reset
+                    and (warning_max_seconds is None or forecast_seconds < warning_max_seconds)
+                    and pct >= WARNING_PERCENT_FLOOR
+                ):
+                    warning_seconds = forecast_seconds
+            else:
+                warning_seconds = assess_weekly_quota(
+                    pct,
+                    time_to_reset,
+                    window_seconds,
+                    forecast_seconds,
+                    warning_max_seconds,
+                )
             warning = warning_seconds is not None
             if warning_seconds is not None:
                 reset_text = _t(

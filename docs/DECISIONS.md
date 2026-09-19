@@ -820,3 +820,22 @@ subprocess 呼叫，所以不在本次改動範圍。另外，forwarder 自己�
 tray 時看一眼專案切換與額度輪詢是否還會閃窗。
 
 **驗證**：`pwsh -NoProfile -File tools/dev_check.ps1` → 1616 passed、8 skipped、exit 0。
+
+---
+
+## D-33：上游 59 筆審視：採用換帳號快取過期、UTF-8 BOM 設定容錯與週額度雙速度門檻
+
+**日期**：2026-09-19
+
+**決定**：審視上游 `d42496b..8dce6a6` 59 筆 commit。採用三項關鍵修復：
+1. `f435f13`：Claude Code 切換帳號時快取帳號 UUID 比對，避免在 Windows 下讀到舊帳號額度百分比。
+2. PR #139（`96ed3f7`）：`setup_hook.py` 讀取 Claude `settings.json` 時改用 `utf-8-sig`，相容 Windows 編輯器可能自動加入的 UTF-8 BOM。
+3. PR #138（`d964f8d`、`d99dbbc`）：引入 `assess_weekly_quota()`，以短窗與整週平均雙速度門檻外加 80% 餘裕要求計算週額度耗盡警告，消除短時間密集 coding 造成的週額度誤報。
+
+`last_reviewed` 推到 `8dce6a6`、`last_merged` 推到 `f435f13`。報表改版與用量快照（15 筆）因 `ui/` 與報表產生鏈已與上游分岔，維持列後續；官網網站改版、發版 chore 與 21 筆 `ai_updates.json` 不適用。
+
+**考慮過的替代方案**：將報表改版與 session 用量快照一同搬入。
+
+**為什麼不**：上游報表鏈大幅更動（包含 HTML 結構、CSS、篩選器與快照儲存），每份 snapshot 變更逾千行。本 fork 的報表與前端已依 Windows 桌面與獨立列印/渲染原則分岔，需要單獨規劃專案階段並進行 Windows 實機渲染與列印驗收，不宜混入例行上游同步。
+
+**驗證**：`pwsh -NoProfile -File tools/dev_check.ps1` 全綠通過。

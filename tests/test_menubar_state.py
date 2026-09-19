@@ -54,6 +54,83 @@ def test_quota_row_labels_estimated_reset() -> None:
     assert row.reset_text == "約 2天 0小時後重置"
 
 
+def test_weekly_quota_row_keeps_reset_text_when_whole_window_blocks_warning() -> None:
+    row = menubar_state._quota_row(
+        "Weekly",
+        53.7,
+        1_000.0 + (73 * 3600),
+        1_000.0,
+        menubar_state.CLAUDE_COLOR,
+        language="zh-TW",
+        forecast_seconds=47_040,
+        warning_max_seconds=24 * 3600,
+        window_seconds=7 * 86400,
+    )
+
+    assert row.warning is False
+    assert row.reset_text == "重置 3天 1小時"
+
+
+def test_weekly_quota_row_keeps_reset_text_when_warning_max_blocks_warning() -> None:
+    row = menubar_state._quota_row(
+        "Weekly",
+        80.0,
+        1_000.0 + (73 * 3600),
+        1_000.0,
+        menubar_state.CLAUDE_COLOR,
+        language="zh-TW",
+        forecast_seconds=25 * 3600,
+        warning_max_seconds=24 * 3600,
+        window_seconds=7 * 86400,
+    )
+
+    assert row.warning is False
+    assert row.reset_text == "重置 3天 1小時"
+
+
+def test_weekly_quota_row_warns_when_both_speeds_predict_exhaustion() -> None:
+    row = menubar_state._quota_row(
+        "Weekly",
+        80.0,
+        1_000.0 + (73 * 3600),
+        1_000.0,
+        menubar_state.CLAUDE_COLOR,
+        language="zh-TW",
+        forecast_seconds=10 * 3600,
+        warning_max_seconds=24 * 3600,
+        window_seconds=7 * 86400,
+    )
+
+    assert row.warning is True
+    assert "照目前速度 23小時 45分鐘後用完" in row.reset_text
+
+
+def test_weekly_quota_row_omits_pace_for_invalid_time_or_small_delta() -> None:
+    invalid_time = menubar_state._quota_row(
+        "Weekly",
+        50.0,
+        1_000.0 + (8 * 86400),
+        1_000.0,
+        menubar_state.CLAUDE_COLOR,
+        language="zh-TW",
+        forecast_seconds=30 * 60,
+        window_seconds=7 * 86400,
+    )
+    on_track = menubar_state._quota_row(
+        "Weekly",
+        43.0,
+        1_000.0 + (4 * 86400),
+        1_000.0,
+        menubar_state.CLAUDE_COLOR,
+        language="zh-TW",
+        window_seconds=7 * 86400,
+    )
+
+    assert invalid_time.warning is True
+    assert invalid_time.reset_text.startswith("⚠ 照目前速度")
+    assert on_track.reset_text == "重置 4天 0小時"
+
+
 def test_quota_row_marks_zero_percent_desktop_session_inactive() -> None:
     row = menubar_state._quota_row(
         "Session",
