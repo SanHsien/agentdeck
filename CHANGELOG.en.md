@@ -8,7 +8,12 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.42.1] - 2026-09-19
+
 ### Fixed
+- **Switching accounts no longer reuses the previous account's quota cache.** Claude Code tags `cachedUsageUtilization` in `~/.claude.json` with `accountUuid`. Previously `usage_client.py` did not compare this against `oauthAccount.accountUuid`, so switching accounts via `/login` on Windows reused the former account's percentage. Ported from upstream `f435f13`.
+- **Claude settings now accept UTF-8 with BOM.** Windows text editors may save `settings.json` with a UTF-8 BOM (`\xef\xbb\xbf`), causing `json.load()` failures. `setup_hook.py` now opens settings using `encoding="utf-8-sig"`. Ported from upstream PR #139 (`96ed3f7`).
+- **Weekly burn-rate warnings now require dual speed thresholds and safety margin.** Extrapolating only a 30-60 minute window over 7 days produced frequent false warnings during short coding bursts. `assess_weekly_quota()` now requires both short-window and weekly-average exhaustion before reset (with a 1-hour urgent branch) plus an 80% reset-time margin before alerting, with updated warning text. Ported from upstream PR #138 (`d964f8d`, `d99dbbc`).
 - **No more console windows flashing during startup and everyday use.** The app has no console of its own, so every call to `git`, `claude`, `clip`, or the Antigravity CLI popped a black window on Windows -- once per project lookup, once per quota poll, adding up across a session. Only 1 of 17 spawn sites suppressed it; all of them now go through `creation_flags()`, and an AST scan test keeps new call sites from slipping through. Ported from upstream `2a1996e`.
 - **Fixes to the status-line forwarder now reach installed copies too.** Self-heal refreshed only the status line; the forwarder updated on reinstall alone.
 - **An over-long tray tooltip no longer stops the panel from updating.** Windows caps `szTip` at 128 characters and pystray raises past that, from inside the refresh path — four provider rows with localized window titles reach it. The tooltip is now truncated to 127 characters with an ellipsis. Ported from upstream `8eacc3b`.
