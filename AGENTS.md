@@ -38,11 +38,11 @@
 - `zh-TW`
 - `en`
 
-所有使用者可見字串走 `i18n.json`。新增 key 必須兩語一起補；中文 locale（含簡體）目前統一映射到 `zh-TW`。若改 locale normalization，要同步檢查 stdlib-only hook 中的複本與 `session_hooks.py`。
+所有使用者可見字串走 `i18n.json`。新增 key 必須兩語一起補；中文 locale（含簡體）目前統一映射到 `zh-TW`。若改 locale normalization，要同步檢查 stdlib-only hook 中的複本與 `session_hooks.py`。部分 stdlib-only hook 因不能 import 共用模組，會各自保留 locale normalization，改語言映射時搜尋：`usage_lang.py`、`usage_statusline.py`、`usage_session_resume.py`、`usage_terse_mode.py`、`usage_terse_reminder.py`、`session_hooks.py`。
 
 ### 產品名稱
 
-新寫入的使用者資料與對外名稱使用 `agentdeck` / `AGENTDECK_*`。內部仍有 `usage_*` 歷史模組名與 migration fallback，除非有完整遷移方案，不要只為了品牌一致性大規模改名。
+新寫入的使用者資料與對外名稱使用 `agentdeck` / `AGENTDECK_*`。內部仍有 `usage_*`、`menubar_*` 等歷史模組名與 migration fallback，除非有完整遷移方案，不要只為了品牌一致性大規模改名。尤其不要移動會安裝到使用者環境的 root hook，也不要刪除仍有 migration / fallback 測試覆蓋的歷史路徑。
 
 ## 架構地圖
 
@@ -59,6 +59,58 @@
 - `tests/`：pytest 回歸測試
 
 逐模組陷阱不要堆在本檔；需要時讀 [`CLAUDE.md`](CLAUDE.md) 或 [`docs/DEVELOPMENT.zh-TW.md`](docs/DEVELOPMENT.zh-TW.md)。
+
+## 常用指令
+
+環境以 `uv.lock` 為準：
+
+```powershell
+uv sync --frozen --group dev --extra windows
+
+uv run --no-sync python main.py            # tray
+uv run --no-sync python main.py --mock     # fake-data preview
+uv run --no-sync python main.py --tui      # terminal UI
+uv run --no-sync python main.py --doctor   # environment / hook diagnostics
+uv run --no-sync python usage_cli.py report
+
+pwsh tools/dev_check.ps1                    # normal pre-PR validation
+pwsh scripts/build_windows.ps1              # Windows bundle
+```
+
+單獨測試：
+
+```powershell
+uv run --no-sync pytest tests/test_usage_client.py::test_name -v
+```
+
+## 主要資料流
+
+```text
+Claude Code statusLine
+        │
+        ▼
+usage_statusline.py ──> ~/.claude/agentdeck-status.json ─┐
+Claude Desktop ───────> plan-usage-history.json ──────────┤
+                                                         │
+Codex ~/.codex/* ───────> providers/codex_loader.py ─────┼─> state / wintray / TUI
+                                                         │
+Antigravity CLI auth ───> providers/* Antigravity loader ┘
+```
+
+Claude / Codex 的 quota path 是 local-first。Antigravity 是例外：quota 來源本來就是 Google 官方端點，但使用的是 Antigravity CLI 已保存的本機登入身分。
+
+## 高風險模組
+
+| 位置 | 注意事項 |
+|---|---|
+| `setup_hook.py` / `session_hooks.py` | 會修改使用者工具設定；必須有 backup / restore / idempotency，測試只用 temp path。 |
+| `providers/codex_loader.py` | Codex 本機資料契約與 `CODEX_HOME` 路徑處理；不要寫回 provider 資料。 |
+| Antigravity provider | Credential 只讀；不得把 token 寫 log / cache；刷新後的 access token 只留記憶體。 |
+| `wintray.py` | Windows tray / WebView2 orchestration；DPI 座標與 monitor work area 容易出錯，邏輯盡量下沉可測 leaf module。 |
+| `council/` | 會啟動 provider CLI；處理 subprocess lifecycle、取消、timeout、唯讀附件邊界時要補測試。 |
+| `persona_store.py` | 寫 Claude / Codex / Cursor agent 目錄；同名檔案必須先備份，回報實際寫入位置。 |
+| auto-resume / Windows Scheduler | 預設關閉；一次性任務要能清理，不能把 7-day quota 用盡視為應自動續跑。 |
+| `update_checker.py` / 外部連結 | URL 必須綁定預期 host / repo；不要退回只驗 scheme 或 substring 的檢查。 |
 
 ## 開發原則
 
