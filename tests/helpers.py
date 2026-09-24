@@ -126,6 +126,12 @@ def patch_setup_hook_paths(
     monkeypatch.setattr(setup_hook, "STATUS_FILE", status_file)
     monkeypatch.setattr(setup_hook, "CODEX_CONFIG", tmp_path / ".codex" / "config.toml")
     monkeypatch.setattr(setup_hook, "CODEX_BACKUP", tmp_path / ".codex" / "agentdeck-backup.json")
+    agy_dir = tmp_path / ".gemini" / "antigravity-cli"
+    monkeypatch.setattr(setup_hook, "AGY_SETTINGS", agy_dir / "settings.json")
+    monkeypatch.setattr(setup_hook, "AGY_HOOK_TARGET", agy_dir / "agentdeck-statusline-agy.py")
+    monkeypatch.setattr(
+        setup_hook, "AGY_PREVIOUS_STATUSLINE", agy_dir / "agentdeck-previous-statusline.json"
+    )
     monkeypatch.setattr(setup_hook, "_resolve_hook_source", lambda: hook_source)
     monkeypatch.setattr(setup_hook, "_resolve_forwarder_source", lambda: forwarder_source)
     monkeypatch.setattr(shutil, "which", lambda _: "/usr/bin/python3")

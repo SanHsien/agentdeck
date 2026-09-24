@@ -86,6 +86,11 @@ BACKUP_KEY = "agentdeck"
 LEGACY_TT_BACKUP_KEY = "tokenTracker"
 LEGACY_BACKUP_KEY = LEGACY_NAME
 PREV_SL_KEY = "previousStatusLine"
+# Where the status-line switch parks the live statusLine while it is off, so it
+# never mixes with the pre-install backup under PREV_SL_KEY.
+DISABLED_SL_KEY = "disabledStatusLine"
+# Older versions parked the switch's statusLine under settings["usage"][PREV_SL_KEY].
+LEGACY_DISABLED_SL_CONTAINER = "usage"
 # Every character the shells that run our hooks treat specially. Claude Code
 # uses Git Bash when present, Antigravity hands its command to cmd.exe, and a
 # path may legitimately contain any of these -- C:/Users/R&D/ is not exotic.
@@ -943,9 +948,17 @@ def unsetup() -> int:
     if CLAUDE_SETTINGS.parent.exists():
         settings = _load_settings()
         sl = settings.get("statusLine")
+        backup = settings.get(BACKUP_KEY)
+        parked = backup.pop(DISABLED_SL_KEY, None) if isinstance(backup, dict) else None
+        legacy_parked_in = settings.get(LEGACY_DISABLED_SL_CONTAINER)
+        if parked is None and isinstance(legacy_parked_in, dict):
+            parked = legacy_parked_in.pop(PREV_SL_KEY, None)
+            if not legacy_parked_in:
+                del settings[LEGACY_DISABLED_SL_CONTAINER]
+        if sl is None:
+            sl = parked
 
         if _is_usage_hook(sl) or _is_legacy_tt_hook(sl):
-            backup = settings.get(BACKUP_KEY)
             legacy_backup = settings.get(LEGACY_TT_BACKUP_KEY)
             prev = backup.get(PREV_SL_KEY) if isinstance(backup, dict) else None
             if not isinstance(prev, dict) and isinstance(legacy_backup, dict):
@@ -983,5 +996,8 @@ def unsetup() -> int:
 
     if CODEX_CONFIG.exists():
         _unsetup_codex()
+
+    if AGY_SETTINGS.exists():
+        _unsetup_agy()
 
     return 0

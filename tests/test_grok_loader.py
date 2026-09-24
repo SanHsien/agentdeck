@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
@@ -158,6 +159,33 @@ def test_load_entries_maps_inference_and_looks_up_model_and_project(
     assert [entry.timestamp for entry in entries] == sorted(
         entry.timestamp for entry in entries
     )
+
+
+def test_load_entries_reuses_result_until_a_source_changes(
+    grok_paths: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    log_path, config_path = grok_paths
+    _write_config(config_path)
+    _write_log(
+        log_path,
+        [_event("2026-08-26T10:24:38.127Z", _SID, "shell.turn.inference_done", _inference_ctx(1))],
+    )
+    updates_path = _updates_path(log_path, _SID)
+    _write_updates(updates_path, [_update("2026-08-26T10:24:38.500Z", 100)])
+    first = grok_loader.load_entries()
+    parse_events = Mock(side_effect=grok_loader._parse_events)
+    monkeypatch.setattr(grok_loader, "_parse_events", parse_events)
+
+    assert grok_loader.load_entries() == first
+    assert parse_events.call_count == 0
+
+    _write_updates(
+        updates_path,
+        [_update("2026-08-26T10:24:38.500Z", 100), _update("2026-08-26T10:24:39.500Z", 200)],
+    )
+    grok_loader.load_entries()
+    assert parse_events.call_count == 1
 
 
 def test_load_entries_uses_model_in_effect_after_mid_session_switch(
@@ -575,6 +603,40 @@ def test_load_entries_restores_session_missing_from_unified_log(
     assert entry.cache_read_tokens == 30
     assert entry.cache_creation_tokens == 4
     assert entry.output_tokens == 20
+    assert entry.cost_usd == pytest.approx(25.0)
+    assert entry.project == "usage-grok-project"
+
+
+def test_load_entries_restores_session_when_log_is_missing(
+    grok_paths: tuple[Path, Path],
+) -> None:
+    log_path, config_path = grok_paths
+    _write_config(config_path)
+    sid = "updates-only-session"
+    _write_updates(
+        _updates_path_for_cwd(log_path, sid, "%2Ftmp%2Fusage-grok-project"),
+        [
+            _update(
+                1_777_777_777,
+                250_000_000_000,
+                model_usage={
+                    "grok-4.6-build": {
+                        "inputTokens": 100,
+                        "outputTokens": 20,
+                        "cachedReadTokens": 30,
+                        "cacheCreationTokens": 4,
+                        "costUsdTicks": 250_000_000_000,
+                    }
+                },
+            )
+        ],
+    )
+
+    entries = grok_loader.load_entries()
+
+    assert len(entries) == 1
+    entry = entries[0]
+    assert entry.model == "grok-4.6"
     assert entry.cost_usd == pytest.approx(25.0)
     assert entry.project == "usage-grok-project"
 

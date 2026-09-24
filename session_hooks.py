@@ -59,7 +59,7 @@ SETTINGS_LOCK = Path(os.path.expanduser("~/.claude/agentdeck-settings.lock"))
 # session. Off by default: enabled only via the menu toggle, never by self_heal.
 RESUME_HOOK_TARGET = Path(os.path.expanduser("~/.claude/agentdeck-session-resume.py"))
 RESUME_PROMPT_SIDECAR = Path(os.path.expanduser("~/.claude/agentdeck-resume-prompt.json"))
-RESUME_HOOK_VERSION = "1.7"
+RESUME_HOOK_VERSION = "1.8"
 RESUME_MATCHER = "startup|clear"
 RESUME_LANGS = ("zh-TW", "en")
 _RESUME_MARKER = "agentdeck-session-resume"
@@ -73,7 +73,7 @@ _RESUME_DIAGNOSIS_CAUSE_KEYS = (
 )
 TERSE_HOOK_TARGET = Path(os.path.expanduser("~/.claude/agentdeck-terse-mode.py"))
 TERSE_PROMPT_SIDECAR = Path(os.path.expanduser("~/.claude/agentdeck-terse-prompt.json"))
-TERSE_HOOK_VERSION = "1.2"
+TERSE_HOOK_VERSION = "1.3"
 TERSE_MATCHER = "startup|clear"
 TERSE_LANGS = ("zh-TW", "en")
 _TERSE_MARKER = "agentdeck-terse-mode"

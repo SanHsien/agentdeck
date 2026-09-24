@@ -20,7 +20,9 @@ CLAUDE_DIRS = [
     os.path.expanduser("~/.claude/projects"),
     os.path.expanduser("~/.config/claude/projects"),
 ]
-_FILE_CACHE_MAXSIZE = 512
+# Must exceed a real user's session file count (providers/history_loader.py explains
+# why): at 512, a machine with 822 files re-parsed every file on each report.
+_FILE_CACHE_MAXSIZE = 4096
 _file_cache: OrderedDict[Path, tuple[float, int, list[UsageEntry]]] = OrderedDict()
 
 

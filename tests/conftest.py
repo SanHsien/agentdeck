@@ -97,6 +97,7 @@ def _isolate_operator_data(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> N
         (grok_loader, "GROK_HOME", ".grok"),
         (grok_loader, "GROK_LOG_PATH", ".grok/logs/unified.jsonl"),
         (grok_loader, "GROK_CONFIG_PATH", ".grok/config.toml"),
+        (grok_loader, "GROK_SESSIONS_DIR", ".grok/sessions"),
     ):
         if hasattr(module, name):
             monkeypatch.setattr(module, name, home / relative)

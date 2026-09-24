@@ -46,7 +46,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, cast
 
-__version__ = "1.7"
+__version__ = "1.8"
 
 
 def _creation_flags() -> int:
@@ -140,17 +140,17 @@ _DEFAULT_TEMPLATES: dict[str, dict[str, Any]] = {
             "Left uncommitted last time: {count} changed file(s) on branch {branch} ({files})"
         ),
         "diagnosis_reminder": (
-            'Health check: about {waste_pct}% waste from {cause}. Say "fix it" '
+            'Health check: about {waste_pct}% waste came from {cause}. Say "fix it" '
             "and I'll read the full diagnosis at {path}."
         ),
         "diagnosis_reminder_explain": (
-            'Health check: about {waste_pct}% waste from {cause}. Say "show me" '
+            'Health check: about {waste_pct}% waste came from {cause}. Say "show me" '
             "and I'll walk you through the full diagnosis at {path}."
         ),
         "diagnosis_default_cause": "avoidable context waste",
         "diagnosis_causes": {
             "repeated_reads": "re-reading the same files",
-            "polluter_dirs": "scanning generated folders",
+            "polluter_dirs": "scanning generated or dependency folders",
             "anomaly_session": "one oversized session",
             "noisy_bash": "oversized Bash output",
             "repeated_bash": "re-running the same Bash command",

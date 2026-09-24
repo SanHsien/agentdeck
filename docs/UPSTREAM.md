@@ -31,20 +31,57 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "8dce6a6893c7d4f61e23d52c3514e10699fcce93",
-      "last_merged": "f435f13fe4281ad265cb94ecef6ea83042f16a2e",
-      "note": "2026-09-19 審視 d42496b..8dce6a6 共 59 筆：採用 f435f13（換帳號不再沿用舊額度快取）、PR #139（相容含 UTF-8 BOM 之 Claude 設定檔）、PR #138（週額度警示雙速度門檻與餘裕要求）。報表改版與 session 快照（feat/usage-snapshot 等 15 筆）因報表鏈已分岔續列後續；官網網站改版、發版 chore 與 21 筆 ai_updates.json 不適用。逐筆見 2026-09-19 段落。"
+      "last_reviewed": "39bc844797eb65e548c1b6c3ad6a7f856430dc78",
+      "last_merged": "07439a4f914e71e52f49161a5f0de59faa0bdecd",
+      "note": "2026-09-24 審視 8dce6a6..39bc844 共 50 筆：採用 Opus 5.5／gpt-6 離線價格、Grok 無 unified.jsonl 仍補花費與未變動沿用結果、hook 備用文字與 i18n 同步、狀態列開關不再和安裝前備份混放且 unsetup 還原 Antigravity、報表解析快取上限 4096、README 補 SmartScreen 放行步驟。歷史快取效能大改與報表 KPI 卡續列後續；官網、圖示、發版、ruff format、plugin 與 18 筆 ai_updates.json 不適用。逐筆見 2026-09-24 段落。"
     }
   },
   "tickets": {
-    "reviewed_pr_through": 144,
+    "reviewed_pr_through": 146,
     "reviewed_issue_through": 130,
-    "reviewed_date": "2026-09-19",
-    "note": "以 --state all 查過。PR #138（週額度雙速度門檻）、#139（UTF-8 BOM 設定）、#144（時區釘定）已審視並依適用性處理；#140-#143 為依賴升級；issue 停在 #130。"
+    "reviewed_date": "2026-09-24",
+    "note": "以 --state all 查過。PR #145（SmartScreen 放行步驟）採用；#146（Grok Windows 狀態列 .cmd 包裝）本 fork 不安裝 Grok 狀態列故不適用；issue 停在 #130。"
   }
 }
 ```
 <!-- sync-points:end -->
+
+## 2026-09-24：`8dce6a6..39bc844` 共 50 筆，`last_reviewed` 推到 `39bc844`
+
+issue #23 累積 50 筆：32 筆需判斷、18 筆只同步 `ai_updates.json`。
+
+### 採用
+
+- **離線價格補 Opus 5.5 與 gpt-6-sol／gpt-6-luna**（`752d7f1`、`07439a4`）：價格快取過期時這些模型原本一律算 $0；`ui/tables.py` 補「Opus 5.5」短名。
+- **Grok 花費**（`e1844a2`、`c9f3df7`）：`unified.jsonl` 不存在時仍從各 session 的 `updates.jsonl` 補回花費；來源檔 stat 沒變時沿用上次全量結果（`hours_back>0` 不快取）。測試隔離補上 `GROK_SESSIONS_DIR`。
+- **hook 備用文字與 i18n 同步**（`81de184`、`2b00fdb`）：本 fork 只出貨 zh-TW／en，`usage_terse_mode.py` 兩語備用文字從 `i18n.json` 重新產生，`usage_session_resume.py` 英文健檢三處對齊；加測試鎖住三支 hook 的備用文字與 i18n／sidecar 一致。`TERSE_HOOK_VERSION` 1.2→1.3、`RESUME_HOOK_VERSION` 1.7→1.8。
+- **狀態列開關與 unsetup**（`24f9ad8` 部分）：本 fork 的開關把目前 statusLine 暫存在舊名 `usage.previousStatusLine`，而安裝前備份在 `agentdeck.previousStatusLine`；開關關著時執行 unsetup 會留下暫存、安裝前的狀態列也不會還原。改為暫存到 `agentdeck.disabledStatusLine`，仍讀得到舊位置；unsetup 先取回暫存再還原，並補呼叫 `_unsetup_agy()`。`patch_setup_hook_paths` 同步隔離 Antigravity 路徑。
+- **報表解析快取上限 512 → 4096**（`c88b0ad`）：與 `providers/history_loader.py` 同一個理由，session 檔多於 512 時每次產報表都整份重讀。
+- **README 補 SmartScreen 放行步驟**（PR `#145`，`a59376f`）：本 fork 只出 Windows 版，快速開始第 2 步兩語同步補上。
+
+### 逐筆判定
+
+| Commit / PR | 判定 | 理由 |
+| --- | --- | --- |
+| `752d7f1`、`07439a4` 離線價格 | **採用** | 見上 |
+| `e1844a2`、`c9f3df7` Grok loader | **採用** | 見上 |
+| `81de184`、`2b00fdb` hook 備用文字 | **採用** | 見上；ja／ko／zh-CN 部分本 fork 不出貨 |
+| `24f9ad8` 狀態列備份／unsetup Antigravity | **部分採用** | 多個 `CLAUDE_CONFIG_DIR` 修正不適用（本 fork `_history_directory_sources()` 固定三個來源）；更新檢查重讀偏好本 fork `wintray.py` 已在連網後才讀 |
+| `c88b0ad` 報表解析快取上限 | **採用** | 見上 |
+| PR `#145`（`a59376f`）SmartScreen | **採用** | 只取 README 兩語；官網部分不適用 |
+| `cc9a73d` 磁碟快取保留 1 小時快取寫入量 | 不適用 | 本 fork 的 `UsageEntry` 沒有 `cache_creation_1h_tokens` 欄位 |
+| PR `#146`（`7cd4b3a`）Grok Windows 狀態列 `.cmd` 包裝 | 不適用 | 本 fork 不安裝 Grok 狀態列 |
+| `702c585` `tests/test_menubar.py` tzset | 不適用 | 本 fork 沒有該測試；既有 tzset 測試已用 `getattr` |
+| `faf27f3` 歷史重組與標題計算加速 | 後續 | 跨 history／codex 磁碟快取 schema 與 menubar state，需在本 fork 資料鏈上實測後再移植 |
+| `b1d8764` 報表 KPI 卡 | 後續 | 同前次判準，`ui/` 報表渲染已分岔 |
+| `be30803`、`1c19d38`、`274769f`、`954c591`、`1b492d2`、`d92fd34`、`16d5e3f`、`c673274`、`1408ce2` 共 9 筆官網 | 不適用 | 上游行銷官網，本 fork 不維護 |
+| `2779841`、`d648eef` 新圖示與社群預覽圖 | 不適用 | 上游品牌識別；本 fork 有自己的圖示（同 `a1ce980` 判準） |
+| `f9eb89a`、`3a8b23d` 全專案 ruff format 與 CI 檢查 | 不適用 | 上游排版 commit，套用只會製造大量衝突；本 fork 格式規則自行維護 |
+| `fac39f7`、`39bc844` Claude Code plugin `/usage:quota` | 不適用 | 依賴上游 `usage-cli` 指令與 marketplace 發佈；本 fork 只出 Windows bundle |
+| `4d06bae`、`9223e6f`、`9a739da` 發版 chore | 不適用 | 本 fork 自行版控 |
+| 18 筆 `ai_updates.json` 同步 | 不適用 | 本 fork 已移除該檔案 |
+
+需要 Windows 實機 smoke：狀態列開關關閉 → 解除安裝，確認 Claude 與 Antigravity 狀態列還原為安裝前設定。
 
 ## 2026-09-19：`d42496b..8dce6a6` 共 59 筆，`last_reviewed` 推到 `8dce6a6`
 

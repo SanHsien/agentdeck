@@ -64,7 +64,7 @@ agentdeck 把這些狀態放回 Windows 桌面工作流：
 ## 快速開始
 
 1. 從 [Latest Release](https://github.com/SanHsien/agentdeck/releases/latest) 下載 `agentdeck-windows.zip`。
-2. 解壓後執行 `agentdeck.exe`；不需要安裝程式。
+2. 解壓後執行 `agentdeck.exe`；不需要安裝程式。第一次執行若跳出 SmartScreen 的**「Windows 已保護您的電腦」**，按**「其他資訊」**→**「仍要執行」**。
 3. **Codex**：只要已有本機使用紀錄，agentdeck 會自動讀取。
 4. **Claude Code**：終端使用者可在選單執行「設定狀態列」並重新啟動 Claude Code；Claude Desktop 使用者則會自動讀取 Desktop 已寫入的本機方案用量紀錄。
 5. **Antigravity**：需先安裝並登入 Antigravity CLI，額度卡才會出現。

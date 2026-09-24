@@ -64,7 +64,7 @@ Four visual themes ship with the app: Classic, Catppuccin, Stained Glass, and Or
 ## Quick start
 
 1. Download `agentdeck-windows.zip` from the [Latest Release](https://github.com/SanHsien/agentdeck/releases/latest).
-2. Extract it and run `agentdeck.exe`; there is no installer.
+2. Extract it and run `agentdeck.exe`; there is no installer. If SmartScreen shows **Windows protected your PC** on first launch, click **More info** → **Run anyway**.
 3. **Codex** — existing local usage history is detected automatically.
 4. **Claude Code** — terminal users can install the local hook with **Set Up Status Line** and restart Claude Code; Claude Desktop users are detected through the plan-usage history Desktop already writes locally.
 5. **Antigravity** — install and sign in to the Antigravity CLI first; its quota card appears after a successful quota read.

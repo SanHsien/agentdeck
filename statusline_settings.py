@@ -97,14 +97,16 @@ def _sync_agy_statusline(enable: bool) -> None:
 
 
 def _disable_statusline_settings() -> int:
+    import setup_hook
+
     settings = _load_claude_settings()
     if "statusLine" not in settings:
         return 0
-    usage_settings = settings.setdefault("usage", {})
+    usage_settings = settings.setdefault(setup_hook.BACKUP_KEY, {})
     if not isinstance(usage_settings, dict):
         usage_settings = {}
-        settings["usage"] = usage_settings
-    usage_settings["previousStatusLine"] = settings["statusLine"]
+        settings[setup_hook.BACKUP_KEY] = usage_settings
+    usage_settings[setup_hook.DISABLED_SL_KEY] = settings["statusLine"]
     del settings["statusLine"]
     _save_claude_settings(settings)
     _sync_agy_statusline(False)
@@ -112,27 +114,34 @@ def _disable_statusline_settings() -> int:
 
 
 def _enable_statusline_settings() -> int:
+    import setup_hook
+
     settings = _load_claude_settings()
     if "statusLine" in settings:
         return 0
-    raw_usage_settings = settings.get("usage")
+    container_key = setup_hook.BACKUP_KEY
+    stash_key = setup_hook.DISABLED_SL_KEY
+    raw_usage_settings = settings.get(container_key)
+    if not isinstance(raw_usage_settings, dict) or stash_key not in raw_usage_settings:
+        # Older versions parked the switch's statusLine under usage.previousStatusLine.
+        container_key = setup_hook.LEGACY_DISABLED_SL_CONTAINER
+        stash_key = setup_hook.PREV_SL_KEY
+        raw_usage_settings = settings.get(container_key)
     usage_settings = raw_usage_settings if isinstance(raw_usage_settings, dict) else None
-    previous = usage_settings.get("previousStatusLine") if usage_settings is not None else None
+    previous = usage_settings.get(stash_key) if usage_settings is not None else None
     if previous:
         assert usage_settings is not None
         if not _statusline_command_target_exists(previous):
-            del usage_settings["previousStatusLine"]
+            del usage_settings[stash_key]
             if not usage_settings:
-                del settings["usage"]
+                del settings[container_key]
             _save_claude_settings(settings)
-            import setup_hook
-
             _sync_agy_statusline(True)
             return setup_hook.setup()
         settings["statusLine"] = previous
-        del usage_settings["previousStatusLine"]
+        del usage_settings[stash_key]
         if not usage_settings:
-            del settings["usage"]
+            del settings[container_key]
         _save_claude_settings(settings)
         _sync_agy_statusline(True)
         return 0
