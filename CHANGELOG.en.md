@@ -8,6 +8,18 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.42.2] - 2026-09-24
+
+### Fixed
+- **Uninstalling while the status-line switch is off now restores the pre-install status line.** The switch parked the live statusLine under the legacy `usage.previousStatusLine`, which uninstall never picked up, so the original setting was not restored. It now parks under `agentdeck.disabledStatusLine` (the old location is still read), and uninstall also restores Antigravity's status line. Ported from upstream `24f9ad8`.
+- **Offline pricing now covers Opus 5.5, gpt-6-sol, and gpt-6-luna.** When the pricing cache expired these models were priced at $0; report tables also gain the "Opus 5.5" short name. Ported from upstream `752d7f1`, `07439a4`.
+- **Grok spend is recovered even when the unified log is missing.** A missing `unified.jsonl` used to return nothing, dropping every per-session `updates.jsonl` cost; unchanged logs now reuse the previous result. Ported from upstream `e1844a2`, `c9f3df7`.
+- **Terse-mode and resume hook fallback text now matches the UI strings.** The built-in text shown when the sidecar is missing had drifted from `i18n.json`; installed hooks refresh on next launch. Ported from upstream `81de184`, `2b00fdb`.
+- **Reports no longer re-parse every file when there are many sessions.** The report parser's file cache limit rises from 512 to 4096. Ported from upstream `c88b0ad`.
+
+### Documentation
+- **README now explains how to get past SmartScreen on first launch.** Ported from upstream PR #145.
+
 ### Changed
 - **Direct dependency floors aligned with verified releases.** Dependency freshness review upgraded `ruff` (`>=0.16.5` → `>=0.16.8`) and `pyinstaller` (`>=6.22.2` → `>=6.22.3`) alongside lockfile updates, with zero new findings across 208 source files and all gates passing.
 
