@@ -1,0 +1,30 @@
+# 選用的 commit 前檢查。啟用方式（需要先 pip/uv 裝 pre-commit）：
+#
+#     pre-commit install
+#
+# 刻意只放**非破壞性**的檢查：不掛 ruff format、trailing-whitespace 這類會改寫
+# 檔案的 hook。這個 repo 沿用上游的既有排版（`ruff check` 綠但沒有跑過
+# `ruff format`），自動改寫會在無關檔案上產生大量雜訊 diff。
+#
+# 這裡不是完整的把關 —— commit 前請跑 `pwsh tools/dev_check.ps1`（ruff + mypy
+# + pytest 三道，等同 CI）。mypy 與 pytest 沒有掛進 pre-commit，是因為兩者都需要
+# 完整的專案環境、且 pytest 要跑 3 分鐘，掛在每次 commit 上不切實際。
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # 與 pyproject.toml [dependency-groups] dev 的 ruff 版本保持一致。
+    rev: v0.16.0
+    hooks:
+      - id: ruff
+        name: ruff check
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      # 現有最大的追蹤檔是 assets/usage.icns（約 2.1 MB），門檻設在它之上，
+      # 目的是擋住誤加的影片／資料庫匯出，而不是擋正常的圖示與截圖。
+      - id: check-added-large-files
+        args: [--maxkb=4096]
