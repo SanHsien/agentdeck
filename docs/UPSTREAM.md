@@ -31,22 +31,48 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "ae5b9065aa3cbced5b5a8e45a0f5b160adfe7a44",
-      "last_merged": "f8b95630b351c2759e866e0cfeb806e34558c70c",
-      "note": "2026-10-01 審視 39bc844..ae5b906 共 6 筆：採用 f8b9563 的精簡模式文字修正（兩語改寫、hook 版號 1.4）；同一 commit 的 usage status／quota 技能、發版、依賴升級與 ai_updates.json 不適用。ae5b906 之後約 60 筆尚未審視，逐筆見 2026-10-01 段落的待審清單。"
+      "last_reviewed": "97338531ff59a0f0cb7217594589d89ceef8a38b",
+      "last_merged": "97338531ff59a0f0cb7217594589d89ceef8a38b",
+      "note": "2026-10-01 審視 ae5b906..9733853 共 60 筆、PR #150–#156、Issue #150, #153。採用 0be34ba (Sonnet 5.5 定價)、538e19a (子代理串流最大輸出 token)、c0bdc87 (Antigravity steps 表時間)、5af7c62 (PR #151 四款核心主題頁尾按鈕防溢出)；PR #152/#154 高 DPI 縮放待 Windows 實機整體評估；PR #150 Antigravity 雙額度組涉及過多 DOM 改動暫緩；其餘 Muse Code、新主題、發版、依賴 bump 與 26 筆 ai_updates.json 不適用。"
     }
   },
   "tickets": {
-    "reviewed_pr_through": 149,
-    "reviewed_issue_through": 130,
+    "reviewed_pr_through": 156,
+    "reviewed_issue_through": 153,
     "reviewed_date": "2026-10-01",
-    "note": "以 --state all 查過。PR #147–#149 是上游自己的依賴升級（ruff、codeql-action、setup-uv），本 fork 由自己的 Dependabot 處理，不適用；issue 停在 #130（#150 起與尚未審視的 commit 同批處理）。"
+    "note": "以 --state all 審視。PR #150-#156、Issue #150 與 #153 皆已完成判定與記錄。"
   }
 }
 ```
 <!-- sync-points:end -->
 
-## 2026-10-01：`39bc844..ae5b906` 共 6 筆，`last_reviewed` 推到 `ae5b906`
+## 2026-10-01：`ae5b906..9733853` 共 60 筆，`last_reviewed` 推到 `9733853`
+
+處理 issue #24。上游自 `ae5b906` 至 `9733853` 累積 60 筆 commit，含 PR #150–#156、Issue #150 與 #153。
+
+### 採用
+
+- **離線價格補 Sonnet 5.5**（`0be34ba`）：`pricing.py` 新增 `claude-sonnet-5-5`（輸入 $2/M、輸出 $10/M、快取寫入 $2.5/M、快取讀取 $0.20/M），防止離線或價目快取過期時以 $0 計算；`ui/tables.py` 補短名 `Sonnet 5.5`，補全測試斷言。
+- **Claude Code 子代理串流日誌去重**（`538e19a`）：子代理日誌（`subagents/agent-*.jsonl`）在串流中對同一個 request 寫入多行且 `output_tokens` 遞增，解析器改為保留同檔同鍵最大 `output_tokens`（無 id 者不合併）；`_HISTORY_JSONL_CACHE_SCHEMA` 升版至 3、`_YEAR_CACHE_SCHEMA` 升版至 2，舊快取自動重算；補齊 `test_adapters_claude.py` 與 `test_history_loader.py` 回歸測試。
+- **Antigravity steps 表時間戳記解析**（`c0bdc87`）：針對 agy 1.1.18+ 不再於 `gen_metadata` 存逐輪時間問題，由 `steps` 表依 `responseId` 或 `gen_idx` 查詢時間，避免多日對話塌縮至 session 起始日；`_AGY_DB_CACHE_SCHEMA` 升版至 2；補齊 `test_agy_loader.py` 測試。
+- **四款核心主題頁尾按鈕防溢出**（PR `#151`，`5af7c62`，修復 Issue `#153`）：四款核心主題（`classic`、`catppuccin`、`origami`、`stained_glass`）頁尾 `.action` 按鈕改用 `min-height: 32px; height: auto; white-space: normal; min-width: 0; line-height: 1.3;`，防止 Windows 文字放大（125% 等）造成按鈕截斷與按鈕列溢出。
+
+### 逐筆判定與跳過分類
+
+| 類別 / Commit | 判定 | 理由 |
+| --- | --- | --- |
+| `0be34ba` Sonnet 5.5 離線價格 | **採用** | 見上 |
+| `538e19a` 子代理串流輸出 token 去重 | **採用** | 見上 |
+| `c0bdc87` Antigravity steps 表時間解析 | **採用** | 見上 |
+| `5af7c62`（PR #151）頁尾按鈕防溢出 | **採用** | 見上，套用本 fork 維護的 4 款核心主題 |
+| PR #152 / PR #154 / `899af13` 高 DPI 面板縮放 | **後續評估** | 耦合上游 `wintray/app.py` 的縮放量測機制，本 fork 有專屬 Windows WebView2 多螢幕 / DPI 座標邏輯，留待 Windows 實機整體評估 |
+| PR #150 / `47b2998` Antigravity 雙額度組 | **後續評估** | 涉及 37 個檔案、大量 DOM 結構變更與自訂事件，改動幅度大且易破壞本 fork 精簡面板契約，暫緩引進 |
+| `3dd1de7` / `c0bb1d1` 快取提醒與 token 警告 | **後續評估** | 屬非必要的新增警告機制，待評估是否符合本 fork 精簡原則 |
+| `bbcf28b`、`16b9765` 等 Muse Code 支援 | 不適用 | 本 fork 專注 Claude Code、Codex、Antigravity，不支援 Muse Code |
+| 新主題（`matrix`、`win95`、`newspaper` 等） | 不適用 | 本 fork 固化 4 款核心主題，不出貨其餘主題 |
+| 發版與文案 chore（`0.30.23` 等） | 不適用 | 上游發版與官網行銷文案，不影響本 fork |
+| 依賴 bump | 不適用 | 上游自升依賴，本 fork 由自己的 Dependabot 獨立控管 |
+| 26 筆 `ai_updates.json` 同步 | 不適用 | 純上游模型與服務更新新聞檔，非程式邏輯 |
 
 ### 採用：精簡模式文字（`f8b9563` 的一部分）
 

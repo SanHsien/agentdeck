@@ -289,6 +289,12 @@ def test_fallback_pricing_contains_expected_models() -> None:
         "cache_creation_input_token_cost": 5e-6,
         "cache_read_input_token_cost": 0.2e-6,
     }
+    assert fallback["claude-sonnet-5-5"] == {
+        "input_cost_per_token": 2e-6,
+        "output_cost_per_token": 10e-6,
+        "cache_creation_input_token_cost": 2.5e-6,
+        "cache_read_input_token_cost": 0.2e-6,
+    }
     assert pricing._resolve_model_key("claude-opus-5", fallback) == "claude-opus-5"
     assert "gpt-6-sol" in fallback
     assert "gpt-6-luna" in fallback

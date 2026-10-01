@@ -37,7 +37,7 @@ _YEAR_WEEKS = 53
 YEAR_CACHE_PATH = Path(os.path.expanduser("~/.agentdeck/year_cache.json"))
 YEAR_LEDGER_PATH = YEAR_CACHE_PATH.with_name("year_ledger.json")
 YEAR_CACHE_TTL_SECONDS = 6 * 3600
-_YEAR_CACHE_SCHEMA = 1
+_YEAR_CACHE_SCHEMA = 2
 _YEAR_LEDGER_SCHEMA = 1
 _YEAR_LEDGER_TRIM_BUFFER_DAYS = 60
 

@@ -15,7 +15,7 @@ import os
 import time
 from collections import OrderedDict
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -48,7 +48,7 @@ _file_cache: OrderedDict[Path, _FileCacheEntry] = OrderedDict()
 
 CLAUDE_PROJECTS_DIR = Path(os.path.expanduser("~/.claude/projects"))
 HISTORY_CACHE_PATH = Path(os.path.expanduser("~/.agentdeck/history_jsonl_cache.json"))
-_HISTORY_JSONL_CACHE_SCHEMA = 2
+_HISTORY_JSONL_CACHE_SCHEMA = 3
 _disk_cache_seeded = False
 _DISK_CACHE_FLUSH_INTERVAL_S = 300.0
 _disk_cache_dirty = False
@@ -297,6 +297,7 @@ def _parse_complete_lines(
     digest: Any,
     confirmed_offset: int,
 ) -> int:
+    index = {_dedup_key(entry): i for i, entry in enumerate(parsed_entries)}
     while True:
         line_start = int(file.tell())
         # The drained bytes still go through the digest: the confirmed prefix is
@@ -315,6 +316,18 @@ def _parse_complete_lines(
         digest.update(line)
         confirmed_offset = int(file.tell())
         if parsed_entry is not None:
+            dedup_key = _dedup_key(parsed_entry)
+            kept_at = index.get(dedup_key)
+            if kept_at is not None:
+                # Subagent transcripts log one request several times while it streams,
+                # with output_tokens still growing, so keep the largest, not the first.
+                kept = parsed_entries[kept_at]
+                if parsed_entry.output_tokens > kept.output_tokens:
+                    parsed_entries[kept_at] = replace(
+                        kept, output_tokens=parsed_entry.output_tokens
+                    )
+                continue
+            index[dedup_key] = len(parsed_entries)
             parsed_entries.append(parsed_entry)
 
 
