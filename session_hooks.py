@@ -73,7 +73,7 @@ _RESUME_DIAGNOSIS_CAUSE_KEYS = (
 )
 TERSE_HOOK_TARGET = Path(os.path.expanduser("~/.claude/agentdeck-terse-mode.py"))
 TERSE_PROMPT_SIDECAR = Path(os.path.expanduser("~/.claude/agentdeck-terse-prompt.json"))
-TERSE_HOOK_VERSION = "1.3"
+TERSE_HOOK_VERSION = "1.4"
 TERSE_MATCHER = "startup|clear"
 TERSE_LANGS = ("zh-TW", "en")
 _TERSE_MARKER = "agentdeck-terse-mode"

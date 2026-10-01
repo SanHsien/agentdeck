@@ -31,20 +31,47 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "39bc844797eb65e548c1b6c3ad6a7f856430dc78",
-      "last_merged": "07439a4f914e71e52f49161a5f0de59faa0bdecd",
-      "note": "2026-09-24 審視 8dce6a6..39bc844 共 50 筆：採用 Opus 5.5／gpt-6 離線價格、Grok 無 unified.jsonl 仍補花費與未變動沿用結果、hook 備用文字與 i18n 同步、狀態列開關不再和安裝前備份混放且 unsetup 還原 Antigravity、報表解析快取上限 4096、README 補 SmartScreen 放行步驟。歷史快取效能大改與報表 KPI 卡續列後續；官網、圖示、發版、ruff format、plugin 與 18 筆 ai_updates.json 不適用。逐筆見 2026-09-24 段落。"
+      "last_reviewed": "ae5b9065aa3cbced5b5a8e45a0f5b160adfe7a44",
+      "last_merged": "f8b95630b351c2759e866e0cfeb806e34558c70c",
+      "note": "2026-10-01 審視 39bc844..ae5b906 共 6 筆：採用 f8b9563 的精簡模式文字修正（兩語改寫、hook 版號 1.4）；同一 commit 的 usage status／quota 技能、發版、依賴升級與 ai_updates.json 不適用。ae5b906 之後約 60 筆尚未審視，逐筆見 2026-10-01 段落的待審清單。"
     }
   },
   "tickets": {
-    "reviewed_pr_through": 146,
+    "reviewed_pr_through": 149,
     "reviewed_issue_through": 130,
-    "reviewed_date": "2026-09-24",
-    "note": "以 --state all 查過。PR #145（SmartScreen 放行步驟）採用；#146（Grok Windows 狀態列 .cmd 包裝）本 fork 不安裝 Grok 狀態列故不適用；issue 停在 #130。"
+    "reviewed_date": "2026-10-01",
+    "note": "以 --state all 查過。PR #147–#149 是上游自己的依賴升級（ruff、codeql-action、setup-uv），本 fork 由自己的 Dependabot 處理，不適用；issue 停在 #130（#150 起與尚未審視的 commit 同批處理）。"
   }
 }
 ```
 <!-- sync-points:end -->
+
+## 2026-10-01：`39bc844..ae5b906` 共 6 筆，`last_reviewed` 推到 `ae5b906`
+
+### 採用：精簡模式文字（`f8b9563` 的一部分）
+
+- 「從現在起……不會淡忘」改成「整個對話都適用」：逐則提醒 hook 已負責防回彈，開場那句施壓是多餘的。
+- 刪掉「不要為了親切多寫」：進度交接的招呼語要保留溫度。
+- zh-TW 與 en 都改；`usage_terse_mode.py` 的備用文字依 `i18n.json` 重新產生，`__version__` 與 `TERSE_HOOK_VERSION` 升 1.4，讓已安裝的 hook 換新。
+
+### 逐筆判定
+
+| commit | 判定 | 理由 |
+| --- | --- | --- |
+| `f8b9563` 其餘（`usage status --json` 的 `resets_in_seconds`／`age_seconds`、`/usage:quota` 技能） | 不適用 | 本 fork 沒有 `usage status` 指令與 quota plugin（見 2026-09-24 對 `fac39f7` 的判定） |
+| `17233f8` chore(release): v0.30.22 | 不適用 | 上游發版 |
+| `901455e`（PR #147）、`83bb934`（#148）、`0165cd8`（#149） | 不適用 | 上游的依賴升級；本 fork 由自己的 Dependabot 與新鮮度檢查處理（ruff 下限本輪升到 0.16.9） |
+| `ae5b906` chore: sync AI updates | 不適用 | 只同步 `ai_updates.json` |
+
+### 待審：`ae5b906` 之後約 60 筆
+
+本輪沒有審，水位刻意停在有證據的地方。與 Windows 版直接相關、下一輪優先看的：
+
+- `899af13`、`88e46a3`（PR #154）、`5af7c62`（#151）、`e41199c`（#152）：高 DPI 下面板超出工作區、頁尾按鈕被切掉、縮放時面板高度（issue #153）。
+- `538e19a`：子代理串流的重複行改取最大輸出 token（原本少算 86%）。
+- `0be34ba`：Sonnet 5.5 離線價格。
+- `c0bdc87`：Antigravity 的 turn 日期。
+- 功能類（`c0bb1d1`、`3dd1de7`、`47b2998`、`bbcf28b`、`16b9765`、新面板）與官網、發版、`ai_updates.json` 另行判定。
 
 ## 2026-09-24：`8dce6a6..39bc844` 共 50 筆，`last_reviewed` 推到 `39bc844`
 
