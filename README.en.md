@@ -146,6 +146,10 @@ See [`NOTICE.md`](NOTICE.md) for the AGPL-3.0 §5a modification statement, [`doc
 | [`NOTICE.md`](NOTICE.md) | Fork attribution, modification statement, data, and licensing boundaries |
 | [`SECURITY.en.md`](SECURITY.en.md) | Vulnerability reporting and support policy |
 
+## Multi-agent pipeline
+
+This repo is one piece of the [agent-relay](https://github.com/SanHsien/agent-relay) multi-agent dispatch and verification pipeline: once agent-relay is set up, the tray shows a notice when new mail arrives (`relay_mailbox.py`, reads mailbox files only, no network). The protocol spec and the index of every related repo live in agent-relay.
+
 ## License
 
 **AGPL-3.0-only.** This repository is a derivative of `aqua5230/usage` and preserves upstream copyright and license notices. Modifications in this fork are also released under AGPL-3.0-only. See [`LICENSE`](LICENSE) for the license text and [`NOTICE.md`](NOTICE.md) for source and modification statements.

@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING, Any
 
 import about_info
 import autoresume_scheduler
+import relay_mailbox
 import tray_text
 import update_checker
 import win_clipboard
@@ -949,6 +950,7 @@ class _WindowsTrayController:
             self.latest_state = self._build_state(measure=measure, debug_timing=debug_timing)
             self._process_quota_notifications(self.latest_state)
             autoresume_scheduler.tick(self.icon, self.language)
+            relay_mailbox.tick(self.icon, self.language)
             started_at = time.monotonic() if debug_timing else 0.0
             self._update_tray()
             measure("update_tray", started_at)

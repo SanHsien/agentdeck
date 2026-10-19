@@ -146,6 +146,10 @@ agentdeck 是 [`aqua5230/usage`](https://github.com/aqua5230/usage) 的修改版
 | [`NOTICE.md`](NOTICE.md) | fork attribution、修改聲明、資料與授權邊界 |
 | [`SECURITY.md`](SECURITY.md) | 漏洞回報與支援政策 |
 
+## 多 Agent 流水線
+
+本 repo 是 [agent-relay](https://github.com/SanHsien/agent-relay) 多 Agent 派工與驗收流水線的一環：設好 agent-relay 後，托盤會在收到新信時跳通知（`relay_mailbox.py`，只讀信箱檔、不連網）。協定規格與所有相關 repo 的總目錄見 agent-relay。
+
 ## 授權
 
 **AGPL-3.0-only**。本 repo 是 `aqua5230/usage` 的衍生作品，保留上游著作權與授權聲明；本 fork 的修改同樣依 AGPL-3.0-only 發布。完整條款見 [`LICENSE`](LICENSE)，修改與來源聲明見 [`NOTICE.md`](NOTICE.md)。

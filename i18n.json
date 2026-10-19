@@ -533,7 +533,9 @@
     "autoresume_done_title": "自動續跑完成",
     "autoresume_done_body": "額度重置後的續跑已結束，記錄在 autoresume-log.txt。",
     "autoresume_failed_title": "自動續跑失敗",
-    "autoresume_failed_body": "續跑沒有正常結束，原因記錄在 autoresume-log.txt。"
+    "autoresume_failed_body": "續跑沒有正常結束，原因記錄在 autoresume-log.txt。",
+    "relay_mail_title": "{agent} 有新信（{count} 封）",
+    "relay_mail_body": "{sender}：{subject}"
   },
   "en": {
     "panel_default_name": "Default",
@@ -1064,6 +1066,8 @@
     "autoresume_done_title": "Auto-resume finished",
     "autoresume_done_body": "The post-reset run has ended; details are in autoresume-log.txt.",
     "autoresume_failed_title": "Auto-resume failed",
-    "autoresume_failed_body": "The run did not finish cleanly; details are in autoresume-log.txt."
+    "autoresume_failed_body": "The run did not finish cleanly; details are in autoresume-log.txt.",
+    "relay_mail_title": "New mail for {agent} ({count})",
+    "relay_mail_body": "{sender}: {subject}"
   }
 }
