@@ -77,3 +77,11 @@ def test_other_mailboxes_are_ignored(tmp_path: Path) -> None:
     home, store = _setup(tmp_path, agent="claude-code")
     _deliver(store, "hermes", "20261020T000000000Z-aaaaaa")
     assert relay.tick(FakeIcon(), "en", home=home, seen_file=tmp_path / "seen.json") == []
+
+
+def test_env_overrides_match_the_cli(tmp_path: Path, monkeypatch) -> None:
+    home, _ = _setup(tmp_path, agent="claude-code")
+    other = tmp_path / "other-store"
+    monkeypatch.setenv("AGENT_RELAY_STORE", str(other))
+    monkeypatch.setenv("AGENT_RELAY_AGENT", "hermes")
+    assert relay.load_config(home) == (other, "hermes")

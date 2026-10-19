@@ -52,7 +52,9 @@ def load_config(home: Path) -> tuple[Path, str] | None:
         cfg = json.loads((home / "config.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
-    store, agent = cfg.get("store"), cfg.get("agent")
+    # Same overrides as the agent-relay CLI, so both watch the same mailbox.
+    store = os.environ.get("AGENT_RELAY_STORE") or cfg.get("store")
+    agent = os.environ.get("AGENT_RELAY_AGENT") or cfg.get("agent")
     if not isinstance(store, str) or not isinstance(agent, str) or not agent:
         return None
     return Path(store), agent
