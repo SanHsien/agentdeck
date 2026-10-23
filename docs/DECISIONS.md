@@ -839,3 +839,21 @@ tray 時看一眼專案切換與額度輪詢是否還會閃窗。
 **為什麼不**：上游報表鏈大幅更動（包含 HTML 結構、CSS、篩選器與快照儲存），每份 snapshot 變更逾千行。本 fork 的報表與前端已依 Windows 桌面與獨立列印/渲染原則分岔，需要單獨規劃專案階段並進行 Windows 實機渲染與列印驗收，不宜混入例行上游同步。
 
 **驗證**：`pwsh -NoProfile -File tools/dev_check.ps1` 全綠通過。
+
+---
+
+## D-34：2026-10-24 讓 main 的 CI 轉綠並修 Pillow 警示——一個 PR，檔案上限不升反降
+
+**日期**：2026-10-24
+
+**決定**：一個 PR 同時處理兩件事。
+1. CI 紅燈的根因是 `b49486f`（relay 託盤通知）引入兩處違反既有閘門：`tests/test_relay_mailbox.py:82` 的 `monkeypatch` 缺型別註解（mypy），以及 `wintray.py` 變成 1815 行、超過 `scripts/check_file_size.py` 的 1813 行上限。`main` 自此（2026-10-19）一直是紅的，後續 `514e349` 沒碰這兩處所以繼續紅。因為 mypy 先失敗，後面的 file-size 與 pytest 在 CI 上根本沒跑到，兩個錯是同時存在的。修法：補型別註解；把 `_session_resume_enabled` / `_terse_mode_enabled` 兩個選單探針搬到葉模組 `win_session_flags.py`（`wintray` 以 `X as X` 形式重新匯出，既有測試的 monkeypatch 與 `win_tray_menu` 的匯入點不變），並把上限從 1813 **降**到 1799。
+2. Pillow 12.3.0 → 13.0.0（`uv.lock`，`pyproject.toml` 下限同步改 `>=13.0`），涵蓋 9 筆 Dependabot 警示（1 critical、6 high、2 medium，修補版本皆為 13.0.0）。與 PR #27（Dependabot 的同一個升版）等價。
+
+**考慮過的替代方案**：
+- 把上限調到 1815：政策文件明講「Lower a ceiling whenever a cut lands; never raise one to make the build green」。
+- 拆成兩個 PR：兩者無程式碼關聯，但 Dependabot PR #27 自己也被同一個 mypy 失敗擋住，不先修 CI 就沒有任何依賴更新能驗證為綠；合併成一個 PR 能一次看到完整閘門。
+
+**為什麼**：測試端另補了 autouse fixture 清掉 `AGENT_RELAY_HOME/STORE/AGENT`——`load_config()` 會讀這些環境變數，操作者若有匯出，測試就會改讀真實郵箱而不是 `tmp_path`。
+
+**驗證**：`pwsh -NoProfile -File tools/dev_check.ps1` 全綠（lock、ruff、mypy、doc-parity、file-size、pytest 1662 passed）。

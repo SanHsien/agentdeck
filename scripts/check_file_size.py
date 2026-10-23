@@ -32,7 +32,9 @@ CEILINGS = {
     # `tray_text.py`, and again on 2026-09-14 when the clipboard write moved to
     # `win_clipboard.py`. The policy above is the reason: a cut that leaves the
     # old ceiling in place just buys room for the next feature to grow back into.
-    "wintray.py": 1813,
+    # Lowered from 1813 on 2026-10-24 when the session-hook menu probes moved to
+    # `win_session_flags.py` to absorb the two lines the relay tray notice added.
+    "wintray.py": 1799,
 }
 
 
