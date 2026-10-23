@@ -10,7 +10,17 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 import relay_mailbox as relay
+
+
+@pytest.fixture(autouse=True)
+def _isolated_relay_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    # load_config() honours these overrides, so an operator who exports them would
+    # otherwise point every test below at their real mailbox instead of tmp_path.
+    for name in ("AGENT_RELAY_HOME", "AGENT_RELAY_STORE", "AGENT_RELAY_AGENT"):
+        monkeypatch.delenv(name, raising=False)
 
 
 class FakeIcon:
@@ -79,7 +89,7 @@ def test_other_mailboxes_are_ignored(tmp_path: Path) -> None:
     assert relay.tick(FakeIcon(), "en", home=home, seen_file=tmp_path / "seen.json") == []
 
 
-def test_env_overrides_match_the_cli(tmp_path: Path, monkeypatch) -> None:
+def test_env_overrides_match_the_cli(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     home, _ = _setup(tmp_path, agent="claude-code")
     other = tmp_path / "other-store"
     monkeypatch.setenv("AGENT_RELAY_STORE", str(other))

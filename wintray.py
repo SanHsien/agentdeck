@@ -71,6 +71,8 @@ from usage_lang import detect_lang
 from usage_notifications import NotificationEvent, QuotaNotifier
 from usage_rate import UsageRateTracker
 from win_modal import MB_ICON_INFO, MB_ICON_WARNING, MB_YESNOCANCEL
+from win_session_flags import _session_resume_enabled as _session_resume_enabled
+from win_session_flags import _terse_mode_enabled as _terse_mode_enabled
 
 # Re-exported so the tray menu keeps its import site while its 96 lines live in
 # a leaf module (the `as` form is what marks a re-export explicit under mypy).
@@ -1715,24 +1717,6 @@ class _WindowsTrayController:
             self.icon.stop()
         if self.window is not None:
             self.window.destroy()
-
-
-def _session_resume_enabled() -> bool:
-    try:
-        import session_hooks
-
-        return session_hooks.is_resume_enabled()
-    except Exception:
-        return False
-
-
-def _terse_mode_enabled() -> bool:
-    try:
-        import session_hooks
-
-        return session_hooks.is_terse_mode_enabled()
-    except Exception:
-        return False
 
 
 _SINGLE_INSTANCE_MUTEX = "usage-windows-tray-single-instance"
