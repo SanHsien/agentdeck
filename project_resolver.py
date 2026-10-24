@@ -117,6 +117,12 @@ def _existing_encoded_project_path(current: Path, encoded: str, truncated: bool)
         return None
     for entry in entries:
         name = _encode(entry.name)
+        # Windows paths ignore case, so a session opened as "github\my-proj" must
+        # still find the real "GitHub\My-Proj". Encoded names are ASCII, so lower()
+        # keeps the lengths the slicing below relies on.
+        if os.sep == "\\":
+            name = name.lower()
+            encoded = encoded.lower()
         last = encoded == name or (truncated and name.startswith(encoded))
         if not last and not encoded.startswith(name + "-"):
             continue

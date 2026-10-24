@@ -309,3 +309,15 @@ def test_encoded_cache_handles_missing_growing_truncated_and_deleted_journal(
         assert project_from_encoded_path(path, projects) == "real"
     path.unlink()
     assert project_from_encoded_path(path, projects) == "real"
+
+
+@pytest.mark.skipif(os.sep != "\\", reason="only Windows paths ignore case")
+def test_project_from_encoded_path_ignores_case_on_windows(tmp_path: Path) -> None:
+    projects_dir = tmp_path / "projects"
+    real_project = tmp_path / "GitHub" / "My-Proj"
+    real_project.mkdir(parents=True)
+    encoded = str(real_project).replace(os.sep, "-").replace(":", "-").lower()
+
+    result = project_from_encoded_path(projects_dir / encoded / "a.jsonl", projects_dir)
+
+    assert result == "My-Proj"

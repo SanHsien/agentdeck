@@ -33,14 +33,14 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
     "main": {
       "last_reviewed": "577e2dfe2c092e8eb93377d870f358815b031d36",
       "last_merged": "577e2dfe2c092e8eb93377d870f358815b031d36",
-      "note": "2026-10-24 審視 9733853..577e2df 共 367 筆。採用 11 筆（定價、專案目錄解碼、續接視窗判斷、keeper 背景 ping、結束鈕缺字、WebView2 儲存目錄）；Antigravity 額度主機、#202 加固、新功能與重構逐筆記在 Skipped 表。上游此段把根目錄模組搬進套件，無法整段 merge，一律手工移植。"
+      "note": "2026-10-24 審視 9733853..577e2df 共 367 筆。採用 12 筆（定價、專案目錄解碼、續接視窗判斷、keeper 背景 ping、結束鈕缺字、WebView2 儲存目錄）；Antigravity 額度主機、#202 加固、新功能與重構逐筆記在 Skipped 表。上游此段把根目錄模組搬進套件，無法整段 merge，一律手工移植。"
     }
   },
   "tickets": {
     "reviewed_pr_through": 261,
     "reviewed_issue_through": 202,
     "reviewed_date": "2026-10-24",
-    "note": "以 --state all 審視。PR #157–#261（105 筆，#190 為未合併關閉的搬模組重構）與 Issue #202（單一機器、已以 not planned 關閉）。"
+    "note": "以 --state all 審視。PR #157–#261（103 筆，#190 為未合併關閉的搬模組重構）與 Issue #202（單一機器、已以 not planned 關閉）。"
   }
 }
 ```
@@ -48,14 +48,14 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
 
 ## 2026-10-24：`9733853..577e2df` 共 367 筆，`last_reviewed` 推到 `577e2df`
 
-處理 issue #26。#26 每天回報的 HTTP 404 是 sync point 寫成 `97338531ff59…`（只有前 7 碼對）造成的，已由 PR #30 修正並讓檢查器在 compare 404 時指出原因；這一輪才是真正審視累積的 367 筆 commit（317 筆需判斷，其餘為發版、依賴與 `ai_updates.json`）、PR #157–#261 與 Issue #202。
+處理 issue #26。#26 每天回報的 HTTP 404 是 sync point 寫成 `97338531ff59…`（只有前 7 碼對）造成的，已由 PR #30 修正並讓檢查器在 compare 404 時指出原因；這一輪才是真正審視累積的 367 筆 commit（約 167 筆需判斷，其餘為 merge commit、只動 `ai_updates.json` 的同步、發版與依賴 chore）、PR #157–#261 與 Issue #202。
 
 上游這段把根目錄的 `pricing.py`、`i18n.py`、`project_resolver.py`、`wintray.py` 等搬進 `usage_common/`、`usage_hooks/`、`quota/`、`wintray/` 等套件，所以 diff 對不上本 fork 的檔案，**一律手工移植設計、補測試**，不整段 cherry-pick。
 
 ### 採用
 
 - **離線價格**（`45c5e55`、`a74f6c1`、`de053b3` 的價格部分、`c36d259`）：補 `gpt-6.1-sol`、`claude-haiku-5-5`，Sonnet 5.5 快取讀取價降為 $0.10/Mtok，`grok-*` 經 `xai/` 表鍵查價。新價格以上游為準，本 fork 沒有獨立來源可驗證。
-- **Claude 專案目錄解碼**（`2229d95`、`fb46534`）：Claude Code 把路徑每個非英數字元壓成 `-`，原本解碼遇到含 `-`、`.`、非 ASCII、emoji 或超過 200 字被截斷的目錄名會退回編碼字串。`project_resolver.py` 後半整段換成上游設計（含 Windows 磁碟機代號 `C--`），`tests/test_project_resolver.py` 改成上游新版。
+- **Claude 專案目錄解碼**（`2229d95`、`fb46534`，加 `e8ebd19` 的解析快取部分）：Claude Code 把路徑每個非英數字元壓成 `-`，原本解碼遇到含 `-`、`.`、非 ASCII、emoji 或超過 200 字被截斷的目錄名會退回編碼字串。`project_resolver.py` 後半整段換成上游設計（含 Windows 磁碟機代號 `C--`），`tests/test_project_resolver.py` 改成上游新版。解析結果以 `lru_cache` 快取，找不到的目錄不進快取，新建資料夾才解得出來。Windows 路徑不分大小寫，所以目錄走訪在 Windows 上以小寫比對（上游以 macOS 為主不需要），並補測試。
 - **續接 hook 略過鄰居視窗仍在跑的 session**（`121ac55`、`bef2f7b`）：同專案開多個視窗時，新視窗原本會被交給最後寫入的紀錄，常是鄰居正在做的工作。hook 版號 1.8 → 1.9，讓已安裝的副本在下次啟動時換新；本 fork 的版號沒有跟上游 1.9～1.11 一一對應，只取這兩筆的行為。Windows 上 `os.kill(pid, 0)` 會送 CTRL_C_EVENT，所以不探測 pid、直接信任註冊檔，代價是崩潰視窗的過期登錄最多影響 10 分鐘。
 - **keeper 背景 ping 不跑使用者 hook、不進 /resume**（`5657c7e`、`ddf2ac0`）：`window_keeper._run_claude_ping` 加 `--settings`（`disableAllHooks`）、`--tools ""`、`--strict-mcp-config`、`--no-session-persistence`。本 fork 的 keeper 沒有 `keeper_outcome` 回報層，只取參數。
 - **「結束」鈕在 Windows 顯示缺字方框**（`6ba5e28`，PR #158）：U+23FB 在 Windows 字型不存在。上游在輸出時剝掉，本 fork 直接從 `i18n.json` 與四款核心主題 HTML 拿掉，並加測試鎖住。
@@ -75,16 +75,16 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
 | `baeb054`、`1b93ce2`、`371afdc`、`0d8254e`、`f2ed4f5`、`29f7412`、`a115b68`、`d9ea34e`、`3d54590` 等 Muse 額度 | 不適用 | 同 2026-10-01 判定，本 fork 不支援 Muse。 |
 | `9fe9fe0`、`3595d9d`、`0ce4ed0`、`2982e00`、`3f8082c`、`db47b81`、`4417396`、`0ba2b90`、`a2861f4` 緊湊卡片與設定鈕 | 後續 | 依賴上游多卡片面板重寫；本 fork 四款核心主題需另行評估。 |
 | `5ed7070`、`c9a0667`、`3f722bb`、`23fdb3f`、`598ea1d`、`4398b3c` 報表快取命中率與派工帳 | 後續 | `ui/` 報表渲染已與上游分岔（同 2026-09-24 判準）。 |
-| `e8ebd19` 閒置刷新 CPU 降 90% | 後續 | 值得做，但改動貫穿 `menubar`／面板快取；需在本 fork 資料鏈實測。 |
+| `e8ebd19` 閒置刷新 CPU 降 90% | 部分採用 | 專案目錄解析快取已採用（見上）；其餘值得做，但改動貫穿 `menubar`／面板快取；需在本 fork 資料鏈實測。 |
 | `6e8c88c` 更新後顯示一次更新說明 | 後續 | 新功能。 |
 | `29454fe`、`4f2ef90`、`d5401cb`、`6ea2b1b`、PR #190 搬模組進套件 | 不適用 | 上游目錄重構；本 fork 刻意留在根目錄（`AGENTS.md` 禁止移動會安裝到使用者環境的 hook）。 |
 | `fdaa53c` 測試隔離真實 HOME | 後續 | 有價值，但上游測試與本 fork 測試已分岔；列入測試衛生清單。 |
 | `80df24e`、`1f98097`、`4ec91bb`、macOS 專屬 menubar 項目 | 不適用 | macOS-only，本 fork 已移除該平台。 |
 | 官網、README、`docs(site)`、發版 chore、依賴 bump、`ai_updates.json` 同步 | 不適用 | 同 2026-10-01 判定。 |
-| PR #157–#261 | 依上表 | 105 筆；#190 未合併關閉（搬模組重構）。其餘皆已合併，經 commit 軸判定。 |
+| PR #157–#261 | 依上表 | 103 筆；#190 未合併關閉（搬模組重構）。其餘皆已合併，經 commit 軸判定。 |
 | Issue #202 | 不適用（單機） | 單一機器回報，上游以 not planned 關閉；見 `5ab47cd`。 |
 
-需要 Windows 實機 smoke：結束鈕與系統匣選單不再出現方框；同專案開兩個 Claude Code 視窗時，新視窗不會被交接到鄰居的工作。
+需要 Windows 實機 smoke：結束鈕與系統匣選單不再出現方框；同專案開兩個 Claude Code 視窗時，新視窗不會被交接到鄰居的工作；另測 `/clear` 後新視窗仍拿到自己先前的 session（Windows 上 hook 的父行程多半是 shell，`os.getppid()` 可能不是 Claude，需確認 `CLAUDE_PID` 是否有設）。
 
 ## 2026-10-01：`ae5b906..9733853` 共 60 筆，`last_reviewed` 推到 `9733853`
 
