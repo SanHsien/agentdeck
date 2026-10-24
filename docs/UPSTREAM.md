@@ -31,20 +31,60 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "9733853e080346d26a215c0ada43fea224f5d7e4",
-      "last_merged": "9733853e080346d26a215c0ada43fea224f5d7e4",
-      "note": "2026-10-01 審視 ae5b906..9733853 共 60 筆、PR #150–#156、Issue #150, #153。採用 0be34ba (Sonnet 5.5 定價)、538e19a (子代理串流最大輸出 token)、c0bdc87 (Antigravity steps 表時間)、5af7c62 (PR #151 四款核心主題頁尾按鈕防溢出)；PR #152/#154 高 DPI 縮放待 Windows 實機整體評估；PR #150 Antigravity 雙額度組涉及過多 DOM 改動暫緩；其餘 Muse Code、新主題、發版、依賴 bump 與 26 筆 ai_updates.json 不適用。"
+      "last_reviewed": "577e2dfe2c092e8eb93377d870f358815b031d36",
+      "last_merged": "577e2dfe2c092e8eb93377d870f358815b031d36",
+      "note": "2026-10-24 審視 9733853..577e2df 共 367 筆。採用 11 筆（定價、專案目錄解碼、續接視窗判斷、keeper 背景 ping、結束鈕缺字、WebView2 儲存目錄）；Antigravity 額度主機、#202 加固、新功能與重構逐筆記在 Skipped 表。上游此段把根目錄模組搬進套件，無法整段 merge，一律手工移植。"
     }
   },
   "tickets": {
-    "reviewed_pr_through": 156,
-    "reviewed_issue_through": 153,
-    "reviewed_date": "2026-10-01",
-    "note": "以 --state all 審視。PR #150-#156、Issue #150 與 #153 皆已完成判定與記錄。"
+    "reviewed_pr_through": 261,
+    "reviewed_issue_through": 202,
+    "reviewed_date": "2026-10-24",
+    "note": "以 --state all 審視。PR #157–#261（105 筆，#190 為未合併關閉的搬模組重構）與 Issue #202（單一機器、已以 not planned 關閉）。"
   }
 }
 ```
 <!-- sync-points:end -->
+
+## 2026-10-24：`9733853..577e2df` 共 367 筆，`last_reviewed` 推到 `577e2df`
+
+處理 issue #26。#26 每天回報的 HTTP 404 是 sync point 寫成 `97338531ff59…`（只有前 7 碼對）造成的，已由 PR #30 修正並讓檢查器在 compare 404 時指出原因；這一輪才是真正審視累積的 367 筆 commit（317 筆需判斷，其餘為發版、依賴與 `ai_updates.json`）、PR #157–#261 與 Issue #202。
+
+上游這段把根目錄的 `pricing.py`、`i18n.py`、`project_resolver.py`、`wintray.py` 等搬進 `usage_common/`、`usage_hooks/`、`quota/`、`wintray/` 等套件，所以 diff 對不上本 fork 的檔案，**一律手工移植設計、補測試**，不整段 cherry-pick。
+
+### 採用
+
+- **離線價格**（`45c5e55`、`a74f6c1`、`de053b3` 的價格部分、`c36d259`）：補 `gpt-6.1-sol`、`claude-haiku-5-5`，Sonnet 5.5 快取讀取價降為 $0.10/Mtok，`grok-*` 經 `xai/` 表鍵查價。新價格以上游為準，本 fork 沒有獨立來源可驗證。
+- **Claude 專案目錄解碼**（`2229d95`、`fb46534`）：Claude Code 把路徑每個非英數字元壓成 `-`，原本解碼遇到含 `-`、`.`、非 ASCII、emoji 或超過 200 字被截斷的目錄名會退回編碼字串。`project_resolver.py` 後半整段換成上游設計（含 Windows 磁碟機代號 `C--`），`tests/test_project_resolver.py` 改成上游新版。
+- **續接 hook 略過鄰居視窗仍在跑的 session**（`121ac55`、`bef2f7b`）：同專案開多個視窗時，新視窗原本會被交給最後寫入的紀錄，常是鄰居正在做的工作。hook 版號 1.8 → 1.9，讓已安裝的副本在下次啟動時換新；本 fork 的版號沒有跟上游 1.9～1.11 一一對應，只取這兩筆的行為。Windows 上 `os.kill(pid, 0)` 會送 CTRL_C_EVENT，所以不探測 pid、直接信任註冊檔，代價是崩潰視窗的過期登錄最多影響 10 分鐘。
+- **keeper 背景 ping 不跑使用者 hook、不進 /resume**（`5657c7e`、`ddf2ac0`）：`window_keeper._run_claude_ping` 加 `--settings`（`disableAllHooks`）、`--tools ""`、`--strict-mcp-config`、`--no-session-persistence`。本 fork 的 keeper 沒有 `keeper_outcome` 回報層，只取參數。
+- **「結束」鈕在 Windows 顯示缺字方框**（`6ba5e28`，PR #158）：U+23FB 在 Windows 字型不存在。上游在輸出時剝掉，本 fork 直接從 `i18n.json` 與四款核心主題 HTML 拿掉，並加測試鎖住。
+- **WebView2 設定檔固定放一個資料夾**（`3ce97a2`）：`webview.start(storage_path=~/.agentdeck/webview)`，避免異常結束後留下一堆暫存設定檔。啟動參數放進新的 `win_webview.py`，因為 `wintray.py` 已在行數上限。
+
+### 逐筆判定與跳過分類
+
+| 類別 / Commit | 判定 | 理由與觸發條件 |
+| --- | --- | --- |
+| `5ab47cd` 加固三個 native 呼叫（#202） | 後續 | 針對只在單一機器出現、上游已以 not planned 關閉的 Issue #202；其中的 UI Automation 掃描在本 fork 不存在。順手的 `ToInt32`→`ToInt64` 與私有 `WinDLL` 簽章本身合理，但要連同 pystray 子類一起在實機驗證。觸發：本 fork 出現鎖定／解鎖後閃退，或有人回報 `python313.dll` 存取違規。 |
+| `37fcefe`、`062ef25`、`a5770ac`、`9433d59`、`31164f9`、`d1fe73c`、`118f0c0`、`8a35065`、`7c3ef3d`、`659bb7f`、`fa9ba9a`、`3eb9541`、`d3da896` Antigravity 額度 | **待維護者決定** | 上游 `daily-cloudcode-pa` 不再回 Gemini 群組，改查正式主機 `cloudcode-pa`，之後又改成讀 `agy -p /usage`。本 fork 的 `providers/agy_quota_probe.py:48` 仍打 daily 主機，Gemini 額度很可能同樣缺。改主機等於把使用者的 OAuth token 送到另一個 Google 端點，且 `SECURITY*.md` 有寫明端點，所以不擅自換。 |
+| `bab3d1f`、`1ecaec3` 更新檢查每小時重查、keeper 失敗回報 | 不適用 | 依賴上游 `keeper_outcome`／`quota/status_payload` 新層，本 fork 沒有。 |
+| `16ca0ea`（PR #159） | 不適用 | 改的是 `usage_statusline_grok.py`，本 fork 不安裝 Grok 狀態列（同 PR #146 判定）。 |
+| `364c8c0`、`f5eea75`、`fedac10`、`578345c`、`a941147`、`c0acbf0` 等 Claude Code 側邊面板 | 不適用 | 新產品面（常駐面板、工作列、toast），與本 fork 精簡面板契約衝突；macOS 版另有 `4ec91bb`。觸發：維護者想要側邊面板。 |
+| `2583c67`、`7aadc88`、`76ab9fe`、`88e9f27` 新手模式；`091e5ed`、`5153d29`、`b077e4b` 額度感知模式；`65a8032` 精簡模式 STE 規則 | 後續（產品方向） | 都是新增 Claude Code 行為開關與 hook，要先決定是否擴大本 fork 範圍。觸發：維護者要求。 |
+| `4debe46`、`e53fdfd`、`28c2468`、`d5c7a59`、`f45e679`、`b0bf266` 工作列額度標籤、速率基準、情境色、Claude Desktop 額度 | 後續（產品方向） | 新功能，依賴 UI Automation 與 `quota/` 新層。 |
+| `baeb054`、`1b93ce2`、`371afdc`、`0d8254e`、`f2ed4f5`、`29f7412`、`a115b68`、`d9ea34e`、`3d54590` 等 Muse 額度 | 不適用 | 同 2026-10-01 判定，本 fork 不支援 Muse。 |
+| `9fe9fe0`、`3595d9d`、`0ce4ed0`、`2982e00`、`3f8082c`、`db47b81`、`4417396`、`0ba2b90`、`a2861f4` 緊湊卡片與設定鈕 | 後續 | 依賴上游多卡片面板重寫；本 fork 四款核心主題需另行評估。 |
+| `5ed7070`、`c9a0667`、`3f722bb`、`23fdb3f`、`598ea1d`、`4398b3c` 報表快取命中率與派工帳 | 後續 | `ui/` 報表渲染已與上游分岔（同 2026-09-24 判準）。 |
+| `e8ebd19` 閒置刷新 CPU 降 90% | 後續 | 值得做，但改動貫穿 `menubar`／面板快取；需在本 fork 資料鏈實測。 |
+| `6e8c88c` 更新後顯示一次更新說明 | 後續 | 新功能。 |
+| `29454fe`、`4f2ef90`、`d5401cb`、`6ea2b1b`、PR #190 搬模組進套件 | 不適用 | 上游目錄重構；本 fork 刻意留在根目錄（`AGENTS.md` 禁止移動會安裝到使用者環境的 hook）。 |
+| `fdaa53c` 測試隔離真實 HOME | 後續 | 有價值，但上游測試與本 fork 測試已分岔；列入測試衛生清單。 |
+| `80df24e`、`1f98097`、`4ec91bb`、macOS 專屬 menubar 項目 | 不適用 | macOS-only，本 fork 已移除該平台。 |
+| 官網、README、`docs(site)`、發版 chore、依賴 bump、`ai_updates.json` 同步 | 不適用 | 同 2026-10-01 判定。 |
+| PR #157–#261 | 依上表 | 105 筆；#190 未合併關閉（搬模組重構）。其餘皆已合併，經 commit 軸判定。 |
+| Issue #202 | 不適用（單機） | 單一機器回報，上游以 not planned 關閉；見 `5ab47cd`。 |
+
+需要 Windows 實機 smoke：結束鈕與系統匣選單不再出現方框；同專案開兩個 Claude Code 視窗時，新視窗不會被交接到鄰居的工作。
 
 ## 2026-10-01：`ae5b906..9733853` 共 60 筆，`last_reviewed` 推到 `9733853`
 
