@@ -293,8 +293,15 @@ def test_fallback_pricing_contains_expected_models() -> None:
         "input_cost_per_token": 2e-6,
         "output_cost_per_token": 10e-6,
         "cache_creation_input_token_cost": 2.5e-6,
-        "cache_read_input_token_cost": 0.2e-6,
+        "cache_read_input_token_cost": 0.1e-6,
     }
+    assert fallback["claude-haiku-5-5"] == {
+        "input_cost_per_token": 0.1e-6,
+        "output_cost_per_token": 0.5e-6,
+        "cache_creation_input_token_cost": 0.125e-6,
+        "cache_read_input_token_cost": 0.01e-6,
+    }
+    assert "gpt-6.1-sol" in fallback
     assert pricing._resolve_model_key("claude-opus-5", fallback) == "claude-opus-5"
     assert "gpt-6-sol" in fallback
     assert "gpt-6-luna" in fallback
@@ -938,3 +945,10 @@ def test_the_cache_multipliers_are_the_published_anthropic_ratios() -> None:
     """
     assert pricing.CACHE_WRITE_COST_MULTIPLIER == 1.25
     assert pricing.CACHE_READ_COST_MULTIPLIER == 0.1
+
+
+def test_grok_models_resolve_through_their_xai_table_keys() -> None:
+    table = {"xai/grok-4": {"input_cost_per_token": 3e-6}}
+
+    assert pricing._resolve_model_key("grok-4", table) == "xai/grok-4"
+    assert pricing._resolve_model_key("grok-9", table) is None
