@@ -28,8 +28,8 @@ environments = [
 
 [dependency-groups]
 dev = [
-    "ruff>=0.16.9",
-    "mypy>=2.3.1",
+    "ruff>=0.17.2",
+    "mypy>=2.4.0",
     "pytest>=9.1.1",
     # PyInstaller belongs in the lock, not beside it. It used to be installed
     # out of band with `uv pip install pyinstaller`, which meant every
