@@ -31,8 +31,8 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "97338531ff59a0f0cb7217594589d89ceef8a38b",
-      "last_merged": "97338531ff59a0f0cb7217594589d89ceef8a38b",
+      "last_reviewed": "9733853e080346d26a215c0ada43fea224f5d7e4",
+      "last_merged": "9733853e080346d26a215c0ada43fea224f5d7e4",
       "note": "2026-10-01 審視 ae5b906..9733853 共 60 筆、PR #150–#156、Issue #150, #153。採用 0be34ba (Sonnet 5.5 定價)、538e19a (子代理串流最大輸出 token)、c0bdc87 (Antigravity steps 表時間)、5af7c62 (PR #151 四款核心主題頁尾按鈕防溢出)；PR #152/#154 高 DPI 縮放待 Windows 實機整體評估；PR #150 Antigravity 雙額度組涉及過多 DOM 改動暫緩；其餘 Muse Code、新主題、發版、依賴 bump 與 26 筆 ai_updates.json 不適用。"
     }
   },
