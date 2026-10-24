@@ -2,7 +2,7 @@
 
 繁體中文 · [English](DEVELOPMENT.md)
 
-agentdeck 是 Windows 專用的。fork 規則見 [`FORK.zh-TW.md`](FORK.zh-TW.md)，架構見 [`../CLAUDE.md`](../CLAUDE.md)，移植 macOS 功能的方法見 [`PORTING.zh-TW.md`](PORTING.zh-TW.md)。
+agentdeck 是 Windows 專用的。fork 規則見 [`FORK.zh-TW.md`](FORK.zh-TW.md)，架構見 [`../AGENTS.md`](../AGENTS.md) 的「架構地圖」段，移植 macOS 功能的方法見 [`PORTING.zh-TW.md`](PORTING.zh-TW.md)。
 
 ## 前置
 

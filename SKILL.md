@@ -16,7 +16,7 @@ description: 維護 SanHsien/agentdeck。Windows-only AI coding cockpit：監看
 ## 先讀
 
 1. [`AGENTS.md`](AGENTS.md)：產品邊界、fork / AGPL、Windows-only 與驗證規則。
-2. [`CLAUDE.md`](CLAUDE.md)：高風險模組與常用技術入口。
+2. [`AGENTS.md`](AGENTS.md) 的「架構地圖」「高風險模組」「常用指令」段：高風險模組與常用技術入口。
 3. 任務相關文件：
    - Windows 開發：`docs/DEVELOPMENT.zh-TW.md`
    - 移植：`docs/PORTING.zh-TW.md`

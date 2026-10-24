@@ -59,7 +59,7 @@ badge 是**自我認證**（self-certification）:必須用一個具名的 GitHu
 |---|---|---|
 | `repo_public` / `repo_track` / `repo_interim` | Met | 公開 GitHub repo，每次改動都是獨立 commit，不是只推發布版 |
 | `repo_distributed` | Met | git |
-| `version_unique` / `version_semver` | Met | SemVer 2.0.0 是本專案的硬性規定，見 [`CLAUDE.md`](../CLAUDE.md) 的 Versioning 段；`pyproject.toml` 是唯一真實來源，並有 `scripts/check_release_version.py` 在 CI 擋掉不比舊版新的 tag |
+| `version_unique` / `version_semver` | Met | SemVer 2.0.0 是本專案的硬性規定，見 [`DECISIONS.md`](DECISIONS.md) D-05；`pyproject.toml` 是唯一真實來源，並有 `scripts/check_release_version.py` 在 CI 擋掉不比舊版新的 tag |
 | `release_notes` | Met | 雙語 CHANGELOG，每個 release 都有 notes |
 | `release_notes_vulns` | Met | 安全性修正列在 CHANGELOG 的「安全性」小節（例:v0.41.4） |
 

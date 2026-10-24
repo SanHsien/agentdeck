@@ -2,7 +2,7 @@
 
 [Traditional Chinese](DEVELOPMENT.zh-TW.md) · English
 
-agentdeck is Windows-only. Fork rules are in [`FORK.zh-TW.md`](FORK.zh-TW.md), the architecture in [`../CLAUDE.md`](../CLAUDE.md), and the method for porting macOS features in [`PORTING.zh-TW.md`](PORTING.zh-TW.md).
+agentdeck is Windows-only. Fork rules are in [`FORK.zh-TW.md`](FORK.zh-TW.md), the architecture map in [`../AGENTS.md`](../AGENTS.md), and the method for porting macOS features in [`PORTING.zh-TW.md`](PORTING.zh-TW.md).
 
 ## Prerequisites
 

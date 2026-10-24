@@ -1,6 +1,6 @@
 # AGENTS.md
 
-本檔是 **SanHsien/agentdeck** 的 AI coding agent 主要維護規則。技術細節見 [`CLAUDE.md`](CLAUDE.md) 與 [`docs/DEVELOPMENT.zh-TW.md`](docs/DEVELOPMENT.zh-TW.md)；移植與 fork 流程分別見 [`docs/PORTING.zh-TW.md`](docs/PORTING.zh-TW.md)、[`docs/FORK.zh-TW.md`](docs/FORK.zh-TW.md)。
+本檔是 **SanHsien/agentdeck** 的 AI coding agent 主要維護規則。技術細節見 [`docs/DEVELOPMENT.zh-TW.md`](docs/DEVELOPMENT.zh-TW.md)；移植與 fork 流程分別見 [`docs/PORTING.zh-TW.md`](docs/PORTING.zh-TW.md)、[`docs/FORK.zh-TW.md`](docs/FORK.zh-TW.md)。
 
 ## 專案定位
 
@@ -58,7 +58,7 @@
 - `scripts/`、`tools/`：建置、文件 parity、size gate、upstream 檢查
 - `tests/`：pytest 回歸測試
 
-逐模組陷阱不要堆在本檔；需要時讀 [`CLAUDE.md`](CLAUDE.md) 或 [`docs/DEVELOPMENT.zh-TW.md`](docs/DEVELOPMENT.zh-TW.md)。
+逐模組陷阱不要堆在本檔；需要時讀 [`docs/DEVELOPMENT.zh-TW.md`](docs/DEVELOPMENT.zh-TW.md)。
 
 ## 常用指令
 

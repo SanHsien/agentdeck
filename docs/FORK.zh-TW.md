@@ -2,7 +2,7 @@
 
 本倉庫 fork 自 [`aqua5230/usage`](https://github.com/aqua5230/usage)，但**獨立維護、不回貢上游**。這份文件講只有 fork 才需要知道的事：跟上游的關係、已經分叉了哪些地方、要撿上游更新時怎麼做。
 
-專案本身怎麼運作看 [`CLAUDE.md`](../CLAUDE.md)；Windows 開發環境看 [`DEVELOPMENT.zh-TW.md`](DEVELOPMENT.zh-TW.md)；agent 工作規則看 [`AGENTS.md`](../AGENTS.md)。
+專案本身怎麼運作（架構地圖、高風險模組）與 agent 工作規則看 [`AGENTS.md`](../AGENTS.md)；Windows 開發環境看 [`DEVELOPMENT.zh-TW.md`](DEVELOPMENT.zh-TW.md)。
 
 ## 定位
 
@@ -56,7 +56,7 @@ git remote add upstream https://github.com/aqua5230/usage.git
 git config remote.upstream.tagOpt --no-tags
 ```
 
-發版時 tag 用 `vX.Y.Z`，且**必須指向 `pyproject.toml` 版號相符的 commit**（規則見 [`../CLAUDE.md`](../CLAUDE.md) 的 Versioning 段與 [`DECISIONS.md`](DECISIONS.md) D-05）。
+發版時 tag 用 `vX.Y.Z`，且**必須指向 `pyproject.toml` 版號相符的 commit**（規則見 [`DECISIONS.md`](DECISIONS.md) D-05）。
 
 ## 撿上游更新
 
