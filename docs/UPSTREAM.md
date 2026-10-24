@@ -33,7 +33,7 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
     "main": {
       "last_reviewed": "577e2dfe2c092e8eb93377d870f358815b031d36",
       "last_merged": "577e2dfe2c092e8eb93377d870f358815b031d36",
-      "note": "2026-10-24 審視 9733853..577e2df 共 367 筆。採用 12 筆（定價、專案目錄解碼、續接視窗判斷、keeper 背景 ping、結束鈕缺字、WebView2 儲存目錄）；Antigravity 額度主機、#202 加固、新功能與重構逐筆記在 Skipped 表。上游此段把根目錄模組搬進套件，無法整段 merge，一律手工移植。"
+      "note": "2026-10-24 審視 9733853..577e2df 共 367 筆。採用 13 筆（定價、專案目錄解碼與解析快取、續接視窗判斷、keeper 背景 ping、結束鈕缺字、WebView2 儲存目錄）；Antigravity 額度主機、#202 加固、新功能與重構逐筆記在 Skipped 表。上游此段把根目錄模組搬進套件，無法整段 merge，一律手工移植。"
     }
   },
   "tickets": {
