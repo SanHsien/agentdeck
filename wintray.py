@@ -29,6 +29,7 @@ import win_login_item
 import win_modal
 import win_refresh
 import win_ui_thread
+import win_webview
 import window_keeper
 from burn_rate import BurnRateTracker
 from i18n import _t
@@ -95,7 +96,6 @@ _TALENT_ACTIONS = frozenset(
 build_tooltip = tray_text.build_tooltip
 tray_icon_style = tray_text.tray_icon_style
 TOOLTIP_MAX_LENGTH = tray_text.TOOLTIP_MAX_LENGTH
-
 SLOW_POLL_INTERVAL_S = 300
 HISTORY_SCAN_CACHE_SECONDS = 30.0
 PANEL_WIDTH = 380
@@ -1796,4 +1796,4 @@ def run_app(mock: bool = False, interval: int = 60) -> None:
     icon = pystray.Icon("agentdeck", draw_tray_icon(None), "agentdeck", _menu(controller))
     controller.attach(icon, window)
     icon.run_detached()
-    webview.start(gui="edgechromium", debug=os.environ.get("AGENTDECK_DEBUG") == "1")
+    webview.start(**win_webview.start_options())
