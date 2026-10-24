@@ -44,6 +44,9 @@ logger = logging.getLogger(__name__)
 # constant so tests can monkeypatch it instead of touching the real
 # ``~/.agentdeck/`` dir.
 WINDOW_KEEPER_STATE_PATH = Path(os.path.expanduser("~/.agentdeck/window_keeper.json"))
+KEEPER_CLAUDE_SETTINGS_PATH = Path(
+    os.path.expanduser("~/.agentdeck/window_keeper_claude_settings.json")
+)
 
 PING_TIMEOUT_SECONDS = 180
 
@@ -180,9 +183,27 @@ def _release() -> None:
 
 
 def _run_claude_ping(claude_bin: str) -> None:
+    # Background pings should not trigger user hooks. Pass a settings file, not
+    # inline JSON: cmd.exe mangles the quotes when claude is a .cmd shim.
+    KEEPER_CLAUDE_SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    KEEPER_CLAUDE_SETTINGS_PATH.write_text('{"disableAllHooks": true}\n', encoding="utf-8")
     # encoding="utf-8" is mandatory inside the .app bundle (project invariant).
     subprocess.run(  # noqa: S603 - shelling out to the user's own claude CLI by resolved path
-        [claude_bin, "-p", "ok", "--model", "haiku"],
+        [
+            claude_bin,
+            "-p",
+            "ok",
+            "--model",
+            "haiku",
+            "--settings",
+            str(KEEPER_CLAUDE_SETTINGS_PATH),
+            # No tools or MCP servers keeps the ping small; no persistence keeps
+            # it out of the user's /resume list.
+            "--tools",
+            "",
+            "--strict-mcp-config",
+            "--no-session-persistence",
+        ],
         stdin=subprocess.DEVNULL,
         capture_output=True,
         encoding="utf-8",

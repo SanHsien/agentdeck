@@ -8,6 +8,14 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- **The offline price table gains gpt-6.1-sol and Haiku 5.5, Sonnet 5.5 cache reads drop to $0.10/Mtok, and Grok models resolve through their `xai/` price keys.** From upstream `45c5e55`, `de053b3`, `a74f6c1`, `c36d259`.
+- **Project names decode for directories containing `-`, `.`, non-ASCII characters, emoji, or names cut at 200 characters.** From upstream `2229d95`, `fb46534`.
+- **With several Claude Code windows open in one project, the resume hook no longer hands a new window a neighbour's live session.** Hook bumped to 1.9; installed copies update themselves. From upstream `121ac55`, `bef2f7b`.
+- **The quota keeper's background ping no longer runs the user's hooks or shows up in `/resume`.** From upstream `5657c7e`, `ddf2ac0`.
+- **The "Quit" label no longer renders as a missing-glyph box on the panel and tray menu.** From upstream PR #158.
+- **The WebView2 profile lives in one folder, `~/.agentdeck/webview`.** From upstream `3ce97a2`.
+
 ## [0.42.2] - 2026-09-24
 
 ### Fixed

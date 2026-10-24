@@ -35,7 +35,7 @@ USER_AGENT = "agentdeck"
 # When the hard-coded fallback table below was last checked against upstream.
 # Without a date the table is unfalsifiable: a vendor price change makes every
 # cost silently wrong and nothing in the code can tell you how stale it is.
-FALLBACK_PRICING_AS_OF: str = "2026-09-06"
+FALLBACK_PRICING_AS_OF: str = "2026-10-12"
 # Anthropic's published cache write/read prices as multiples of input pricing.
 # These only fill in fields the upstream table omits, and are not guaranteed
 # correct for other providers.
@@ -357,6 +357,11 @@ def _resolve_model_key(model: str, pricing: PricingTable) -> str | None:
     if dated_matches:
         return sorted(dated_matches, key=lambda key: (len(key), key))[0]
 
+    if normalized.startswith("grok-"):
+        xai_key = f"xai/{normalized}"
+        if xai_key in pricing:
+            return xai_key
+
     # Once a query carries its own version (claude-opus-4), a candidate that only
     # appends another number is a different model, not a variant: claude-opus-4
     # must not fall back to claude-opus-4-6 pricing. A version-less query
@@ -467,7 +472,7 @@ def _fallback_pricing() -> PricingTable:
             "input_cost_per_token": 2e-6,
             "output_cost_per_token": 10e-6,
             "cache_creation_input_token_cost": 2.5e-6,
-            "cache_read_input_token_cost": 0.2e-6,
+            "cache_read_input_token_cost": 0.1e-6,
         },
         "claude-fable-5": {
             "input_cost_per_token": 10e-6,
@@ -480,6 +485,12 @@ def _fallback_pricing() -> PricingTable:
             "output_cost_per_token": 50e-6,
             "cache_creation_input_token_cost": 12.5e-6,
             "cache_read_input_token_cost": 0.25e-6,
+        },
+        "claude-haiku-5-5": {
+            "input_cost_per_token": 0.1e-6,
+            "output_cost_per_token": 0.5e-6,
+            "cache_creation_input_token_cost": 0.125e-6,
+            "cache_read_input_token_cost": 0.01e-6,
         },
         "claude-haiku-4-5-20251001": {
             "input_cost_per_token": 1e-6,
@@ -506,6 +517,12 @@ def _fallback_pricing() -> PricingTable:
             "output_cost_per_token": 10e-6,
             "cache_creation_input_token_cost": 2.5e-6,
             "cache_read_input_token_cost": 0.2e-6,
+        },
+        "gpt-6.1-sol": {
+            "input_cost_per_token": 2e-6,
+            "output_cost_per_token": 10e-6,
+            "cache_creation_input_token_cost": 2.5e-6,
+            "cache_read_input_token_cost": 0.1e-6,
         },
         "gpt-6-luna": {
             "input_cost_per_token": 0.1e-6,

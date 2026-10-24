@@ -18,6 +18,7 @@ import autoresume_scheduler
 import prefs
 import win_login_item
 import win_modal
+import win_webview
 import wintray
 from i18n import _t
 from providers import codex_loader
@@ -967,7 +968,9 @@ def test_run_app_wires_pystray_and_pywebview(
     fake_pystray = SimpleNamespace(Icon=FakeIcon, Menu=FakeMenu, MenuItem=FakeMenuItem)
     fake_webview = SimpleNamespace(
         create_window=create_window,
-        start=lambda **kwargs: events.append(("start", kwargs["gui"])),
+        start=lambda **kwargs: events.append(
+            ("start", kwargs["gui"], kwargs["storage_path"])
+        ),
     )
     monkeypatch.setitem(sys.modules, "pystray", fake_pystray)
     monkeypatch.setitem(sys.modules, "webview", fake_webview)
@@ -987,7 +990,7 @@ def test_run_app_wires_pystray_and_pywebview(
         "restored_handler",
         ("icon", "agentdeck"),
         "run_detached",
-        ("start", "edgechromium"),
+        ("start", "edgechromium", str(win_webview.WEBVIEW_STORAGE_DIR)),
     ]
 
 
@@ -1721,3 +1724,14 @@ def test_a_hidden_panel_owns_nothing() -> None:
     window = SimpleNamespace(native=SimpleNamespace(Handle=SimpleNamespace(ToInt64=lambda: 4242)))
 
     assert win_modal.owner_handle(window, visible=False) == 0
+
+
+def test_webview_storage_lives_in_one_agentdeck_subfolder() -> None:
+    assert win_webview.WEBVIEW_STORAGE_DIR.parts[-2:] == (".agentdeck", "webview")
+
+
+def test_shipped_ui_strings_avoid_the_power_glyph_windows_fonts_lack() -> None:
+    root = Path(wintray.__file__).resolve().parent
+    shipped = [root / "i18n.json", *sorted((root / "assets" / "panels").glob("*.html"))]
+
+    assert all("⏻" not in path.read_text(encoding="utf-8") for path in shipped)
