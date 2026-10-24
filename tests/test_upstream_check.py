@@ -292,3 +292,64 @@ def test_a_digest_sync_is_the_one_thing_that_drops_out(
 
     assert commits[0]["relevance"] == "no-content"
     assert check.needs_review(commits) == []
+
+
+def _http_error(url: str, code: int) -> Any:
+    return check.urllib.error.HTTPError(url, code, "Not Found", None, None)
+
+
+def test_a_missing_sync_point_is_named_not_reported_as_bare_404(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Issue #26: compare 404'd because last_reviewed was a mistyped full SHA,
+    # while the repo itself answered fine.
+    def fake(url: str, token: Any) -> Any:
+        if "/compare/" in url:
+            raise _http_error(url, 404)
+        return {"full_name": "owner/repo"}
+
+    monkeypatch.setattr(check, "_request", fake)
+    results = check.collect_results(check.parse_sync_points(VALID))
+
+    assert results[0]["commits"] == []
+    assert "找不到 `last_reviewed` `abc1234`" in results[0]["error"]
+    assert check.has_updates(results) is True
+    assert "不代表沒有更新" in check.render_markdown(results, "owner/repo")
+
+
+def test_a_vanished_repo_is_named_not_reported_as_no_updates(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake(url: str, token: Any) -> Any:
+        raise _http_error(url, 404)
+
+    monkeypatch.setattr(check, "_request", fake)
+    results = check.collect_results(check.parse_sync_points(VALID))
+
+    assert results[0]["commits"] == []
+    assert "repo `aqua5230/usage` 本身也回 404" in results[0]["error"]
+    assert check.has_updates(results) is True
+
+
+def test_an_unconfirmable_404_stays_an_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake(url: str, token: Any) -> Any:
+        if "/compare/" in url:
+            raise _http_error(url, 404)
+        raise check.urllib.error.URLError("offline")
+
+    monkeypatch.setattr(check, "_request", fake)
+    results = check.collect_results(check.parse_sync_points(VALID))
+
+    assert "無法確認 repo 是否存在" in results[0]["error"]
+    assert check.has_updates(results) is True
+
+
+def test_ticket_axis_404_is_not_checked_not_empty(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake(url: str, token: Any) -> Any:
+        raise _http_error(url, 404)
+
+    monkeypatch.setattr(check, "_request", fake)
+    results = check.collect_ticket_results(check.parse_sync_points(VALID))
+
+    assert all(r["error"] and r["items"] == [] for r in results)
+    assert "**Not checked**" in check.render_ticket_markdown(results)

@@ -349,6 +349,36 @@ def render_ticket_markdown(ticket_results: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def describe_compare_failure(
+    repo: str, last_reviewed: str, exc: urllib.error.HTTPError, *, token: str | None = None
+) -> str:
+    """Turn a failed compare into something a person can act on.
+
+    Compare answers 404 both when the repo is gone and when ``last_reviewed``
+    is not a commit upstream has. Those need opposite fixes -- move the
+    ``repo`` field versus correct the sync point -- so one extra request tells
+    them apart. Issue #26 sat on a bare "HTTP Error 404" for three weeks while
+    the cause was a mistyped full SHA in docs/UPSTREAM.md.
+    """
+    if exc.code != 404:
+        return str(exc)
+    try:
+        _request(f"{API_ROOT}/repos/{repo}", token)
+    except urllib.error.HTTPError as probe:
+        if probe.code == 404:
+            return (
+                f"{exc}；上游 repo `{repo}` 本身也回 404：可能已改名、搬家、轉為私人或刪除，"
+                "請確認 sync points 的 `repo`"
+            )
+        return f"{exc}（無法確認 repo 是否存在：{probe}）"
+    except (urllib.error.URLError, json.JSONDecodeError, ValueError) as probe:
+        return f"{exc}（無法確認 repo 是否存在：{probe}）"
+    return (
+        f"{exc}；上游 repo `{repo}` 存在，但找不到 `last_reviewed` `{last_reviewed}`："
+        "sync point 可能打錯字，或上游改寫了歷史，請用完整 SHA 核對 docs/UPSTREAM.md"
+    )
+
+
 def collect_results(
     sync_points: dict[str, Any], *, repo: str | None = None, token: str | None = None
 ) -> list[dict[str, Any]]:
@@ -361,7 +391,12 @@ def collect_results(
             commits = fetch_new_commits(effective_repo, name, last_reviewed, token=token)
             classify_commits(effective_repo, commits, token=token)
             error: str | None = None
-        except (urllib.error.URLError, urllib.error.HTTPError, UpstreamCheckError) as exc:
+        except urllib.error.HTTPError as exc:
+            # Caught before URLError, its base class: a 404 from compare is
+            # ambiguous and needs the extra probe below to be actionable.
+            commits = []
+            error = describe_compare_failure(effective_repo, last_reviewed, exc, token=token)
+        except (urllib.error.URLError, UpstreamCheckError) as exc:
             # A network or API failure must not look like "nothing new"; surface it
             # so a silent report is never mistaken for an up-to-date fork.
             commits = []
