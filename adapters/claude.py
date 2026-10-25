@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from jsonl_utils import iter_jsonl_dicts
+from time_utils import parse_optional_iso8601_utc
 
 from .types import AgentInfo, UsageEntry
 
@@ -167,10 +168,9 @@ def _parse_assistant_entry(data: dict[str, Any], project: str) -> UsageEntry | N
     if input_tokens == 0 and output_tokens == 0 and cache_creation == 0 and cache_read == 0:
         return None
 
-    timestamp_str = data.get("timestamp", "")
-    try:
-        ts = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
-    except (ValueError, AttributeError):
+    # Offset-less stamps are read as UTC: they are compared against the aware cutoff.
+    ts = parse_optional_iso8601_utc(data.get("timestamp"))
+    if ts is None:
         return None
 
     message_id = message.get("id", "")

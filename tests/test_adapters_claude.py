@@ -175,3 +175,23 @@ def test_parse_jsonl_never_merges_output_across_entries_without_ids(tmp_path: Pa
 
     assert [(entry.session_id, entry.output_tokens) for entry in entries] == [("s1", 6)]
 
+
+def test_load_entries_tolerates_a_timestamp_without_an_offset(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """The cutoff and every other timestamp are timezone-aware, so an offset-less
+    one used to raise TypeError out of the whole report instead of being read."""
+    projects_dir = tmp_path / "projects"
+    _write_assistant_log(
+        projects_dir / "demo" / "entry.jsonl",
+        timestamp=datetime.now(UTC).replace(tzinfo=None).isoformat(),
+        usage={"input_tokens": 5, "output_tokens": 5},
+    )
+    monkeypatch.setattr(claude, "CLAUDE_DIRS", [str(projects_dir)])
+
+    entries = claude.load_entries(hours_back=24)
+
+    assert len(entries) == 1
+    assert entries[0].timestamp.tzinfo is not None
+
