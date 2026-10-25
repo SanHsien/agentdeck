@@ -959,3 +959,12 @@ def test_redaction_covers_cookies_private_and_pat_without_eating_path() -> None:
     assert "cookie_value_abc" not in redacted
     assert "private_value_xyz" not in redacted
     assert "/usr/local/bin:/usr/bin:/bin" in redacted, "PATH is diagnostics, not a secret"
+
+
+def test_adapter_treats_a_too_deeply_nested_line_as_a_parse_error() -> None:
+    """The provider CLI's stdout is not ours to trust. RecursionError used to kill
+    the reader thread, so the turn ended as "no completion event"."""
+    adapter = ClaudeAdapter()
+
+    assert adapter.parse_stdout_line("[" * 200_000) == (None, False)
+    assert adapter.parse_stdout_line('{"type":"result","subtype":"success"}') == (None, True)

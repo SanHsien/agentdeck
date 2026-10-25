@@ -241,7 +241,7 @@ class _JSONAdapter:
     def _load_event(self, line: str) -> dict[str, object] | None:
         try:
             value = json.loads(line)
-        except (json.JSONDecodeError, TypeError):
+        except (json.JSONDecodeError, RecursionError, TypeError):
             self._record_parse_error()
             return None
         if not isinstance(value, dict):
