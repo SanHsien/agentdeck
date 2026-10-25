@@ -129,7 +129,11 @@ def _run_resume() -> int:
     _log(f"resuming session {target.session_id} in {target.cwd}")
     try:
         result = subprocess.run(
-            [executable, "-p", prompt],
+            [executable, "-p"],
+            # On stdin, not argv: the prompt quotes the transcript, and an npm-style
+            # ``claude.cmd`` shim is run through cmd.exe, which would interpret "&" or
+            # "%" in it as commands. It also sidesteps the command-line length limit.
+            input=prompt,
             cwd=target.cwd,
             capture_output=True,
             text=True,

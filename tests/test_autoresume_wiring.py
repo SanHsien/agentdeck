@@ -336,3 +336,32 @@ def test_run_resume_clears_the_task_even_when_it_aborts(
     runner.run_resume()
 
     assert cancelled == [1]
+
+
+def test_run_resume_sends_the_handoff_on_stdin_not_on_the_command_line(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The prompt quotes the transcript. A ``claude.cmd`` shim goes through cmd.exe,
+    where an ampersand or percent sign in it would be interpreted as a command."""
+    seen: dict[str, object] = {}
+    hostile = "fix it & calc & echo %PATH%"
+
+    def fake_run(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        seen["args"] = args
+        seen["input"] = kwargs.get("input")
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    monkeypatch.setattr(runner, "LOG_PATH", tmp_path / "log.txt")
+    monkeypatch.setattr(
+        runner, "load_resume_target", lambda: ResumeTarget("abc", str(tmp_path), "t.jsonl")
+    )
+    monkeypatch.setattr(runner, "_claude_executable", lambda: "claude.cmd")
+    monkeypatch.setattr(runner, "build_handoff", lambda _target: hostile)
+    monkeypatch.setattr(scheduler, "cancel", lambda: True)
+    monkeypatch.setattr(scheduler, "RESULT_PATH", tmp_path / "result.json")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    assert runner.run_resume() == 0
+
+    assert hostile not in " ".join(str(a) for a in seen["args"])  # type: ignore[attr-defined]
+    assert seen["input"] == hostile
