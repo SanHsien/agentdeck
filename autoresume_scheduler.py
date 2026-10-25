@@ -211,11 +211,17 @@ def take_result() -> dict[str, object] | None:
 #: costs nothing. ``None`` means "no task pending"; the value is the scheduled epoch.
 _registered_run_at: int | None = None
 
+#: Whether ``_registered_run_at`` reflects the scheduler. A fresh process knows nothing:
+#: the task a previous run registered may still be there, and it would fire an
+#: unattended resume even though the user has since turned the feature off.
+_registry_known = False
+
 
 def reset_registration_cache() -> None:
     """Forget what the scheduler is believed to hold. For tests and for re-sync."""
-    global _registered_run_at
+    global _registered_run_at, _registry_known
     _registered_run_at = None
+    _registry_known = False
 
 
 def tick(icon: object, language: str) -> ScheduleDecision:
@@ -226,12 +232,13 @@ def tick(icon: object, language: str) -> ScheduleDecision:
     registered. Everything the decision needs is read here rather than passed in, so
     wiring this into the tray costs a single call.
     """
-    global _registered_run_at
+    global _registered_run_at, _registry_known
 
     result = take_result()
     if result is not None:
         # The run that just finished consumed the task it was triggered by.
         _registered_run_at = None
+        _registry_known = True
         _announce(icon, language, result)
 
     decision = decide(
@@ -246,8 +253,14 @@ def tick(icon: object, language: str) -> ScheduleDecision:
             datetime.fromtimestamp(decision.run_at)
         ):
             _registered_run_at = decision.run_at
-    elif decision.action == "cancel" and _registered_run_at is not None and cancel():
+            _registry_known = True
+    elif (
+        decision.action == "cancel"
+        and (_registered_run_at is not None or not _registry_known)
+        and cancel()
+    ):
         _registered_run_at = None
+        _registry_known = True
 
     return decision
 

@@ -164,14 +164,16 @@ def test_a_moved_reset_time_re_registers(monkeypatch: pytest.MonkeyPatch) -> Non
     assert len(scheduled) == 1  # the second arrange installed a fresh recorder
 
 
-def test_cancel_is_not_called_when_nothing_is_registered(
+def test_cancel_is_not_repeated_once_the_scheduler_is_known_to_be_clear(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _, cancelled = _arrange(monkeypatch, enabled=False)
+    scheduler.tick(_FakeIcon(), "en")  # first tick syncs with what the scheduler holds
 
     scheduler.tick(_FakeIcon(), "en")
+    scheduler.tick(_FakeIcon(), "en")
 
-    assert cancelled == []
+    assert len(cancelled) == 1
 
 
 def test_cancel_runs_once_after_a_schedule_is_withdrawn(
@@ -336,6 +338,23 @@ def test_run_resume_clears_the_task_even_when_it_aborts(
     runner.run_resume()
 
     assert cancelled == [1]
+
+
+def test_a_task_left_by_a_previous_run_is_cancelled_when_auto_resume_is_off(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A fresh process knows nothing about what the scheduler holds.
+
+    The task registered before the tray last quit is still armed; with the feature
+    turned off in the meantime it would otherwise fire an unattended ``claude -p``.
+    One cancel on the first tick clears it, and later ticks stay free.
+    """
+    _, cancelled = _arrange(monkeypatch, enabled=False)
+
+    for _ in range(3):
+        scheduler.tick(_FakeIcon(), "en")
+
+    assert len(cancelled) == 1
 
 
 def test_run_resume_sends_the_handoff_on_stdin_not_on_the_command_line(
