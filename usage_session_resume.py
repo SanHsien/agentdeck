@@ -462,7 +462,7 @@ def _parse_session(path: Path) -> tuple[datetime, str, list[str], list[str], lis
                     continue
                 try:
                     data = json.loads(line)
-                except json.JSONDecodeError:
+                except (json.JSONDecodeError, RecursionError):
                     continue
                 if not isinstance(data, dict):
                     continue

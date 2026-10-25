@@ -1149,3 +1149,25 @@ def test_clean_request_keeps_user_tagged_prompt() -> None:
     value = "<Task>split the settings panel</Task> <Constraints>keep the old API</Constraints>"
 
     assert mod._clean_request(value) == value
+
+
+def test_parse_session_skips_a_line_nested_too_deep_to_decode(tmp_path: Path) -> None:
+    """json.loads raises RecursionError, not JSONDecodeError, on deep nesting. That
+    used to escape and throw away the whole session summary (and, in the scheduled
+    auto-resume run, crash the headless process with nothing logged)."""
+    import usage_session_resume as resume
+
+    good = json.dumps(
+        {
+            "type": "user",
+            "timestamp": "2026-10-25T10:00:00Z",
+            "message": {"content": "fix the login redirect bug now"},
+        }
+    )
+    path = tmp_path / "session.jsonl"
+    path.write_text(good + "\n" + "[" * 200_000 + "\n", encoding="utf-8")
+
+    parsed = resume._parse_session(path)
+
+    assert parsed is not None
+    assert "login redirect" in parsed[1]
