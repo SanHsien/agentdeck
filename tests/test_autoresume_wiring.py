@@ -384,3 +384,24 @@ def test_run_resume_sends_the_handoff_on_stdin_not_on_the_command_line(
 
     assert hostile not in " ".join(str(a) for a in seen["args"])  # type: ignore[attr-defined]
     assert seen["input"] == hostile
+
+
+def test_a_failing_startup_cancel_is_not_retried_every_tick(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """schtasks words "no such task" in the OEM code page, which cancel() may not
+    recognise, so the startup cleanup can report failure while nothing is wrong.
+    It is best-effort and one-shot: it must not turn into a schtasks call per tick."""
+    attempts: list[int] = []
+    _arrange(monkeypatch, enabled=False)
+
+    def failing_cancel() -> bool:
+        attempts.append(1)
+        return False
+
+    monkeypatch.setattr(scheduler, "cancel", failing_cancel)
+
+    for _ in range(4):
+        scheduler.tick(_FakeIcon(), "en")
+
+    assert len(attempts) == 1

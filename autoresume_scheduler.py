@@ -254,13 +254,16 @@ def tick(icon: object, language: str) -> ScheduleDecision:
         ):
             _registered_run_at = decision.run_at
             _registry_known = True
-    elif (
-        decision.action == "cancel"
-        and (_registered_run_at is not None or not _registry_known)
-        and cancel()
-    ):
-        _registered_run_at = None
-        _registry_known = True
+    elif decision.action == "cancel" and (_registered_run_at is not None or not _registry_known):
+        if cancel():
+            _registered_run_at = None
+            _registry_known = True
+        elif _registered_run_at is None:
+            # Startup cleanup is best-effort and one-shot. schtasks words "no such
+            # task" in the OEM code page, which cancel() may not recognise, so a
+            # failure here can be a clean machine; retrying would cost a process
+            # per tick for as long as the tray runs.
+            _registry_known = True
 
     return decision
 
