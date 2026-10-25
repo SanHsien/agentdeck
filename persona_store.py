@@ -104,14 +104,33 @@ def render_agent_file(role: dict[str, Any], language: str) -> str:
     name = _text(role.get("name"), language) or role["id"]
     description = _text(role.get("description"), language)
     prompt = _text(role.get("system_prompt"), language)
-    escaped_name = name.replace('"', '\\"')
-    escaped_description = description.replace('"', '\\"')
+    # A JSON string is a valid YAML double-quoted scalar, and it escapes the
+    # backslashes and newlines that a quote-only replace would leave raw.
     return (
         "---\n"
-        f'name: "{escaped_name}"\n'
-        f'description: "{escaped_description}"\n'
+        f"name: {json.dumps(name, ensure_ascii=False)}\n"
+        f"description: {json.dumps(description, ensure_ascii=False)}\n"
         "---\n\n"
         f"{prompt.strip()}\n"
+    )
+
+
+def _toml_multiline_body(text: str) -> str:
+    """Escape ``text`` for the inside of a TOML multi-line basic string.
+
+    That string form processes escapes, so a raw backslash (a Windows path, a
+    regex) made the whole file unparsable, and a bare triple quote closed the
+    block early. Control characters other than newline and tab are not allowed
+    raw either.
+    """
+    backslash = chr(92)
+    text = text.replace("\r\n", "\n").replace(backslash, backslash * 2)
+    text = text.replace('"""', '""' + backslash + '"')
+    return "".join(
+        f"{backslash}u{ord(ch):04x}"
+        if (ord(ch) < 0x20 and ch not in "\n\t") or ord(ch) == 0x7F
+        else ch
+        for ch in text
     )
 
 
@@ -126,8 +145,7 @@ def render_codex_agent_file(role: dict[str, Any], language: str) -> str:
     name = _text(role.get("name"), language) or role["id"]
     description = _text(role.get("description"), language)
     prompt = _text(role.get("system_prompt"), language).strip()
-    # A bare triple quote inside the body would close the block early.
-    prompt = prompt.replace('"""', "'''")
+    prompt = _toml_multiline_body(prompt)
     return (
         f"name = {json.dumps(name, ensure_ascii=False)}\n"
         f"description = {json.dumps(description, ensure_ascii=False)}\n"

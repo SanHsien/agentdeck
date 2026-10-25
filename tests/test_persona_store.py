@@ -346,3 +346,53 @@ def test_cursor_absent_means_cursor_untouched(
 
     assert "Cursor" not in result["targets"]
     assert not (store / "no-cursor").exists()
+
+
+BS = chr(92)
+NASTY_TEXT = f'C:{BS}dir {BS}d+ "quoted"{chr(10)}second line{chr(9)}tab'
+
+
+def test_claude_frontmatter_survives_backslashes_and_newlines() -> None:
+    """name/description are written as YAML double-quoted scalars.
+
+    Only the quote used to be escaped, so a backslash (a regex like d-plus) became an invalid
+    YAML escape and a newline split the scalar across lines, which Claude Code
+    then fails to load. JSON strings are valid YAML double-quoted scalars, so
+    each frontmatter value must round-trip through ``json.loads``.
+    """
+    role = {
+        "id": "nasty",
+        "name": {"en": NASTY_TEXT},
+        "description": {"en": NASTY_TEXT},
+        "system_prompt": {"en": "p"},
+    }
+
+    rendered = persona_store.render_agent_file(role, "en")
+
+    frontmatter = rendered.split("---\n")[1].splitlines()
+    assert len(frontmatter) == 2
+    values = {line.split(": ", 1)[0]: line.split(": ", 1)[1] for line in frontmatter}
+    assert json.loads(values["name"]) == NASTY_TEXT
+    assert json.loads(values["description"]) == NASTY_TEXT
+
+
+def test_codex_prompt_with_backslashes_still_parses_and_round_trips() -> None:
+    """A multi-line basic TOML string processes escapes, so a bare backslash-d or a
+    Windows path in a prompt made the whole agent file unparsable (Codex then
+    drops it silently) and a backslash-t was silently turned into a tab."""
+    import tomllib
+
+    prompt = (
+        f'path C:{BS}dir regex {BS}d+ tab-escape {BS}t quote """ and "" end'
+        f"{chr(13)}{chr(10)}next"
+    )
+    role = {
+        "id": "nasty",
+        "name": {"en": "n"},
+        "description": {"en": "d"},
+        "system_prompt": {"en": prompt},
+    }
+
+    parsed = tomllib.loads(persona_store.render_codex_agent_file(role, "en"))
+
+    assert parsed["developer_instructions"].strip() == prompt.replace("\r\n", "\n")
