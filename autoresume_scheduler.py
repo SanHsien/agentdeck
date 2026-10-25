@@ -94,7 +94,10 @@ def resume_command() -> tuple[str, str]:
     """
     if getattr(sys, "frozen", False):
         return sys.executable, "--resume-now"
-    return sys.executable, f'"{os.path.abspath("main.py")}" --resume-now'
+    # Anchored to this file, not the working directory: the tray can be launched from
+    # anywhere, and a cwd-relative path would register a task that can never start.
+    main_py = os.path.join(os.path.dirname(os.path.abspath(__file__)), "main.py")
+    return sys.executable, f'"{main_py}" --resume-now'
 
 
 def build_task_xml(

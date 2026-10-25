@@ -9,6 +9,7 @@ from __future__ import annotations
 import subprocess
 import sys
 from datetime import datetime
+from pathlib import Path
 from xml.etree import ElementTree
 
 import pytest
@@ -159,3 +160,18 @@ def test_source_checkout_routes_back_through_the_interpreter(
     assert command == "C:/py/python.exe"
     assert arguments.endswith("--resume-now")
     assert "main.py" in arguments
+
+
+def test_source_checkout_entry_point_does_not_depend_on_the_working_directory(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The tray can be started from any directory; the task runs from none of them."""
+    monkeypatch.delattr(sys, "frozen", raising=False)
+    monkeypatch.chdir(tmp_path)
+
+    _command, arguments = scheduler.resume_command()
+
+    main_py = Path(arguments.split('"')[1])
+    assert main_py.is_absolute()
+    assert main_py == Path(scheduler.__file__).resolve().with_name("main.py")
+    assert main_py.is_file()
