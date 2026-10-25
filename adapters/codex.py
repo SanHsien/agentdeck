@@ -4,7 +4,6 @@
 # Part of "usage". Free software licensed under the GNU Affero General Public
 # License v3.0 only; see the LICENSE file for full terms and the warranty disclaimer.
 
-import json
 import math
 import os
 import sqlite3
@@ -15,6 +14,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from codex_paths import codex_home
+from jsonl_utils import iter_jsonl_dicts
 from typing import Any
 
 from providers import codex_loader as shared_codex_loader
@@ -162,18 +162,8 @@ def _load_jsonl_rows(path: Path) -> list[dict[str, Any]]:
         _file_cache.move_to_end(path)
         return cached[2]
 
-    rows: list[dict[str, Any]] = []
-    with open(path, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                data = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if isinstance(data, dict):
-                rows.append(data)
+    # Bounded reads and RecursionError handling live in the shared iterator.
+    rows = list(iter_jsonl_dicts(path))
 
     if path not in _file_cache and len(_file_cache) >= _FILE_CACHE_MAXSIZE:
         _file_cache.popitem(last=False)

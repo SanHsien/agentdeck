@@ -169,3 +169,12 @@ def test_extract_rate_limits_uses_turn_context_model_when_state_db_missing(
 
     assert result is not None
     assert result.model == "gpt-5.4-mini"
+
+
+def test_load_jsonl_rows_skips_a_line_nested_too_deep_to_decode(tmp_path: Path) -> None:
+    """Deep nesting raises RecursionError from json.loads, which is not a
+    JSONDecodeError; one such line used to abort the whole report."""
+    path = tmp_path / "rollout.jsonl"
+    path.write_text('{"ok": 1}\n' + "[" * 200_000 + '\n{"ok": 2}\n', encoding="utf-8")
+
+    assert codex._load_jsonl_rows(path) == [{"ok": 1}, {"ok": 2}]
