@@ -119,3 +119,29 @@ def test_sync_points_actually_carry_both_ticket_numbers() -> None:
 
     assert isinstance(tickets.get("reviewed_pr_through"), int)
     assert isinstance(tickets.get("reviewed_issue_through"), int)
+
+
+def test_a_listing_cut_off_at_the_page_cap_is_an_error_not_a_complete_list(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Ten full pages that never reach the reviewed number must not read as 'nothing new'."""
+    full_page = [{"number": 5000 - i, "title": "t"} for i in range(100)]
+    monkeypatch.setattr(checker, "_request", lambda url, token: full_page)
+
+    with pytest.raises(ValueError, match="cap"):
+        checker.fetch_new_tickets("example/product", "pr", 9)
+
+    results = checker.collect_ticket_results(SYNC_POINTS, repo="example/product")
+    assert all(result["error"] for result in results)
+
+
+def test_print_safely_survives_a_console_that_cannot_encode_the_report(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import io
+
+    console = io.TextIOWrapper(io.BytesIO(), encoding="cp950")
+    monkeypatch.setattr(sys, "stdout", console)
+    checker.print_safely("| #1 | 🚀 修復 |")
+    console.flush()
+    assert b"#1" in console.buffer.getvalue()

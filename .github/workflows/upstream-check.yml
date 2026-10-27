@@ -1,3 +1,4 @@
+# fleet-waiver: upstream_tool -- reads the sync-points block in docs/UPSTREAM.md through the GitHub API, not tools/upstream_baseline.json, so the shared checker does not apply; the fleet-wide defects (list truncation, console encoding) are fixed in place and tested
 name: 上游更新檢查
 
 on:

@@ -264,6 +264,13 @@ def fetch_new_tickets(
             items.append({"number": number, "title": item.get("title", "")})
         if len(batch) < per_page:
             break
+    else:
+        # Ten full pages and still not at the reviewed number: the listing was cut off, and
+        # the missing items would read as "nothing new". Recorded as an error, not a result.
+        raise ValueError(
+            f"{kind} listing hit its {per_page * 10}-item cap before reaching "
+            f"#{last_reviewed}; older unreviewed items may be missing"
+        )
     return sorted(items, key=lambda entry: entry["number"])
 
 
@@ -506,6 +513,12 @@ def has_updates(results: list[dict[str, Any]]) -> bool:
     """
     return any(result["error"] or needs_review(result["commits"]) for result in results)
 
+def print_safely(text: str) -> None:
+    """Print without depending on the console encoding (cp950 has no emoji, cp1252 no CJK)."""
+    encoding = getattr(sys.stdout, "encoding", None) or "utf-8"
+    print(text.encode(encoding, errors="backslashreplace").decode(encoding))
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", default=None, help="Override the upstream repo.")
@@ -533,7 +546,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.output is not None:
         args.output.write_text(report, encoding="utf-8", newline="\n")
     else:
-        print(report)
+        print_safely(report)
 
     # Tickets feed the same signal as commits. The sync points have carried
     # `tickets.reviewed_*_through` all along with nothing reading them, so those
