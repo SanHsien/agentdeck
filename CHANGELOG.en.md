@@ -8,6 +8,9 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **Add `main.py --status --json` CLI query emitting versioned health and quota JSON.** Schedulers and scripts can inspect Claude, Codex, and Antigravity quotas and health state with sensitive usernames, paths, and tokens redacted by default.
+
 ### Fixed
 - **The offline price table gains gpt-6.1-sol and Haiku 5.5, Sonnet 5.5 cache reads drop to $0.10/Mtok, and Grok models resolve through their `xai/` price keys.** From upstream `45c5e55`, `de053b3`, `a74f6c1`, `c36d259`.
 - **Project names decode for directories containing `-`, `.`, non-ASCII characters, emoji, or names cut at 200 characters.** From upstream `2229d95`, `fb46534`.

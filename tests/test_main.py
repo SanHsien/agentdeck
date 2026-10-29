@@ -38,6 +38,8 @@ def test_parse_args_defaults(monkeypatch: Any) -> None:
 
     assert args.mock is False
     assert args.interval == 60
+    assert args.status is False
+    assert args.json is False
     assert args.tui is False
     assert args.setup is False
     assert args.unsetup is False
@@ -128,6 +130,8 @@ def _patch_main_for_win32(monkeypatch: Any, calls: list[dict[str, Any]]) -> None
         main,
         "parse_args",
         lambda: type("Args", (), {
+            "status": False,
+            "json": False,
             "doctor": False,
             "setup": False,
             "unsetup": False,

@@ -225,6 +225,16 @@ def parse_args() -> argparse.Namespace:
         help="從 Claude Code 移除 statusLine hook 並還原原設定",
     )
     parser.add_argument(
+        "--status",
+        action="store_true",
+        help="顯示各 AI provider 額度與健康狀態",
+    )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="搭配 --status 輸出版本化 JSON",
+    )
+    parser.add_argument(
         "--doctor",
         action="store_true",
         help=argparse.SUPPRESS,
@@ -236,6 +246,8 @@ def parse_args() -> argparse.Namespace:
         help=argparse.SUPPRESS,
     )
     args = parser.parse_args()
+    if args.json and not args.status:
+        parser.error("--json 必須搭配 --status 使用")
     args.interval = max(30, args.interval)
     return args
 
@@ -311,6 +323,14 @@ async def run_tui(mock: bool, interval: int, force_group: int | None = None) -> 
 def main() -> None:
     _setup_logging()
     args = parse_args()
+    if getattr(args, "status", False):
+        import status_projection
+
+        if getattr(args, "json", False):
+            print(status_projection.render_json(mock=getattr(args, "mock", False)))
+        else:
+            print(status_projection.render_text(mock=getattr(args, "mock", False)), end="")
+        raise SystemExit(0)
     if args.doctor:
         import doctor
 
