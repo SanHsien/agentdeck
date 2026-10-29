@@ -31,20 +31,25 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "577e2dfe2c092e8eb93377d870f358815b031d36",
+      "last_reviewed": "9723c048ca1fed0cb867390dc4577a6415ce104d",
       "last_merged": "577e2dfe2c092e8eb93377d870f358815b031d36",
-      "note": "2026-10-24 審視 9733853..577e2df 共 367 筆。採用 13 筆（定價、專案目錄解碼與解析快取、續接視窗判斷、keeper 背景 ping、結束鈕缺字、WebView2 儲存目錄）；Antigravity 額度主機、#202 加固、新功能與重構逐筆記在 Skipped 表。上游此段把根目錄模組搬進套件，無法整段 merge，一律手工移植。"
+      "note": "2026-10-29 審視 310d779、9723c04 與 PR #262（setuptools GHSA-xmj3-9gf7-h52w）。本 fork 的 uv.lock 已是 84.2.1，記為已等價不採用。"
     }
   },
   "tickets": {
-    "reviewed_pr_through": 261,
+    "reviewed_pr_through": 262,
     "reviewed_issue_through": 202,
-    "reviewed_date": "2026-10-24",
-    "note": "以 --state all 審視。PR #157–#261（103 筆，#190 為未合併關閉的搬模組重構）與 Issue #202（單一機器、已以 not planned 關閉）。"
+    "reviewed_date": "2026-10-29",
+    "note": "以 --state all 審視。PR #262（setuptools CVE 升版，已等價不採用）與 Issue #202（單一機器、已以 not planned 關閉）。"
   }
 }
 ```
 <!-- sync-points:end -->
+
+## 2026-10-29：`577e2df..9723c04` 共 2 筆，`last_reviewed` 推到 `9723c04`
+
+處理 issue #34。審視上游 commit `310d779`、`9723c04` 與 PR #262。
+上游升級 `setuptools` 至 84.2.1 修補安全漏洞 GHSA-xmj3-9gf7-h52w。本 fork 的 `uv.lock` 已在同一個 84.2.1 版本，安全與功能已等價，決定不重複套用，記為「已等價、不採用」並補入 Skipped 表。
 
 ## 2026-10-24：`9733853..577e2df` 共 367 筆，`last_reviewed` 推到 `577e2df`
 
@@ -701,6 +706,7 @@ Linux cloud agent **沒有**跑 `build_windows.ps1`；archive_viewer 那層要�
 
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
+| main | `310d779`／`9723c04` | build(deps): bump setuptools to 84.2.1 (GHSA-xmj3-9gf7-h52w)（PR #262） | 2026-10-29 | **已等價、不採用**。上游為 GHSA-xmj3-9gf7-h52w 將 `setuptools` 升至 84.2.1；本 fork 的 `uv.lock` 已是 84.2.1，安全性與功能已等價，無須更動程式碼與 lockfile。 |
 | main | `9261121` | chore(release): v0.30.7 | 2026-09-04 | **不適用**。上游的發版 chore（`CHANGELOG`、`pyproject` 版號、`uv.lock`）。本 fork 自行版控與發版，不跟上游版號。 |
 | main | `6adc9bb` | docs(website): 官網補上 Grok CLI 功能卡片，五語系同步 | 2026-09-04 | **不適用**。上游 `docs/index.html` 的行銷頁與五語系文案；本 fork 的公開入口是自己的，正式 UI 只出貨 zh-TW／en。 |
 | main | `3f33a31` | style(web,report): 官網與 HTML 報告視覺改版 | 2026-09-04 | **列後續**。同 2026-08-31 那批的判準：`ui/report_styles.py` 已與上游分岔，整批視覺改版需要獨立的渲染與列印驗收，不在上游同步裡順手做。 |

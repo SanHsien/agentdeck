@@ -857,3 +857,11 @@ tray 時看一眼專案切換與額度輪詢是否還會閃窗。
 **為什麼**：測試端另補了 autouse fixture 清掉 `AGENT_RELAY_HOME/STORE/AGENT`——`load_config()` 會讀這些環境變數，操作者若有匯出，測試就會改讀真實郵箱而不是 `tmp_path`。
 
 **驗證**：`pwsh -NoProfile -File tools/dev_check.ps1` 全綠（lock、ruff、mypy、doc-parity、file-size、pytest 1662 passed）。
+
+---
+
+## D-35：上游更新檢查 #34：setuptools 升版（GHSA-xmj3-9gf7-h52w）已等價不採用
+
+**日期**：2026-10-29
+
+**決定**：審視上游 commit `310d779`、`9723c04` 與 PR #262（將 `setuptools` 升至 84.2.1 修復 GHSA-xmj3-9gf7-h52w）。本 fork 的 `uv.lock` 已在同一個 84.2.1 版本，安全與功能等價，決定不重複套用，`last_reviewed` 推至 `9723c04`、PR 審視水位推至 #262。

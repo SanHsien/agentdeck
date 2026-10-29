@@ -5,13 +5,13 @@
 
 ## 現況
 
-Windows 系統匣駕駛艙（Claude Code、Codex、Antigravity 額度、AI 圓桌、報告），私有，從上游 [`aqua5230/usage`](https://github.com/aqua5230/usage) 分出後獨立維護，定位與邊界見 [`docs/DECISIONS.md`](docs/DECISIONS.md) D-01。健康：`main` 的 CI、CodeQL、Scorecard、ClusterFuzzLite batch、上游更新檢查最近一次皆 success（2026-10-27／28）；open PR 0、Dependabot 與 Code scanning 告警 0；open issue 1（#34，上游更新檢查，審視 `310d779`、`9723c04`）；最新 release 是 v0.42.1，`pyproject.toml` 已是 0.42.2、`CHANGELOG.md` 的 `[Unreleased]` 另有已合併未發版的修正（`gh` 實查，2026-10-29）。上游已把根目錄模組搬進套件，無法整段 merge，一律手工移植（`docs/UPSTREAM.md`）。卡住的是需要真實 Windows 桌面的驗證與發版決定，不是程式缺陷。
+Windows 系統匣駕駛艙（Claude Code、Codex、Antigravity 額度、AI 圓桌、報告），私有，從上游 [`aqua5230/usage`](https://github.com/aqua5230/usage) 分出後獨立維護，定位與邊界見 [`docs/DECISIONS.md`](docs/DECISIONS.md) D-01。健康：`main` 的 CI、CodeQL、Scorecard、ClusterFuzzLite batch、上游更新檢查最近一次皆 success（2026-10-27／28）；open PR 0、Dependabot 與 Code scanning 告警 0；open issue 1（#34 上游更新檢查，已審視到 `9723c04`／#262，推上 main 後待關閉）；最新 release 是 v0.42.1，`pyproject.toml` 已是 0.42.2、`CHANGELOG.md` 的 `[Unreleased]` 另有已合併未發版的修正（`gh` 實查，2026-10-29）。上游已把根目錄模組搬進套件，無法整段 merge，一律手工移植（`docs/UPSTREAM.md`）。卡住的是需要真實 Windows 桌面的驗證與發版決定，不是程式缺陷。
 
 ## 近期：可以直接動手
 | 項目 | 為什麼 | 驗收方式 | 建議執行者 | 證據 |
 | --- | --- | --- | --- | --- |
-| 處理上游更新檢查 #34：逐筆判斷後推進 `docs/UPSTREAM.md` 的標記 | 上游 `310d779` 把 `setuptools` 升到 84.2.1（GHSA-xmj3-9gf7-h52w），本 fork 的 `uv.lock` 已是同一版，應記為「已等價、不採用」而不是漏看；`#262` 也要記入已審視範圍 | `docs/UPSTREAM.md` 的 `last_reviewed` 與 `tickets.reviewed_pr_through` 已推進、Skipped 表補一列含理由、`docs/DECISIONS.md` 補一句；下次「上游更新檢查」workflow 不再開新 issue、#34 關閉；重新確認 `uv.lock` 的 `setuptools` 版本不低於上游該筆修正版 | Claude Sonnet | Issue #34；`uv.lock:574-577`（`setuptools` 84.2.1）；`docs/UPSTREAM.md:28-47`（sync points）、`docs/UPSTREAM.md:16-24`（處理流程） |
 | 決定並發佈下一版（含 `[Unreleased]` 的修正與 0.42.2 之後的 runtime 修正） | `pyproject.toml` 是 0.42.2 而最新 release 是 v0.42.1；`[Unreleased]` 有價格表、專案目錄解碼、hook、WebView2 設定檔等修正，尚未讓使用者拿到 | 維護者決定版號後：`CHANGELOG.md` 與 `CHANGELOG.en.md` 把 `[Unreleased]` 切成版本段；`python scripts/check_release_version.py SanHsien/agentdeck <tag>` 通過；推 `v*` tag 後 Release workflow success；下載的 exe 以 `--doctor` 回報的版本等於 tag，SHA-256 與 release asset 一致 | 維護者 | `pyproject.toml:3`；`gh release list -R SanHsien/agentdeck`（最新 v0.42.1）；`CHANGELOG.md:9-25`；`.github/workflows/release.yml` |
+| 審視上游 `9723c04..main`（約 26 筆待判斷）與 PR #263–#272 | 2026-10-30 審完 #262 時上游已再前進 29 筆；不審的話上游更新檢查會持續回報、#34 關不掉 | `python tools/check_upstream_updates.py` 回 `has_updates=False`；逐筆在 `docs/UPSTREAM.md` 記採用／不採用與理由，推進 `last_reviewed` 與 `tickets.reviewed_pr_through`；採用的修正各有測試 | Antigravity | `gh api repos/aqua5230/usage/compare/9723c04...main`（ahead 29）；`tools/check_upstream_updates.py` 輸出 `has_updates=True` |
 | Windows 實機 smoke：WebView2 在 100%／150%／225% DPI、900×640 與 1280×800 下的系統匣與面板，以及 AI 圓桌 | 自動化測試取代不了真實桌面；`docs/release-evidence/` 目前只有 2026-07-31 的圓桌版面一份，發版與 v1.0 都需要新的實機證據 | 新增一份 `docs/release-evidence/<日期>-smoke.md`：記錄 Windows build、WebView2 Runtime 版本、DPI、邏輯／實體解析度、逐項 checklist 結果與問題截圖；發現的缺陷各開 issue | 維護者 | `docs/release-evidence/2026-07-31-discussion-layout.md`（唯一一份）；`REVIEW_Claude.md`「環境」；接續開發報告（2026-10-25）「需要維護者決定：Windows 實機 smoke」 |
 
 ## 中期：等條件成立再做
