@@ -125,7 +125,8 @@ def _run(args: list[str]) -> subprocess.CompletedProcess[str]:
         args,
         capture_output=True,
         text=True,
-        encoding="utf-8",
+        # schtasks writes stdout/stderr in the Windows console OEM code page (e.g. CP950 on zh-TW).
+        encoding="oem",
         errors="replace",
         timeout=30,
         check=False,

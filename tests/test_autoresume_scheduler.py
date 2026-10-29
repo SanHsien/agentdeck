@@ -114,6 +114,56 @@ def test_cancel_recognises_the_localized_not_found_message(
     assert scheduler.cancel() is True
 
 
+def test_cancel_recognises_oem_encoded_not_found(monkeypatch: pytest.MonkeyPatch) -> None:
+    """schtasks emits error messages in the Windows console OEM code page.
+
+    On a zh-TW Windows machine (CP950), schtasks /Delete outputs '錯誤: 系統找不到指定的檔案。'
+    encoded in CP950. With encoding="oem", the bytes are decoded cleanly and recognised.
+    """
+    raw_oem_bytes = "錯誤: 系統找不到指定的檔案。".encode("cp950")
+
+    def fake_subprocess_run(
+        args: list[str],
+        capture_output: bool = True,
+        text: bool = True,
+        encoding: str | None = None,
+        errors: str | None = None,
+        timeout: int | None = None,
+        check: bool = False,
+        creationflags: int = 0,
+    ) -> subprocess.CompletedProcess[str]:
+        assert encoding == "oem"
+        # Simulate subprocess decoding with the chosen OEM encoding on zh-TW (CP950)
+        stderr_text = raw_oem_bytes.decode("cp950", errors=errors or "replace")
+        return subprocess.CompletedProcess(args, 1, "", stderr_text)
+
+    monkeypatch.setattr(subprocess, "run", fake_subprocess_run)
+    assert scheduler.cancel() is True
+
+
+def test_oem_decoding_preserves_chinese_not_found() -> None:
+    raw_bytes = "錯誤: 系統找不到指定的檔案。".encode("cp950")
+    # Under utf-8, decoding CP950 bytes produces mojibake where '找不到' is lost
+    assert "找不到" not in raw_bytes.decode("utf-8", errors="replace")
+    # Under CP950 (OEM on zh-TW), '找不到' is preserved
+    assert "找不到" in raw_bytes.decode("cp950")
+
+
+def test_run_uses_oem_encoding(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_subprocess_run(
+        args: list[str], **kwargs: object
+    ) -> subprocess.CompletedProcess[str]:
+        captured.update(kwargs)
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    monkeypatch.setattr(subprocess, "run", fake_subprocess_run)
+    scheduler._run(["schtasks"])
+
+    assert captured.get("encoding") == "oem"
+
+
 def test_cancel_reports_failure_on_a_real_error(monkeypatch: pytest.MonkeyPatch) -> None:
     _fake_run(monkeypatch, 1, "ERROR: Access is denied.")
 
