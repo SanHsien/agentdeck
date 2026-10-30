@@ -46,7 +46,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, cast
 
-__version__ = "1.9"
+__version__ = "1.10"
 
 
 def _creation_flags() -> int:
@@ -331,7 +331,7 @@ def _git_dirty(cwd: str) -> tuple[str, int, list[str]] | None:
         if not branch:
             return None
         status_proc = subprocess.run(
-            ["git", "-C", cwd, "status", "--porcelain"],
+            ["git", "-C", cwd, "-c", "core.fsmonitor=false", "status", "--porcelain"],
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             timeout=2,

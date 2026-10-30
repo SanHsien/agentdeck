@@ -830,15 +830,23 @@ def _csv_cost(value: float | None) -> str:
     return f"{value:.4f}" if 0 < value < 1 else f"{value:.2f}"
 
 
+def _csv_safe_name(name: str) -> str:
+    """Keep a name field text in spreadsheet apps: a leading formula character gets a quote."""
+    if name.startswith(("=", "+", "-", "@", "\t", "\r")):
+        return "'" + name
+    return name
+
+
 def _build_csv_data(data: Mapping[str, Any], lang: str, *, mask_projects: bool = False) -> str:
     out = StringIO()
     writer = csv.writer(out, lineterminator="\r\n")
     writer.writerow(["type", "name", "share_pct", "tokens", "cost_usd"])
     for idx, item in enumerate(data.get("by_project", []), start=1):
+        name = f"Project {idx}" if mask_projects else _display_name(item.get("project"), lang)
         writer.writerow(
             [
                 "project",
-                f"Project {idx}" if mask_projects else _display_name(item.get("project"), lang),
+                _csv_safe_name(name),
                 f"{float(item.get('pct', 0.0)):.1f}",
                 str(int(item.get("tokens", 0))),
                 _csv_cost(float(item.get("cost", 0.0))),
@@ -846,10 +854,11 @@ def _build_csv_data(data: Mapping[str, Any], lang: str, *, mask_projects: bool =
         )
     for model_item in data.get("by_model", []):
         cost_val = None if not model_item.get("cost_known", True) else float(model_item.get("cost", 0.0))
+        name = _display_name(model_item.get("model"), lang)
         writer.writerow(
             [
                 "model",
-                _display_name(model_item.get("model"), lang),
+                _csv_safe_name(name),
                 f"{float(model_item.get('pct', 0.0)):.1f}",
                 str(int(model_item.get("tokens", 0))),
                 _csv_cost(cost_val),

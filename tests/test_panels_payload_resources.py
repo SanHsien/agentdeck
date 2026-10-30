@@ -106,3 +106,11 @@ def test_neither_helper_consults_py2apps_resourcepath(
 
     assert Path(resolve_resource("panels/classic.html")) != bundle / "panels" / "classic.html"
     assert _i18n_path() != bundle / "i18n.json"
+
+
+def test_panel_brand_titles_allow_descender_room() -> None:
+    panels_dir = REPO_ROOT / "assets" / "panels"
+    for theme in ("classic", "origami", "stained_glass", "catppuccin"):
+        html = (panels_dir / f"{theme}.html").read_text(encoding="utf-8")
+        assert "padding-block: 0.2em;" in html
+        assert "margin-block: -0.2em;" in html

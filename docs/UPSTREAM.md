@@ -31,20 +31,54 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "9723c048ca1fed0cb867390dc4577a6415ce104d",
-      "last_merged": "577e2dfe2c092e8eb93377d870f358815b031d36",
-      "note": "2026-10-29 審視 310d779、9723c04 與 PR #262（setuptools GHSA-xmj3-9gf7-h52w）。本 fork 的 uv.lock 已是 84.2.1，記為已等價不採用。"
+      "last_reviewed": "28655a22812773bc839e0a05d45359cc0905f842",
+      "last_merged": "1c78dc4220b5e7c1beaca62cf76a94ac9efe7993",
+      "note": "2026-10-30 審視 9723c04..28655a2 共 29 筆與 PR #263–#272。採用備用價格 gpt-6.1-terra（PR #268）、面板品牌標題防字母下伸截斷（PR #267）、續接 hook 關閉 repo 內定 fsmonitor、Codex config.toml 寫入前驗證、報表 CSV 公式防護（以上皆 PR #270）。last_merged 指向最後一筆採用的 1c78dc4，時間序晚於 a8d5bd6、83c56f4 與 a35dc9e。"
     }
   },
   "tickets": {
-    "reviewed_pr_through": 262,
+    "reviewed_pr_through": 272,
     "reviewed_issue_through": 202,
-    "reviewed_date": "2026-10-29",
-    "note": "以 --state all 審視。PR #262（setuptools CVE 升版，已等價不採用）與 Issue #202（單一機器、已以 not planned 關閉）。"
+    "reviewed_date": "2026-10-30",
+    "note": "以 --state all 審視。PR #263–#272（採用 #267、#268 價格部分、#270 的 fsmonitor、config.toml 驗證與 CSV 公式防護；其餘依 commit 軸逐筆判定並記錄理由）與 Issue #202。"
   }
 }
 ```
 <!-- sync-points:end -->
+
+## 2026-10-30：`9723c04..28655a2` 共 29 筆，`last_reviewed` 推到 `28655a2`
+
+處理 issue #34 與路線圖近期項目。審視上游 `9723c04` 至 `28655a2` 累積 29 筆 commit，含 PR #263–#272、Release v0.34.8 與 v0.34.9。
+
+### 採用
+
+- **離線備用價格補上 gpt-6.1-terra**（`b495eb3`，PR #268）：`pricing.py` 補上 `gpt-6.1-terra`（輸入 $1/M、輸出 $5/M、快取寫入 $1.25/M、快取讀取 $0.05/M），更新 `FALLBACK_PRICING_AS_OF` 為 `2026-10-30`；補齊 `tests/test_pricing.py` 回歸測試。
+- **防止面板品牌標題截斷字母下伸（descenders）**（`75e1afe`，PR #267）：四款核心主題（`classic`、`catppuccin`、`origami`、`stained_glass`）的品牌標題（`.brand h1`）在 ellipsis clip 下會切掉 `g`、`y` 等字母下緣，補上 `padding-block: 0.2em; margin-block: -0.2em;` 留出渲染空間且不影響版面佈局；補齊 `tests/test_panels_payload_resources.py` 測試。
+- **續接 hook 跑 git status 時關閉 repo 內定的 fsmonitor**（`cd1ce70`、`1c78dc4`，PR #270）：使用者若在特定 repo 設定了惡意或耗時的 `core.fsmonitor` hook，跑 `git status` 時可能觸發非預期指令執行或掛起。在 `usage_session_resume.py` 的 `_git_dirty` 加上 `-c core.fsmonitor=false` 停用 fsmonitor；hook 版號與 `session_hooks.py` 的 `RESUME_HOOK_VERSION` 升至 `1.10` 以利部署更新；補齊 `tests/test_session_resume.py` 測試，並讓測試用 `as_posix()` 路徑設定 `core.fsmonitor`，使 hook 在 Windows 上真的會被 git 的 shell 執行；移除修正後該測試實測會紅。
+- **改寫 Codex config.toml 前先驗證新內容**（`a8d5bd6`，PR #270）：`setup_hook._ensure_table_line` 遇到 `features = { hooks = false }` 或 `features.hooks = false` 會產出無法解析的 TOML（`Cannot declare ('features',) twice`），`session_hooks._setup_codex_terse` 還會把它寫回使用者的 `~/.codex/config.toml`。三個 return 都包上 `validated()`：新內容經 `tomllib.loads` 解析失敗就退回原內容；`_setup_codex_terse` 在內容沒變時記一則 warning（`Could not enable Codex hooks`）。補齊 `tests/test_setup_hook_terse.py::test_setup_codex_terse_preserves_unsupported_features_syntax`（兩種寫法）。
+- **報表 CSV 名稱的公式防護**（`83c56f4` 的 CSV 部分，PR #270）：`ui/html_report.py` 的 `_build_csv_data` 原樣把以 `=`、`+`、`-`、`@`、tab 或 CR 開頭的專案與模型名稱寫進 CSV，在試算表中會被當成公式。名稱欄加單引號前綴（`_csv_safe_name`），數值欄不動；補齊 `tests/test_html_report_snapshot.py::test_build_csv_data_escapes_formula_names_only`。屬性遮罩部分不適用，見下表。
+
+### 逐筆判定與跳過分類
+
+| 類別 / Commit | 判定 | 理由與觸發條件 |
+| --- | --- | --- |
+| `1e06779`、`8c2dfcb`（PR #263）ruff 0.17.2 | 不適用 | 上游依賴更新；本 fork 由自己的 Dependabot 獨立控管。 |
+| `f0fdad7`、`3c4f9d7`（PR #264）codeql-action | 不適用 | 上游 GitHub Actions 依賴升級；本 fork 自行控管。 |
+| `37cbe09`、`c43fde8`（PR #265）setup-uv 10.3.2 | 不適用 | 上游 Actions 依賴升級；本 fork 自行控管。 |
+| `a6994c2`、`db6d4e3`（PR #266）setup-python 7.1.0 | 不適用 | 上游 Actions 依賴升級；本 fork 自行控管。 |
+| `027196d`（PR #268）刪除 discussion.html | 不適用 | 上游 macOS 版下架 AI 圓桌遺留檔；本 fork 在 Windows 上仍保留並獨立維護 AI Council 功能（`AGENTS.md`）。 |
+| `d0b3ee3`（PR #268）比對備用價格檢查 Codex 模型 | 不適用 | 改動 `scripts/check_fallback_pricing.py`，本 fork 無該 script，因此 GPT 系列新模型仍靠人工比對；若之後引入該比對 script，需一併帶入 `MAINSTREAM_CODEX_RE`。 |
+| `75e1afe`、`637f709`（PR #267）面板標題防截斷 | **採用** | 見上。 |
+| `b495eb3`、`4998093`（PR #268）備用價格 gpt-6.1-terra | **採用** | 見上。 |
+| `a1720fc`、`923d5fd`（PR #269）鎖定建置工具與 PyPI 拆分 | 部分已等價，其餘未採用 | PyInstaller 已鎖進 `uv.lock`（`pyproject.toml:34-40`），tag 已經由環境變數傳入（`release.yml:35-39`）。PyPI 拆分不適用（無 PyPI 發布）。`persist-credentials: false` 尚未採用，`release.yml:49` 的 checkout 與 `contents: write` 同 job，該檔沒有 `git push`；列 ROADMAP 追蹤。 |
+| `f67e7f1`（PR #269）Dependabot 延緩 7 天 | 未採用 | 本 fork 的 `dependabot.yml` 目前未設 cooldown，沿用預設；若發生供應鏈事故或維護者要拉長等待期，再加 cooldown。 |
+| `9362465`（PR #269）打包前預編 .pyc | 不適用 | macOS `scripts/build_app.sh` 專屬；本 fork 使用 `scripts/build_windows.ps1`。 |
+| `cd1ce70`、`1c78dc4`（PR #270）關閉 fsmonitor | **採用** | 見上。 |
+| `a8d5bd6`、`a35dc9e`（PR #270）Codex config.toml 寫入驗證 | **採用** | 見上。 |
+| `83c56f4`、`a35dc9e`（PR #270）報表屬性專案遮罩與 CSV 公式防護 | **部分採用** | CSV 公式防護已移植；屬性遮罩不適用：本 fork 沒有 `setToggleLabel`，報表列不把專案名寫進 `aria-label`。 |
+| `4d4baba`、`45d8cf0` 發版 v0.34.8、v0.34.9 | 不適用 | 上游版本發布 chore。 |
+| `02dc0eb`、`84dec53`（PR #271）用 ditto 壓縮保留符號連結 | 不適用 | macOS zip 打包專屬；本 fork 使用 Windows zip 打包。 |
+| `64ac5f5`、`28655a2`（PR #272）額度用完顯示恢復倒數 | 後續（產品方向） | 新功能，改動貫穿 macOS menubar 與 statusline；Windows 系統匣與精簡狀態列需另外評估（同工作列標籤與速率基準判準）。 |
 
 ## 2026-10-29：`577e2df..9723c04` 共 2 筆，`last_reviewed` 推到 `9723c04`
 
@@ -706,6 +740,19 @@ Linux cloud agent **沒有**跑 `build_windows.ps1`；archive_viewer 那層要�
 
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
+| main | `1e06779`／`8c2dfcb` | chore(deps-dev): bump ruff from 0.17.1 to 0.17.2（PR #263） | 2026-10-30 | **不適用**。上游 Dependabot 依賴更新；本 fork 由自己的 Dependabot 獨立控管。 |
+| main | `f0fdad7`／`3c4f9d7` | chore(deps): bump codeql-action group（PR #264） | 2026-10-30 | **不適用**。上游 GitHub Actions 依賴升級；本 fork 自行控管。 |
+| main | `37cbe09`／`c43fde8` | chore(deps): bump astral-sh/setup-uv from 10.3.0 to 10.3.2（PR #265） | 2026-10-30 | **不適用**。上游 Actions 依賴升級；本 fork 自行控管。 |
+| main | `a6994c2`／`db6d4e3` | chore(deps): bump actions/setup-python from 7.0.0 to 7.1.0（PR #266） | 2026-10-30 | **不適用**。上游 Actions 依賴升級；本 fork 自行控管。 |
+| main | `027196d` | chore(remove): 刪除 AI 圓桌下架時漏掉的 discussion.html（PR #268） | 2026-10-30 | **不適用**。上游 macOS 版下架 AI 圓桌遺留檔；本 fork 在 Windows 上仍保留並獨立維護 AI Council 功能（`AGENTS.md`）。 |
+| main | `d0b3ee3` | fix(scripts): 備用價目表比對也檢查 Codex 主線模型有沒有漏（PR #268） | 2026-10-30 | **不適用**。改動 `scripts/check_fallback_pricing.py`，本 fork 無該 script，因此 GPT 系列新模型仍靠人工比對；若之後引入該比對 script，需一併帶入 `MAINSTREAM_CODEX_RE`。 |
+| main | `a1720fc`／`923d5fd` | fix(security): 發版流程建置工具鎖版，PyPI 建置與發布拆開（PR #269） | 2026-10-30 | **部分已等價，其餘未採用**。PyInstaller 已鎖進 `uv.lock`（`pyproject.toml:34-40`），tag 已經由環境變數傳入（`release.yml:35-39`）。PyPI 拆分不適用（無 PyPI 發布）。`persist-credentials: false` 尚未採用，`release.yml:49` 的 checkout 與 `contents: write` 同 job，該檔沒有 `git push`；列 ROADMAP 追蹤。 |
+| main | `f67e7f1` | ci(dependabot): 版本升級等滿 7 天才送 PR（PR #269） | 2026-10-30 | **未採用**。本 fork 的 `dependabot.yml` 目前未設 cooldown，沿用預設；若發生供應鏈事故或維護者要拉長等待期，再加 cooldown。 |
+| main | `9362465` | fix(security): 打包時預先編好 .pyc，app 用過後簽章不再失效（PR #269） | 2026-10-30 | **不適用**。macOS `scripts/build_app.sh` 專屬；本 fork 使用 `scripts/build_windows.ps1`。 |
+| main | `83c56f4`／`a35dc9e` | fix(security): 報表屬性專案遮罩與 CSV 公式防護（PR #270） | 2026-10-30 | **部分採用**。CSV 公式防護已移植；屬性遮罩不適用：本 fork 沒有 `setToggleLabel`，報表列不把專案名寫進 `aria-label`。 |
+| main | `4d4baba`／`45d8cf0` | release: v0.34.8／v0.34.9 | 2026-10-30 | **不適用**。上游版本發布 chore，本 fork 版號獨立（D-05）。 |
+| main | `02dc0eb`／`84dec53` | fix(release): 用 ditto 壓縮 app，下載版的簽章不再失效（PR #271） | 2026-10-30 | **不適用**。macOS zip 打包專屬；本 fork 使用 Windows zip 打包。 |
+| main | `64ac5f5`／`28655a2` | feat(quota): 額度用完時選單列與狀態列改顯示恢復倒數（PR #272） | 2026-10-30 | **列後續（產品方向）**。新功能，改動貫穿 macOS menubar 與 statusline；Windows 系統匣與精簡狀態列需另外評估（同工作列標籤與速率基準判準）。 |
 | main | `310d779`／`9723c04` | build(deps): bump setuptools to 84.2.1 (GHSA-xmj3-9gf7-h52w)（PR #262） | 2026-10-29 | **已等價、不採用**。上游為 GHSA-xmj3-9gf7-h52w 將 `setuptools` 升至 84.2.1；本 fork 的 `uv.lock` 已是 84.2.1，安全性與功能已等價，無須更動程式碼與 lockfile。 |
 | main | `9261121` | chore(release): v0.30.7 | 2026-09-04 | **不適用**。上游的發版 chore（`CHANGELOG`、`pyproject` 版號、`uv.lock`）。本 fork 自行版控與發版，不跟上游版號。 |
 | main | `6adc9bb` | docs(website): 官網補上 Grok CLI 功能卡片，五語系同步 | 2026-09-04 | **不適用**。上游 `docs/index.html` 的行銷頁與五語系文案；本 fork 的公開入口是自己的，正式 UI 只出貨 zh-TW／en。 |

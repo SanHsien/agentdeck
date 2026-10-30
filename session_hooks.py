@@ -11,6 +11,7 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import logging
 import os
 import re
 import shutil
@@ -59,7 +60,7 @@ SETTINGS_LOCK = Path(os.path.expanduser("~/.claude/agentdeck-settings.lock"))
 # session. Off by default: enabled only via the menu toggle, never by self_heal.
 RESUME_HOOK_TARGET = Path(os.path.expanduser("~/.claude/agentdeck-session-resume.py"))
 RESUME_PROMPT_SIDECAR = Path(os.path.expanduser("~/.claude/agentdeck-resume-prompt.json"))
-RESUME_HOOK_VERSION = "1.9"
+RESUME_HOOK_VERSION = "1.10"
 RESUME_MATCHER = "startup|clear"
 RESUME_LANGS = ("zh-TW", "en")
 _RESUME_MARKER = "agentdeck-session-resume"
@@ -595,6 +596,11 @@ def _setup_codex_terse() -> None:
         )
         if new_content != content:
             _atomic_write_text(CODEX_CONFIG, new_content)
+        else:
+            logging.getLogger(__name__).warning(
+                "Could not enable Codex hooks in %s: config update failed TOML validation",
+                CODEX_CONFIG,
+            )
 
     data = _load_codex_hooks()
     hooks = data.get("hooks")

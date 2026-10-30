@@ -18,6 +18,9 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 - **The quota keeper's background ping no longer runs the user's hooks or shows up in `/resume`.** From upstream `5657c7e`, `ddf2ac0`.
 - **The "Quit" label no longer renders as a missing-glyph box on the panel and tray menu.** From upstream PR #158.
 - **The WebView2 profile lives in one folder, `~/.agentdeck/webview`.** From upstream `3ce97a2`.
+- **The offline price table gains gpt-6.1-terra; panel titles no longer clip the descenders of g and y; the resume hook disables a repository's fsmonitor when running git status, so opening a malicious project cannot run its program (hook 1.10).** From upstream `b495eb3`, `75e1afe`, `cd1ce70`, `1c78dc4`.
+- **Rewriting Codex `config.toml` now validates that the result still parses; spellings such as `features = { hooks = false }` or `features.hooks = false` leave the file untouched and log a warning instead of turning it into a config that cannot load.** From upstream `a8d5bd6`.
+- **Project and model names in the report CSV that start with `=`, `+`, `-`, `@`, a tab or a carriage return get a leading single quote, so spreadsheets do not run them as formulas.** From the CSV part of upstream `83c56f4`.
 
 ## [0.42.2] - 2026-09-24
 

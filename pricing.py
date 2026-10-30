@@ -35,7 +35,7 @@ USER_AGENT = "agentdeck"
 # When the hard-coded fallback table below was last checked against upstream.
 # Without a date the table is unfalsifiable: a vendor price change makes every
 # cost silently wrong and nothing in the code can tell you how stale it is.
-FALLBACK_PRICING_AS_OF: str = "2026-10-12"
+FALLBACK_PRICING_AS_OF: str = "2026-10-30"
 # Anthropic's published cache write/read prices as multiples of input pricing.
 # These only fill in fields the upstream table omits, and are not guaranteed
 # correct for other providers.
@@ -523,6 +523,12 @@ def _fallback_pricing() -> PricingTable:
             "output_cost_per_token": 10e-6,
             "cache_creation_input_token_cost": 2.5e-6,
             "cache_read_input_token_cost": 0.1e-6,
+        },
+        "gpt-6.1-terra": {
+            "input_cost_per_token": 1e-6,
+            "output_cost_per_token": 5e-6,
+            "cache_creation_input_token_cost": 1.25e-6,
+            "cache_read_input_token_cost": 0.05e-6,
         },
         "gpt-6-luna": {
             "input_cost_per_token": 0.1e-6,

@@ -7,6 +7,8 @@
 from __future__ import annotations
 
 import base64
+import csv
+import io
 import sys
 from datetime import UTC, date, datetime, timedelta, tzinfo
 from pathlib import Path
@@ -446,6 +448,21 @@ def test_in_progress_week_is_not_compared_with_complete_week() -> None:
     assert "in progress" in rendered
     assert "This week is 2.0× of last week." in rendered
     assert "-100%" not in rendered
+
+
+@pytest.mark.parametrize(
+    "name", ["=1+1", "-cmd", "+cmd", "@cmd", "\tcmd", "\rcmd", '=1,"x"']
+)
+def test_build_csv_data_escapes_formula_names_only(name: str) -> None:
+    data = {
+        "by_project": [{"project": name, "pct": -1.5, "tokens": -2, "cost": -3.0}],
+        "by_model": [{"model": name, "pct": -1.5, "tokens": -2, "cost": -3.0}],
+    }
+
+    rows = list(csv.reader(io.StringIO(html_report._build_csv_data(data, "en"))))
+
+    assert rows[1] == ["project", "'" + name, "-1.5", "-2", "-3.00"]
+    assert rows[2] == ["model", "'" + name, "-1.5", "-2", "-3.00"]
 
 
 def test_build_csv_data_masks_project_names() -> None:

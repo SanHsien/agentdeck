@@ -195,6 +195,22 @@ def test_enable_idempotent_on_codex_features_and_entries(terse_paths: TerseHookP
     assert len(_codex_terse_entries(terse_paths.codex_hooks_json)) == 1
 
 
+@pytest.mark.parametrize("content", ["features = { hooks = false }\n", "features.hooks = false\n"])
+def test_setup_codex_terse_preserves_unsupported_features_syntax(
+    terse_paths: TerseHookPaths, caplog: pytest.LogCaptureFixture, content: str
+) -> None:
+    terse_paths.codex_config.write_text(content, encoding="utf-8")
+
+    session_hooks._setup_codex_terse()
+
+    actual = terse_paths.codex_config.read_text(encoding="utf-8")
+    assert actual == content
+    assert tomllib.loads(actual)["features"]["hooks"] is False
+    assert "Could not enable Codex hooks" in caplog.text
+    assert len(caplog.records) == 1
+    assert caplog.records[0].levelname == "WARNING"
+
+
 def test_enable_skips_codex_when_absent(terse_paths: TerseHookPaths) -> None:
     assert not terse_paths.codex_config.exists()
 
