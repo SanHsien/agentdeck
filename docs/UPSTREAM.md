@@ -70,7 +70,7 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
 | `d0b3ee3`（PR #268）比對備用價格檢查 Codex 模型 | 不適用 | 改動 `scripts/check_fallback_pricing.py`，本 fork 無該 script，因此 GPT 系列新模型仍靠人工比對；若之後引入該比對 script，需一併帶入 `MAINSTREAM_CODEX_RE`。 |
 | `75e1afe`、`637f709`（PR #267）面板標題防截斷 | **採用** | 見上。 |
 | `b495eb3`、`4998093`（PR #268）備用價格 gpt-6.1-terra | **採用** | 見上。 |
-| `a1720fc`、`923d5fd`（PR #269）鎖定建置工具與 PyPI 拆分 | 部分已等價，其餘未採用 | PyInstaller 已鎖進 `uv.lock`（`pyproject.toml:34-40`），tag 已經由環境變數傳入（`release.yml:35-39`）。PyPI 拆分不適用（無 PyPI 發布）。`persist-credentials: false` 尚未採用，`release.yml:49` 的 checkout 與 `contents: write` 同 job，該檔沒有 `git push`；列 ROADMAP 追蹤。 |
+| `a1720fc`、`923d5fd`（PR #269）鎖定建置工具與 PyPI 拆分 | 部分已等價，部分已採用，其餘不適用 | PyInstaller 已鎖進 `uv.lock`（`pyproject.toml:34-40`），tag 已經由環境變數傳入（`release.yml:35-39`）。PyPI 拆分不適用（無 PyPI 發布）。`persist-credentials: false` 已於 2026-10-31 採用（`check.yml`、`codeql.yml`、`upstream-check.yml`、`release.yml`）；四份都沒有需要 git 憑證的步驟，`gh` 走 `GH_TOKEN`。 |
 | `f67e7f1`（PR #269）Dependabot 延緩 7 天 | 未採用 | 本 fork 的 `dependabot.yml` 目前未設 cooldown，沿用預設；若發生供應鏈事故或維護者要拉長等待期，再加 cooldown。 |
 | `9362465`（PR #269）打包前預編 .pyc | 不適用 | macOS `scripts/build_app.sh` 專屬；本 fork 使用 `scripts/build_windows.ps1`。 |
 | `cd1ce70`、`1c78dc4`（PR #270）關閉 fsmonitor | **採用** | 見上。 |
@@ -746,7 +746,7 @@ Linux cloud agent **沒有**跑 `build_windows.ps1`；archive_viewer 那層要�
 | main | `a6994c2`／`db6d4e3` | chore(deps): bump actions/setup-python from 7.0.0 to 7.1.0（PR #266） | 2026-10-30 | **不適用**。上游 Actions 依賴升級；本 fork 自行控管。 |
 | main | `027196d` | chore(remove): 刪除 AI 圓桌下架時漏掉的 discussion.html（PR #268） | 2026-10-30 | **不適用**。上游 macOS 版下架 AI 圓桌遺留檔；本 fork 在 Windows 上仍保留並獨立維護 AI Council 功能（`AGENTS.md`）。 |
 | main | `d0b3ee3` | fix(scripts): 備用價目表比對也檢查 Codex 主線模型有沒有漏（PR #268） | 2026-10-30 | **不適用**。改動 `scripts/check_fallback_pricing.py`，本 fork 無該 script，因此 GPT 系列新模型仍靠人工比對；若之後引入該比對 script，需一併帶入 `MAINSTREAM_CODEX_RE`。 |
-| main | `a1720fc`／`923d5fd` | fix(security): 發版流程建置工具鎖版，PyPI 建置與發布拆開（PR #269） | 2026-10-30 | **部分已等價，其餘未採用**。PyInstaller 已鎖進 `uv.lock`（`pyproject.toml:34-40`），tag 已經由環境變數傳入（`release.yml:35-39`）。PyPI 拆分不適用（無 PyPI 發布）。`persist-credentials: false` 尚未採用，`release.yml:49` 的 checkout 與 `contents: write` 同 job，該檔沒有 `git push`；列 ROADMAP 追蹤。 |
+| main | `a1720fc`／`923d5fd` | fix(security): 發版流程建置工具鎖版，PyPI 建置與發布拆開（PR #269） | 2026-10-30 | **部分已等價，部分已採用，其餘不適用**。PyInstaller 已鎖進 `uv.lock`（`pyproject.toml:34-40`），tag 已經由環境變數傳入（`release.yml:35-39`）。PyPI 拆分不適用（無 PyPI 發布）。`persist-credentials: false` 已於 2026-10-31 採用（`check.yml`、`codeql.yml`、`upstream-check.yml`、`release.yml`）；四份都沒有需要 git 憑證的步驟，`gh` 走 `GH_TOKEN`。 |
 | main | `f67e7f1` | ci(dependabot): 版本升級等滿 7 天才送 PR（PR #269） | 2026-10-30 | **未採用**。本 fork 的 `dependabot.yml` 目前未設 cooldown，沿用預設；若發生供應鏈事故或維護者要拉長等待期，再加 cooldown。 |
 | main | `9362465` | fix(security): 打包時預先編好 .pyc，app 用過後簽章不再失效（PR #269） | 2026-10-30 | **不適用**。macOS `scripts/build_app.sh` 專屬；本 fork 使用 `scripts/build_windows.ps1`。 |
 | main | `83c56f4`／`a35dc9e` | fix(security): 報表屬性專案遮罩與 CSV 公式防護（PR #270） | 2026-10-30 | **部分採用**。CSV 公式防護已移植；屬性遮罩不適用：本 fork 沒有 `setToggleLabel`，報表列不把專案名寫進 `aria-label`。 |
