@@ -109,6 +109,7 @@ uv run --no-sync python main.py            # Windows system tray
 uv run --no-sync python main.py --tui      # Rich TUI
 uv run --no-sync python main.py --mock     # 假資料預覽
 uv run --no-sync python main.py --doctor   # 環境 / hook 診斷
+uv run --no-sync python main.py --doctor --json # 預設遮蔽敏感資訊的問題回報
 uv run --no-sync python usage_cli.py report
 ```
 

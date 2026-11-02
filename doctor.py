@@ -6,22 +6,130 @@
 
 from __future__ import annotations
 
+import json
 import os
+import platform
+import re
 import shlex
 import sqlite3
 import sys
 import tomllib
 from collections.abc import Callable
 from datetime import UTC, datetime
+from functools import partial
 from importlib import metadata
 from pathlib import Path
+from typing import Any
 
 import provider_health
 import provider_probe
 import setup_hook
+import status_projection
 from i18n import _t, packaged_resource_path
 
 SEPARATOR = "-" * 29
+DOCTOR_SCHEMA_VERSION = 1
+
+
+def _json_check(func: Callable[[], Any]) -> Any:
+    try:
+        return func()
+    except Exception as exc:
+        # Exception messages may contain credentials or arbitrary project paths.
+        return {"error": type(exc).__name__}
+
+
+def _json_hook_version() -> dict[str, str | None]:
+    installed = setup_hook._installed_hook_version()
+    if installed is not None and not re.fullmatch(r"[0-9]{1,8}(?:\.[0-9]{1,8}){1,3}", installed):
+        installed = "[REDACTED]"
+    return {"installed": installed, "current": setup_hook.HOOK_VERSION}
+
+
+def _file_info(path: Path) -> dict[str, Any]:
+    # Paths add no diagnostic value beyond the logical file name in this report.
+    exists = path.exists()
+    return {"exists": exists, "modified_ago": _ago(path.stat().st_mtime) if exists else None}
+
+
+def _json_self_heal_log() -> list[dict[str, Any]]:
+    settings = setup_hook._load_settings()
+    usage = settings.get(setup_hook.BACKUP_KEY)
+    log = usage.get("selfHealLog") if isinstance(usage, dict) else None
+    if not isinstance(log, list):
+        return []
+    known_actions = {
+        "install_hook", "update_hook", "restore_hook_scripts", "migrate_windows_statusline",
+        "migrate_bundled_python", "restore_terse_hook_codex", "update_terse_hook_codex",
+        "restore_resume_hook", "update_resume_hook", "restore_terse_hook", "update_terse_hook",
+        "restore_terse_reminder_hook", "update_terse_reminder_hook", "upgrade_codex_status_line",
+    }
+    entries = []
+    for item in log[-5:]:
+        if not isinstance(item, dict):
+            continue
+        try:
+            timestamp = datetime.fromisoformat(str(item.get("timestamp"))).isoformat()
+        except ValueError:
+            timestamp = "unknown"
+        action = item.get("action")
+        entries.append({
+            "timestamp": timestamp,
+            "action": (
+                action if isinstance(action, str) and action in known_actions else "[REDACTED]"
+            ),
+            "detail": "[REDACTED]" if item.get("detail") else "",
+        })
+    return entries
+
+
+def render_json() -> str:
+    """Issue-safe, headless diagnostic report sharing the status v1 projection.
+
+    No repair, UI initialization, network probe or raw credential is requested.
+    Free-form logs and exception messages are withheld, even for unknown secrets.
+    """
+    from providers import codex_loader
+
+    payload = status_projection.build_status_payload()
+    payload["schema_version"] = DOCTOR_SCHEMA_VERSION
+    for entry in payload["providers"].values():
+        health = entry.get("health", {})
+        if health.get("detail"):
+            health["detail"] = "[REDACTED]"
+    payload["diagnostics"] = {
+        "environment": {
+            "os": platform.system(),
+            "os_version": platform.version(),
+            "python_version": platform.python_version(),
+            "packaged": bool(getattr(sys, "frozen", False)),
+        },
+        "checks": {
+            "hook_state": _json_check(_hook_state),
+            "hook_version": _json_check(_json_hook_version),
+            "status_command": _json_check(_status_command),
+            "external_hooks": _json_check(_external_hooks),
+            "forwarder_prompt": _json_check(_forwarder_prompt),
+            "codex_sessions": _json_check(_codex_sessions),
+            "codex_log_rate_limit_rows": _json_check(
+                lambda: _codex_rate_limit_log_count(codex_loader.LOGS_DB)
+                if codex_loader.LOGS_DB.exists() else 0
+            ),
+            "codex_rate_limits": _json_check(_codex_rate_limits),
+        },
+        "files": {
+            name: _json_check(partial(_file_info, path))
+            for name, path in (
+                ("hook_script", setup_hook.HOOK_TARGET),
+                ("forwarder_script", setup_hook.FORWARDER_TARGET),
+                ("status_file", setup_hook.STATUS_FILE),
+                ("codex_logs", codex_loader.LOGS_DB),
+                ("codex_state", codex_loader.STATE_DB),
+            )
+        },
+        "self_heal_log": _json_check(_json_self_heal_log),
+    }
+    return json.dumps(status_projection.redact_data(payload), ensure_ascii=False, indent=2)
 
 
 def render() -> str:

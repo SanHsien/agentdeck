@@ -83,6 +83,16 @@ uv run --no-sync python usage_cli.py report # terminal analytics report
 $env:AGENTDECK_DEBUG=1; uv run --no-sync python main.py   # surface swallowed exceptions
 ```
 
+`main.py --doctor --json` produces an issue report without a UI, repairs or network probes.
+Its `schema_version` is `1`; `app_version`, `generated_at`, `timestamp` and `providers` reuse
+the neutral `--status --json` projection. It adds `diagnostics.environment`, `checks`, `files`
+and the last five `self_heal_log` entries. Files expose existence and modification age rather
+than paths. Free-form health details, log details and unknown log actions are masked;
+exceptions expose only their type. Environment and provider state also use the shared redactor.
+Missing files or individual check failures still produce valid JSON (exit 0, failed checks
+carry `error`); `--status` and `--doctor` cannot be combined. Schema additions are compatible;
+removing fields or changing field types incompatibly requires a higher `schema_version`.
+
 ## Packaging
 
 This is a flat application distributed with PyInstaller, not as a wheel or PyPI package; `[tool.uv] package = false` is intentional. Do not use `uv build` as the release check.

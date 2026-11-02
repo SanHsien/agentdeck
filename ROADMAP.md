@@ -5,6 +5,8 @@
 
 ## 現況
 
+`--status --json` 與 `--doctor --json` 已提供 schema v1，兩者共用中立狀態投影；後者另附預設遮蔽敏感資訊的環境與 hook 診斷。
+
 Windows 系統匣駕駛艙（Claude Code、Codex、Antigravity 額度、AI 圓桌、報告），私有，從上游 [`aqua5230/usage`](https://github.com/aqua5230/usage) 分出後獨立維護，定位與邊界見 [`docs/DECISIONS.md`](docs/DECISIONS.md) D-01。健康：`main` 的 CI、CodeQL、Scorecard、ClusterFuzzLite batch、上游更新檢查最近一次皆 success（2026-10-27／28）；open PR 0、Dependabot 與 Code scanning 告警 0；open issue 1（#34 上游更新檢查，已審視到 `28655a2`／PR #272，推上 main 後待關閉）；最新 release 是 v0.42.1，`pyproject.toml` 已是 0.42.2、`CHANGELOG.md` 的 `[Unreleased]` 另有已合併未發版的修正（`gh` 實查，2026-10-29）。上游已把根目錄模組搬進套件，無法整段 merge，一律手工移植（`docs/UPSTREAM.md`）。卡住的是需要真實 Windows 桌面的驗證與發版決定，不是程式缺陷。
 
 ## 近期：可以直接動手
@@ -16,7 +18,6 @@ Windows 系統匣駕駛艙（Claude Code、Codex、Antigravity 額度、AI 圓�
 ## 中期：等條件成立再做
 | 項目 | 觸發條件 | 驗收方式 | 建議執行者 | 證據 |
 | --- | --- | --- | --- | --- |
-| `main.py --doctor --json`，供 issue 回報與自動診斷 | `--status --json` 的 schema 合併後（共用同一個中立狀態投影） | 輸出版本化 JSON；預設遮蔽使用者名稱、專案路徑與 token（有測試）；無 UI 環境可跑；一個指令即可完成問題回報所需診斷 | Claude Sonnet | `doctor.py`；`main.py:227-231`（現有 `--doctor` 為人類可讀輸出） |
 | AI 圓桌歷史：索引、搜尋、重開與「在檔案總管開啟」 | 維護者決定下一輪投入圓桌；先確認失敗或取消後已完成的回合仍完整存檔 | 以日期、主題、參與者與結果搜尋 `~/.agentdeck/discussions/`；重開時看得懂中斷原因；存檔格式有 migration 測試，舊版討論仍可讀；回合硬上限與 token 預算在啟動前可見 | Claude Opus | `council/discussion_bridge.py:63,992-993`（存檔位置，未見索引或搜尋程式）；`council/discussion_session.py` |
 | Codex 事件驅動來源評估（plugin／`app-server`）與效能基準（冷啟動、90 天紀錄掃描、檔案事件後刷新延遲、記憶體峰值） | Codex 本機 JSONL 格式變動造成額度空白，或維護者要求更低的更新延遲 | 寫成 `docs/DECISIONS.md` 的採用／不採用決定與實測數字；JSONL 掃描保留為零安裝 fallback；基準可重跑且有 fixture | Claude Opus | 儲存庫內查無 benchmark 程式（`grep -rn benchmark` 只命中舊路線圖）；`docs/DECISIONS.md` 無 Codex 事件來源決策 |
 | Antigravity 額度改打正式主機 `cloudcode-pa` | 維護者決定接受「OAuth token 送往另一個 Google 端點」，或實測 Gemini 額度確實缺失 | 實機以真實帳號驗證 Gemini 額度出現；`SECURITY.md` 與 `SECURITY.en.md` 的端點清單同步更新；`docs/UPSTREAM.md` 該列標為已決定並寫理由 | 維護者 | `docs/UPSTREAM.md:69`（待維護者決定）；`providers/agy_quota_probe.py:48` |

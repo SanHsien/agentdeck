@@ -147,3 +147,190 @@ def test_doctor_reports_codex_diagnostics(
     assert "codex state:" in output
     assert "[ok]" in output
     assert "codex rate limits: 5h: no, weekly: yes, updated:" in output
+
+
+@pytest.fixture
+def isolated_doctor(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    import status_projection
+
+    for name in ("HOOK_TARGET", "FORWARDER_TARGET", "STATUS_FILE", "CLAUDE_SETTINGS"):
+        monkeypatch.setattr(setup_hook, name, tmp_path / name)
+    for name in ("SESSIONS_DIR", "LOGS_DB", "STATE_DB"):
+        monkeypatch.setattr(codex_loader, name, tmp_path / name)
+    monkeypatch.setattr(codex_loader, "load_rate_limits", lambda: None)
+    monkeypatch.setattr(setup_hook, "_load_settings", lambda: {})
+    monkeypatch.setattr(
+        status_projection, "build_status_payload",
+        lambda: {"schema_version": 1, "app_version": "0.42.2",
+                 "generated_at": "2026-11-02T00:00:00+00:00", "timestamp": 1793577600,
+                 "providers": {"claude": {"health": {"detail": ""}, "quota": None}}},
+    )
+
+
+def test_doctor_json_schema_and_missing_files(isolated_doctor: None) -> None:
+    payload = json.loads(doctor.render_json())
+    assert payload["schema_version"] == 1
+    assert payload["app_version"] == "0.42.2"
+    assert payload["generated_at"] == "2026-11-02T00:00:00+00:00"
+    assert "providers" in payload
+    diagnostics = payload["diagnostics"]
+    assert set(diagnostics) == {"environment", "checks", "files", "self_heal_log"}
+    assert diagnostics["environment"]["python_version"]
+    assert diagnostics["checks"]["hook_state"] == "none"
+    assert diagnostics["checks"]["codex_rate_limits"] == "none"
+    assert diagnostics["files"]["hook_script"]["exists"] is False
+    assert diagnostics["files"]["status_file"]["exists"] is False
+    assert diagnostics["self_heal_log"] == []
+
+
+def test_doctor_json_redacts_untrusted_diagnostics(
+    isolated_doctor: None, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    import status_projection
+
+    user = "FixtureMaintainer"
+    project = str(tmp_path / "private project")
+    token = "fixture-credential-do-not-disclose"
+    message = f"{user} {project} {token}"
+    monkeypatch.setattr(status_projection, "_user_names", lambda: {user})
+    monkeypatch.setattr(setup_hook, "HOOK_TARGET", tmp_path / "private project" / "hook.py")
+    monkeypatch.setattr(setup_hook, "_load_settings", lambda: {
+        setup_hook.BACKUP_KEY: {"selfHealLog": [
+            {"timestamp": "2026-11-02T00:00:00+00:00", "action": message, "detail": message}
+        ]},
+    })
+
+    def broken() -> str:
+        raise OSError(message)
+
+    monkeypatch.setattr(doctor, "_codex_sessions", broken)
+    payload = json.loads(doctor.render_json())
+    text = json.dumps(payload)
+    for private in (user, project, token):
+        assert private not in text
+    assert payload["diagnostics"]["checks"]["codex_sessions"] == {"error": "OSError"}
+    assert "[REDACTED]" in text
+
+
+def test_main_doctor_json_is_headless(
+    isolated_doctor: None, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+) -> None:
+    import main
+
+    def forbidden() -> None:
+        pytest.fail("doctor must not initialize UI, repair hooks or launch a provider")
+
+    monkeypatch.setattr(main, "_self_heal", forbidden)
+    monkeypatch.setattr(main, "health_check", forbidden)
+    monkeypatch.setattr(main, "run_tui", forbidden)
+    monkeypatch.setattr(sys, "argv", ["main.py", "--doctor", "--json"])
+    with pytest.raises(SystemExit) as result:
+        main.main()
+    assert result.value.code == 0
+    captured = capsys.readouterr()
+    assert captured.err == ""
+    assert "diagnostics" in json.loads(captured.out)
+
+
+def test_doctor_and_status_are_mutually_exclusive(monkeypatch: pytest.MonkeyPatch) -> None:
+    import main
+
+    monkeypatch.setattr(sys, "argv", ["main.py", "--doctor", "--status", "--json"])
+    with pytest.raises(SystemExit) as result:
+        main.parse_args()
+    assert result.value.code == 2
+
+
+def test_doctor_json_uses_real_shared_projection_without_ui_or_writes(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    import main
+    import provider_health
+    import provider_probe
+    import status_projection
+
+    private = "fixture-credential-do-not-disclose"
+    calls = []
+
+    def healths(*, now: float) -> list[provider_health.ProviderHealth]:
+        calls.append(now)
+        return [provider_health.ProviderHealth(
+            provider="claude", state=provider_health.HealthState.ERROR,
+            reason_key="health_claude_error", detail=private,
+        )]
+
+    def forbidden(*args: object, **kwargs: object) -> None:
+        pytest.fail("headless diagnostics must not write settings or initialize UI")
+
+    for name in ("HOOK_TARGET", "FORWARDER_TARGET", "STATUS_FILE", "CLAUDE_SETTINGS"):
+        monkeypatch.setattr(setup_hook, name, tmp_path / name)
+    monkeypatch.setattr(setup_hook, "_load_settings", lambda: {})
+    monkeypatch.setattr(setup_hook, "_save_settings", forbidden)
+    monkeypatch.setattr(provider_probe, "collect_provider_health", healths)
+    for name in ("_collect_claude_quota", "_collect_codex_quota", "_collect_antigravity_quota"):
+        monkeypatch.setattr(status_projection, name, lambda **kwargs: None)
+    monkeypatch.setattr(codex_loader, "load_rate_limits", lambda: None)
+    for name in ("wintray", "webview", "pystray", "tui"):
+        monkeypatch.setitem(sys.modules, name, None)
+    monkeypatch.setattr(main, "_self_heal", forbidden)
+    monkeypatch.setattr(sys, "argv", ["main.py", "--doctor", "--json"])
+    with pytest.raises(SystemExit) as result:
+        main.main()
+    assert result.value.code == 0
+    output = capsys.readouterr()
+    payload = json.loads(output.out)
+    assert output.err == ""
+    assert len(calls) == 1
+    assert payload["schema_version"] == 1
+    assert set(payload) == {
+        "schema_version", "app_version", "generated_at", "timestamp", "providers", "diagnostics"
+    }
+    assert set(payload["providers"]) == {"claude", "codex", "antigravity"}
+    assert payload["providers"]["claude"]["health"]["state"] == "error"
+    assert private not in output.out
+    assert payload["providers"]["codex"]["health"]["state"] == "missing"
+    assert not list(tmp_path.iterdir())
+
+
+def test_doctor_json_log_retains_last_five_safe_actions(
+    isolated_doctor: None, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(setup_hook, "_load_settings", lambda: {
+        setup_hook.BACKUP_KEY: {"selfHealLog": [
+            {"timestamp": f"2026-11-02T00:00:0{index}Z", "action": "update_hook", "detail": ""}
+            for index in range(7)
+        ]},
+    })
+    entries = json.loads(doctor.render_json())["diagnostics"]["self_heal_log"]
+    assert len(entries) == 5
+    assert entries[0]["timestamp"] == "2026-11-02T00:00:02+00:00"
+    assert entries[-1]["action"] == "update_hook"
+
+
+def test_doctor_json_failed_file_and_corrupt_log_are_reported(
+    isolated_doctor: None, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def broken_file(path: Path) -> dict[str, object]:
+        raise PermissionError("fixture-private-project")
+
+    monkeypatch.setattr(doctor, "_file_info", broken_file)
+    monkeypatch.setattr(setup_hook, "_load_settings", lambda: {
+        setup_hook.BACKUP_KEY: {"selfHealLog": [None, {"timestamp": "invalid"}]},
+    })
+    payload = json.loads(doctor.render_json())
+    assert payload["diagnostics"]["files"]["hook_script"] == {"error": "PermissionError"}
+    assert payload["diagnostics"]["self_heal_log"][0]["timestamp"] == "unknown"
+    assert "fixture-private-project" not in json.dumps(payload)
+
+
+@pytest.mark.parametrize("installed", ["1.9", "fixture-credential-do-not-disclose"])
+def test_doctor_json_validates_installed_hook_version(
+    isolated_doctor: None, monkeypatch: pytest.MonkeyPatch, installed: str,
+) -> None:
+    monkeypatch.setattr(setup_hook, "_installed_hook_version", lambda: installed)
+    check = json.loads(doctor.render_json())["diagnostics"]["checks"]["hook_version"]
+    assert check == {
+        "installed": installed if installed == "1.9" else "[REDACTED]",
+        "current": setup_hook.HOOK_VERSION,
+    }

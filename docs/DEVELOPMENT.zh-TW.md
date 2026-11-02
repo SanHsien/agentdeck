@@ -79,6 +79,14 @@ uv run --no-sync python usage_cli.py report # 終端機分析報告
 $env:AGENTDECK_DEBUG=1; uv run --no-sync python main.py   # 讓被吞掉的例外浮出來
 ```
 
+`main.py --doctor --json` 可在無 UI 環境產生問題回報，不啟動修復或網路探測。
+JSON 的 `schema_version` 為 `1`；`app_version`、`generated_at`、`timestamp`、`providers`
+沿用 `--status --json` 的中立投影，另外提供 `diagnostics.environment`、`checks`、`files`
+與最近五筆 `self_heal_log`。檔案只回報存在與更新時間，不輸出路徑；自由文字健康詳情、
+log detail 與不認得的 log action 會遮蔽，例外只保留類型。環境與 provider 狀態仍使用共用遮蔽器。
+缺檔或單項失敗仍輸出有效 JSON（exit 0，失敗項帶 `error`）；`--status` 與 `--doctor`
+不能同時使用。Schema 可增加欄位；不相容的欄位刪除或型別變更須提高 `schema_version`。
+
 ## 打包
 
 這是以 PyInstaller 發佈的 flat application，不發佈 wheel／PyPI 套件；`[tool.uv] package = false` 是刻意設定。請勿用 `uv build` 當作 release 驗證。

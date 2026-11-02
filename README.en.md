@@ -109,6 +109,7 @@ uv run --no-sync python main.py            # Windows system tray
 uv run --no-sync python main.py --tui      # Rich TUI
 uv run --no-sync python main.py --mock     # preview with fake data
 uv run --no-sync python main.py --doctor   # environment / hook diagnostics
+uv run --no-sync python main.py --doctor --json # issue report with default redaction
 uv run --no-sync python usage_cli.py report
 ```
 

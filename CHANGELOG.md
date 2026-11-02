@@ -8,6 +8,7 @@
 ## [Unreleased]
 
 ### 新增
+- **新增 `main.py --doctor --json` 問題回報診斷。** 沿用狀態投影並附上環境、hook 與本機資料檔診斷，輸出 schema v1；預設遮蔽路徑與敏感自由文字，無需啟動 UI 或修復設定。
 - **新增 `main.py --status --json` 命令列查詢，輸出版本化健康與額度 JSON。** 方便排程與外部腳本自動讀取 Claude、Codex、Antigravity 額度與健康狀態，預設遮蔽使用者名稱、路徑與敏感憑證。
 
 ### 修正

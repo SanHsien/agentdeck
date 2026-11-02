@@ -9,6 +9,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Add `main.py --doctor --json` for issue diagnostics.** Reuses the status projection and adds environment, hook and local data-file checks under schema v1; paths and sensitive free text are masked by default, without starting a UI or repairing settings.
 - **Add `main.py --status --json` CLI query emitting versioned health and quota JSON.** Schedulers and scripts can inspect Claude, Codex, and Antigravity quotas and health state with sensitive usernames, paths, and tokens redacted by default.
 
 ### Fixed

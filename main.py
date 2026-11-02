@@ -232,7 +232,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--json",
         action="store_true",
-        help="搭配 --status 輸出版本化 JSON",
+        help=_t("cli_json_help"),
     )
     parser.add_argument(
         "--doctor",
@@ -246,8 +246,10 @@ def parse_args() -> argparse.Namespace:
         help=argparse.SUPPRESS,
     )
     args = parser.parse_args()
-    if args.json and not args.status:
-        parser.error("--json 必須搭配 --status 使用")
+    if args.status and args.doctor:
+        parser.error(_t("cli_status_doctor_conflict"))
+    if args.json and not (args.status or args.doctor):
+        parser.error(_t("cli_json_requires_report"))
     args.interval = max(30, args.interval)
     return args
 
@@ -334,7 +336,10 @@ def main() -> None:
     if args.doctor:
         import doctor
 
-        print(doctor.render(), end="")
+        if getattr(args, "json", False):
+            print(doctor.render_json())
+        else:
+            print(doctor.render(), end="")
         raise SystemExit(0)
     if args.resume_now:
         # Runs headless with no tray and no self-heal: this process exists only to

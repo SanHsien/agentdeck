@@ -1,5 +1,8 @@
 {
   "zh-TW": {
+    "cli_json_help": "搭配 --status 或 --doctor 輸出版本化 JSON",
+    "cli_status_doctor_conflict": "--status 與 --doctor 不可同時使用",
+    "cli_json_requires_report": "--json 必須搭配 --status 或 --doctor 使用",
     "panel_default_name": "預設",
     "panel_origami": "摺紙",
     "panel_stained_glass": "彩繪玻璃",
@@ -538,6 +541,9 @@
     "relay_mail_body": "{sender}：{subject}"
   },
   "en": {
+    "cli_json_help": "Emit versioned JSON with --status or --doctor",
+    "cli_status_doctor_conflict": "--status and --doctor cannot be combined",
+    "cli_json_requires_report": "--json requires --status or --doctor",
     "panel_default_name": "Default",
     "panel_origami": "Origami",
     "panel_stained_glass": "Stained Glass",
