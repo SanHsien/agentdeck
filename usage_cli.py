@@ -254,13 +254,24 @@ def _parse_out_and_help(args: list[str], command: str) -> tuple[str | None, bool
     return out_path, show_help
 
 
+def _csv_safe_text(value: Any) -> Any:
+    """Stop spreadsheet formula injection: quote a string cell led by a formula character.
+
+    Same rule as ``ui.html_report._csv_safe_name``. Only ``str`` is touched, so
+    numeric cells (a negative number stays ``-5``) are never prefixed.
+    """
+    if isinstance(value, str) and value.startswith(("=", "+", "-", "@", "\t", "\r")):
+        return "'" + value
+    return value
+
+
 def _csv_row(stat: Any, fields: list[str]) -> dict[str, Any]:
     row: dict[str, Any] = {}
     for field in fields:
         value = getattr(stat, field)
         if field in {"start_time", "end_time"}:
             value = value.isoformat()
-        row[field] = value
+        row[field] = _csv_safe_text(value)
     return row
 
 

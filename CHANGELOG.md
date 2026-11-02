@@ -20,6 +20,7 @@
 - **離線價格表補上 gpt-6.1-terra；面板標題的 g、y 不再被切掉；接續 hook 跑 git status 時停用 repo 指定的 fsmonitor，避免開啟惡意專案時執行其程式（hook 升到 1.10）。** 取自上游 `b495eb3`、`75e1afe`、`cd1ce70`、`1c78dc4`。
 - **改寫 Codex `config.toml` 前先驗證新內容仍可解析；遇到 `features = { hooks = false }` 或 `features.hooks = false` 這類寫法就保持原檔不動並記錄警告，不再把設定改成無法載入。** 取自上游 `a8d5bd6`。
 - **報表 CSV 的專案與模型名稱若以 `=`、`+`、`-`、`@`、tab 或換行字元開頭，會加上單引號前綴，避免在試算表中被當成公式執行。** 取自上游 `83c56f4` 的 CSV 部分。
+- **`usage export` 匯出的 CSV 也防公式注入：字串欄（agent_id、session_id、project、model 等）若以 `=`、`+`、`-`、`@`、tab 或換行字元開頭，會加上單引號前綴；數值欄不動，負數維持原樣。** 上游未修，本 fork 自行補上，規則與報表 CSV 相同。
 
 ## [0.42.2] - 2026-09-24
 

@@ -21,6 +21,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 - **The offline price table gains gpt-6.1-terra; panel titles no longer clip the descenders of g and y; the resume hook disables a repository's fsmonitor when running git status, so opening a malicious project cannot run its program (hook 1.10).** From upstream `b495eb3`, `75e1afe`, `cd1ce70`, `1c78dc4`.
 - **Rewriting Codex `config.toml` now validates that the result still parses; spellings such as `features = { hooks = false }` or `features.hooks = false` leave the file untouched and log a warning instead of turning it into a config that cannot load.** From upstream `a8d5bd6`.
 - **Project and model names in the report CSV that start with `=`, `+`, `-`, `@`, a tab or a carriage return get a leading single quote, so spreadsheets do not run them as formulas.** From the CSV part of upstream `83c56f4`.
+- **The `usage export` CSV is now formula-injection safe too: string cells (agent_id, session_id, project, model, ...) starting with `=`, `+`, `-`, `@`, tab, or CR get a leading single quote; numeric cells are untouched, so negative numbers stay as they are.** Not fixed upstream; added here with the same rule as the report CSV.
 
 ## [0.42.2] - 2026-09-24
 

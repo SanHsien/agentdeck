@@ -671,3 +671,56 @@ def test_dashboard_sort_cycle_shape_and_order() -> None:
         "cost_usd",
         "message_count",
     ]
+
+
+def _hostile_session_stat() -> Any:
+    from adapters.types import SessionStats
+
+    return SessionStats(
+        session_id="@sid",
+        project="=HYPERLINK(\"http://x\",\"y\")",
+        model="+cmd|' /C calc'!A0",
+        start_time=datetime(2026, 1, 1, 12, 0, tzinfo=UTC),
+        end_time=datetime(2026, 1, 1, 12, 30, tzinfo=UTC),
+        duration_minutes=30.0,
+        input_tokens=-5,
+        cost_usd=-1.5,
+        agent_id="-agent",
+    )
+
+
+@pytest.mark.parametrize("prefix", ["=", "+", "-", "@", "\t", "\r"])
+def test_export_csv_quotes_string_fields_that_start_with_a_formula_character(prefix: str) -> None:
+    assert usage_cli._csv_safe_text(prefix + "x") == "'" + prefix + "x"
+
+
+def test_export_csv_leaves_numbers_and_plain_strings_alone() -> None:
+    assert usage_cli._csv_safe_text("project") == "project"
+    assert usage_cli._csv_safe_text(-5) == -5
+    assert usage_cli._csv_safe_text(-1.5) == -1.5
+    assert usage_cli._csv_safe_text(0) == 0
+
+
+def test_export_csv_text_rule_matches_the_report_csv_rule() -> None:
+    from ui import html_report
+
+    for sample in ["=1", "+1", "-1", "@a", "\tx", "\rx", "plain", "", "a=b"]:
+        assert usage_cli._csv_safe_text(sample) == html_report._csv_safe_name(sample)
+
+
+def test_export_sessions_csv_neutralizes_hostile_text_but_keeps_negative_numbers(
+    tmp_path: Path,
+) -> None:
+    import csv
+
+    out_path = tmp_path / "s.csv"
+    usage_cli._write_export_csv([_hostile_session_stat()], "sessions", str(out_path))
+
+    with out_path.open(encoding="utf-8", newline="") as fh:
+        row = next(csv.DictReader(fh))
+    assert row["agent_id"] == "'-agent"
+    assert row["session_id"] == "'@sid"
+    assert row["project"].startswith("'=")
+    assert row["model"].startswith("'+")
+    assert row["input_tokens"] == "-5"
+    assert row["cost_usd"] == "-1.5"

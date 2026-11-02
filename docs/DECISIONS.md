@@ -873,3 +873,17 @@ tray 時看一眼專案切換與額度輪詢是否還會閃窗。
 **日期**：2026-10-30
 
 **決定**：上游 9723c04..28655a2 的不採用項目（依賴升級、macOS 打包、發版 chore）與理由見 docs/UPSTREAM.md。
+
+---
+
+## D-37：`usage export` CSV 加公式注入防護，只處理字串欄
+
+**日期**：2026-11-02
+
+**決定**：`usage_cli._csv_row` 對每個字串值套 `_csv_safe_text`：以 `=`、`+`、`-`、`@`、tab、CR 開頭就加單引號前綴，規則與報表 CSV 的 `ui/html_report._csv_safe_name` 一致（測試釘住兩者輸出相同）。涵蓋 agent_id、session_id、project、model 等所有字串欄，不只 project 與 model，因為 session_id 同樣來自外部 JSONL。
+
+**考慮過的替代方案**：
+- 直接 import `ui.html_report._csv_safe_name`：該函式是私有且 `html_report` 模組很重，CLI 路徑不該為一個五行函式載入它；改為複製規則加一條等價測試。
+- 對所有儲存格（含數值）加前綴：負數（如 `-5`、`-1.5`）會變成字串 `'-5`，破壞下游數值解析，因此只處理 `str`，數值欄原樣輸出。
+
+**取捨**：被加前綴的儲存格在機器讀取時多一個 `'`；對 project／model 這類標籤欄可接受，也是 OWASP 建議的作法。純標籤中間出現的 `=` 不受影響。上游未修此處。
