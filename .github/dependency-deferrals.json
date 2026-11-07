@@ -1,0 +1,8 @@
+{
+  "deferrals": {
+    "ruff": {
+      "deferredLatest": "0.17.4",
+      "reason": "0.17.4 was released 2026-11-05 and is inside the 7-day cooling-off window (uploaded 2026-11-05T18:51Z); the declared floor and lock use 0.17.3. Review on or after 2026-11-12T18:51Z. See docs/DECISIONS.md D-39."
+    }
+  }
+}

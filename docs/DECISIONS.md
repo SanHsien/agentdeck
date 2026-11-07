@@ -887,3 +887,33 @@ tray 時看一眼專案切換與額度輪詢是否還會閃窗。
 - 對所有儲存格（含數值）加前綴：負數（如 `-5`、`-1.5`）會變成字串 `'-5`，破壞下游數值解析，因此只處理 `str`，數值欄原樣輸出。
 
 **取捨**：被加前綴的儲存格在機器讀取時多一個 `'`；對 project／model 這類標籤欄可接受，也是 OWASP 建議的作法。純標籤中間出現的 `=` 不受影響。上游未修此處。
+
+## D-38：下一版為 0.43.0，tag 與 release 對外寫入由維護者授權的執行者進行（2026-11-08）
+
+**日期**：2026-11-08
+
+**決定**：把 `[Unreleased]` 切成 `0.43.0`，`pyproject.toml`、`uv.lock` 同步升到 0.43.0。0.42.2 的變更段原樣保留（它沒有被打過 tag，內容併入 0.43.0 這一版發給使用者）。
+
+**為什麼是 MINOR**：D-05 的 SemVer 規則下，`[Unreleased]` 新增 `--status --json` 與 `--doctor --json` 兩個命令列介面，是新功能，不是 PATCH；沒有破壞性變更，所以不是 MAJOR。距離上次 release（v0.42.1，2026-09-19）已有 0.42.2 與 31 個 commit 的修正沒送到使用者手上。
+
+**驗收**：`python scripts/check_release_version.py SanHsien/agentdeck v0.43.0` 通過；推 `v0.43.0` 後 Release workflow success；下載的 exe 以 `--doctor` 回報的版本為 0.43.0，SHA-256 與 release asset 一致。建立 release 屬對外寫入，不在規劃輪次執行。
+
+**重新考慮的條件**：驗收失敗（版本不符、SHA 不符）時不重用 tag，改發 0.43.1。
+
+## D-39：開發工具下限升到 ruff 0.17.3、mypy 2.4.1、pytest 9.2.0；ruff 0.17.4 冷卻中（2026-11-08）
+
+**日期**：2026-11-08
+
+**背景**：依賴新鮮度檢查（issue #35，2026-11-01）列出三個 `REVIEW UPDATE`：ruff `>=0.17.2` → 0.17.3、mypy `>=2.4.0` → 2.4.1、pytest `>=9.1.1` → 9.2.0，都在 `[dependency-groups] dev`，不隨產品發出。
+
+**決定**：三個下限升到上述版本，`uv.lock` 同步（`uv lock --upgrade-package mypy --upgrade-package pytest --upgrade-package ruff==0.17.3`），ruff 刻意釘在 0.17.3 而不是 PyPI 當下最新的 0.17.4。
+
+**證據**（PyPI JSON，2026-11-08）：ruff 0.17.3 上傳於 2026-10-27（12 天）、mypy 2.4.1 於 2026-10-28（11 天）、pytest 9.2.0 於 2026-10-27（12 天），都過了 7 天冷卻期；ruff 0.17.4 上傳於 2026-11-05（3 天），未過冷卻期。三者 `requires_python` 為 ruff `>=3.7`、mypy `>=3.10`、pytest `>=3.10`，本專案 `requires-python >=3.13`，沒有相容性疑慮。升級後 ruff、mypy、pytest 與完整 `tools/dev_check.ps1` 的結果見下方「驗證」。
+
+**為什麼調高下限不算消音**：AGENTS.md 的規則是不要只為了讓紅燈消失而調高下限。這次先升 lock、同步環境，再以新版本跑完整閘門（lint、型別、測試）才調高宣告，下限等於實際驗證過的最低版本；三者都是開發工具，沒有使用者端的相容性承諾。
+
+**驗證**（`tools/dev_check.ps1`，2026-11-08，升級後的 ruff 0.17.3、mypy 2.4.1、pytest 9.2.0）：lock OK、ruff OK、mypy OK、doc-parity OK、file-size OK，pytest 1756 passed／8 skipped／1 deselected，結尾 PASS、exit 0。
+
+**ruff 0.17.4**：上傳於 2026-11-05T18:51Z，冷卻期到 2026-11-12T18:51Z。在 `.github/dependency-deferrals.json` 以 `deferredLatest: 0.17.4` 登記延後；PyPI 出現比 0.17.4 更新的版本時延後自動失效。過了冷卻期、讀完 release notes 再升。
+
+**重新考慮的條件**：ruff 0.17.4 滿 7 天；或 ruff／mypy／pytest 的新版修了本專案踩到的問題。

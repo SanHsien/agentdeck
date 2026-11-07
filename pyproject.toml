@@ -1,6 +1,6 @@
 [project]
 name = "agentdeck"
-version = "0.42.2"
+version = "0.43.0"
 description = "Windows AI coding cockpit for Claude Code, Codex, and Antigravity quota, council, personas, and local reports"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -28,9 +28,9 @@ environments = [
 
 [dependency-groups]
 dev = [
-    "ruff>=0.17.2",
-    "mypy>=2.4.0",
-    "pytest>=9.1.1",
+    "ruff>=0.17.3",
+    "mypy>=2.4.1",
+    "pytest>=9.2.0",
     # PyInstaller belongs in the lock, not beside it. It used to be installed
     # out of band with `uv pip install pyinstaller`, which meant every
     # `uv sync` saw it and its six dependencies as extraneous and deleted them
