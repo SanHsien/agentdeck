@@ -674,7 +674,9 @@ def _self_heal_codex_terse() -> None:
     script_missing = not CODEX_TERSE_HOOK_TARGET.exists()
     entry_missing = not _is_codex_terse_installed()
     old_version = _installed_codex_terse_version()
-    version_stale = CODEX_TERSE_HOOK_TARGET.exists() and old_version != TERSE_HOOK_VERSION
+    version_stale = CODEX_TERSE_HOOK_TARGET.exists() and setup_hook.is_older(
+        old_version, TERSE_HOOK_VERSION
+    )
 
     if not (script_missing or entry_missing or version_stale or not hooks_enabled):
         return
@@ -914,7 +916,7 @@ def _self_heal_resume() -> None:
         _copy_resume_script()
         _write_resume_sidecar()
         _append_self_heal_log("restore_resume_hook", detail)
-    elif _installed_resume_version() != RESUME_HOOK_VERSION:
+    elif setup_hook.is_older(_installed_resume_version(), RESUME_HOOK_VERSION):
         old = _installed_resume_version()
         _copy_resume_script()
         _write_resume_sidecar()
@@ -951,7 +953,7 @@ def _self_heal_terse_mode() -> None:
         _append_self_heal_log("restore_terse_hook", f"missing={','.join(missing)}")
     else:
         old = _installed_terse_version()
-        if old != TERSE_HOOK_VERSION:
+        if setup_hook.is_older(old, TERSE_HOOK_VERSION):
             _copy_terse_script()
             _write_terse_sidecar()
             _append_self_heal_log(
@@ -981,7 +983,7 @@ def _self_heal_terse_reminder() -> None:
         _append_self_heal_log("restore_terse_reminder_hook", f"missing={','.join(parts)}")
         return
     old = _installed_terse_reminder_version()
-    if old != TERSE_REMINDER_HOOK_VERSION:
+    if setup_hook.is_older(old, TERSE_REMINDER_HOOK_VERSION):
         _copy_terse_reminder_script()
         _append_self_heal_log(
             "update_terse_reminder_hook",

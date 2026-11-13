@@ -48,6 +48,34 @@ def test_each_hook_constant_matches_the_file_it_installs(constant: str, module: 
 LEGACY_NAME = "usag"
 
 
+@pytest.mark.parametrize("installed", ["9.0", "1.10"])
+def test_needs_update_keeps_newer_hook(
+    setup_paths: SetupHookPaths, installed: str
+) -> None:
+    setup_paths.hook_target.parent.mkdir(parents=True, exist_ok=True)
+    setup_paths.hook_target.write_text(f'__version__ = "{installed}"\n', encoding="utf-8")
+    assert not setup_hook.needs_update()
+
+
+def test_upgrading_statusline_keeps_newer_forwarder(setup_paths: SetupHookPaths) -> None:
+    newer = '__version__ = "9.0"\n'
+    setup_paths.forwarder_target.write_text(newer, encoding="utf-8")
+    setup_paths.forwarder_source.write_text('__version__ = "1.1"\n', encoding="utf-8")
+    setup_hook.update_hook()
+    assert setup_paths.forwarder_target.read_text(encoding="utf-8") == newer
+
+
+@pytest.mark.parametrize(
+    ("installed", "current", "expected"),
+    [(None, "1.3", True), ("bad", "1.3", True), ("1.2", "1.3", True),
+     ("1.3", "1.3", False), ("1.10", "1.9", False), ("1.9", "1.10", True)],
+)
+def test_hook_versions_compare_numerically(
+    installed: str | None, current: str, expected: bool
+) -> None:
+    assert setup_hook.is_older(installed, current) is expected
+
+
 def test_windows_cli_output_reconfigures_both_streams(monkeypatch: pytest.MonkeyPatch) -> None:
     class Stream:
         def __init__(self) -> None:

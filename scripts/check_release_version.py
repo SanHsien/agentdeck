@@ -23,6 +23,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -77,6 +78,16 @@ def main(argv: list[str]) -> int:
         return 2
     repo, tag = argv
     version = _strip_v(tag)
+
+    with (Path(__file__).resolve().parent.parent / "pyproject.toml").open("rb") as source:
+        project_version = tomllib.load(source)["project"]["version"]
+    if version != project_version:
+        print(
+            f"::error::Tag {tag!r} ({version}) does not match "
+            f"pyproject.toml project.version ({project_version}).",
+            file=sys.stderr,
+        )
+        return 1
 
     previous = latest(published_versions(repo, exclude_tag=tag))
     if previous is None:

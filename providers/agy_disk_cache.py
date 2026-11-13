@@ -78,6 +78,13 @@ def seed_caches(
             entries_data = file_data["entries"]
             if not isinstance(entries_data, list):
                 continue
+            wal = file_data.get("wal")
+            if wal is not None and (
+                not isinstance(wal, list)
+                or len(wal) != 2
+                or not all(isinstance(value, int) for value in wal)
+            ):
+                continue
             if len(file_cache) >= maxsize:
                 file_cache.popitem(last=False)
             file_cache[Path(path_str)] = _FileCacheEntry(
@@ -85,6 +92,7 @@ def seed_caches(
                 size=int(file_data["size"]),
                 entries=[_deserialize_entry(entry) for entry in entries_data],
                 skipped_missing_dedup_key=int(file_data["skipped_missing_dedup_key"]),
+                wal=None if wal is None else (int(wal[0]), int(wal[1])),
             )
         except (KeyError, TypeError, ValueError):
             continue
@@ -107,6 +115,7 @@ def flush_caches(
                 str(path): {
                     "mtime": entry.mtime,
                     "size": entry.size,
+                    "wal": entry.wal,
                     "entries": [_serialize_entry(item) for item in entry.entries],
                     "skipped_missing_dedup_key": entry.skipped_missing_dedup_key,
                 }

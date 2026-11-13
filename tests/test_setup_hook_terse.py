@@ -22,6 +22,25 @@ def terse_paths(patch_terse_hook_paths: Callable[..., TerseHookPaths]) -> TerseH
     return patch_terse_hook_paths()
 
 
+def test_self_heal_keeps_newer_terse_hooks(terse_paths: TerseHookPaths) -> None:
+    terse_paths.codex_config.write_text('model = "gpt-5"\n', encoding="utf-8")
+    session_hooks.enable_terse_mode()
+    targets = (
+        terse_paths.terse_target,
+        terse_paths.codex_terse_target,
+        terse_paths.terse_reminder_target,
+    )
+    newer = '__version__ = "9.0"\n'
+    for target in targets:
+        target.write_text(newer, encoding="utf-8")
+    before = terse_paths.settings.read_bytes()
+
+    session_hooks._self_heal_terse_mode()
+
+    assert all(target.read_text(encoding="utf-8") == newer for target in targets)
+    assert terse_paths.settings.read_bytes() == before
+
+
 def _terse_entries(settings: Path) -> list[dict[str, object]]:
     data = json.loads(settings.read_text(encoding="utf-8"))
     return [e for e in data["hooks"]["SessionStart"] if session_hooks._is_terse_entry(e)]

@@ -31,20 +31,63 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "709ed56d7ed1861eabf3ec07e31c3ff1efdef509",
-      "last_merged": "709ed56d7ed1861eabf3ec07e31c3ff1efdef509",
-      "note": "2026-11-13 逐筆審視 d05d9ea5..709ed56d 共 2 筆，部分移植 709ed56d 的安裝器、CLI 與日期邊界修正。到本機 upstream/main 042b8c56 尚有 70 筆；PR／issue 水位維持原值。"
+      "last_reviewed": "1c44513e7556d310345a878158c129056aa55c88",
+      "last_merged": "347966a811c360ed43c2d9e4733d3aaf0dc732c9",
+      "note": "2026-11-13 第三批逐筆審視 709ed56d..1c44513e 共 18 筆，另審 PR #286 的 2 筆分支提交，移植讀取、終端報表、離線定價、發版核對與 hook 防降版修正。到 upstream/main 042b8c56 水位後尚有 52 筆（其中 PR #286 兩筆已審），下一筆新審查為 67b8f888；PR 審至 #288，issue 維持 #273。"
     }
   },
   "tickets": {
-    "reviewed_pr_through": 279,
+    "reviewed_pr_through": 288,
     "reviewed_issue_through": 273,
-    "reviewed_date": "2026-11-12",
-    "note": "GitHub issues API state=all、兩頁清冊確認 #203–#279 中非 PR 的 issue 只有 #273，已讀原文；已讀 PR #274–#279 原文與本機提交 patch。#273 是 issue，沒有 PR #273。"
+    "reviewed_date": "2026-11-13",
+    "note": "已讀 PR #280–#288 內文及相關 patch；#283–#285 已關閉且無 merge commit，dev 版本在本 fork 已等價。#286 的 merge commit 0c4e0f17 另行審視，無額外修正，不跨越中間未審提交推進 commit 水位。state=all 非 PR issue 清冊只有已審的 #273，issue 水位維持原值。"
   }
 }
 ```
 <!-- sync-points:end -->
+
+## 2026-11-13：`709ed56d..1c44513e` 共 18 筆（issue #36 第三批）
+
+連續審至 `1c44513e`，`last_merged` 指向最後含移植內容的 `347966a8`。本機 `upstream/main` 快照為 `042b8c56`：70 筆中連續水位涵蓋 18 筆，`git rev-list --count 1c44513e..upstream/main` 為 52。這 52 筆中的 `e1edcb24` 與 `0c4e0f17` 已隨 PR #286 另行審視，餘 50 筆未審；下一筆新審查為 `67b8f888`。`e1edcb24` 在原清單按時間排序時較早出現，但不是 `1c44513e` 的祖先，仍列在水位後。此計數不代表遠端即時狀態。
+
+### 採用與移植差異
+
+- **Antigravity WAL 快取**：記憶體與磁碟快取指紋包含 `-wal` 的奈秒修改時間及大小，近期篩選取主檔與 WAL 較新時間。fork 的磁碟 schema 由 2 升至 3，以失效舊快取；保留唯讀 SQLite URI 與現有解析模型，不照搬上游 schema 4 的編號。
+- **Codex 重置時間**：相對秒數錨定事件時間，重讀不延後；事件時間無法解析時保持未知，絕對重置時間仍優先。狀態 adapter 遇到非物件 JSON 時續讀備援；Claude 時間戳已等價。
+- **終端報表正確性**：重置及 session 開始時間轉當地時間，週／月日均用當地日期；全零用量可正常畫表；消耗速率排除 cache read，但總 token 不變。沿用 D-33／D-40，不新增 cube 或重寫 HTML 報表。
+- **發版與離線價格**：先核對 tag 與 `pyproject.toml` 版號，再查已發布版本，保留本 fork 排除當次 tag 的比對契約。離線價目加入 `gpt-6-astra-law` 的輸入 $10/M、輸出 $50/M、快取讀取 $1/M。
+- **hook 防降版**：self-heal 的版本更新改以數字比較，更新舊版或無法辨識的版本；保留較新的 statusline、resume、Claude／Codex terse 與 reminder。更新 statusline 時也不覆蓋較新的 forwarder。根目錄 stdlib hook 本身未改內容，不另升 hook 版本。
+
+### 逐筆判定（含 Skipped）
+
+| Commit | 標題／PR | 審視日期 | 判定與理由 |
+| --- | --- | --- | --- |
+| `04719f51` | fix(loaders): WAL、Codex 重置與 adapter；#280 | 2026-11-13 | 採用 WAL 快取與相對重置時間、非物件狀態檔備援；Claude 無時區時間戳本 fork 已用 UTC 正規化，補等價回歸。 |
+| `33bc9cfe` | fix(report): 日期、時區、零用量與消耗速率；#280 | 2026-11-13 | 部分採用：終端報表轉當地時間、當地日均、零用量分母與排除 cache read 的消耗速率。cube 日期篩選與其時區索引不在本 fork 報表架構內，見 Skipped。 |
+| `ae31c9c0` | fix(scripts): 發版核對與離線價格；#280 | 2026-11-13 | 部分採用：GitHub 查詢前核對 tag 與 project.version，保留排除當次 tag 的既有規則；補 gpt-6-astra-law。上游維護檢查與 shell 安裝腳本不適用。 |
+| `67ac38c6` | docs(changelog): Unreleased 條目；#280 | 2026-11-13 | Skipped：上游雙語發布紀錄，本 fork 只記實際移植內容。 |
+| `6a099318` | Merge PR #280 | 2026-11-13 | 部分採用前述修正，無額外 merge 修正；包含第二批已移植的 709ed56d。 |
+| `8e2d73a7` | fix(quota): nvm／Volta 等 CLI 查找；#281 | 2026-11-13 | Skipped：新增 Unix 版本管理工具查找及 PATH 前置，Windows 分支明確不變；本 fork 保留既有 Windows 查找。 |
+| `ddd72ee5` | chore(check_upstream): pr 已知欄位；#281 | 2026-11-13 | Skipped：本 fork 無上游 scripts/check_upstream.py 的 stdin schema checker；tools/check_upstream_updates.py 只追蹤 Git 提交。 |
+| `340b0bc8` | release: v0.34.12；#281 | 2026-11-13 | Skipped：上游版號與發布紀錄，沿用獨立發版。 |
+| `55669c40` | Merge PR #281 | 2026-11-13 | Skipped：整合 Unix CLI 查找、schema checker 與上游發版，無額外 merge 修正。 |
+| `70fda10a` | fix(muse): 優先 muse usage；#282 | 2026-11-13 | Skipped：本 fork 未出貨 Muse provider，不新增 quota probe 或模型呼叫路徑。 |
+| `5e0a9ae4` | fix(muse): app 結束停止 muse usage；#282 | 2026-11-13 | Skipped：同 Muse provider 邊界；其 subprocess lifecycle 不在本 fork。 |
+| `b900960b` | Merge PR #282 | 2026-11-13 | Skipped：上述 Muse 變更整合，無額外 merge 修正。 |
+| `347966a8` | fix(hooks): 帳號隔離與禁止降版；#287 | 2026-11-13 | 部分採用：狀態列、resume、Claude／Codex terse 與 reminder 的數字版本比較；statusline 更新時也保留較新 forwarder。未出貨 quota-aware hook，不加入其跨 session 額度標記。 |
+| `32a99102` | fix(quota-aware): reset 漂移去重；#287 | 2026-11-13 | Skipped：本 fork 無 quota-aware 提醒 hook 或其窗口 state key，不引入新提醒功能。 |
+| `4c3bf59f` | feat(beginner): 略過使用者輸入術語；#288 | 2026-11-13 | Skipped：本 fork 未出貨 Claude pane／新手模式或 glossary，不引入該功能。 |
+| `39d10f88` | fix(beginner): 不測驗使用者已輸入術語；#288 | 2026-11-13 | Skipped：同新手模式邊界，沒有 quiz 排程可修正。 |
+| `bd179d34` | Merge PR #287 | 2026-11-13 | 部分採用 hook 防降版，帳號提醒與 reset 去重不適用；無額外 merge 修正。 |
+| `1c44513e` | Merge PR #288 | 2026-11-13 | Skipped：整合新手模式；combined diff 只補整合後的 changelog，無額外程式修正。 |
+
+### PR／issue 水位
+
+已讀 PR #280–#288 內文及對應提交，`reviewed_pr_through` 推至 288。#280 部分採用；#281 的新增行為限 Unix；#282 為未出貨的 Muse；#283／#284／#285 已關閉且沒有 merge commit，對應 pytest 9.2.0／ruff 0.17.3／mypy 2.4.1 在本 fork 已等價；#286 只改上游 Actions，由本 fork 自行維護；#287 部分採用防降版；#288 新手模式不適用。
+
+#286 的 `e1edcb24` 與 `0c4e0f17` 另行讀過 patch，均為上游 check／release 的 setup-uv Action pin 10.3.3 更新，merge 無額外修正，判定 Skipped。兩筆均位於本批連續水位之外，因此不跨越未審提交推進 commit 水位。#280／#281／#282／#287 的 merge 無額外修正；#288 的 combined diff 只有 changelog 整合。
+
+state=all 的非 PR issue 清冊只有已審的 #273，`reviewed_issue_through` 保持 273；未將 PR 號碼當成 issue 水位。
 
 ## 2026-11-13：`d05d9ea5..709ed56d` 共 2 筆（issue #36 第二批）
 
@@ -800,6 +843,25 @@ Linux cloud agent **沒有**跑 `build_windows.ps1`；archive_viewer 那層要�
 
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
+| main | `33bc9cfe` | fix(report): 日期、時區、零用量與消耗速率；#280 | 2026-11-13 | 部分採用：終端報表轉當地時間、當地日均、零用量分母與排除 cache read 的消耗速率。cube 日期篩選與其時區索引不在本 fork 報表架構內。 |
+| main | `ae31c9c0` | fix(scripts): 發版核對與離線價格；#280 | 2026-11-13 | 部分採用：GitHub 查詢前核對 tag 與 project.version，保留排除當次 tag 的既有規則；補 gpt-6-astra-law。上游維護檢查與 shell 安裝腳本不適用。 |
+| main | `67ac38c6` | docs(changelog): Unreleased 條目；#280 | 2026-11-13 | Skipped：上游雙語發布紀錄，本 fork 只記實際移植內容。 |
+| main | `6a099318` | Merge PR #280 | 2026-11-13 | 部分採用前述修正，無額外 merge 修正；包含第二批已移植的 709ed56d。 |
+| main | `8e2d73a7` | fix(quota): nvm／Volta 等 CLI 查找；#281 | 2026-11-13 | Skipped：新增 Unix 版本管理工具查找及 PATH 前置，Windows 分支明確不變；本 fork 保留既有 Windows 查找。 |
+| main | `ddd72ee5` | chore(check_upstream): pr 已知欄位；#281 | 2026-11-13 | Skipped：本 fork 無上游 scripts/check_upstream.py 的 stdin schema checker；tools/check_upstream_updates.py 只追蹤 Git 提交。 |
+| main | `340b0bc8` | release: v0.34.12；#281 | 2026-11-13 | Skipped：上游版號與發布紀錄，沿用獨立發版。 |
+| main | `55669c40` | Merge PR #281 | 2026-11-13 | Skipped：整合 Unix CLI 查找、schema checker 與上游發版，無額外 merge 修正。 |
+| main | `70fda10a` | fix(muse): 優先 muse usage；#282 | 2026-11-13 | Skipped：本 fork 未出貨 Muse provider，不新增 quota probe 或模型呼叫路徑。 |
+| main | `e1edcb24` | chore(deps): setup-uv 10.3.3；#286 | 2026-11-13 | Skipped：只改上游 check／release 的 Action pin；本 fork 依賴由自身 Dependabot 與新鮮度政策維護。 |
+| main | `5e0a9ae4` | fix(muse): app 結束停止 muse usage；#282 | 2026-11-13 | Skipped：同 Muse provider 邊界；其 subprocess lifecycle 不在本 fork。 |
+| main | `b900960b` | Merge PR #282 | 2026-11-13 | Skipped：上述 Muse 變更整合，無額外 merge 修正。 |
+| main | `347966a8` | fix(hooks): 帳號隔離與禁止降版；#287 | 2026-11-13 | 部分採用：狀態列、resume、Claude／Codex terse 與 reminder 的數字版本比較；statusline 更新時也保留較新 forwarder。未出貨 quota-aware hook，不加入其跨 session 額度標記。 |
+| main | `32a99102` | fix(quota-aware): reset 漂移去重；#287 | 2026-11-13 | Skipped：本 fork 無 quota-aware 提醒 hook 或其窗口 state key，不引入新提醒功能。 |
+| main | `4c3bf59f` | feat(beginner): 略過使用者輸入術語；#288 | 2026-11-13 | Skipped：本 fork 未出貨 Claude pane／新手模式或 glossary，不引入該功能。 |
+| main | `39d10f88` | fix(beginner): 不測驗使用者已輸入術語；#288 | 2026-11-13 | Skipped：同新手模式邊界，沒有 quiz 排程可修正。 |
+| main | `bd179d34` | Merge PR #287 | 2026-11-13 | 部分採用 hook 防降版，帳號提醒與 reset 去重不適用；無額外 merge 修正。 |
+| main | `1c44513e` | Merge PR #288 | 2026-11-13 | Skipped：整合新手模式；combined diff 只補整合後的 changelog，無額外程式修正。 |
+| main | `0c4e0f17` | Merge PR #286（ticket 審視） | 2026-11-13 | 上游 Actions pin 更新，無額外 merge 修正；本 fork 自行維護依賴。此筆與 e1edcb24 均不計入第三批連續 18 筆。 |
 | main | `9030c5f0` | release: v0.34.11 | 2026-11-13 | 只切未採用之報表改版 changelog、版本與 lock；沿用 D-33／D-40，本 fork 獨立發版。 |
 | main | `709ed56d`（部分） | fix: 安裝器、選單列與命令列的 8 個問題 | 2026-11-13 | macOS 轉發提示、FSEvents 與多圖示標題快取不在本 fork 正式產品中；未出貨上游額度提醒 hook／Claude 側邊面板／新手模式，不新增解除安裝依賴。其餘適用修正已移植，見本批說明。 |
 | main | `71be8dee` | release: v0.34.10；#275 | 2026-11-12 | 只切上游 changelog、版本與 lock；本 fork 獨立發版，不覆蓋 0.43.0。 |

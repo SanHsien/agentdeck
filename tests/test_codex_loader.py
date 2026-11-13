@@ -11,7 +11,7 @@ import os
 import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 from unittest.mock import Mock
 
 import pytest
@@ -2598,3 +2598,46 @@ def test_disk_cache_file_mtime_invalidates_seed(
     # Should have the actual file's values, not the seed's
     assert entries[0].input_tokens == 200
     assert entries[0].output_tokens == 100
+
+
+@pytest.mark.parametrize("window", ["Primary", "Secondary"])
+def test_websocket_relative_reset_uses_record_time(
+    monkeypatch: pytest.MonkeyPatch, window: str
+) -> None:
+    recorded = 1_800_000_000
+    current = recorded
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz: Any = None) -> Self:
+            return cls.fromtimestamp(current, tz)
+
+    monkeypatch.setattr(codex_loader, "datetime", Clock)
+    event = {
+        "headers": {
+            f"X-Codex-{window}-Used-Percent": "100",
+            f"X-Codex-{window}-Reset-After-Seconds": "60",
+        }
+    }
+    for elapsed in (0, 30):
+        current = recorded + elapsed
+        result = codex_loader._rate_limits_from_websocket_error(event, "", recorded)
+        assert result is not None
+        reset = result.five_hour_resets_at if window == "Primary" else result.seven_day_resets_at
+        assert reset == recorded + 60
+    current = recorded + 61
+    assert codex_loader._rate_limits_from_websocket_error(event, "", recorded) is None
+
+
+@pytest.mark.parametrize("window", ["Primary", "Secondary"])
+def test_websocket_relative_reset_with_invalid_record_time_stays_unknown(window: str) -> None:
+    event = {
+        "headers": {
+            f"X-Codex-{window}-Used-Percent": "100",
+            f"X-Codex-{window}-Reset-After-Seconds": "60",
+        }
+    }
+    result = codex_loader._rate_limits_from_websocket_error(event, "", "invalid")
+    assert result is not None
+    assert result.five_hour_resets_at is None
+    assert result.seven_day_resets_at is None

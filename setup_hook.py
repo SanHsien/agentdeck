@@ -886,8 +886,12 @@ def _unsetup_codex() -> None:
 
 
 def _installed_hook_version() -> str | None:
+    return _script_version(HOOK_TARGET)
+
+
+def _script_version(path: Path) -> str | None:
     try:
-        with HOOK_TARGET.open(encoding="utf-8") as f:
+        with path.open(encoding="utf-8") as f:
             for line in f:
                 if line.startswith("__version__"):
                     return line.split("=", 1)[1].strip().strip("\"'")
@@ -896,10 +900,20 @@ def _installed_hook_version() -> str | None:
     return None
 
 
+def is_older(installed: str | None, current: str) -> bool:
+    """Replace missing, unreadable or older hooks; never downgrade a newer copy."""
+    if installed is None:
+        return True
+    try:
+        return tuple(map(int, installed.split("."))) < tuple(map(int, current.split(".")))
+    except ValueError:
+        return True
+
+
 def needs_update() -> bool:
     if not HOOK_TARGET.parent.exists():
         return False
-    return _installed_hook_version() != HOOK_VERSION
+    return is_older(_installed_hook_version(), HOOK_VERSION)
 
 
 def update_hook() -> None:
@@ -911,7 +925,9 @@ def update_hook() -> None:
     # is the failure `HOOK_VERSION` exists to prevent -- it just was not wired to
     # this file. Copy it only when one is installed; installing it here would
     # turn a refresh into a setup change for someone who does not use it.
-    if FORWARDER_TARGET.exists():
+    if FORWARDER_TARGET.exists() and is_older(
+        _script_version(FORWARDER_TARGET), _script_version(_resolve_forwarder_source()) or "0"
+    ):
         _copy_forwarder_script()
 
 

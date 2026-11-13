@@ -21,6 +21,16 @@ def resume_paths(patch_resume_hook_paths: Callable[..., ResumeHookPaths]) -> Res
     return patch_resume_hook_paths()
 
 
+def test_self_heal_keeps_newer_resume_hook(resume_paths: ResumeHookPaths) -> None:
+    session_hooks.enable_session_resume()
+    newer = '__version__ = "9.0"\n'
+    resume_paths.resume_target.write_text(newer, encoding="utf-8")
+    before = resume_paths.settings.read_bytes()
+    session_hooks._self_heal_resume()
+    assert resume_paths.resume_target.read_text(encoding="utf-8") == newer
+    assert resume_paths.settings.read_bytes() == before
+
+
 def _resume_entries(settings: Path) -> list[dict[str, object]]:
     data = json.loads(settings.read_text(encoding="utf-8"))
     return [e for e in data["hooks"]["SessionStart"] if session_hooks._is_resume_entry(e)]

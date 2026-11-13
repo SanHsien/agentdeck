@@ -23,6 +23,14 @@ from adapters.types import UsageEntry as AnalyzerUsageEntry
 from providers.history_loader import UsageEntry
 
 
+def test_astra_law_offline_pricing() -> None:
+    assert pricing._fallback_pricing()["gpt-6-astra-law"] == {
+        "input_cost_per_token": 10e-6,
+        "output_cost_per_token": 50e-6,
+        "cache_read_input_token_cost": 1e-6,
+    }
+
+
 @pytest.fixture(autouse=True)
 def reset_pricing_state() -> Iterator[None]:
     pricing._set_pricing_cache_for_test(None)

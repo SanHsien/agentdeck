@@ -195,3 +195,25 @@ def test_load_entries_tolerates_a_timestamp_without_an_offset(
     assert len(entries) == 1
     assert entries[0].timestamp.tzinfo is not None
 
+
+
+def test_load_entries_normalizes_naive_timestamps(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    paths = [tmp_path / "naive.jsonl", tmp_path / "utc.jsonl"]
+    for index, (path, timestamp) in enumerate(
+        zip(paths, ["2026-11-04T00:01:00", "2026-11-04T00:00:00Z"], strict=True)
+    ):
+        _write_assistant_log(path, timestamp=timestamp, usage={"input_tokens": 10})
+        data = json.loads(path.read_text())
+        data["message"]["id"] = f"message-{index}"
+        path.write_text(json.dumps(data))
+    monkeypatch.setattr(claude, "CLAUDE_DIRS", [str(tmp_path)])
+
+    entries = claude.load_entries()
+
+    assert len(entries) == 2
+    assert [entry.timestamp for entry in entries] == [
+        datetime(2026, 11, 4, 0, 0, tzinfo=UTC),
+        datetime(2026, 11, 4, 0, 1, tzinfo=UTC),
+    ]

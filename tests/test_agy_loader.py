@@ -6,14 +6,43 @@
 
 from __future__ import annotations
 
+import json
 import os
 import sqlite3
+from collections import OrderedDict
+from contextlib import closing
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 
 from providers import agy_loader
+from providers.agy_disk_cache import flush_caches, seed_caches
+
+
+def test_disk_cache_preserves_wal_fingerprint(tmp_path: Path) -> None:
+    db = tmp_path / "session.db"
+    cache = tmp_path / "cache.json"
+    original = OrderedDict({db: agy_loader._FileCacheEntry(100, 200, [], 0, (123, 4096))})
+    restored: OrderedDict[Path, agy_loader._FileCacheEntry] = OrderedDict()
+    flush_caches(cache, agy_loader._AGY_DB_CACHE_SCHEMA, original)
+    seed_caches(cache, agy_loader._AGY_DB_CACHE_SCHEMA, 10, restored)
+    assert restored == original
+
+
+@pytest.mark.parametrize("wal", [[], [1], [1, 2, 3], "bad", [1, "bad"]])
+def test_disk_cache_ignores_malformed_wal(tmp_path: Path, wal: object) -> None:
+    cache = tmp_path / "cache.json"
+    cache.write_text(json.dumps({
+        "schema_version": agy_loader._AGY_DB_CACHE_SCHEMA,
+        "files": {"session.db": {
+            "mtime": 100, "size": 200, "entries": [],
+            "skipped_missing_dedup_key": 0, "wal": wal,
+        }},
+    }), encoding="utf-8")
+    restored: OrderedDict[Path, agy_loader._FileCacheEntry] = OrderedDict()
+    seed_caches(cache, agy_loader._AGY_DB_CACHE_SCHEMA, 10, restored)
+    assert not restored
 
 
 def _varint(value: int) -> bytes:
@@ -385,3 +414,24 @@ def test_load_entries_reuses_disk_cache_after_reseed(
     monkeypatch.setattr(sqlite3, "connect", _unexpected_connect)
 
     assert agy_loader.load_entries_with_stats() == expected
+
+
+def test_load_entries_sees_generations_committed_only_to_wal(sessions_dir: Path) -> None:
+    now = datetime.now(UTC)
+    path = sessions_dir / "wal.db"
+    _write_database(path, [_generation_blob(timestamp=now, dedup_key="first")], now)
+    with closing(sqlite3.connect(path)) as writer:
+        writer.execute("PRAGMA journal_mode=WAL")
+        writer.execute("PRAGMA wal_autocheckpoint=0")
+        assert len(agy_loader.load_entries_with_stats().entries) == 1
+
+        blob = _generation_blob(timestamp=now, dedup_key="second")
+        writer.execute(
+            "INSERT INTO gen_metadata (idx, data, size) VALUES (?, ?, ?)", (1, blob, len(blob))
+        )
+        writer.commit()
+        assert len(agy_loader.load_entries_with_stats().entries) == 2
+
+        stale = (now - timedelta(days=2)).timestamp()
+        os.utime(path, (stale, stale))
+        assert len(agy_loader.load_entries_with_stats(hours_back=24).entries) == 2

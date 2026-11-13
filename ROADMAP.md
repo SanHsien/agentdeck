@@ -12,7 +12,7 @@ Windows 系統匣駕駛艙（Claude Code、Codex、Antigravity 額度、AI 圓�
 ## 近期：可以直接動手
 | 項目 | 為什麼 | 驗收方式 | 建議執行者 | 證據 |
 | --- | --- | --- | --- | --- |
-| 繼續上游追平（issue #36）：`709ed56d` 之後 70 筆 commit（2026-11-13 本機 ref 快照到 `042b8c56`，非遠端即時數字） | 第二批逐筆審視 2 筆，部分移植安裝器、CLI 與日期邊界修正；原 72 筆剩 70 筆。PR #280 尚未審完，ticket 水位維持 PR #279／issue #273 | 從 `04719f51` 起連續讀 patch，補齊 PR #280 起的內文與 issue 清冊（state=all）；依 `docs/UPSTREAM.md` 記採用／Skipped 理由，手工移植並補紅轉綠測試，只推進已審完的 commit／ticket 水位；`tools/dev_check.ps1` 全綠。push 後確認 #36 由上游檢查更新或關閉 | Codex | `docs/UPSTREAM.md` 2026-11-13 第二批；`docs/DECISIONS.md` D-40 |
+| 繼續上游追平（issue #36）：`1c44513e` 之後 52 筆 commit（2026-11-13 本機 ref 快照到 `042b8c56`，非遠端即時數字） | 第三批連續水位涵蓋 18 筆，另審 PR #286 的 2 筆分支提交，移植讀取、終端報表、發版核對、離線定價與 hook 防降版修正；原 70 筆中水位後剩 52 筆，含已審的 PR #286 兩筆，未審 50 筆。ticket 審至 PR #288／issue #273 | 從 `67b8f888` 起連續讀 patch，接續 PR #289 起內文與 state=all issue；依 `docs/UPSTREAM.md` 記採用／Skipped 理由，手工移植並補紅轉綠測試，只推進已審完的 commit／ticket 水位；`tools/dev_check.ps1` 全綠。push 後確認 #36 由上游檢查更新或關閉 | Codex | `docs/UPSTREAM.md` 2026-11-13 第三批；`docs/DECISIONS.md` D-40 |
 | 發佈 v0.43.0 的 GitHub Release | v0.43.0 的程式碼已在 `main`（f2f2e21），CI 綠；Release 沒發，原因是代理工具的權限檢查擋下 `gh release create`。`.github/workflows/release.yml` 由 tag push 觸發，而且 Release 要先存在；使用者最後一次拿到的仍是 v0.42.1 | 維護者執行：`python scripts/check_release_version.py SanHsien/agentdeck v0.43.0 && gh release create v0.43.0 --repo SanHsien/agentdeck --target f2f2e214a6a7dc8abc76e7be4c2862c47f1ecefd --title v0.43.0 --notes-file <CHANGELOG 0.43.0 段>`（建立 release 時一併建立 `v0.43.0` tag，由 tag push 觸發 Release workflow）；之後看 Release workflow 是否 success，並驗 asset 的 SHA-256 與下載的 exe（`--doctor` 回報 0.43.0）一致；驗收完這列刪掉 | 維護者 | `pyproject.toml:3`；`CHANGELOG.md` `[0.43.0]`；`.github/workflows/release.yml`；`docs/DECISIONS.md` D-38 |
 
 ## 中期：等條件成立再做
