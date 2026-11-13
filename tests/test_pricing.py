@@ -966,3 +966,14 @@ def test_grok_models_resolve_through_their_xai_table_keys() -> None:
 
     assert pricing._resolve_model_key("grok-4", table) == "xai/grok-4"
     assert pricing._resolve_model_key("grok-9", table) is None
+
+
+def test_gemini_models_resolve_provider_keys_without_overriding_exact_prices() -> None:
+    table: pricing.PricingTable = {
+        "gemini/gemini-4-argon": {"input_cost_per_token": 2e-6},
+        "gemini/gemini-4-hydrogen": {"input_cost_per_token": 3e-6},
+        "gemini-4-hydrogen": {"input_cost_per_token": 4e-6},
+    }
+    assert pricing._resolve_model_key("gemini-4-argon", table) == "gemini/gemini-4-argon"
+    assert pricing._resolve_model_key("gemini-4-hydrogen", table) == "gemini-4-hydrogen"
+    assert pricing._resolve_model_key("gemini-9-unknown", table) is None

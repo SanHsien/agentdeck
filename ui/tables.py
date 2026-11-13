@@ -97,6 +97,9 @@ def _group_by_agent[StatT: _HasAgentId](stats: Iterable[StatT]) -> dict[str, lis
 
 
 MODEL_SHORT = {
+    "gemini-3.8-flash": "Flash 3.8",
+    "gemini-4-argon": "Argon 4",
+    "gemini-4-hydrogen": "Hydrogen 4",
     "claude-opus-4-6": "Opus 4.6",
     "claude-opus-4-7": "Opus 4.7",
     "claude-opus-4-8": "Opus 4.8",

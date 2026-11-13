@@ -74,21 +74,25 @@ def _generation_blob(
     timestamp: datetime | None,
     dedup_key: str | None,
     model: str = "gemini-3.5-flash-low",
-    system_tokens: int = 1_020,
+    model_enum: int = 1_525,
     input_tokens: int = 200,
     cache_read_tokens: int = 70_000,
-    output_tokens: int = 30,
+    output_tokens: int | None = 30,
     thinking_tokens: int = 4,
+    total_output_tokens: int | None = None,
 ) -> bytes:
     usage = b"".join(
         (
-            _varint_field(1, system_tokens),
+            _varint_field(1, model_enum),
             _varint_field(2, input_tokens),
             _varint_field(5, cache_read_tokens),
-            _varint_field(9, output_tokens),
-            _varint_field(10, thinking_tokens),
+            _varint_field(9, thinking_tokens),
         )
     )
+    if output_tokens is not None:
+        usage += _varint_field(10, output_tokens)
+    if total_output_tokens is not None:
+        usage += _varint_field(3, total_output_tokens)
     if dedup_key is not None:
         usage += _message_field(11, dedup_key.encode())
     chat_model = _message_field(4, usage) + _message_field(19, model.encode())
@@ -183,6 +187,48 @@ def test_active_tokens_excludes_cache_read_tokens() -> None:
     assert entry.active_tokens == 300
 
 
+@pytest.mark.parametrize(("response", "total", "thinking", "expected"), [
+    (None, 50, 20, 30), (None, 10, 20, 0), (0, 50, 20, 0), (7, 50, 20, 7),
+])
+def test_generation_output_fields(
+    response: int | None, total: int, thinking: int, expected: int,
+) -> None:
+    now = datetime.now(UTC)
+    blob = _generation_blob(
+        timestamp=now, dedup_key="fields", input_tokens=200, output_tokens=response,
+        total_output_tokens=total, thinking_tokens=thinking,
+    )
+    entry, skipped = agy_loader._parse_generation(
+        blob, "session", now, set(), gen_idx=0, by_response_id={}, by_gen_idx={},
+    )
+    assert entry is not None
+    assert (entry.input_tokens, entry.output_tokens, entry.thinking_tokens) == (
+        200, expected, thinking,
+    )
+    assert skipped == 0
+
+
+def test_generation_model_enum_is_not_usage() -> None:
+    blob = _generation_blob(
+        timestamp=datetime.now(UTC), dedup_key="enum-only", input_tokens=0,
+        output_tokens=None, thinking_tokens=0, cache_read_tokens=0,
+    )
+    assert agy_loader._parse_generation(
+        blob, "session", datetime.now(UTC), set(), gen_idx=0,
+        by_response_id={}, by_gen_idx={},
+    ) == (None, 0)
+
+
+def test_previous_token_mapping_cache_is_rejected(tmp_path: Path) -> None:
+    db = tmp_path / "session.db"
+    cache = tmp_path / "cache.json"
+    original = OrderedDict({db: agy_loader._FileCacheEntry(100, 200, [], 0)})
+    flush_caches(cache, 3, original)
+    restored: OrderedDict[Path, agy_loader._FileCacheEntry] = OrderedDict()
+    seed_caches(cache, agy_loader._AGY_DB_CACHE_SCHEMA, 10, restored)
+    assert not restored
+
+
 def test_load_entries_parses_usage_deduplicates_and_skips_non_generation_rows(
     sessions_dir: Path,
 ) -> None:
@@ -206,7 +252,7 @@ def test_load_entries_parses_usage_deduplicates_and_skips_non_generation_rows(
     assert entry.timestamp == now
     assert entry.session_id == "first"
     assert entry.model == "gemini-3.5-flash-low"
-    assert entry.input_tokens == 1_220
+    assert entry.input_tokens == 200
     assert entry.output_tokens == 30
     assert entry.cache_read_tokens == 70_000
     assert entry.thinking_tokens == 4
@@ -311,7 +357,7 @@ def test_recent_input_output_tokens_excludes_cache_and_thinking(sessions_dir: Pa
             _generation_blob(
                 timestamp=now,
                 dedup_key="total",
-                system_tokens=1_000,
+                model_enum=1_318,
                 input_tokens=20,
                 output_tokens=30,
                 cache_read_tokens=99_999,
@@ -321,7 +367,7 @@ def test_recent_input_output_tokens_excludes_cache_and_thinking(sessions_dir: Pa
         now,
     )
 
-    assert agy_loader.recent_input_output_tokens(1) == 1_050
+    assert agy_loader.recent_input_output_tokens(1) == 50
 
 
 def test_load_entries_skips_database_when_sqlite_is_locked(

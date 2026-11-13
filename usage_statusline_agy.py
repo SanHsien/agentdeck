@@ -32,6 +32,7 @@ STATUSLINE_TRANSLATIONS = {
         "context": "對話窗",
         "remaining_prefix": "剩",
         "effort_high": "深思",
+        "effort_xhigh": "深思熟慮",
         "effort_normal": "標準",
         "effort_low": "速答",
     },
@@ -41,6 +42,7 @@ STATUSLINE_TRANSLATIONS = {
         "context": "Context",
         "remaining_prefix": "left",
         "effort_high": "Deep",
+        "effort_xhigh": "Extended",
         "effort_normal": "Standard",
         "effort_low": "Quick",
     },
@@ -292,7 +294,7 @@ def _quota_parts(data: Dict[str, Any], bar_width: int) -> List[Tuple[str, str, s
     return parts
 
 
-_EFFORT_SUFFIXES = {"(low)": "low", "(medium)": "medium", "(high)": "high"}
+_EFFORT_SUFFIXES = {"(low)": "low", "(medium)": "medium", "(high)": "high", "(xhigh)": "xhigh"}
 
 
 def _split_effort_suffix(name: str) -> Tuple[str, Optional[str]]:
@@ -343,6 +345,7 @@ def _render_core(data: Dict[str, Any]) -> str:
                 "low": _t("effort_low"),
                 "medium": _t("effort_normal"),
                 "high": _t("effort_high"),
+                "xhigh": _t("effort_xhigh"),
             }.get(effort.lower(), effort)
             model_name += f"/{effort_label}"
         model_parts.append(f"{C['dim']}{C['magenta']}{safe_text(model_name)}{C['reset']}")

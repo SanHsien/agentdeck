@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -20,6 +21,7 @@ from contextlib import suppress
 from pathlib import Path
 
 from network_reachability import google_auth_reachable
+from providers import agy_quota_probe
 from state.menubar_agy import AgyRefreshResult
 from state.menubar_prefs import _agy_window_keeper_enabled
 from subprocess_utils import creation_flags
@@ -30,6 +32,7 @@ AGY_WINDOW_KEEPER_STATE_PATH = Path(
     os.path.expanduser("~/.agentdeck/agy_window_keeper.json")
 )
 PING_COOLDOWN_SECONDS = 5 * 3600
+AGY_CLI_SIGNED_OUT_PATH = AGY_WINDOW_KEEPER_STATE_PATH.parent / "agy_cli_signed_out"
 PING_TIMEOUT_SECONDS = 180
 AGY_MODEL = "Gemini 3.5 Flash (Low)"
 _AGY_BIN_FALLBACKS = (
@@ -123,8 +126,62 @@ def _release() -> None:
         _ping_in_flight = False
 
 
+def _credential_fingerprint() -> str | None:
+    """Read the stored credential without resolving or refreshing it."""
+    token_data: object = agy_quota_probe._read_token_file()
+    if not agy_quota_probe._has_usable_token(token_data):
+        token_data = agy_quota_probe._read_windows_credential()
+    token = token_data.get("token") if isinstance(token_data, dict) else None
+    if not isinstance(token, dict):
+        return None
+    return hashlib.sha256(json.dumps(token, sort_keys=True).encode()).hexdigest()
+
+
+def _mark_cli_signed_out(before: str | None) -> None:
+    if _credential_fingerprint() != before:
+        return
+    with suppress(OSError):
+        AGY_CLI_SIGNED_OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        AGY_CLI_SIGNED_OUT_PATH.write_text(
+            json.dumps({"fingerprint": before}), encoding="utf-8",
+        )
+
+
+def _cli_may_run() -> bool:
+    if not AGY_CLI_SIGNED_OUT_PATH.exists():
+        return True
+    try:
+        marker = json.loads(AGY_CLI_SIGNED_OUT_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError, UnicodeError):
+        marker = {}
+    stored = marker.get("fingerprint") if isinstance(marker, dict) else None
+    current = _credential_fingerprint()
+    if current is None or current == stored:
+        return False
+    with suppress(OSError):
+        AGY_CLI_SIGNED_OUT_PATH.unlink(missing_ok=True)
+    return True
+
+
+def _auth_failure(stdout: object, stderr: object) -> bool:
+    output = f"{stdout or ''}\n{stderr or ''}".lower()
+    return "authentication required" in output or "authentication failed" in output
+
+
 def _run_agy_ping(agy_bin: str) -> None:
-    subprocess.run(  # noqa: S603 - resolved local Antigravity CLI
+    if not _cli_may_run():
+        return
+    before = _credential_fingerprint()
+    try:
+        _run_agy_command(agy_bin, before)
+    except subprocess.TimeoutExpired as exc:
+        if _auth_failure(exc.stdout, exc.stderr):
+            _mark_cli_signed_out(before)
+        raise
+
+
+def _run_agy_command(agy_bin: str, before: str | None) -> None:
+    result = subprocess.run(  # noqa: S603 - resolved local Antigravity CLI
         [agy_bin, "-p", "ok", "--model", AGY_MODEL],
         stdin=subprocess.DEVNULL,
         capture_output=True,
@@ -135,6 +192,8 @@ def _run_agy_ping(agy_bin: str) -> None:
         check=False,
         creationflags=creation_flags(),
     )
+    if result.returncode != 0 and _auth_failure(result.stdout, result.stderr):
+        _mark_cli_signed_out(before)
 
 
 def _ping_worker(started_at: float) -> None:
@@ -183,6 +242,8 @@ def maybe_ping(result: AgyRefreshResult, mock: bool) -> None:
     ):
         return
     if not google_auth_reachable():
+        return
+    if not _cli_may_run():
         return
     if not _try_acquire():
         return

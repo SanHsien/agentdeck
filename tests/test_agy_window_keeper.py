@@ -7,13 +7,14 @@ import os
 import shutil
 import subprocess
 import threading
+import time
 from dataclasses import replace
 from pathlib import Path
 from typing import Any, cast
 
 import pytest
 
-from providers import agy_window_keeper
+from providers import agy_quota_probe, agy_window_keeper
 from providers.agy_quota_probe import AgyQuotaWindow
 from state import menubar_agy
 from state.menubar_state import AgyStaleState, QuotaRowState
@@ -50,6 +51,106 @@ def isolated_state(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
     _SyncThread.instances.clear()
     monkeypatch.setattr(threading, "Thread", _SyncThread)
     return state_path
+
+
+@pytest.fixture(autouse=True)
+def isolated_cli_auth(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(agy_window_keeper, "AGY_CLI_SIGNED_OUT_PATH", tmp_path / "signed-out")
+    monkeypatch.setattr(agy_quota_probe, "_read_token_file", lambda: None)
+    monkeypatch.setattr(agy_quota_probe, "_read_windows_credential", lambda: None)
+
+
+def test_signed_out_keeper_waits_for_changed_credential(
+    monkeypatch: pytest.MonkeyPatch, isolated_state: Path,
+) -> None:
+    calls = _arm_ping(monkeypatch)
+    fingerprint = "old"
+    monkeypatch.setattr(agy_window_keeper, "_credential_fingerprint", lambda: fingerprint)
+    agy_window_keeper._mark_cli_signed_out("old")
+    agy_window_keeper.maybe_ping(_refresh_result(), mock=False)
+    assert calls == []
+    assert not isolated_state.exists()
+    fingerprint = "new"
+    agy_window_keeper.maybe_ping(_refresh_result(), mock=False)
+    assert calls == ["/fake/agy"]
+    assert not agy_window_keeper.AGY_CLI_SIGNED_OUT_PATH.exists()
+
+
+def test_sign_in_during_failed_run_does_not_block_new_credential(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(agy_window_keeper, "_credential_fingerprint", lambda: "new")
+    agy_window_keeper._mark_cli_signed_out("old")
+    assert not agy_window_keeper.AGY_CLI_SIGNED_OUT_PATH.exists()
+
+
+@pytest.mark.parametrize("timeout", [False, True])
+def test_auth_failure_marks_signed_out_without_storing_token(
+    monkeypatch: pytest.MonkeyPatch, timeout: bool,
+) -> None:
+    monkeypatch.setattr(agy_window_keeper, "_credential_fingerprint", lambda: "digest")
+
+    def fail_run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        if timeout:
+            raise subprocess.TimeoutExpired(command, 1, output=b"Authentication required")
+        return subprocess.CompletedProcess(command, 1, "", "Authentication failed")
+
+    monkeypatch.setattr(subprocess, "run", fail_run)
+    if timeout:
+        with pytest.raises(subprocess.TimeoutExpired):
+            agy_window_keeper._run_agy_ping("/fake/agy")
+    else:
+        agy_window_keeper._run_agy_ping("/fake/agy")
+    assert json.loads(agy_window_keeper.AGY_CLI_SIGNED_OUT_PATH.read_text()) == {
+        "fingerprint": "digest",
+    }
+
+
+def test_unknown_marker_keeps_dispatch_cooldown(
+    monkeypatch: pytest.MonkeyPatch, isolated_state: Path,
+) -> None:
+    calls = _arm_ping(monkeypatch)
+    agy_window_keeper.AGY_CLI_SIGNED_OUT_PATH.write_text("")
+    monkeypatch.setattr(agy_window_keeper, "_credential_fingerprint", lambda: "new")
+    agy_window_keeper._save_last_ping(time.time())
+    agy_window_keeper.maybe_ping(_refresh_result(), mock=False)
+    assert calls == []
+
+
+def test_credential_fingerprint_reads_stored_token_without_refresh(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    token = {"access_token": "fixture", "expiry": "2999-01-01T00:00:00Z"}
+    monkeypatch.setattr(agy_quota_probe, "_read_token_file", lambda: {"token": token})
+    monkeypatch.setattr(
+        agy_quota_probe, "_resolve_access_token", lambda *_: pytest.fail("must not refresh"),
+    )
+    before = agy_window_keeper._credential_fingerprint()
+    assert before is not None and len(before) == 64 and "fixture" not in before
+    token["access_token"] = "different-fixture"
+    assert agy_window_keeper._credential_fingerprint() != before
+
+
+def test_unreadable_credential_keeps_signed_out_gate_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    agy_window_keeper.AGY_CLI_SIGNED_OUT_PATH.write_text('{"fingerprint":"old"}')
+    monkeypatch.setattr(agy_window_keeper, "_credential_fingerprint", lambda: None)
+    monkeypatch.setattr(subprocess, "run", lambda *_a, **_k: pytest.fail("must not run"))
+    agy_window_keeper._run_agy_ping("/fake/agy")
+    assert agy_window_keeper.AGY_CLI_SIGNED_OUT_PATH.exists()
+
+
+def test_unrelated_cli_failure_does_not_mark_signed_out(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda command, **_: subprocess.CompletedProcess(command, 1, "", "offline"),
+    )
+    agy_window_keeper._run_agy_ping("/fake/agy")
+    assert not agy_window_keeper.AGY_CLI_SIGNED_OUT_PATH.exists()
 
 
 def _gate(**overrides: object) -> bool:

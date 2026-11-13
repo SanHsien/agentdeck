@@ -77,6 +77,7 @@ def _isolate_operator_data(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> N
     from providers import (
         agy_loader,
         agy_quota_probe,
+        agy_window_keeper,
         codex_loader,
         grok_loader,
         grok_quota_probe,
@@ -92,6 +93,7 @@ def _isolate_operator_data(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> N
         (history_loader, "HISTORY_CACHE_PATH", ".agentdeck/history_jsonl_cache.json"),
         (agy_loader, "AGY_CACHE_PATH", ".agentdeck/agy_db_cache.json"),
         (agy_quota_probe, "CACHE_PATH", ".agentdeck/agy_quota_cache.json"),
+        (agy_window_keeper, "AGY_CLI_SIGNED_OUT_PATH", ".agentdeck/agy_cli_signed_out"),
         (reporter, "YEAR_CACHE_PATH", ".agentdeck/year_cache.json"),
         (reporter, "YEAR_LEDGER_PATH", ".agentdeck/year_ledger.json"),
         (codex_loader, "SESSIONS_DIR", ".codex/sessions"),

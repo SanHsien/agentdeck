@@ -107,8 +107,21 @@ def test_normalize_model_covers_tokscale_aliases() -> None:
         "gemini-3.1-pro",
         "gemini-3-pro",
         "gemini-3-pro",
-        "gemini-3.5-flash-low",
+        "gemini-3.5-flash",
     ]
+
+
+@pytest.mark.parametrize(("model", "expected"), [
+    ("gemini-4-argon-s", "gemini-4-argon"),
+    ("gemini-3.8-flash-n", "gemini-3.8-flash"),
+    ("gemini-4-hydrogen-xhigh", "gemini-4-hydrogen"),
+    ("claude-sonnet-5-5-medium", "claude-sonnet-5-5"),
+    ("gemini-4-argon-trial", "gemini-4-argon"),
+    ("gemini-4-argon-tiered", "gemini-4-argon"),
+    ("unknown-model", "unknown-model"),
+])
+def test_normalize_current_antigravity_models(model: str, expected: str) -> None:
+    assert agy._normalize_model(model) == expected
 
 
 def test_registry_includes_antigravity(monkeypatch: pytest.MonkeyPatch) -> None:

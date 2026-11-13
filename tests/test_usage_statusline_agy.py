@@ -12,6 +12,28 @@ import pytest
 import usage_statusline_agy
 
 
+@pytest.mark.parametrize(("lang", "label"), [("zh-TW", "深思熟慮"), ("en", "Extended")])
+@pytest.mark.parametrize("explicit", [True, False])
+def test_render_localizes_xhigh_effort(
+    monkeypatch: pytest.MonkeyPatch, lang: str, label: str, explicit: bool,
+) -> None:
+    monkeypatch.setenv("AGENTDECK_LANG", lang)
+    model = {"display_name": "Gemini 4 Hydrogen (XHigh)"}
+    if explicit:
+        model["effort"] = "xhigh"
+    rendered = usage_statusline_agy.render({"model": model})
+    assert f"Gemini 4 Hydrogen/{label}" in rendered
+    assert "(XHigh)" not in rendered
+
+
+def test_xhigh_fallback_matches_translation_bundle() -> None:
+    bundle = json.loads((Path(__file__).parents[1] / "i18n.json").read_text(encoding="utf-8"))
+    for lang in ("zh-TW", "en"):
+        assert usage_statusline_agy.STATUSLINE_TRANSLATIONS[lang]["effort_xhigh"] == (
+            bundle[lang]["agy_effort_xhigh"]
+        )
+
+
 @pytest.mark.parametrize(
     ("value", "expected"),
     [(999_499, "999k"), (999_500, "1.0M"), (999_949_999, "999.9M"), (999_950_000, "1.0B")],

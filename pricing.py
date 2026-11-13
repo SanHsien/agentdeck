@@ -362,6 +362,11 @@ def _resolve_model_key(model: str, pricing: PricingTable) -> str | None:
         if xai_key in pricing:
             return xai_key
 
+    if normalized.startswith("gemini-"):
+        gemini_key = f"gemini/{normalized}"
+        if gemini_key in pricing:
+            return gemini_key
+
     # Once a query carries its own version (claude-opus-4), a candidate that only
     # appends another number is a different model, not a variant: claude-opus-4
     # must not fall back to claude-opus-4-6 pricing. A version-less query

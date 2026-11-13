@@ -31,20 +31,55 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "c276bf74cecbac9cb74060262e74d9cb37026a2e",
-      "last_merged": "6a4a58677b04fc15ce96e2233a4f932b972699d5",
-      "note": "2026-11-13 第七批審至 c276bf74，c3b796f9..c276bf74 共 6 筆；移植精簡模式可讀性規則、Fable 5.2 離線價格、Antigravity 兩行狀態列與重置時間、Codex 子代理用量修正。到 upstream/main 042b8c56 剩 13 筆，下一筆 c72a4cfb；PR 審至 #311，issue 維持 #273。"
+      "last_reviewed": "042b8c56af14651a7cc53135e7f316266f9ee4fe",
+      "last_merged": "042b8c56af14651a7cc53135e7f316266f9ee4fe",
+      "note": "2026-11-13 第八批審完 c276bf74..042b8c56 共 13 筆；移植 Antigravity 保活登入防護、模型計價與短名、xhigh 顯示及 token 欄位修正。本機 upstream/main 042b8c56 無剩餘 commit；PR 審至 #328，issue 維持 #273。"
     }
   },
   "tickets": {
-    "reviewed_pr_through": 311,
+    "reviewed_pr_through": 328,
     "reviewed_issue_through": 273,
     "reviewed_date": "2026-11-13",
-    "note": "已讀 PR #306–#311 內文、mergeCommit 與 patch；#306 採用繁中／英文，#307–#310 採用適用修正，#311 為上游獨立發版。issue 審視範圍維持 #273。"
+    "note": "已讀 PR #312–#328 內文與 mergeCommit，逐筆審視 13 筆已合併 patch；#312–#317 不引入 quota-aware，#318／#319 部分採用保活登入防護，#327／#328 採用適用修正。#320 獨立發版、#321 自行維護 Actions；#322–#325 未合併且由 #326 整合，均屬 macOS 依賴。issue 審視範圍維持 #273。"
   }
 }
 ```
 <!-- sync-points:end -->
+
+## 2026-11-13：`c276bf74..042b8c56` 共 13 筆（issue #36 第八批）
+
+`last_reviewed` 與 `last_merged` 推至 `042b8c56`。本機 `upstream/main` 快照為 `042b8c56`，`git rev-list --count 042b8c56..upstream/main` 為 0；此計數不代表遠端即時狀態。
+
+### 採用與移植差異
+
+- **保活登入防護**：背景 CLI 回報 Authentication required／failed（含 timeout 輸出）後，只保存儲存憑證的 SHA-256 摘要；相同或不可讀憑證不重試。憑證改變才解除封鎖，執行期間登入則不把新憑證標成失效。判斷不刷新 token、不連網，仍保留 fork 的五小時派送冷卻與單一保活工作限制。第一次登入失敗仍可能開啟登入頁。
+- **模型計價與呈現**：Antigravity adapter 保留既有別名優先順序，去除 n／s／trial／tiered／low／medium／high／xhigh 尾碼；價格解析在精確鍵之後補查 gemini/ 前綴。補 Flash 3.8、Argon 4、Hydrogen 4 短名；狀態列將 (XHigh) 或明確 effort 顯示為「深思熟慮」／Extended，維持 stdlib-only 與兩語副本一致。
+- **token 欄位**：ModelUsageStats 欄位 1 是模型 enum，不再加到輸入；輸入讀 2、思考讀 9、回覆輸出讀 10。10 缺失時使用 max(3 − 9, 0)，明確的零仍保留；只有模型 enum 的紀錄不算用量。依 fork 版本序列將資料庫解析快取 schema 3 升至 4，重建舊計數。
+- **fork 差異**：不引入 quota-aware hook、其服務快照、開場總覽、換帳號提醒或重置狀態；官方 quota 端點直讀沒有 CLI 探測失敗後的週額度沿用流程，故不加入其老化與錨點欄位。保留 Windows 單一保活鎖，不新增不存在的第二個 CLI 呼叫者。其餘語言、上游獨立發版與依賴更新見全域 Skipped 表。
+
+### 逐筆判定（含 Skipped）
+
+| Commit | 標題／PR | 審視日期 | 判定與理由 |
+| --- | --- | --- | --- |
+| `c72a4cfb` | 提醒附重置時鐘與目前時間；#312 | 2026-11-13 | Skipped：本 fork 無 quota-aware hook，不引入其時鐘與提醒文字。 |
+| `0f815cff` | 提醒官方服務異常；#313 | 2026-11-13 | Skipped：服務狀態已有 UI 呈現；不新增 quota-aware hook 專用快照與對話注入。 |
+| `38f8dfac` | 額度重置後撤銷提醒；#314 | 2026-11-13 | Skipped：本 fork 無 quota-aware 提醒紀錄，沒有對應的重置撤銷流程。 |
+| `ec6bb88a` | 對話開始時額度總覽；#315 | 2026-11-13 | Skipped：屬未出貨 quota-aware hook 的新功能，不新增開場額度注入。 |
+| `5909571d` | Claude 換帳號提醒；#316 | 2026-11-13 | Skipped：本 fork 無 quota-aware hook 的帳號提醒狀態；既有 provider 帳號隔離維持不變。 |
+| `b2e53dda` | 提醒鎖、逐窗口帳號隔離與重置漂移；#317 | 2026-11-13 | Skipped：修正均位於未出貨的 quota-aware hook，不新增其狀態檔與鎖。 |
+| `80c949b2` | 背景登入防護與週額度保留；#318 | 2026-11-13 | 部分採用：保活遇到登入失敗後停止派送；額度探測不啟動 CLI，沒有探測與保活共用鎖或 fallback 週額度沿用流程。 |
+| `86774467` | 憑證變更判斷、週額度老化與重置錨點；#319 | 2026-11-13 | 部分採用：以儲存憑證摘要判斷是否重試，執行期間登入不封鎖新憑證；保留五小時派送冷卻。不引入 CLI 週額度沿用或 quota-aware 漂移狀態。 |
+| `e113692f` | CodeQL Actions 4.39.3；#321 | 2026-11-13 | Skipped：只更新上游 Actions pin；本 fork 的 Actions 由自己的 Dependabot 管理。 |
+| `60f34e7f` | release: v0.34.17；#320 | 2026-11-13 | Skipped：上游版號、lock 與發版紀錄，本 fork 獨立發版。 |
+| `5f158547` | PyObjC frameworks 13.0；#326 | 2026-11-13 | Skipped：macOS-only，本 fork 已移除 PyObjC 與該平台打包。 |
+| `b5fbf1de` | Antigravity 模型價格與 xhigh；#327 | 2026-11-13 | 採用適用修正：去除模型尾碼、補 gemini/ 價格鍵與三種短名；xhigh 僅維護繁中／英文。 |
+| `042b8c56` | Antigravity token 欄位；#328 | 2026-11-13 | 採用：輸入讀欄位 2、思考讀 9、輸出讀 10，缺輸出時以欄位 3 扣思考且不小於零；略過只有模型 enum 的紀錄，fork 快取 schema 3 升至 4。 |
+
+### PR／issue 審視範圍
+
+已讀 PR #312–#328 內文與 mergeCommit，`reviewed_pr_through` 推至 328。#312–#317 維持未出貨 quota-aware 的邊界；#318／#319 部分採用保活修正；#320 為上游獨立發版，#321 為自行維護的 Actions pin；#322–#325 已關閉且未合併，由 #326 整合為 PyObjC 13.0，全部不適用 Windows fork；#327／#328 採用上述適用修正。
+
+`reviewed_issue_through` 保持 273；PR 號碼不當成 issue 審視範圍。
 
 ## 2026-11-13：`c3b796f9..c276bf74` 共 6 筆（issue #36 第七批）
 
@@ -970,6 +1005,18 @@ Linux cloud agent **沒有**跑 `build_windows.ps1`；archive_viewer 那層要�
 
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
+| main | `c72a4cfb` | 提醒附重置時鐘與目前時間；#312 | 2026-11-13 | Skipped：本 fork 無 quota-aware hook，不引入其時鐘與提醒文字。 |
+| main | `0f815cff` | 提醒官方服務異常；#313 | 2026-11-13 | Skipped：服務狀態已有 UI 呈現；不新增 quota-aware hook 專用快照與對話注入。 |
+| main | `38f8dfac` | 額度重置後撤銷提醒；#314 | 2026-11-13 | Skipped：本 fork 無 quota-aware 提醒紀錄，沒有對應的重置撤銷流程。 |
+| main | `ec6bb88a` | 對話開始時額度總覽；#315 | 2026-11-13 | Skipped：屬未出貨 quota-aware hook 的新功能，不新增開場額度注入。 |
+| main | `5909571d` | Claude 換帳號提醒；#316 | 2026-11-13 | Skipped：本 fork 無 quota-aware hook 的帳號提醒狀態；既有 provider 帳號隔離維持不變。 |
+| main | `b2e53dda` | 提醒鎖、逐窗口帳號隔離與重置漂移；#317 | 2026-11-13 | Skipped：修正均位於未出貨的 quota-aware hook，不新增其狀態檔與鎖。 |
+| main | `80c949b2` | 背景登入防護與週額度保留；#318 | 2026-11-13 | 部分採用：保活遇到登入失敗後停止派送；額度探測不啟動 CLI，沒有探測與保活共用鎖或 fallback 週額度沿用流程。 |
+| main | `86774467` | 憑證變更判斷、週額度老化與重置錨點；#319 | 2026-11-13 | 部分採用：以儲存憑證摘要判斷是否重試，執行期間登入不封鎖新憑證；保留五小時派送冷卻。不引入 CLI 週額度沿用或 quota-aware 漂移狀態。 |
+| main | `e113692f` | CodeQL Actions 4.39.3；#321 | 2026-11-13 | Skipped：只更新上游 Actions pin；本 fork 的 Actions 由自己的 Dependabot 管理。 |
+| main | `60f34e7f` | release: v0.34.17；#320 | 2026-11-13 | Skipped：上游版號、lock 與發版紀錄，本 fork 獨立發版。 |
+| main | `5f158547` | PyObjC frameworks 13.0；#326 | 2026-11-13 | Skipped：macOS-only，本 fork 已移除 PyObjC 與該平台打包。 |
+| main | `b5fbf1de` | Antigravity xhigh 其他語言；#327 | 2026-11-13 | 部分採用：僅出貨繁中／英文，不搬入簡中、日文與韓文翻譯。 |
 | main | `fe2449ce`（部分） | 精簡模式白話規則；#306 | 2026-11-13 | 採用繁中／英文與 hook 更新；簡中、日文與韓文不在正式語言集合，沿用中文映射繁中的契約。 |
 | main | `c276bf74` | release: v0.34.16；#311 | 2026-11-13 | 上游版本、lock 與發版紀錄；本 fork 獨立發版。 |
 | main | `25493823`／`5b705002` | 舊 ledger 日補回 Codex 明細；#298 | 2026-11-13 | 沿用 D-33／D-40，未採用的用量快照、ledger_backfill、cube 價格覆蓋率與日期篩選器不搬入；merge combined diff 無額外修正。 |

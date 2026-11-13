@@ -21,6 +21,15 @@ from i18n import t
 from ui import tables
 
 
+@pytest.mark.parametrize(("model", "expected"), [
+    ("gemini-3.8-flash", "Flash 3.8"),
+    ("gemini-4-argon", "Argon 4"),
+    ("gemini-4-hydrogen", "Hydrogen 4"),
+])
+def test_current_gemini_model_short_names(model: str, expected: str) -> None:
+    assert tables._model_short(model) == expected
+
+
 @pytest.mark.parametrize(
     ("theme", "colorfgbg", "expected"),
     [
