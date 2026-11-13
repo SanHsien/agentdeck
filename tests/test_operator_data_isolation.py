@@ -20,6 +20,7 @@ from pathlib import Path
 
 import pytest
 
+import prefs
 from adapters import claude as claude_adapter
 from adapters import codex as codex_adapter
 from adapters import rate_limits
@@ -34,6 +35,7 @@ from providers import (
 )
 
 _GUARDED = [
+    (prefs, "PREFERENCES_FILE"),
     (codex_loader, "SESSIONS_DIR"),
     (codex_loader, "ARCHIVED_SESSIONS_DIR"),
     (codex_loader, "STATE_DB"),

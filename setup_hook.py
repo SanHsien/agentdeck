@@ -99,7 +99,7 @@ _SHELL_UNSAFE_CHARACTERS = "&|^<>()$`;'"
 # with the `__version__` line of the installed copy, so the two move together or the
 # hook is either never refreshed (bumped file, stale constant) or reported stale on
 # every run (bumped constant, stale file).
-HOOK_VERSION = "1.2"
+HOOK_VERSION = "1.3"
 _SL_REGEX = re.compile(r"(?m)^[ \t]*status_line\s*=\s*\[.*?\]", re.DOTALL)
 _TABLE_REGEX = re.compile(r"(?m)^[ \t]*\[[^\]\n]+\][ \t]*(?:#.*)?$")
 

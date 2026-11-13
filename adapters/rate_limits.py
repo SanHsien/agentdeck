@@ -45,9 +45,12 @@ def load_rate_limits() -> RateLimits | None:
     if data is None:
         return None
 
-    rl = data.get("rate_limits") or {}
-    five = rl.get("five_hour") or {}
-    seven = rl.get("seven_day") or {}
+    raw_rl = data.get("rate_limits")
+    rl = raw_rl if isinstance(raw_rl, dict) else {}
+    five = rl.get("five_hour")
+    seven = rl.get("seven_day")
+    five = five if isinstance(five, dict) else {}
+    seven = seven if isinstance(seven, dict) else {}
 
     now_ts = datetime.now(timezone.utc).timestamp()
     five_pct = _as_finite_float(five.get("used_percentage"))

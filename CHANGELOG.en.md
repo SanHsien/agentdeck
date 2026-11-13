@@ -8,6 +8,9 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- Claude Code quota keeps updating when only one quota window is reported, instead of reverting to stale cached values. Expired windows remain for one cycle for 0% display and recovery notifications, then disappear. The opt-in window keeper remembers real reset times without arming on unknown reset times or plans that never reported a five-hour limit. Malformed windows still use fallback data and no longer crash reports. Ported from upstream PRs #274, #278 and #279; newer Claude Desktop samples still take precedence.
+
 ## [0.43.0] - 2026-11-08
 
 ### Added

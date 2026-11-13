@@ -379,7 +379,9 @@ def test_maybe_ping_skips_when_window_still_running(
     )
 
     assert calls == []
-    assert isolated_state.exists() is False
+    assert json.loads(isolated_state.read_text(encoding="utf-8")) == {
+        "last_seen_reset_at": now + 3600,
+    }
     assert _SyncThread.instances == []
 
 
@@ -502,3 +504,39 @@ def test_maybe_ping_ignores_non_hook_source(
     assert calls == []
     assert isolated_state.exists() is False
     assert _SyncThread.instances == []
+
+
+def test_maybe_ping_recalls_real_window_after_it_disappears(
+    monkeypatch: pytest.MonkeyPatch, isolated_state: Path
+) -> None:
+    calls = _arm_successful_ping(monkeypatch)
+    now = 1_800_000_000.0
+    monkeypatch.setattr("window_keeper.time.time", lambda: now)
+    reset = now + 3600
+    window_keeper.maybe_ping(reset, 46, "hook", False)
+    assert calls == []
+    now = reset + 18001
+    window_keeper.maybe_ping(None, None, "hook", False)
+    assert calls == ["/fake/claude"]
+    assert window_keeper._load_ping_state() == (reset, now)
+    window_keeper.maybe_ping(None, None, "hook", False)
+    assert calls == ["/fake/claude"]
+
+
+def test_maybe_ping_never_arms_weekly_only_plan(
+    monkeypatch: pytest.MonkeyPatch, isolated_state: Path
+) -> None:
+    calls = _arm_successful_ping(monkeypatch)
+    window_keeper.maybe_ping(None, None, "hook", False)
+    assert calls == []
+    assert not isolated_state.exists()
+
+
+@pytest.mark.parametrize("reset", [None, float("nan"), float("inf"), float("-inf")])
+def test_maybe_ping_never_remembers_invalid_reset(
+    monkeypatch: pytest.MonkeyPatch, isolated_state: Path, reset: float | None
+) -> None:
+    calls = _arm_successful_ping(monkeypatch)
+    window_keeper.maybe_ping(reset, 46, "hook", False)
+    assert calls == []
+    assert not isolated_state.exists()

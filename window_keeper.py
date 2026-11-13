@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import shutil
 import subprocess
@@ -54,10 +55,8 @@ PING_TIMEOUT_SECONDS = 180
 # window the previous ping opened.
 PING_COOLDOWN_SECONDS = 5 * 3600 + 300
 
-# usage_client defaults a missing ``resets_at`` to parse-time "now", which one
-# refresh later reads as "expired seconds ago". Requiring the expiry to be at
-# least this old filters those synthetic timestamps without delaying a real
-# expired-while-away ping by more than two minutes.
+# Wait briefly after a real reset before opening the next window so quota
+# observations around the reset boundary can settle.
 PING_EXPIRY_GRACE_SECONDS = 120
 
 # ``claude`` binary resolution order: PATH first, then the well-known install
@@ -109,38 +108,35 @@ def should_ping(
     return last_ping_at is None or now - last_ping_at >= PING_COOLDOWN_SECONDS
 
 
-def _load_ping_state(
-    path: Path | None = None,
-) -> tuple[float | None, float | None]:
+def _read_ping_state(path: Path | None = None) -> dict[str, object]:
     state_path = WINDOW_KEEPER_STATE_PATH if path is None else path
     if not state_path.exists():
-        return None, None
+        return {}
     try:
         data = json.loads(state_path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-        return None, None
-    if not isinstance(data, dict):
-        return None, None
-
-    def numeric_value(key: str) -> float | None:
-        value = data.get(key)
-        if isinstance(value, bool) or not isinstance(value, int | float):
-            return None
-        return float(value)
-
-    return numeric_value("last_pinged_reset_at"), numeric_value("last_ping_at")
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
-def _save_ping_state(
-    reset_at: float,
-    ping_at: float,
-    path: Path | None = None,
-) -> None:
+def _state_number(data: dict[str, object], key: str) -> float | None:
+    value = data.get(key)
+    if isinstance(value, bool) or not isinstance(value, int | float) or not math.isfinite(value):
+        return None
+    return float(value)
+
+
+def _load_ping_state(path: Path | None = None) -> tuple[float | None, float | None]:
+    data = _read_ping_state(path)
+    return _state_number(data, "last_pinged_reset_at"), _state_number(data, "last_ping_at")
+
+
+def _update_ping_state(updates: dict[str, object], path: Path | None = None) -> None:
     state_path = WINDOW_KEEPER_STATE_PATH if path is None else path
     state_path.parent.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps(
-        {"last_pinged_reset_at": reset_at, "last_ping_at": ping_at}
-    ) + "\n"
+    data = _read_ping_state(state_path)
+    data.update(updates)
+    payload = json.dumps(data) + "\n"
     tmp_path: str | None = None
     try:
         fd, tmp_path = tempfile.mkstemp(dir=state_path.parent, suffix=".tmp")
@@ -154,6 +150,25 @@ def _save_ping_state(
         if tmp_path and os.path.exists(tmp_path):
             with suppress(OSError):
                 os.unlink(tmp_path)
+
+
+def _save_ping_state(reset_at: float, ping_at: float, path: Path | None = None) -> None:
+    _update_ping_state({"last_pinged_reset_at": reset_at, "last_ping_at": ping_at}, path)
+
+
+def _recall_expired_window(
+    reset_at: float | None, percent: float | None, data_source: str
+) -> tuple[float | None, float | None]:
+    if data_source != "hook":
+        return reset_at, percent
+    remembered = _state_number(_read_ping_state(), "last_seen_reset_at")
+    if percent is None:
+        return (reset_at, None) if remembered is None else (remembered, 0.0)
+    if reset_at is None or not math.isfinite(reset_at):
+        return None, percent
+    if reset_at is not None and reset_at != remembered:
+        _update_ping_state({"last_seen_reset_at": reset_at})
+    return reset_at, percent
 
 
 def _resolve_claude_bin() -> str | None:
@@ -254,6 +269,9 @@ def maybe_ping(
         return
     now = time.time()
     last_pinged_reset_at, last_ping_at = _load_ping_state()
+    current_reset_at, current_percent = _recall_expired_window(
+        current_reset_at, current_percent, data_source
+    )
     if not should_ping(
         now,
         current_reset_at,

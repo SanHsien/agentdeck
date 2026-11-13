@@ -74,7 +74,7 @@ msvcrt = _msvcrt
 # It also moves when a *sibling* installed file changes, because `needs_update()`
 # compares this version and nothing else: it is the only trigger that makes
 # `update_hook()` run at all, and that is what refreshes the forwarder copy.
-__version__ = "1.2"
+__version__ = "1.3"
 
 STATUS_FILE = os.path.expanduser("~/.claude/agentdeck-status.json")
 LOCK_FILE = os.path.expanduser("~/.claude/agentdeck-status.lock")
@@ -248,6 +248,35 @@ def _rate_limits_complete(rate_limits: Any) -> bool:
     return five.get("used_percentage") is not None and seven.get("used_percentage") is not None
 
 
+_RATE_WINDOWS = {"five_hour": 18000, "seven_day": 604800}
+
+
+def _window_used(window: Any) -> bool:
+    return isinstance(window, dict) and window.get("used_percentage") is not None
+
+
+def _merge_rate_limits(incoming: Any, cached: Any, now_ts: float) -> Any:
+    """Keep fresh windows live; retain missing windows for at most one reset cycle."""
+    if not isinstance(cached, dict) or not any(_window_used(cached.get(k)) for k in _RATE_WINDOWS):
+        return incoming
+    # A new session before its first reply still needs the last quota snapshot.
+    if not isinstance(incoming, dict) or not any(
+        _window_used(incoming.get(k)) for k in _RATE_WINDOWS
+    ):
+        return cached
+    merged = dict(incoming)
+    for key, seconds in _RATE_WINDOWS.items():
+        if _window_used(merged.get(key)):
+            continue
+        old = cached.get(key)
+        reset = _as_float(old.get("resets_at")) if isinstance(old, dict) else None
+        if _window_used(old) and reset is not None and reset + seconds > now_ts:
+            merged[key] = old
+        else:
+            merged.pop(key, None)
+    return merged
+
+
 def _acquire_msvcrt_lock(lock_fd: int) -> bool:
     """Block (bounded) until the byte is locked; False if locking is unavailable.
 
@@ -316,9 +345,11 @@ def save(data: Dict[str, Any], now: datetime) -> None:
                 except (OSError, UnicodeDecodeError, json.JSONDecodeError):
                     existing = None
                 if isinstance(existing, dict):
-                    existing_rate_limits = existing.get("rate_limits")
-                    if _rate_limits_complete(existing_rate_limits):
-                        data["rate_limits"] = existing_rate_limits
+                    merged = _merge_rate_limits(
+                        data.get("rate_limits"), existing.get("rate_limits"), now.timestamp()
+                    )
+                    if merged is not None:
+                        data["rate_limits"] = merged
             fd, tmp_path = tempfile.mkstemp(dir=target_dir, suffix=".tmp")
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False)
@@ -649,6 +680,8 @@ def _render_core(data: Dict[str, Any], now: datetime) -> str:
         resets_at = _as_float(entry.get("resets_at"))
         if resets_at is not None:
             remain = int(resets_at) - int(now.timestamp())
+            if remain <= 0:
+                pct_float = 0.0
             if remain > 0:
                 if lang == "zh-TW":
                     reset_str = f" ({_t('remaining_prefix')}{fmt_duration(remain)})"

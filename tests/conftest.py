@@ -62,6 +62,7 @@ def _isolate_operator_data(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> N
     isolate something fails closed (empty) instead of silently reading real
     data. Tests that need fixture data still monkeypatch afterwards, which wins.
     """
+    import prefs
     from adapters import claude as claude_adapter
     from adapters import codex as codex_adapter
     from adapters import rate_limits
@@ -79,6 +80,7 @@ def _isolate_operator_data(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> N
     monkeypatch.setenv("CODEX_HOME", str(home / ".codex"))
 
     for module, name, relative in (
+        (prefs, "PREFERENCES_FILE", ".claude/agentdeck-preferences.json"),
         (codex_loader, "JSONL_CACHE_PATH", ".agentdeck/codex_jsonl_cache.json"),
         (history_loader, "HISTORY_CACHE_PATH", ".agentdeck/history_jsonl_cache.json"),
         (agy_loader, "AGY_CACHE_PATH", ".agentdeck/agy_db_cache.json"),

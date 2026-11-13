@@ -18,8 +18,8 @@
 **適用所有 AI agent（Claude Code、Codex、Gemini…）與人。**
 
 1. 逐筆讀 commit 內容，判斷是否適用本 fork（Windows-only、繁中/英雙語、已移除 macOS）。
-2. **採用** → 走 `git merge` 或 `git cherry-pick`，完成後同時推進下方的 `last_merged` 與 `last_reviewed`。
-3. **不採用** → 只推進 `last_reviewed`，**並且**在下方「Skipped」表補一列（commit、標題、審視日期、不採用的理由），在 [`DECISIONS.md`](DECISIONS.md) 記一句理由。
+2. **採用** → 依 fork 的模組位置手工移植並補測試（上游已搬入套件，不能整段 merge），完成後同時推進下方的 `last_merged` 與 `last_reviewed`。
+3. **不採用** → 只推進 `last_reviewed`，**並且**在下方「Skipped」表補一列（commit、標題、審視日期、不採用的理由），只有長期產品／架構取捨才在 [`DECISIONS.md`](DECISIONS.md) 記理由（依 `AGENTS.md`）。
 
 > `last_reviewed` 只負責「這次不用再提醒」，Skipped 表才負責「不失憶」。**兩件事缺一不可**——只推進標記卻不記理由，日後想回頭查「當初為什麼跳過」會查無所獲。
 
@@ -31,20 +31,58 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "28655a22812773bc839e0a05d45359cc0905f842",
-      "last_merged": "1c78dc4220b5e7c1beaca62cf76a94ac9efe7993",
-      "note": "2026-10-30 審視 9723c04..28655a2 共 29 筆與 PR #263–#272。採用備用價格 gpt-6.1-terra（PR #268）、面板品牌標題防字母下伸截斷（PR #267）、續接 hook 關閉 repo 內定 fsmonitor、Codex config.toml 寫入前驗證、報表 CSV 公式防護（以上皆 PR #270）。last_merged 指向最後一筆採用的 1c78dc4，時間序晚於 a8d5bd6、83c56f4 與 a35dc9e。"
+      "last_reviewed": "d05d9ea504a4f3fd898167e3d80068edc672a924",
+      "last_merged": "683b3ac5df9ac058d7565c3b321944d18993043c",
+      "note": "2026-11-12 逐筆審視 28655a2..d05d9ea5 共 15 筆（PR #274–#279）。手工移植 #274、#278 與 #279 的 Claude 額度部分；其他理由見本批判定表。"
     }
   },
   "tickets": {
-    "reviewed_pr_through": 272,
-    "reviewed_issue_through": 202,
-    "reviewed_date": "2026-10-30",
-    "note": "以 --state all 審視。PR #263–#272（採用 #267、#268 價格部分、#270 的 fsmonitor、config.toml 驗證與 CSV 公式防護；其餘依 commit 軸逐筆判定並記錄理由）與 Issue #202。"
+    "reviewed_pr_through": 279,
+    "reviewed_issue_through": 273,
+    "reviewed_date": "2026-11-12",
+    "note": "GitHub issues API state=all、兩頁清冊確認 #203–#279 中非 PR 的 issue 只有 #273，已讀原文；已讀 PR #274–#279 原文與本機提交 patch。#273 是 issue，沒有 PR #273。"
   }
 }
 ```
 <!-- sync-points:end -->
+
+## 2026-11-12：`28655a2..d05d9ea5` 共 15 筆（issue #36 第一批）
+
+連續審至 PR #279，沒有越過未審提交。`last_merged` 指向最後一筆採用的 `683b3ac5`，`last_reviewed` 指向其 merge commit `d05d9ea5`。以公開唯讀 API 讀 PR #274–#279 與 issue #273，以本機 Git 讀 patch；六個 merge commit 的 combined diff 均無額外衝突修正。未對遠端寫入。
+
+### 採用與移植差異
+
+- **單窗口持續更新**（`62266b8f`，#274）：hook 逐窗口合併；只送 `seven_day` 也可供讀取端使用，`.claude.json` 不蓋掉有效的單窗口。保留本 fork「較新的 Claude Desktop 全域樣本可優先」契約。
+- **過期窗口保留一個週期後移除**（`ddaa3eea`，#278）：缺少的五小時／每週窗口保留到原重置時間加 18000／604800 秒，供面板 0% 與恢復通知，達到界線即移除。完全沒送額度的新對話保留最後快照。hook 也把已重置窗口畫為 0%。採用 #278 回歸修正，而非 #274 初版的立即移除；本 fork 的 stdlib-only 根目錄 hook 與安裝器版本同步由 1.2 升至 1.3。
+- **窗口消失仍能續開**（`21cb8b75`，#278）：僅在 keeper 已啟用時記錄 hook 的真實重置時間；消失後用它判斷。保留原子寫入、dispatch 去重與冷卻；沒有回報過五小時窗口的方案、mock、停用與非 hook 來源不啟動 CLI。
+- **畸形窗口與虛構時間防護**（`683b3ac5` 的 Claude 部分，#279）：格式錯誤的窗口仍走備援，報表 adapter 不對非 dict 呼叫 `.get()`，snapshot 不把 parse-time 的 now 當成真實五小時重置時間。keeper 同時拒絕記住未知或非有限重置時間，避免 NaN／無限大觸發 CLI。
+- **測試隔離**：起點的三個 UI 測試嘗試寫操作者偏好檔，被沙箱拒絕。補上 `prefs.PREFERENCES_FILE` 的 per-test 隔離與守衛，沒有用真實設定驗證。
+
+### 逐筆判定（含 Skipped）
+
+| Commit | 標題／PR | 審視日期 | 判定與理由 |
+| --- | --- | --- | --- |
+| `62266b8f` | fix(statusline): 沒有 5 小時額度的方案不再凍結額度；#274 | 2026-11-12 | 採用，連同 #278／#279 修正，見上。 |
+| `609030a8` | Merge PR #274 | 2026-11-12 | 採用同一 patch，無額外 merge 修正。 |
+| `71be8dee` | release: v0.34.10；#275 | 2026-11-12 | Skipped：只切上游 changelog、版本與 lock；本 fork 獨立發版，不覆蓋 0.43.0。 |
+| `acc6c12c` | Merge PR #275 | 2026-11-12 | Skipped：同上游發版 chore，無額外 merge 修正。 |
+| `2ef740fc` | feat(report): research-style charts with conclusion headings；#276 | 2026-11-12 | Skipped：改 Python／日期篩選 JS、CSS、五語標題與快照；沿用 D-33 報表分岔決策，保留 Windows 現有報表，不在例行同步搬入大型視覺改版。 |
+| `a99b4a34` | test(report): write the heading parity scripts as UTF-8；#276 | 2026-11-12 | Skipped：只修未採用之新標題測試編碼，本 fork 沒有這兩個測試。 |
+| `079af49f` | perf(report): keep the persona profile for an hour；#276 | 2026-11-12 | Skipped：維持 300 秒新鮮度；上游 1500 檔／20 秒是其環境數字，無本 fork 量測支持延遲至一小時。 |
+| `ca6b0e0d` | Merge PR #276 | 2026-11-12 | Skipped：上述三筆整合，無額外 merge 修正。 |
+| `ea18a5ad` | chore(docs): retake the report screenshots；#277 | 2026-11-12 | Skipped：為未採用的 #276 換官網截圖與五語站台尺寸，本 fork 不出貨該站台。 |
+| `05daaa93` | Merge PR #277 | 2026-11-12 | Skipped：同截圖更新，無額外 merge 修正。 |
+| `21cb8b75` | fix(keeper): 5 小時視窗過期後消失時，照樣自動開下一個；#278 | 2026-11-12 | 採用，以本 fork 原子狀態檔保留 last_seen_reset_at，不引入 keeper_outcome 層。 |
+| `ddaa3eea` | fix(statusline): 過期的額度視窗多留一個週期；#278 | 2026-11-12 | 採用窗口保留與 0% 顯示，覆蓋面板與恢復通知。 |
+| `9b36868b` | Merge PR #278 | 2026-11-12 | 採用上述兩筆，無額外 merge 修正。 |
+| `683b3ac5` | fix: 發版前審查的三個回歸；#279 | 2026-11-12 | 部分採用：Claude 畸形窗口與真實重置時間。Skipped：macOS Antigravity 倒數依 #272 列後續（產品方向），本批不移植；未知重置時間仍顯示百分比，本 fork `_quota_row` 與既有測試已涵蓋。 |
+| `d05d9ea5` | Merge PR #279 | 2026-11-12 | 同前列部分採用，無額外 merge 修正。 |
+
+### 驗證
+
+2026-11-13：`pwsh -NoProfile -File tools/dev_check.ps1` 六道 gate 全綠（exit 0），pytest 為 1781 passed／8 skipped／1 deselected；測試只用暫存資料與假 CLI，未執行真實 Windows 桌面／provider CLI smoke。
+
+審查水位仍為 `d05d9ea5`／PR #279／issue #273；本輪沒有再審後續提交。以既有 2026-11-12 compare JSON 重算：82 筆中本批 15 筆，剩 67 筆，下一筆 `9030c5f0`，快照末端 `8677446`；本機 `upstream/main` 停在 `fe2449c`，只包含其中剩餘 54 筆。這些是快照計數，不是 2026-11-13 上游即時數字；未 push，未更新／關閉遠端 #36。
 
 ## 2026-10-30：`9723c04..28655a2` 共 29 筆，`last_reviewed` 推到 `28655a2`
 
@@ -740,6 +778,15 @@ Linux cloud agent **沒有**跑 `build_windows.ps1`；archive_viewer 那層要�
 
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
+| main | `71be8dee` | release: v0.34.10；#275 | 2026-11-12 | 只切上游 changelog、版本與 lock；本 fork 獨立發版，不覆蓋 0.43.0。 |
+| main | `acc6c12c` | Merge PR #275 | 2026-11-12 | 同上游發版 chore，無額外 merge 修正。 |
+| main | `2ef740fc` | feat(report): research-style charts with conclusion headings；#276 | 2026-11-12 | 改 Python／日期篩選 JS、CSS、五語標題與快照；沿用 D-33 報表分岔決策，保留 Windows 現有報表，不在例行同步搬入大型視覺改版。 |
+| main | `a99b4a34` | test(report): write the heading parity scripts as UTF-8；#276 | 2026-11-12 | 只修未採用之新標題測試編碼，本 fork 沒有這兩個測試。 |
+| main | `079af49f` | perf(report): keep the persona profile for an hour；#276 | 2026-11-12 | 維持 300 秒新鮮度；上游 1500 檔／20 秒是其環境數字，無本 fork 量測支持延遲至一小時。 |
+| main | `ca6b0e0d` | Merge PR #276 | 2026-11-12 | 上述三筆整合，無額外 merge 修正。 |
+| main | `ea18a5ad` | chore(docs): retake the report screenshots；#277 | 2026-11-12 | 為未採用的 #276 換官網截圖與五語站台尺寸，本 fork 不出貨該站台。 |
+| main | `05daaa93` | Merge PR #277 | 2026-11-12 | 同截圖更新，無額外 merge 修正。 |
+| main | `683b3ac5` | fix: 發版前審查的三個回歸；#279 | 2026-11-12 | **部分採用**。Claude 畸形窗口與真實重置時間已移植；macOS Antigravity 倒數依 #272 列後續（產品方向），本批不移植；未知重置時間仍顯示百分比，本 fork `_quota_row` 與既有測試已涵蓋。 |
 | main | `1e06779`／`8c2dfcb` | chore(deps-dev): bump ruff from 0.17.1 to 0.17.2（PR #263） | 2026-10-30 | **不適用**。上游 Dependabot 依賴更新；本 fork 由自己的 Dependabot 獨立控管。 |
 | main | `f0fdad7`／`3c4f9d7` | chore(deps): bump codeql-action group（PR #264） | 2026-10-30 | **不適用**。上游 GitHub Actions 依賴升級；本 fork 自行控管。 |
 | main | `37cbe09`／`c43fde8` | chore(deps): bump astral-sh/setup-uv from 10.3.0 to 10.3.2（PR #265） | 2026-10-30 | **不適用**。上游 Actions 依賴升級；本 fork 自行控管。 |

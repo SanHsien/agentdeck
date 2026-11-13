@@ -147,7 +147,7 @@ def _collect_claude_quota(*, mock: bool = False) -> dict[str, Any] | None:
         snapshot = None
         if result is not None:
             data, source_path, _ = result
-            if usage_client._has_complete_rate_limits(data):
+            if usage_client._has_rate_limits(data):
                 snapshot = usage_client._build_snapshot(
                     data, data_source=usage_client._source_from_path(source_path)
                 )

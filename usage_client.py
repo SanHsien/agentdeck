@@ -394,17 +394,15 @@ def _hook_broken_message(now: float, polled_at: float) -> str | None:
     return HOOK_BROKEN_NOT_INSTALLED
 
 
-def _has_complete_rate_limits(data: dict[str, Any]) -> bool:
+def _has_rate_limits(data: dict[str, Any]) -> bool:
+    """Accept one valid quota window; malformed present windows still need fallback."""
     rl = data.get("rate_limits")
     if not isinstance(rl, dict):
         return False
-    five = rl.get("five_hour")
-    seven = rl.get("seven_day")
-    if not isinstance(five, dict) or not isinstance(seven, dict):
-        return False
-    return (
-        _as_finite_float(five.get("used_percentage")) is not None
-        and _as_finite_float(seven.get("used_percentage")) is not None
+    windows = [rl[key] for key in ("five_hour", "seven_day") if key in rl and rl[key] is not None]
+    return bool(windows) and all(
+        isinstance(window, dict) and _as_finite_float(window.get("used_percentage")) is not None
+        for window in windows
     )
 
 
@@ -446,7 +444,7 @@ def _build_snapshot(data: dict[str, Any], *, data_source: str = "hook") -> Usage
 
     return UsageSnapshot(
         current_percent=five_pct,
-        current_reset_at=five_reset,
+        current_reset_at=_as_finite_float(five.get("resets_at")),
         weekly_percent=seven_pct,
         weekly_reset_at=seven_reset,
         current_status=status,
@@ -524,15 +522,15 @@ class ClaudeUsageClient:
             self._cached_mtime = mtime
 
         # ``.claude.json`` can describe a different or expired session, so it only
-        # fills a missing/incomplete statusLine payload. Claude Desktop's plan history
-        # is global account usage; it may supersede a complete hook only when its own
+        # fills a statusLine payload without valid quota. Claude Desktop's plan history
+        # is global account usage; it may supersede a hook only when its own
         # sample timestamp is newer.
-        if not _has_complete_rate_limits(data):
+        if not _has_rate_limits(data):
             fallback = _newest_snapshot(claude_json_snapshot, desktop_snapshot)
             if fallback is not None:
                 return self._success_outcome(fallback)
 
-        if not _has_complete_rate_limits(data):
+        if not _has_rate_limits(data):
             outcome = PollOutcome(
                 state=PollState.LOADING,
                 message="awaiting_rate_limits",
