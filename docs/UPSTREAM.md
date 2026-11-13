@@ -31,20 +31,46 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "ccf4aedf671ebce68c5f36af6f0338e85d3fbb07",
-      "last_merged": "1817ee20c99e2978e67a449885ec85ac735cac82",
-      "note": "2026-11-13 第四批審至 ccf4aedf，1c44513e..ccf4aedf 共 17 筆，含第三批已審的 PR #286 兩筆；移植續接、設定失敗回報、session hook 修復與通知門檻。到 upstream/main 042b8c56 剩 35 筆，下一筆 144c048c；PR 審至 #294，issue 維持 #273。"
+      "last_reviewed": "d044edf4a72023e48340e7177ac78d96a872188d",
+      "last_merged": "3f26ca643c9a2f3abdbd942b976d7d3f1a407933",
+      "note": "2026-11-13 第五批審至 d044edf4，ccf4aedf..d044edf4 共 5 筆；移植四款主題的 Codex 更新時間提示與 Classic 樣式。到 upstream/main 042b8c56 剩 30 筆，下一筆 25493823；PR 審至 #296，issue 維持 #273。"
     }
   },
   "tickets": {
-    "reviewed_pr_through": 294,
+    "reviewed_pr_through": 296,
     "reviewed_issue_through": 273,
     "reviewed_date": "2026-11-13",
-    "note": "已讀 PR #289–#294 內文、mergeCommit 與相關 patch；#289 採用，#290／#291／#292 部分採用，#293 為 macOS 專屬，#294 的 dev 版本已等價。issue 審視範圍維持 #273。"
+    "note": "已讀 PR #295–#296 內文、mergeCommit 與相關 patch；#295 部分採用，#296 為上游獨立發版。issue 審視範圍維持 #273。"
   }
 }
 ```
 <!-- sync-points:end -->
+
+## 2026-11-13：`ccf4aedf..d044edf4` 共 5 筆（issue #36 第五批）
+
+`last_reviewed` 推至 `d044edf4`，`last_merged` 指向最後移植行為修正的 `3f26ca64`。本機 `upstream/main` 快照為 `042b8c56`，`git rev-list --count d044edf4..upstream/main` 為 30，下一筆為 `25493823`；此計數不代表遠端即時狀態。
+
+### 採用與移植差異
+
+- **Codex 更新時間**：Classic、Catppuccin、Origami、Stained Glass 的舊讀值移除警告符號，使用主題次要文字色，保留資訊提示。繁中文案加上「更新」，英文改用 min／hr，避免單數時間誤用複數；Antigravity、Grok 與歷史讀取錯誤保留警告樣式。
+- **Classic 樣式**：移除卡片左側色條與圖示光暈、降低標題與專案 token 的視覺強度、增加額度列間距、柔化邊框。範圍按鈕使用綠色文字與外框，保留淺色模式可讀性；當日合計移除分隔線，提升 attribution 可讀性。繁中 session 標籤改為「5 小時」。
+- **fork 差異**：保留 Windows 現有三欄按鈕與固定版面，不引入上游 compact-cards 狀態、未出貨的主題、Claude pane 或展示頁；不採用上游版號與發布紀錄。未採用部分見全域 Skipped 表。
+
+### 逐筆判定（含 Skipped）
+
+| Commit | 標題／PR | 審視日期 | 判定與理由 |
+| --- | --- | --- | --- |
+| `144c048c` | Classic 樣式與 Codex 更新時間；#295 | 2026-11-13 | 部分採用：移植 Classic 適用樣式與兩語時間文案；Windows 保留既有版面，其餘不適用部分見 Skipped。 |
+| `3f26ca64` | 其他主題的 Codex 更新時間；#295 | 2026-11-13 | 部分採用：移植 Catppuccin、Origami、Stained Glass；未出貨主題與展示頁不適用。 |
+| `77d919d1` | Merge PR #295 | 2026-11-13 | 部分採用上述面板修正；combined diff 無額外修正。 |
+| `62bd9753` | release: v0.34.13；#296 | 2026-11-13 | Skipped：純上游版號、lock 與發布紀錄，本 fork 獨立發版。 |
+| `d044edf4` | Merge PR #296 | 2026-11-13 | Skipped：整合上述發版，combined diff 無額外修正。 |
+
+### PR／issue 審視範圍
+
+已讀 PR #295–#296 內文與 mergeCommit，`reviewed_pr_through` 推至 296。#295 部分採用四款主題的呈現修正；#296 為上游獨立發版。兩個 merge 的 combined diff 均無額外修正。
+
+`reviewed_issue_through` 保持 273；PR 號碼不當成 issue 審視範圍。
 
 ## 2026-11-13：`1c44513e..ccf4aedf` 共 17 筆（issue #36 第四批）
 
@@ -882,6 +908,10 @@ Linux cloud agent **沒有**跑 `build_windows.ps1`；archive_viewer 那層要�
 
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
+| main | `144c048c`／`77d919d1`（部分） | Classic 與 Codex 呈現；#295 | 2026-11-13 | 採用四款主題適用修正；compact-cards 依賴上游動態緊湊版面，本 fork 保留 Windows 固定版面與三欄按鈕。World Cup、Claude pane 與展示頁未出貨，不新增其程式、翻譯鍵或產物。 |
+| main | `3f26ca64`／`77d919d1`（部分） | 其他主題的 Codex 時間；#295 | 2026-11-13 | 已移植 Catppuccin、Origami、Stained Glass；其餘 11 款主題與 docs/panels 展示頁不在本 fork 正式產品。 |
+| main | `62bd9753` | release: v0.34.13；#296 | 2026-11-13 | 純上游版號、root package lock 與雙語發布紀錄；沿用獨立發版（D-05）。 |
+| main | `d044edf4` | Merge PR #296 | 2026-11-13 | 整合上游 v0.34.13 發版，combined diff 無額外修正；本 fork 獨立發版。 |
 | main | `a8754b78` | 通知門檻子選單；#292 | 2026-11-13 | 部分採用：Windows 系統匣可選 50／70／80／90／95%，保留自訂值與通知器狀態；macOS 選單不適用。 |
 | main | `5a17bb25` | macOS 通知權限提示；#292 | 2026-11-13 | Skipped：macOS-only，本 fork 已移除該平台。 |
 | main | `69828925` | 狀態列與開機啟動切換失敗回報；#291 | 2026-11-13 | 部分採用：只認本工具狀態列，安裝自訂狀態列時保留備份，停用時保留外部狀態列；Windows 回報安裝非零結果與登錄失敗。macOS launchctl 與 Grok 狀態列不適用。 |

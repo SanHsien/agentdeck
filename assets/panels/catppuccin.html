@@ -191,6 +191,11 @@
       display: none;
     }
 
+    /* Codex records are local samples; an older reading is informational. */
+    [data-codex-stale] {
+      color: var(--muted);
+    }
+
     .codex-credits {
       margin-top: 8px;
       color: var(--muted);
@@ -1155,7 +1160,6 @@ h1 {
         <img src="{{CODEX_ICON}}" alt="">
         <h1 data-i18n="codex_name">Codex</h1>
         <div class="codex-stale" data-codex-stale hidden>
-          <span aria-hidden="true">⚠</span>
           <span data-codex-stale-age></span>
           <span class="codex-stale-info" aria-hidden="true">ⓘ
             <span class="codex-stale-tooltip" data-codex-stale-tooltip></span>
