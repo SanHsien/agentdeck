@@ -32,3 +32,25 @@ def test_render_localizes_effort_without_repeating_english_suffix(
 
     assert "Gemini 3.6 Flash/速答" in rendered
     assert "(Low)" not in rendered
+
+
+def test_render_groups_quota_above_model_and_context(monkeypatch: pytest.MonkeyPatch) -> None:
+    fixture = Path(__file__).parent / "fixtures" / "agy_statusline_input.json"
+    data: dict[str, Any] = json.loads(fixture.read_text(encoding="utf-8"))
+    data["terminal_width"] = 80
+    monkeypatch.setenv("AGENTDECK_LANG", "en")
+
+    first, second = usage_statusline_agy.render(data).split("\n")
+
+    assert "project" in first
+    assert "60%" in first
+    assert "Context:" not in first
+    assert "Gemini 3.6 Flash/Quick" in second
+    assert "Context:" in second
+
+
+@pytest.mark.parametrize("data", [{}, {"model": {"id": "Gemini"}}])
+def test_render_does_not_add_blank_lines(data: dict[str, Any]) -> None:
+    rendered = usage_statusline_agy.render(data)
+    assert rendered
+    assert "\n" not in rendered

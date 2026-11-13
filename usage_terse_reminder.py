@@ -30,7 +30,7 @@ import sys
 from pathlib import Path
 from typing import Any, cast
 
-__version__ = "1.2"
+__version__ = "1.3"
 
 
 def _read_stdin_utf8() -> str:
@@ -44,17 +44,15 @@ PROMPT_SIDECAR = Path(os.path.expanduser("~/.claude/agentdeck-terse-prompt.json"
 
 _DEFAULT_REMINDER: dict[str, str] = {
     "zh-TW": (
-        "[精簡模式仍生效：這則回覆保持精簡、用白話；程式碼、指令、路徑、錯誤訊息照舊一字"
-        "不改；"
-        "安全警示與不可逆操作確認仍要講完整；"
-        "使用者明確要求詳細解說時，以使用者當下的要求為準。]"
+        '[精簡模式仍生效：這則回覆保持精簡、用白話、讀一遍就懂；程式碼、指令、路徑、錯誤訊息照舊一字不改；安全警示與不可逆操作確認仍要講完整；使用者明確'
+        '要求詳細解說時，以使用者當下的要求為準。]'
     ),
     "en": (
-        "[Terse mode is still on: keep this reply brief and plain-spoken; code, commands, "
-        "paths, and "
-        "error messages stay byte-exact; security warnings and irreversible-action "
-        "confirmations must still be written out in full; if the user explicitly asks "
-        "for a detailed walkthrough, follow that instead.]"
+        '[Terse mode is still on: keep this reply brief, plain-spoken, and clear '
+        'on a first read; code, commands, paths, and error messages stay byte-exa'
+        'ct; security warnings and irreversible-action confirmations must still b'
+        'e written out in full; if the user explicitly asks for a detailed walkth'
+        'rough, follow that instead.]'
     ),
 }
 

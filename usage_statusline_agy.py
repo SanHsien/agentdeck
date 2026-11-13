@@ -19,6 +19,7 @@ import math
 import os
 import sys
 from contextlib import suppress
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, cast
 
 # Two languages, like every other stdlib-only hook here: usage_lang cannot be
@@ -271,10 +272,16 @@ def _quota_parts(data: Dict[str, Any], bar_width: int) -> List[Tuple[str, str, s
         reset = _as_float(entry.get("reset_in_seconds"))
         reset_str = ""
         if reset is not None and reset > 0:
+            now = datetime.now()
+            reset_dt = datetime.fromtimestamp(now.timestamp() + reset)
+            clock = f"{reset_dt:%H:%M}"
+            if reset_dt.date() != now.date():
+                clock = f"{reset_dt.month}/{reset_dt.day} {clock}"
             if lang in ("zh-TW", "zh-CN"):
-                reset_str = f" ({_t('remaining_prefix')}{fmt_duration(reset)})"
+                remaining_text = f"{_t('remaining_prefix')}{fmt_duration(reset)}"
             else:
-                reset_str = f" ({fmt_duration(reset)} {_t('remaining_prefix')})"
+                remaining_text = f"{fmt_duration(reset)} {_t('remaining_prefix')}"
+            reset_str = f" {C['dim']}{clock}({remaining_text}){C['reset']}"
         parts.append(
             (
                 f"{C['blue']}{label}:{C['reset']}{progress_bar(pct, bar_width)}{reset_str}",
@@ -340,23 +347,19 @@ def _render_core(data: Dict[str, Any]) -> str:
             model_name += f"/{effort_label}"
         model_parts.append(f"{C['dim']}{C['magenta']}{safe_text(model_name)}{C['reset']}")
 
-    full = project_parts + [part[0] for part in quota_parts] + context_parts[:1] + model_parts
-    if vlen(" | ".join(full)) <= width:
-        selected = full
-    else:
-        no_reset = (
-            project_parts + [part[1] for part in quota_parts] + context_parts[:1] + model_parts
-        )
-        if vlen(" | ".join(no_reset)) <= width:
-            selected = no_reset
-        else:
-            selected = (
-                project_parts
-                + [part[2] for part in quota_parts]
-                + context_parts[1:2]
-                + model_parts
-            )
-    return " | ".join(selected) if selected else "agentdeck"
+    # Keep quota and reset times together, with model and context below.
+    first = project_parts + [part[0] for part in quota_parts]
+    for level in (1, 2):
+        if vlen(" | ".join(first)) <= width:
+            break
+        first = project_parts + [part[level] for part in quota_parts]
+
+    second = model_parts + context_parts[:1]
+    if vlen(" | ".join(second)) > width:
+        second = model_parts + context_parts[1:2]
+
+    lines = [" | ".join(line) for line in (first, second) if line]
+    return "\n".join(lines) if lines else "agentdeck"
 
 
 def render(data: Dict[str, Any]) -> str:

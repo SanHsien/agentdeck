@@ -31,20 +31,49 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "c3b796f9fc52fd3569d536a03f5d1cfb32a51052",
-      "last_merged": "6a651ed5b76691c304f7b819254936e10df0b121",
-      "note": "2026-11-13 第六批審至 c3b796f9，d044edf4..c3b796f9 共 11 筆；移植 Antigravity 保活離線防護、Gemini 群組判斷、401 token 快取清除與非 UTF-8 快取容錯。到 upstream/main 042b8c56 剩 19 筆，下一筆 fe2449ce；PR 審至 #305，issue 維持 #273。"
+      "last_reviewed": "c276bf74cecbac9cb74060262e74d9cb37026a2e",
+      "last_merged": "6a4a58677b04fc15ce96e2233a4f932b972699d5",
+      "note": "2026-11-13 第七批審至 c276bf74，c3b796f9..c276bf74 共 6 筆；移植精簡模式可讀性規則、Fable 5.2 離線價格、Antigravity 兩行狀態列與重置時間、Codex 子代理用量修正。到 upstream/main 042b8c56 剩 13 筆，下一筆 c72a4cfb；PR 審至 #311，issue 維持 #273。"
     }
   },
   "tickets": {
-    "reviewed_pr_through": 305,
+    "reviewed_pr_through": 311,
     "reviewed_issue_through": 273,
     "reviewed_date": "2026-11-13",
-    "note": "已讀 PR #297–#305 內文、mergeCommit 與相關 patch；#297、#303、#304 部分採用，其餘依產品與獨立發版邊界不採用。issue 審視範圍維持 #273。"
+    "note": "已讀 PR #306–#311 內文、mergeCommit 與 patch；#306 採用繁中／英文，#307–#310 採用適用修正，#311 為上游獨立發版。issue 審視範圍維持 #273。"
   }
 }
 ```
 <!-- sync-points:end -->
+
+## 2026-11-13：`c3b796f9..c276bf74` 共 6 筆（issue #36 第七批）
+
+`last_reviewed` 推至 `c276bf74`，`last_merged` 指向最後移植行為修正的 `6a4a5867`。本機 `upstream/main` 快照為 `042b8c56`，`git rev-list --count c276bf74..upstream/main` 為 13，下一筆為 `c72a4cfb`；此計數不代表遠端即時狀態。
+
+### 採用與移植差異
+
+- **精簡模式**：開場與逐次提醒都要求讀一遍就懂，保留因果與條件連接詞，避免行話、名詞堆疊與不必要的翻轉句。繁中／英文 i18n 與 stdlib-only fallback 同步；沿用 fork 版號，開場 hook 升至 1.5、提醒 hook 升至 1.3，讓已安裝副本與 sidecar 更新。
+- **Fable 5.2**：離線價目表補上每百萬 token 輸入 $8、輸出 $40、快取寫入 $10、讀取 $0.20；報表短名為 Fable 5.2，保留 Fable 5.1 的獨立匹配。
+- **Antigravity 狀態列**：額度重置顯示當地時鐘，跨日補月／日，並保留剩餘時間；第一行顯示專案與額度，第二行顯示模型與對話窗。窄終端依序省略重置時間、進度條；不產生空白行，無資料時仍顯示 agentdeck。
+- **Codex 子代理**：從第一筆 session_meta 辨識 thread_spawn；父檔存在且沒有重播前綴時，自起點計算子代理用量；有前綴仍排除重播，一般 fork 或父檔缺失不放寬。父檔移除後先拒絕讀取再查記憶體快取；磁碟快取保存來源旗標，缺旗標時重讀。依 fork 現有格式將 JSONL schema 4 升至 5、年度快取 schema 2 升至 3，不引入上游 ledger 或 snapshot 子系統。
+- **fork 差異**：僅出貨繁中與英文，不搬入其他語言文字；上游發版與版本號保持獨立。未採用部分見全域 Skipped 表。
+
+### 逐筆判定（含 Skipped）
+
+| Commit | 標題／PR | 審視日期 | 判定與理由 |
+| --- | --- | --- | --- |
+| `fe2449ce` | 精簡模式白話規則；#306 | 2026-11-13 | 部分採用：同步兩語開場、逐次提醒、fallback 與 hook 更新版本；其餘語言不出貨。 |
+| `0f1d9808` | Fable 5.2 離線價格與短名；#307 | 2026-11-13 | 採用：移植至根目錄 pricing.py 與 ui/tables.py。 |
+| `e7efe19d` | Antigravity 重置時鐘；#308 | 2026-11-13 | 採用：根目錄 stdlib-only 狀態列顯示當地時間與跨日日期。 |
+| `6aab3cfa` | Codex 子代理用量；#309 | 2026-11-13 | 採用適用修正：辨識 thread_spawn、保留重播排除與父檔缺失防護、更新記憶體／磁碟／年度快取處理；沿用 fork schema 編號。 |
+| `6a4a5867` | Antigravity 兩行狀態列；#310 | 2026-11-13 | 採用：專案／額度與模型／對話窗分行，保留窄終端降階與 agentdeck 備援名稱。 |
+| `c276bf74` | release: v0.34.16；#311 | 2026-11-13 | Skipped：上游版本、lock 與發版紀錄，本 fork 獨立發版。 |
+
+### PR／issue 審視範圍
+
+已讀 PR #306–#311 內文、mergeCommit 與 patch，`reviewed_pr_through` 推至 311。#306 部分採用兩語文字；#307–#310 採用上述適用修正；#311 為上游獨立發版。
+
+`reviewed_issue_through` 保持 273；PR 號碼不當成 issue 審視範圍。
 
 ## 2026-11-13：`d044edf4..c3b796f9` 共 11 筆（issue #36 第六批）
 
@@ -941,6 +970,8 @@ Linux cloud agent **沒有**跑 `build_windows.ps1`；archive_viewer 那層要�
 
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
+| main | `fe2449ce`（部分） | 精簡模式白話規則；#306 | 2026-11-13 | 採用繁中／英文與 hook 更新；簡中、日文與韓文不在正式語言集合，沿用中文映射繁中的契約。 |
+| main | `c276bf74` | release: v0.34.16；#311 | 2026-11-13 | 上游版本、lock 與發版紀錄；本 fork 獨立發版。 |
 | main | `25493823`／`5b705002` | 舊 ledger 日補回 Codex 明細；#298 | 2026-11-13 | 沿用 D-33／D-40，未採用的用量快照、ledger_backfill、cube 價格覆蓋率與日期篩選器不搬入；merge combined diff 無額外修正。 |
 | main | `312649b3`／`a843e52e` | Antigravity 群組通知；#299 | 2026-11-13 | fork 的通知通道只含 Claude／Codex，面板無群組切換；不為此新增 Antigravity 通知。merge combined diff 無額外修正。 |
 | main | `979e63f0` | Windows 工作列額度倒數；#300 | 2026-11-13 | fork 無 TaskbarQuotaLabel 或文字標籤開關；依 D-40 不新增倒數 UI，保留現有圖示與 tooltip。也無上游 stdin schema checker。 |
