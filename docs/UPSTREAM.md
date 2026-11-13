@@ -31,9 +31,9 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "d05d9ea504a4f3fd898167e3d80068edc672a924",
-      "last_merged": "683b3ac5df9ac058d7565c3b321944d18993043c",
-      "note": "2026-11-12 逐筆審視 28655a2..d05d9ea5 共 15 筆（PR #274–#279）。手工移植 #274、#278 與 #279 的 Claude 額度部分；其他理由見本批判定表。"
+      "last_reviewed": "709ed56d7ed1861eabf3ec07e31c3ff1efdef509",
+      "last_merged": "709ed56d7ed1861eabf3ec07e31c3ff1efdef509",
+      "note": "2026-11-13 逐筆審視 d05d9ea5..709ed56d 共 2 筆，部分移植 709ed56d 的安裝器、CLI 與日期邊界修正。到本機 upstream/main 042b8c56 尚有 70 筆；PR／issue 水位維持原值。"
     }
   },
   "tickets": {
@@ -45,6 +45,28 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
 }
 ```
 <!-- sync-points:end -->
+
+## 2026-11-13：`d05d9ea5..709ed56d` 共 2 筆（issue #36 第二批）
+
+依本機 Git 逐筆讀完整 patch，連續審至 `709ed56d`，`last_reviewed` 與 `last_merged` 同步推至該筆部分移植提交。2026-11-13 本機 `upstream/main` 為 `042b8c56`：原範圍 72 筆，本批處理 2 筆，剩 70 筆，下一筆為 `04719f51`。這是本機 ref 快照，不代表遠端即時狀態。
+
+PR #280 仍有後續提交未審，因此保留 `reviewed_pr_through: 279`、`reviewed_issue_through: 273` 與原 ticket 日期，不把 commit 審視當成 ticket 審視。
+
+### 採用與移植差異
+
+- **尊重狀態列關閉選擇**：self-heal 不把 `agentdeck.disabledStatusLine`（含 null）視為首次安裝；也辨識本 fork 舊 `usage.previousStatusLine` 關閉記錄。
+- **解除安裝保留使用者狀態列**：缺少安裝前備份時還原停用前的外部狀態列；現有外部狀態列不動，備份只在成功儲存的還原流程中移除。保留本 fork 舊容器的還原路徑。
+- **Codex TOML 防誤改與回讀**：修改前後以 `tomllib` 比對，除目標鍵外的語意必須一致；多行指示內的假表頭不再被誤改。安裝與還原／移除皆確認目標值，寫入後回讀；拒絕修改時提示手動設定，解除安裝不刪仍需保留的備份。沿用現有編輯器，沒有新增 TOML 寫入依賴。
+- **CLI 排序**：資料沒有對應屬性時使用預設排序，提示只列適用欄位；`sessions --sort sessions` 不再拋 `AttributeError`。
+- **當地日期邊界**：今天與明天午夜各自換算 UTC，不沿用當下固定偏移，避免夏令時間切換日漏算用量。fork 的昨天區間並不存在，保留原有四個統計窗口。
+- **不適用部分**：上游 macOS 轉發提示、FSEvents 監看與多圖示標題快取在正式產品不存在；額度提醒 hook、Claude 側邊面板與新手模式也未出貨，不新增其解除安裝依賴。見全域 Skipped 表。
+
+### 逐筆判定（含 Skipped）
+
+| Commit | 標題／PR | 審視日期 | 判定與理由 |
+| --- | --- | --- | --- |
+| `9030c5f0` | release: v0.34.11 | 2026-11-13 | Skipped：只切上游報表改版 changelog、版本與 lock；沿用 D-33／D-40，本 fork 獨立發版。 |
+| `709ed56d` | fix: 安裝器、選單列與命令列的 8 個問題；#280 部分 | 2026-11-13 | 部分採用：狀態列關閉／還原、Codex TOML 防誤改與回讀、CLI 排序及當地午夜邊界；其餘不適用部分見全域 Skipped 表。#280 其餘提交由下一批接續。 |
 
 ## 2026-11-12：`28655a2..d05d9ea5` 共 15 筆（issue #36 第一批）
 
@@ -778,6 +800,8 @@ Linux cloud agent **沒有**跑 `build_windows.ps1`；archive_viewer 那層要�
 
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
+| main | `9030c5f0` | release: v0.34.11 | 2026-11-13 | 只切未採用之報表改版 changelog、版本與 lock；沿用 D-33／D-40，本 fork 獨立發版。 |
+| main | `709ed56d`（部分） | fix: 安裝器、選單列與命令列的 8 個問題 | 2026-11-13 | macOS 轉發提示、FSEvents 與多圖示標題快取不在本 fork 正式產品中；未出貨上游額度提醒 hook／Claude 側邊面板／新手模式，不新增解除安裝依賴。其餘適用修正已移植，見本批說明。 |
 | main | `71be8dee` | release: v0.34.10；#275 | 2026-11-12 | 只切上游 changelog、版本與 lock；本 fork 獨立發版，不覆蓋 0.43.0。 |
 | main | `acc6c12c` | Merge PR #275 | 2026-11-12 | 同上游發版 chore，無額外 merge 修正。 |
 | main | `2ef740fc` | feat(report): research-style charts with conclusion headings；#276 | 2026-11-12 | 改 Python／日期篩選 JS、CSS、五語標題與快照；沿用 D-33 報表分岔決策，保留 Windows 現有報表，不在例行同步搬入大型視覺改版。 |

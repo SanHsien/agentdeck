@@ -549,11 +549,34 @@ def _table_section(content: str, table: re.Match[str]) -> tuple[int, int]:
     return table.end(), section_end
 
 
+def _validated_table_edit(content: str, candidate: str, name: str, key: str) -> str:
+    """Reject edits that change anything except the requested TOML key."""
+    try:
+        before, after = tomllib.loads(content), tomllib.loads(candidate)
+    except tomllib.TOMLDecodeError:
+        return content
+
+    def without_target(table: dict[str, Any], path: list[str]) -> None:
+        part = path[0]
+        if len(path) == 1:
+            table.pop(part, None)
+        elif isinstance(child := table.get(part), dict):
+            without_target(child, path[1:])
+            if not child:
+                table.pop(part)
+
+    path = [*name.split("."), key]
+    without_target(before, path)
+    without_target(after, path)
+    return candidate if before == after else content
+
+
 def _insert_table_line(content: str, name: str, line: str) -> str:
     table = _find_table(content, name)
     if table is None:
         return content
-    return content[: table.end()] + f"\n{line}" + content[table.end() :]
+    candidate = content[: table.end()] + f"\n{line}" + content[table.end() :]
+    return _validated_table_edit(content, candidate, name, next(iter(tomllib.loads(line))))
 
 
 def _replace_table_line(
@@ -564,16 +587,18 @@ def _replace_table_line(
         return content
     start, end = _table_section(content, table)
     section = content[start:end]
-    return content[:start] + line_regex.sub(replacement, section, count=1) + content[end:]
+    candidate = content[:start] + line_regex.sub(replacement, section, count=1) + content[end:]
+    return _validated_table_edit(content, candidate, name, next(iter(tomllib.loads(replacement))))
 
 
-def _remove_table_line(content: str, name: str, line_regex: re.Pattern[str]) -> str:
+def _remove_table_line(content: str, name: str, line_regex: re.Pattern[str], key: str) -> str:
     table = _find_table(content, name)
     if table is None:
         return content
     start, end = _table_section(content, table)
     section = content[start:end]
-    return content[:start] + line_regex.sub("", section, count=1) + content[end:]
+    candidate = content[:start] + line_regex.sub("", section, count=1) + content[end:]
+    return _validated_table_edit(content, candidate, name, key)
 
 
 def _ensure_table_line(
@@ -588,11 +613,7 @@ def _ensure_table_line(
     duplicate-table document the user's tool refuses to load."""
 
     def validated(candidate: str) -> str:
-        try:
-            tomllib.loads(candidate)
-        except tomllib.TOMLDecodeError:
-            return content
-        return candidate
+        return _validated_table_edit(content, candidate, name, next(iter(tomllib.loads(line))))
 
     table = _find_table(content, name)
     if table is None:
@@ -617,7 +638,7 @@ def _replace_tui_status_line(content: str, replacement: str) -> str:
 
 
 def _remove_tui_status_line(content: str) -> str:
-    return _remove_table_line(content, "tui", _SL_REGEX)
+    return _remove_table_line(content, "tui", _SL_REGEX, "status_line")
 
 
 def _read_codex_config() -> tuple[str, dict[str, Any]] | None:
@@ -776,6 +797,7 @@ def _setup_codex() -> None:
             print(_t("setup_codex_config_unreadable"))
         return
     content, parsed = result
+    original = content
 
     old = _codex_status_line(parsed)
     if old == CODEX_STATUS_LINE:
@@ -789,18 +811,33 @@ def _setup_codex() -> None:
         # "restore" a value they never chose.
         content = _replace_tui_status_line(content, _status_line_toml(CODEX_STATUS_LINE))
     elif old is not None:
-        CODEX_BACKUP.parent.mkdir(parents=True, exist_ok=True)
-        CODEX_BACKUP.write_text(
-            json.dumps({"status_line": old}, indent=2, ensure_ascii=False) + "\n",
-            encoding="utf-8",
-        )
         content = _replace_tui_status_line(content, _status_line_toml(CODEX_STATUS_LINE))
     elif isinstance(parsed.get("tui"), dict):
         content = _insert_tui_status_line(content, _status_line_toml(CODEX_STATUS_LINE))
     else:
         content += f"\n[tui]\n{_status_line_toml(CODEX_STATUS_LINE)}\n"
 
+    try:
+        candidate_parsed = tomllib.loads(content)
+    except tomllib.TOMLDecodeError:
+        print(_t("setup_codex_config_unmodifiable"))
+        return
+    if _validated_table_edit(original, content, "tui", "status_line") != content or (
+        _codex_status_line(candidate_parsed) != CODEX_STATUS_LINE
+    ):
+        print(_t("setup_codex_config_unmodifiable"))
+        return
+    if old is not None and old not in LEGACY_CODEX_STATUS_LINES:
+        CODEX_BACKUP.parent.mkdir(parents=True, exist_ok=True)
+        CODEX_BACKUP.write_text(
+            json.dumps({"status_line": old}, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
     _atomic_write_text(CODEX_CONFIG, content)
+    written = _read_codex_config()
+    if written is None or _codex_status_line(written[1]) != CODEX_STATUS_LINE:
+        print(_t("setup_codex_config_unmodifiable"))
+        return
     print(_t("setup_codex_configured"))
     if old is not None and old not in LEGACY_CODEX_STATUS_LINES:
         print(_t("setup_codex_backup_written", path=CODEX_BACKUP))
@@ -823,14 +860,28 @@ def _unsetup_codex() -> None:
         except (OSError, UnicodeDecodeError, json.JSONDecodeError, AttributeError):
             old_items = []
         content = _replace_tui_status_line(content, _status_line_toml(old_items))
+        if _codex_status_line(tomllib.loads(content)) != old_items:
+            print(_t("setup_codex_config_unmodifiable"))
+            return
         # Write the restored config before deleting the backup: if the write fails, the
         # backup must survive so a later retry can still recover the original status line.
         _atomic_write_text(CODEX_CONFIG, content)
+        written = _read_codex_config()
+        if written is None or _codex_status_line(written[1]) != old_items:
+            print(_t("setup_codex_config_unmodifiable"))
+            return
         backup_path.unlink(missing_ok=True)
         print(_t("setup_codex_restored"))
     else:
         content = _remove_tui_status_line(content)
+        if _codex_status_line(tomllib.loads(content)) is not None:
+            print(_t("setup_codex_config_unmodifiable"))
+            return
         _atomic_write_text(CODEX_CONFIG, content)
+        written = _read_codex_config()
+        if written is None or _codex_status_line(written[1]) is not None:
+            print(_t("setup_codex_config_unmodifiable"))
+            return
         print(_t("setup_codex_removed"))
 
 
@@ -961,20 +1012,23 @@ def unsetup() -> int:
         settings = _load_settings()
         sl = settings.get("statusLine")
         backup = settings.get(BACKUP_KEY)
-        parked = backup.pop(DISABLED_SL_KEY, None) if isinstance(backup, dict) else None
+        parked = backup.get(DISABLED_SL_KEY) if isinstance(backup, dict) else None
         legacy_parked_in = settings.get(LEGACY_DISABLED_SL_CONTAINER)
         if parked is None and isinstance(legacy_parked_in, dict):
-            parked = legacy_parked_in.pop(PREV_SL_KEY, None)
-            if not legacy_parked_in:
-                del settings[LEGACY_DISABLED_SL_CONTAINER]
-        if sl is None:
-            sl = parked
-
-        if _is_usage_hook(sl) or _is_legacy_tt_hook(sl):
+            parked = legacy_parked_in.get(PREV_SL_KEY)
+        if _is_usage_hook(sl) or _is_legacy_tt_hook(sl) or (sl is None and parked is not None):
             legacy_backup = settings.get(LEGACY_TT_BACKUP_KEY)
             prev = backup.get(PREV_SL_KEY) if isinstance(backup, dict) else None
             if not isinstance(prev, dict) and isinstance(legacy_backup, dict):
                 prev = legacy_backup.get(PREV_SL_KEY)
+
+            if (
+                not isinstance(prev, dict)
+                and isinstance(parked, dict)
+                and not _is_usage_hook(parked)
+                and not _is_legacy_tt_hook(parked)
+            ):
+                prev = parked
 
             if isinstance(prev, dict):
                 settings["statusLine"] = prev
@@ -985,6 +1039,7 @@ def unsetup() -> int:
 
             if isinstance(backup, dict):
                 backup.pop(PREV_SL_KEY, None)
+                backup.pop(DISABLED_SL_KEY, None)
                 if not backup:
                     del settings[BACKUP_KEY]
             if isinstance(legacy_backup, dict):
@@ -992,6 +1047,10 @@ def unsetup() -> int:
                 if not legacy_backup:
                     del settings[LEGACY_TT_BACKUP_KEY]
 
+            if isinstance(legacy_parked_in, dict):
+                legacy_parked_in.pop(PREV_SL_KEY, None)
+                if not legacy_parked_in:
+                    settings.pop(LEGACY_DISABLED_SL_CONTAINER, None)
             _save_settings(settings)
         else:
             print(_t("setup_statusline_not_usage"))

@@ -1196,7 +1196,12 @@ def self_heal() -> None:
             return
         _migrate_bundled_python_commands_if_needed(settings)
         setup_hook._migrate_windows_statusline_command_if_needed(settings)
-        if not is_setup() and "statusLine" not in settings:
+        backup = settings.get(BACKUP_KEY)
+        legacy = settings.get(setup_hook.LEGACY_DISABLED_SL_CONTAINER)
+        statusline_disabled = (
+            isinstance(backup, dict) and setup_hook.DISABLED_SL_KEY in backup
+        ) or (isinstance(legacy, dict) and setup_hook.PREV_SL_KEY in legacy)
+        if not is_setup() and "statusLine" not in settings and not statusline_disabled:
             exit_code = _run_quietly(setup)
             if exit_code == 0:
                 _append_self_heal_log("install_hook", "initial setup")

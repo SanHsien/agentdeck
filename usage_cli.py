@@ -297,8 +297,13 @@ def _apply_sort(stats: list[Any], sort_key: str | None, descending: bool, defaul
     if sort_key is None:
         stats.sort(key=lambda s: getattr(s, default_attr), reverse=default_reverse)
         return
-    if sort_key not in SORT_KEYS:
-        valid = ", ".join(SORT_KEYS.keys())
+    available_keys = {
+        key: mapping
+        for key, mapping in SORT_KEYS.items()
+        if mapping is None or all(hasattr(stat, mapping[0]) for stat in stats)
+    }
+    if sort_key not in available_keys:
+        valid = ", ".join(available_keys)
         console.print(f"[yellow]{t('unknown_sort_field', field=sort_key, valid=valid)}[/yellow]")
         stats.sort(key=lambda s: getattr(s, default_attr), reverse=default_reverse)
         return

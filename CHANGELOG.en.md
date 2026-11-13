@@ -9,6 +9,7 @@ versions follow [Semantic Versioning 2.0.0](https://semver.org/).
 ## [Unreleased]
 
 ### Fixed
+- Keep disabled status lines disabled and restore a parked external status line during uninstall. Codex edits may change only the target key, reject fake headers inside multiline instructions, and verify written values; failed restores retain backups. CLI sorting falls back for fields absent from the data, and project daily usage uses each midnight's local offset to avoid missing usage across daylight-saving transitions. Partially ported from upstream `709ed56d`.
 - Claude Code quota keeps updating when only one quota window is reported, instead of reverting to stale cached values. Expired windows remain for one cycle for 0% display and recovery notifications, then disappear. The opt-in window keeper remembers real reset times without arming on unknown reset times or plans that never reported a five-hour limit. Malformed windows still use fallback data and no longer crash reports. Ported from upstream PRs #274, #278 and #279; newer Claude Desktop samples still take precedence.
 
 ## [0.43.0] - 2026-11-08
