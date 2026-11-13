@@ -391,6 +391,8 @@ def _post_json(url: str, access_token: str, body: dict[str, object], timeout: fl
         return json.loads(raw)
     except HTTPError as exc:
         _handle_http_error(exc)
+        if exc.code == 401:
+            _token_cache.clear()
         return None
     except (URLError, OSError, ValueError):
         return None
@@ -648,7 +650,7 @@ def _read_cache() -> AgyQuotaResult | None:
     try:
         with CACHE_PATH.open(encoding="utf-8") as cache_file:
             payload: object = json.load(cache_file)
-    except (OSError, json.JSONDecodeError):
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return None
     return _result_from_payload(payload)
 

@@ -574,6 +574,31 @@ def test_probe_quota_returns_none_when_response_has_no_groups(
 # --- load_quota + cache ----------------------------------------------------
 
 
+def test_unauthorized_response_discards_refreshed_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    agy_quota_probe._token_cache.update(access_token="rejected", expires_monotonic=999999)
+
+    def unauthorized(request: Request, timeout: float) -> None:
+        raise HTTPError(request.full_url, 401, "Unauthorized", Message(), None)
+
+    monkeypatch.setattr(agy_quota_probe, "urlopen", unauthorized)
+    assert agy_quota_probe._post_json(_QUOTA_URL, "rejected", {}, 1) is None
+    assert agy_quota_probe._token_cache == {}
+
+
+def test_non_utf8_cache_still_allows_a_fresh_probe(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    cache = tmp_path / "quota.json"
+    cache.write_bytes(b"\xff\xfeinvalid")
+    fresh = _result(datetime.now(UTC))
+    monkeypatch.setattr(agy_quota_probe, "CACHE_PATH", cache)
+    monkeypatch.setattr(agy_quota_probe, "probe_quota", lambda: fresh)
+    assert agy_quota_probe.load_quota() == fresh
+    assert agy_quota_probe._read_cache() == fresh
+
+
 def test_load_quota_returns_fresh_cache_without_probing(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

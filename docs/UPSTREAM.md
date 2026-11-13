@@ -31,20 +31,53 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "d044edf4a72023e48340e7177ac78d96a872188d",
-      "last_merged": "3f26ca643c9a2f3abdbd942b976d7d3f1a407933",
-      "note": "2026-11-13 第五批審至 d044edf4，ccf4aedf..d044edf4 共 5 筆；移植四款主題的 Codex 更新時間提示與 Classic 樣式。到 upstream/main 042b8c56 剩 30 筆，下一筆 25493823；PR 審至 #296，issue 維持 #273。"
+      "last_reviewed": "c3b796f9fc52fd3569d536a03f5d1cfb32a51052",
+      "last_merged": "6a651ed5b76691c304f7b819254936e10df0b121",
+      "note": "2026-11-13 第六批審至 c3b796f9，d044edf4..c3b796f9 共 11 筆；移植 Antigravity 保活離線防護、Gemini 群組判斷、401 token 快取清除與非 UTF-8 快取容錯。到 upstream/main 042b8c56 剩 19 筆，下一筆 fe2449ce；PR 審至 #305，issue 維持 #273。"
     }
   },
   "tickets": {
-    "reviewed_pr_through": 296,
+    "reviewed_pr_through": 305,
     "reviewed_issue_through": 273,
     "reviewed_date": "2026-11-13",
-    "note": "已讀 PR #295–#296 內文、mergeCommit 與相關 patch；#295 部分採用，#296 為上游獨立發版。issue 審視範圍維持 #273。"
+    "note": "已讀 PR #297–#305 內文、mergeCommit 與相關 patch；#297、#303、#304 部分採用，其餘依產品與獨立發版邊界不採用。issue 審視範圍維持 #273。"
   }
 }
 ```
 <!-- sync-points:end -->
+
+## 2026-11-13：`d044edf4..c3b796f9` 共 11 筆（issue #36 第六批）
+
+`last_reviewed` 推至 `c3b796f9`，`last_merged` 指向最後移植行為修正的 `6a651ed5`。本機 `upstream/main` 快照為 `042b8c56`，`git rev-list --count c3b796f9..upstream/main` 為 19，下一筆為 `fe2449ce`；此計數不代表遠端即時狀態。
+
+### 採用與移植差異
+
+- **保活離線防護**：只有符合保活條件時才檢查 Google OAuth 主機；離線不啟動 CLI、不寫入派送時間。HTTPS／all proxy 視為可連線，僅 NO_PROXY 仍做直連檢查；DNS 與 TCP 等待共用三秒上限。額度探測維持直接讀官方端點，不新增 `agy /usage` 呼叫。
+- **Gemini 群組判斷**：fork 面板固定優先 Gemini，只在 Gemini 缺失時顯示其他群組；保活拒絕使用非 Gemini 的備援窗口，不因 Claude／GPT 額度充足而啟動 Gemini。
+- **探測容錯**：官方端點回傳 401 時清除記憶體中的已刷新 token，下一次可重新解析登入資料；非 UTF-8 快取視為無可用快取，仍可探測並以新資料覆寫。沿用 fork 的快取處理，不新增上游 quarantine 儲存機制。
+- **fork 差異**：報表快照與 cube 篩選器依 D-33／D-40 不採用；本 fork 未出貨 Antigravity 通知通道、群組切換與工作列額度文字標籤，不新增對應狀態或倒數功能。官方 quota 探測不啟動 CLI，沒有 `/usage` 重啟冷卻或 models-endpoint 週窗口分類可修正。未採用部分見全域 Skipped 表。
+
+### 逐筆判定（含 Skipped）
+
+| Commit | 標題／PR | 審視日期 | 判定與理由 |
+| --- | --- | --- | --- |
+| `25493823` | 舊 ledger 日補回 Codex 明細；#298 | 2026-11-13 | Skipped：依賴未採用的 ledger_backfill、用量快照、cube 價格覆蓋率與日期篩選器；沿用 D-33／D-40，不改寫 Windows 報表鏈。 |
+| `312649b3` | Antigravity 通知按模型群組隔離；#299 | 2026-11-13 | Skipped：現有通知只含 Claude／Codex，Antigravity 面板也無群組切換，不新增通知功能。 |
+| `5b705002` | Merge PR #298 | 2026-11-13 | Skipped：整合上述報表補回，combined diff 無額外修正。 |
+| `a843e52e` | Merge PR #299 | 2026-11-13 | Skipped：整合上述群組通知，combined diff 無額外修正。 |
+| `979e63f0` | Windows 工作列額度倒數；#300 | 2026-11-13 | Skipped：fork 無工作列額度文字標籤，依 D-40 保留現有圖示與 tooltip；stdin schema checker 也不存在。 |
+| `63ecfaa3` | 離線不啟動 agy；#297 | 2026-11-13 | 部分採用：保活離線不派送、不寫狀態；quota probe 維持官方端點直讀，無 CLI 啟動路徑。 |
+| `2d618ee0` | CLI 失敗後冷卻；#301 | 2026-11-13 | Skipped：僅針對 `/usage` 探測失敗重啟，fork 沒有此路徑；保活仍保留既有五小時派送冷卻。 |
+| `acb3a0c8` | release: v0.34.14；#302 | 2026-11-13 | Skipped：上游版號、lock 與發布紀錄，本 fork 獨立發版。 |
+| `32714131` | Proxy、DNS timeout 與隱藏工作列倒數；#303 | 2026-11-13 | 部分採用：保活連線檢查支援 HTTPS／all proxy、排除 NO_PROXY 並限制 DNS 等待；無工作列文字倒數，未改輪詢。 |
+| `6a651ed5` | Antigravity 四項修正；#304 | 2026-11-13 | 部分採用：Gemini 保活群組判斷、401 清除 token 快取、非 UTF-8 快取容錯；未出貨的 models fallback 與 quarantine 機制不引入。 |
+| `c3b796f9` | release: v0.34.15；#305 | 2026-11-13 | Skipped：上游版號、lock 與發布紀錄，本 fork 獨立發版。 |
+
+### PR／issue 審視範圍
+
+已讀 PR #297–#305 內文與 mergeCommit，`reviewed_pr_through` 推至 305。#297／#303 採用保活適用的離線、proxy 與 DNS timeout 修正；#304 採用群組判斷與探測容錯；#298／#299／#300／#301 不適用；#302／#305 為上游獨立發版。#298／#299 的 merge combined diff 均無額外修正。
+
+`reviewed_issue_through` 保持 273；PR 號碼不當成 issue 審視範圍。
 
 ## 2026-11-13：`ccf4aedf..d044edf4` 共 5 筆（issue #36 第五批）
 
@@ -908,6 +941,15 @@ Linux cloud agent **沒有**跑 `build_windows.ps1`；archive_viewer 那層要�
 
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
+| main | `25493823`／`5b705002` | 舊 ledger 日補回 Codex 明細；#298 | 2026-11-13 | 沿用 D-33／D-40，未採用的用量快照、ledger_backfill、cube 價格覆蓋率與日期篩選器不搬入；merge combined diff 無額外修正。 |
+| main | `312649b3`／`a843e52e` | Antigravity 群組通知；#299 | 2026-11-13 | fork 的通知通道只含 Claude／Codex，面板無群組切換；不為此新增 Antigravity 通知。merge combined diff 無額外修正。 |
+| main | `979e63f0` | Windows 工作列額度倒數；#300 | 2026-11-13 | fork 無 TaskbarQuotaLabel 或文字標籤開關；依 D-40 不新增倒數 UI，保留現有圖示與 tooltip。也無上游 stdin schema checker。 |
+| main | `63ecfaa3`（部分） | 離線不啟動 agy；#297 | 2026-11-13 | 採用保活離線防護；quota probe 本來只呼叫官方端點，不會啟動 `/usage` 或瀏覽器，無對應修正。 |
+| main | `2d618ee0` | CLI 失敗後冷卻；#301 | 2026-11-13 | fork 無 `_probe_via_cli`／`_run_usage_command` 或 auth-expired marker；保活已有五小時派送冷卻，不新增 `/usage` 探測。 |
+| main | `acb3a0c8` | release: v0.34.14；#302 | 2026-11-13 | 上游版號、lock 與發布紀錄；本 fork 獨立發版。 |
+| main | `32714131`（部分） | Proxy 與工作列倒數刷新；#303 | 2026-11-13 | 採用 proxy 與 DNS 等待上限；fork 無工作列文字倒數，不引入其 `_poll_fast` 與刷新機制。 |
+| main | `6a651ed5`（部分） | Antigravity 四項修正；#304 | 2026-11-13 | 已移植 Gemini 判斷、401 token 清除與 UTF-8 容錯；fork 無 models-endpoint fallback 或週窗口時間猜測，快取沿用忽略損壞內容並重探，不新增 quarantine 儲存。 |
+| main | `c3b796f9` | release: v0.34.15；#305 | 2026-11-13 | 上游版號、lock 與發布紀錄；本 fork 獨立發版。 |
 | main | `144c048c`／`77d919d1`（部分） | Classic 與 Codex 呈現；#295 | 2026-11-13 | 採用四款主題適用修正；compact-cards 依賴上游動態緊湊版面，本 fork 保留 Windows 固定版面與三欄按鈕。World Cup、Claude pane 與展示頁未出貨，不新增其程式、翻譯鍵或產物。 |
 | main | `3f26ca64`／`77d919d1`（部分） | 其他主題的 Codex 時間；#295 | 2026-11-13 | 已移植 Catppuccin、Origami、Stained Glass；其餘 11 款主題與 docs/panels 展示頁不在本 fork 正式產品。 |
 | main | `62bd9753` | release: v0.34.13；#296 | 2026-11-13 | 純上游版號、root package lock 與雙語發布紀錄；沿用獨立發版（D-05）。 |

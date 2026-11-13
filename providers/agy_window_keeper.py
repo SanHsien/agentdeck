@@ -19,6 +19,7 @@ import time
 from contextlib import suppress
 from pathlib import Path
 
+from network_reachability import google_auth_reachable
 from state.menubar_agy import AgyRefreshResult
 from state.menubar_prefs import _agy_window_keeper_enabled
 from subprocess_utils import creation_flags
@@ -160,7 +161,13 @@ def maybe_ping(result: AgyRefreshResult, mock: bool) -> None:
     if not enabled:
         return
     projection = result.projection
-    five_hour = projection.five_hour if projection is not None else None
+    # The panel prefers Gemini, but can fall back to another group when it is absent.
+    # Only Gemini's window can authorize a Gemini ping.
+    five_hour = (
+        projection.five_hour
+        if projection is not None and "gemini" in projection.group_name.lower()
+        else None
+    )
     now = time.time()
     last_ping_at = _load_last_ping()
     if not should_ping(
@@ -174,6 +181,8 @@ def maybe_ping(result: AgyRefreshResult, mock: bool) -> None:
         fallback_projection=projection is None,
         mock=mock,
     ):
+        return
+    if not google_auth_reachable():
         return
     if not _try_acquire():
         return

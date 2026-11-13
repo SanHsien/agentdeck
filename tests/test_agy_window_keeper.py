@@ -7,6 +7,7 @@ import os
 import shutil
 import subprocess
 import threading
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, cast
 
@@ -191,6 +192,30 @@ def test_maybe_ping_fires_and_stamps_dispatch(
     assert agy_window_keeper._load_last_ping() is not None
     assert len(_SyncThread.instances) == 1
     assert _SyncThread.instances[0].daemon is True
+
+
+def test_offline_keeper_does_not_stamp_or_spawn(
+    monkeypatch: pytest.MonkeyPatch, isolated_state: Path,
+) -> None:
+    calls = _arm_ping(monkeypatch)
+    monkeypatch.setattr(agy_window_keeper, "google_auth_reachable", lambda: False)
+    agy_window_keeper.maybe_ping(_refresh_result(), mock=False)
+    assert calls == []
+    assert not isolated_state.exists()
+    assert _SyncThread.instances == []
+
+
+def test_keeper_does_not_use_a_non_gemini_fallback(
+    monkeypatch: pytest.MonkeyPatch, isolated_state: Path,
+) -> None:
+    calls = _arm_ping(monkeypatch)
+    result = _refresh_result()
+    assert result.projection is not None
+    result = replace(result, projection=replace(result.projection, group_name="Claude / GPT"))
+    agy_window_keeper.maybe_ping(result, mock=False)
+    assert calls == []
+    assert not isolated_state.exists()
+    assert _SyncThread.instances == []
 
 
 def test_maybe_ping_disabled_has_no_side_effects(

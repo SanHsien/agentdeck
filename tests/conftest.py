@@ -12,6 +12,13 @@ from tests.helpers import patch_setup_hook_paths as _patch_setup_hook_paths
 from tests.helpers import patch_terse_hook_paths as _patch_terse_hook_paths
 
 
+@pytest.fixture(autouse=True)
+def _isolate_google_reachability(monkeypatch: pytest.MonkeyPatch) -> None:
+    from providers import agy_window_keeper
+
+    monkeypatch.setattr(agy_window_keeper, "google_auth_reachable", lambda: True)
+
+
 @pytest.fixture
 def patch_setup_hook_paths(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
