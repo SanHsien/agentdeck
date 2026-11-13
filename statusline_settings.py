@@ -100,7 +100,11 @@ def _disable_statusline_settings() -> int:
     import setup_hook
 
     settings = _load_claude_settings()
-    if "statusLine" not in settings:
+    _sync_agy_statusline(False)
+    if "statusLine" not in settings or setup_hook._detect_current_state(settings) in {
+        "external",
+        "legacy-tt",
+    }:
         return 0
     usage_settings = settings.setdefault(setup_hook.BACKUP_KEY, {})
     if not isinstance(usage_settings, dict):
@@ -109,7 +113,6 @@ def _disable_statusline_settings() -> int:
     usage_settings[setup_hook.DISABLED_SL_KEY] = settings["statusLine"]
     del settings["statusLine"]
     _save_claude_settings(settings)
-    _sync_agy_statusline(False)
     return 0
 
 
@@ -118,7 +121,10 @@ def _enable_statusline_settings() -> int:
 
     settings = _load_claude_settings()
     if "statusLine" in settings:
-        return 0
+        _sync_agy_statusline(True)
+        if setup_hook._detect_current_state(settings) in {"us-direct", "us-forwarder"}:
+            return 0
+        return setup_hook.setup()
     container_key = setup_hook.BACKUP_KEY
     stash_key = setup_hook.DISABLED_SL_KEY
     raw_usage_settings = settings.get(container_key)
@@ -163,4 +169,6 @@ def _statusline_enabled() -> bool:
         settings = _load_claude_settings()
     except (OSError, ValueError, json.JSONDecodeError):
         return False
-    return "statusLine" in settings
+    import setup_hook
+
+    return setup_hook._detect_current_state(settings) in {"us-direct", "us-forwarder"}

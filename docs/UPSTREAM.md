@@ -31,20 +31,59 @@ macOS 專屬的 commit 一律屬於「不採用」，但仍要記進 Skipped 表
   "repo": "aqua5230/usage",
   "branches": {
     "main": {
-      "last_reviewed": "1c44513e7556d310345a878158c129056aa55c88",
-      "last_merged": "347966a811c360ed43c2d9e4733d3aaf0dc732c9",
-      "note": "2026-11-13 第三批逐筆審視 709ed56d..1c44513e 共 18 筆，另審 PR #286 的 2 筆分支提交，移植讀取、終端報表、離線定價、發版核對與 hook 防降版修正。到 upstream/main 042b8c56 水位後尚有 52 筆（其中 PR #286 兩筆已審），下一筆新審查為 67b8f888；PR 審至 #288，issue 維持 #273。"
+      "last_reviewed": "ccf4aedf671ebce68c5f36af6f0338e85d3fbb07",
+      "last_merged": "1817ee20c99e2978e67a449885ec85ac735cac82",
+      "note": "2026-11-13 第四批審至 ccf4aedf，1c44513e..ccf4aedf 共 17 筆，含第三批已審的 PR #286 兩筆；移植續接、設定失敗回報、session hook 修復與通知門檻。到 upstream/main 042b8c56 剩 35 筆，下一筆 144c048c；PR 審至 #294，issue 維持 #273。"
     }
   },
   "tickets": {
-    "reviewed_pr_through": 288,
+    "reviewed_pr_through": 294,
     "reviewed_issue_through": 273,
     "reviewed_date": "2026-11-13",
-    "note": "已讀 PR #280–#288 內文及相關 patch；#283–#285 已關閉且無 merge commit，dev 版本在本 fork 已等價。#286 的 merge commit 0c4e0f17 另行審視，無額外修正，不跨越中間未審提交推進 commit 水位。state=all 非 PR issue 清冊只有已審的 #273，issue 水位維持原值。"
+    "note": "已讀 PR #289–#294 內文、mergeCommit 與相關 patch；#289 採用，#290／#291／#292 部分採用，#293 為 macOS 專屬，#294 的 dev 版本已等價。issue 審視範圍維持 #273。"
   }
 }
 ```
 <!-- sync-points:end -->
+
+## 2026-11-13：`1c44513e..ccf4aedf` 共 17 筆（issue #36 第四批）
+
+`last_reviewed` 推至 `ccf4aedf`，`last_merged` 指向最後移植行為修正的 `1817ee20`。本批涵蓋 17 筆，其中 `e1edcb24`、`0c4e0f17` 已在第三批審視，新增判定 15 筆。本機 `upstream/main` 快照為 `042b8c56`，`git rev-list --count ccf4aedf..upstream/main` 為 35，下一筆為 `144c048c`；此計數不代表遠端即時狀態。
+
+### 採用與移植差異
+
+- **續接內容**：排除 `last-prompt` 的 `!` shell 命令；commit 與編輯只在有後續成功工具結果時列為完成，缺失、失敗、不相符或早於呼叫的結果均不計入。保留 fork 的深層 JSON 防護與 TodoWrite 行為。resume hook 與安裝常數由 1.10 升至 1.11，沿用 fork 的版本序列與 `startup|clear` matcher。
+- **通知門檻**：系統匣通知改為子選單，可選 50／70／80／90／95%，至少保留一個門檻，保留手動設定的其他值。修改門檻沿用現有通知器，不清除觀測值、已提醒或耗盡狀態；新增低於目前用量的門檻不會立即補發。HTML 面板維持通知開關。
+- **設定切換**：狀態列開關只認本工具命令；安裝到外部狀態列時沿用備份／還原，停用時保留外部命令。Windows 回報非零安裝結果與開機啟動登錄錯誤。錯誤回報放在 `win_settings_actions.py`，選單門檻放在 `win_tray_menu.py`，不照搬上游 macOS 結構。
+- **hook 自動修復**：外部或 legacy 狀態列只略過狀態列修復，不再阻止已啟用的 resume／terse hook 修復；不啟用原本關閉的 hook，不引入 quota-aware 提醒。
+
+### 逐筆判定（含 Skipped）
+
+| Commit | 標題／PR | 審視日期 | 判定與理由 |
+| --- | --- | --- | --- |
+| `e1edcb24` | setup-uv 10.3.3；#286 | 2026-11-13 | Skipped：第三批已審；只改上游 Actions pin，本 fork 自行維護。 |
+| `67b8f888` | 略過續接中的 ! shell 命令；#289 | 2026-11-13 | 採用：last-prompt 的前置空白與 ! 不當成使用者請求。 |
+| `a8754b78` | 通知門檻子選單；#292 | 2026-11-13 | 部分採用：Windows 系統匣可選 50／70／80／90／95%，保留自訂值與通知器狀態；macOS 選單不適用。 |
+| `5a17bb25` | macOS 通知權限提示；#292 | 2026-11-13 | Skipped：macOS-only，本 fork 已移除該平台。 |
+| `69828925` | 狀態列與開機啟動切換失敗回報；#291 | 2026-11-13 | 部分採用：只認本工具狀態列，安裝自訂狀態列時保留備份，停用時保留外部狀態列；Windows 回報安裝非零結果與登錄失敗。macOS launchctl 與 Grok 狀態列不適用。 |
+| `ce6bd3ed` | 外部狀態列後方的 hook 修復；#290 | 2026-11-13 | 部分採用：外部／legacy 狀態列不再阻止 resume／terse 修復；quota-aware 資料年齡提醒不適用。 |
+| `1817ee20` | 續接只列成功的 commit 與編輯；#289 | 2026-11-13 | 採用：工具呼叫必須有稍後出現且非錯誤的對應結果；維持順序、去重與 TodoWrite 語意。 |
+| `1b8c05b3` | Windows 選單測試補門檻動作；#292 | 2026-11-13 | 採用測試意圖：以真實 pystray 建構雙語門檻子選單並呼叫門檻動作；本 fork 以 leaf callback 綁定數值，不新增 controller 方法。 |
+| `aa553c32` | Merge PR #291 | 2026-11-13 | 部分採用上述設定修正；combined diff 無額外修正，平台差異同 69828925。 |
+| `12456317` | Merge PR #292 | 2026-11-13 | 部分採用通知門檻與 Windows 測試；combined diff 無額外修正，macOS 權限提示不適用。 |
+| `0685ce2d` | macOS 開機啟動動作拆檔；#293 | 2026-11-13 | Skipped：macOS-only，本 fork 已移除該平台；Windows 設定回報使用自身 leaf module。 |
+| `393b2f79` | Merge PR #290 | 2026-11-13 | 部分採用 session hook 修復；combined diff 無額外修正，quota-aware 提醒不適用。 |
+| `0ed3882e` | Merge PR #293 | 2026-11-13 | Skipped：整合 macOS 動作拆檔，combined diff 無額外修正。 |
+| `8088590e` | Merge PR #289 | 2026-11-13 | 採用上述續接修正；combined diff 無額外修正。 |
+| `0c4e0f17` | Merge PR #286 | 2026-11-13 | Skipped：第三批已審；整合上游 setup-uv pin，combined diff 無額外修正。 |
+| `dd63f9cd` | pytest／ruff／mypy lock 更新；#294 | 2026-11-13 | Skipped：完整 lock 差異只有 pytest 9.2.0、ruff 0.17.3、mypy 2.4.1；本 fork 宣告與 lock 已等價。 |
+| `ccf4aedf` | Merge PR #294 | 2026-11-13 | Skipped：整合上述 dev lock 更新，combined diff 無額外修正。 |
+
+### PR／issue 審視範圍
+
+已讀 PR #289–#294 內文與 mergeCommit，`reviewed_pr_through` 推至 294。#289 採用續接修正；#290 採用獨立修復 session hook，不引入 quota-aware；#291 採用 Windows 設定回報與狀態列歸屬判定；#292 採用 Windows 通知門檻，不採用 macOS 權限提示；#293 不適用；#294 的 dev 套件版本已等價。各 merge 的 combined diff 均無額外修正。
+
+`reviewed_issue_through` 保持 273；PR 號碼不當成 issue 審視範圍。
 
 ## 2026-11-13：`709ed56d..1c44513e` 共 18 筆（issue #36 第三批）
 
@@ -843,6 +882,17 @@ Linux cloud agent **沒有**跑 `build_windows.ps1`；archive_viewer 那層要�
 
 | 分支 | Commit | 標題 | 審視日期 | 不採用理由 |
 |---|---|---|---|---|
+| main | `a8754b78` | 通知門檻子選單；#292 | 2026-11-13 | 部分採用：Windows 系統匣可選 50／70／80／90／95%，保留自訂值與通知器狀態；macOS 選單不適用。 |
+| main | `5a17bb25` | macOS 通知權限提示；#292 | 2026-11-13 | Skipped：macOS-only，本 fork 已移除該平台。 |
+| main | `69828925` | 狀態列與開機啟動切換失敗回報；#291 | 2026-11-13 | 部分採用：只認本工具狀態列，安裝自訂狀態列時保留備份，停用時保留外部狀態列；Windows 回報安裝非零結果與登錄失敗。macOS launchctl 與 Grok 狀態列不適用。 |
+| main | `ce6bd3ed` | 外部狀態列後方的 hook 修復；#290 | 2026-11-13 | 部分採用：外部／legacy 狀態列不再阻止 resume／terse 修復；quota-aware 資料年齡提醒不適用。 |
+| main | `aa553c32` | Merge PR #291 | 2026-11-13 | 部分採用上述設定修正；combined diff 無額外修正，平台差異同 69828925。 |
+| main | `12456317` | Merge PR #292 | 2026-11-13 | 部分採用通知門檻與 Windows 測試；combined diff 無額外修正，macOS 權限提示不適用。 |
+| main | `0685ce2d` | macOS 開機啟動動作拆檔；#293 | 2026-11-13 | Skipped：macOS-only，本 fork 已移除該平台；Windows 設定回報使用自身 leaf module。 |
+| main | `393b2f79` | Merge PR #290 | 2026-11-13 | 部分採用 session hook 修復；combined diff 無額外修正，quota-aware 提醒不適用。 |
+| main | `0ed3882e` | Merge PR #293 | 2026-11-13 | Skipped：整合 macOS 動作拆檔，combined diff 無額外修正。 |
+| main | `dd63f9cd` | pytest／ruff／mypy lock 更新；#294 | 2026-11-13 | Skipped：完整 lock 差異只有 pytest 9.2.0、ruff 0.17.3、mypy 2.4.1；本 fork 宣告與 lock 已等價。 |
+| main | `ccf4aedf` | Merge PR #294 | 2026-11-13 | Skipped：整合上述 dev lock 更新，combined diff 無額外修正。 |
 | main | `33bc9cfe` | fix(report): 日期、時區、零用量與消耗速率；#280 | 2026-11-13 | 部分採用：終端報表轉當地時間、當地日均、零用量分母與排除 cache read 的消耗速率。cube 日期篩選與其時區索引不在本 fork 報表架構內。 |
 | main | `ae31c9c0` | fix(scripts): 發版核對與離線價格；#280 | 2026-11-13 | 部分採用：GitHub 查詢前核對 tag 與 project.version，保留排除當次 tag 的既有規則；補 gpt-6-astra-law。上游維護檢查與 shell 安裝腳本不適用。 |
 | main | `67ac38c6` | docs(changelog): Unreleased 條目；#280 | 2026-11-13 | Skipped：上游雙語發布紀錄，本 fork 只記實際移植內容。 |

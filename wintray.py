@@ -25,9 +25,9 @@ import relay_mailbox
 import tray_text
 import update_checker
 import win_clipboard
-import win_login_item
 import win_modal
 import win_refresh
+import win_settings_actions
 import win_ui_thread
 import win_webview
 import window_keeper
@@ -66,7 +66,7 @@ from state.menubar_prefs import (
 from state.menubar_prefs import _save_panel_flavor as _save_panel_flavor
 from state.menubar_prefs import _valid_quota_card_order as _valid_quota_card_order
 from state.menubar_prefs import _window_keeper_enabled as _window_keeper_enabled
-from statusline_settings import _statusline_enabled, _toggle_statusline_settings
+from statusline_settings import _statusline_enabled
 from usage_client import ClaudeUsageClient, PollState
 from usage_lang import detect_lang
 from usage_notifications import NotificationEvent, QuotaNotifier
@@ -1201,7 +1201,7 @@ class _WindowsTrayController:
         return _panel_menu_payload(self)
 
     def toggle_login(self, _icon: Any = None, _item: Any = None) -> None:
-        win_login_item.disable() if win_login_item.is_enabled() else win_login_item.enable()
+        win_settings_actions.toggle_login(self)
 
     def open_changelog(self, _icon: Any = None, _item: Any = None) -> None:
         """Open this project's changelog, matching the UI language.
@@ -1236,6 +1236,8 @@ class _WindowsTrayController:
         preferences = _load_preferences()
         preferences["quota_notifications"] = not _quota_notifications_enabled(preferences)
         _save_preferences(preferences)
+        if self.icon is not None:
+            self.icon.update_menu()
 
     def toggle_window_keeper(self, _icon: Any = None, _item: Any = None) -> None:
         preferences = _load_preferences()
@@ -1637,14 +1639,7 @@ class _WindowsTrayController:
         return None
 
     def _toggle_statusline(self) -> None:
-        try:
-            _toggle_statusline_settings()
-        except Exception as exc:
-            logger.warning("statusLine settings toggle failed", exc_info=True)
-            self._report_action_result(
-                _t(self.language, "statusline_action_failed"), detail=str(exc), failed=True
-            )
-        self.refresh()
+        win_settings_actions.toggle_statusline(self)
 
     def _install_hook(self) -> None:
         import session_hooks

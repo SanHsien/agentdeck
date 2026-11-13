@@ -16,13 +16,16 @@ from i18n import _t
 from panels.registry import available_panels
 from state.menubar_prefs import (
     PANEL_FLAVORS,
+    QUOTA_THRESHOLD_PRESETS,
     _hide_agy_enabled,
     _hide_claude_enabled,
     _hide_codex_enabled,
     _hide_grok_enabled,
     _panel_flavor,
+    _quota_notification_thresholds,
     _quota_notifications_enabled,
     _window_keeper_enabled,
+    toggle_quota_threshold,
 )
 
 if TYPE_CHECKING:  # pragma: no cover - import cycle at runtime, fine for typing
@@ -110,7 +113,7 @@ def _menu(controller: _WindowsTrayController) -> Any:
         ),
         pystray.MenuItem(
             _t(controller.language, "quota_notifications_menu"),
-            controller.toggle_quota_notifications,
+            _quota_threshold_menu(controller),
             checked=lambda _item: _quota_notifications_enabled(),
         ),
         pystray.MenuItem(
@@ -216,3 +219,33 @@ def _panel_menu_data(controller: _WindowsTrayController) -> list[dict[str, objec
         {"type": "separator"},
         item("refresh_now", "refresh"),
     ]
+
+
+def _select_quota_threshold(controller: _WindowsTrayController, percent: int) -> None:
+    if toggle_quota_threshold(percent, controller._quota_notifier) and controller.icon is not None:
+        controller.icon.update_menu()
+
+
+def _quota_threshold_menu(controller: _WindowsTrayController) -> Any:
+    import pystray
+
+    return pystray.Menu(
+        pystray.MenuItem(
+            _t(controller.language, "quota_notifications_toggle"),
+            controller.toggle_quota_notifications,
+            checked=lambda _item: _quota_notifications_enabled(),
+        ),
+        pystray.Menu.SEPARATOR,
+        pystray.MenuItem(_t(controller.language, "quota_threshold_header"), None, enabled=False),
+        *(
+            pystray.MenuItem(
+                _t(controller.language, "quota_threshold_item", percent=percent),
+                lambda _icon, _item, *, percent=percent: _select_quota_threshold(
+                    controller, percent
+                ),
+                checked=lambda _item, percent=percent: percent in _quota_notification_thresholds(),
+                enabled=lambda _item: _quota_notifications_enabled(),
+            )
+            for percent in QUOTA_THRESHOLD_PRESETS
+        ),
+    )

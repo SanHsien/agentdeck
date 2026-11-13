@@ -15,6 +15,9 @@ from state.autoresume import (
     DEFAULT_WEEKLY_CEILING_PCT,
     AutoResumeConfig,
 )
+from usage_notifications import QuotaNotifier
+
+QUOTA_THRESHOLD_PRESETS = (50, 70, 80, 90, 95)
 
 DEFAULT_QUOTA_CARD_ORDER = ("claude", "codex", "agy", "grok")
 # Catppuccin ships four flavours of the same palette; the panel picks one
@@ -172,3 +175,25 @@ def _quota_notification_thresholds(prefs: Mapping[str, object] | None = None) ->
         if isinstance(value, int | float) and 0 < float(value) <= 100:
             thresholds.append(float(value))
     return thresholds or [90.0]
+
+
+def toggle_quota_threshold(value: object, notifier: QuotaNotifier) -> bool:
+    """Toggle a preset, preserving custom thresholds and the running notifier."""
+    if not isinstance(value, int | float) or value not in QUOTA_THRESHOLD_PRESETS:
+        return False
+    prefs = _load_preferences()
+    if not _quota_notifications_enabled(prefs):
+        return False
+    thresholds = set(_quota_notification_thresholds(prefs))
+    threshold = float(value)
+    if threshold in thresholds:
+        if len(thresholds) == 1:
+            return False
+        thresholds.remove(threshold)
+    else:
+        thresholds.add(threshold)
+    values = sorted(thresholds)
+    prefs["quota_notification_thresholds"] = values
+    _save_preferences(prefs)
+    notifier.set_thresholds(values)
+    return True

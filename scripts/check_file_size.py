@@ -34,7 +34,8 @@ CEILINGS = {
     # old ceiling in place just buys room for the next feature to grow back into.
     # Lowered from 1813 on 2026-10-24 when the session-hook menu probes moved to
     # `win_session_flags.py` to absorb the two lines the relay tray notice added.
-    "wintray.py": 1799,
+    # Settings failure reporting moved to win_settings_actions on 2026-11-13.
+    "wintray.py": 1794,
 }
 
 

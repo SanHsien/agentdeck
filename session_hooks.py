@@ -60,7 +60,7 @@ SETTINGS_LOCK = Path(os.path.expanduser("~/.claude/agentdeck-settings.lock"))
 # session. Off by default: enabled only via the menu toggle, never by self_heal.
 RESUME_HOOK_TARGET = Path(os.path.expanduser("~/.claude/agentdeck-session-resume.py"))
 RESUME_PROMPT_SIDECAR = Path(os.path.expanduser("~/.claude/agentdeck-resume-prompt.json"))
-RESUME_HOOK_VERSION = "1.10"
+RESUME_HOOK_VERSION = "1.11"
 RESUME_MATCHER = "startup|clear"
 RESUME_LANGS = ("zh-TW", "en")
 _RESUME_MARKER = "agentdeck-session-resume"
@@ -1189,8 +1189,8 @@ def _upgrade_codex_status_line_if_ours() -> None:
     _append_self_heal_log("upgrade_codex_status_line", detail)
 
 
-def self_heal() -> None:
-    """Best-effort startup repair for agentdeck-owned Claude statusLine hooks."""
+def _self_heal_statuslines() -> None:
+    """Best-effort repair for agentdeck-owned status lines."""
     try:
         settings = _load_settings()
         state = _detect_current_state(settings)
@@ -1247,6 +1247,10 @@ def self_heal() -> None:
             raise
         _debug_self_heal_failure("restore_hook_scripts", exc)
 
+
+def self_heal() -> None:
+    """Repair status lines and independently repair opt-in session hooks."""
+    _self_heal_statuslines()
     try:
         _self_heal_resume()
     except BaseException as exc:

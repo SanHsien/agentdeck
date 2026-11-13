@@ -267,6 +267,7 @@ def _transcript(tmp_path: Path) -> Path:
                 "content": [
                     {
                         "type": "tool_use",
+                        "id": "commit_redirect",
                         "name": "Bash",
                         "input": {"command": 'git commit -m "fix redirect loop"'},
                     },
@@ -281,6 +282,22 @@ def _transcript(tmp_path: Path) -> Path:
             },
         },
     ]
+    lines.append(
+        {
+            "type": "user",
+            "timestamp": "2026-08-09T09:05:01Z",
+            "message": {
+                "content": [
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": "commit_redirect",
+                        "content": "Success",
+                        "is_error": False,
+                    }
+                ]
+            },
+        }
+    )
     path.write_text("\n".join(json.dumps(line) for line in lines), encoding="utf-8")
     return path
 
