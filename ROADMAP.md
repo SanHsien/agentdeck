@@ -12,7 +12,6 @@ Windows 系統匣駕駛艙（Claude Code、Codex、Antigravity 額度、AI 圓�
 ## 近期：可以直接動手
 | 項目 | 為什麼 | 驗收方式 | 建議執行者 | 證據 |
 | --- | --- | --- | --- | --- |
-| 已安裝的 Antigravity 狀態列副本自動更新 | `setup_hook.py` 安裝的副本只在切換狀態列開關時才重寫（`statusline_settings.py`），上游改為比對檔案內容自動更新；fork 舊使用者不重切開關就看不到上游 #308／#310 的兩行顯示與重置時間 | self-heal 比對已安裝副本與來源內容，不同就更新；使用者停用時不裝回；補紅轉綠測試；`tools/dev_check.ps1` 全綠 | Codex | 2026-11-13 第七批審查；`docs/UPSTREAM.md` 2026-11-13 第七批 |
 | 發佈 v0.43.0 的 GitHub Release | v0.43.0 的程式碼已在 `main`（f2f2e21），CI 綠；Release 沒發，原因是代理工具的權限檢查擋下 `gh release create`。`.github/workflows/release.yml` 由 tag push 觸發，而且 Release 要先存在；使用者最後一次拿到的仍是 v0.42.1 | 維護者執行：`python scripts/check_release_version.py SanHsien/agentdeck v0.43.0 && gh release create v0.43.0 --repo SanHsien/agentdeck --target f2f2e214a6a7dc8abc76e7be4c2862c47f1ecefd --title v0.43.0 --notes-file <CHANGELOG 0.43.0 段>`（建立 release 時一併建立 `v0.43.0` tag，由 tag push 觸發 Release workflow）；之後看 Release workflow 是否 success，並驗 asset 的 SHA-256 與下載的 exe（`--doctor` 回報 0.43.0）一致；驗收完這列刪掉 | 維護者 | `pyproject.toml:3`；`CHANGELOG.md` `[0.43.0]`；`.github/workflows/release.yml`；`docs/DECISIONS.md` D-38 |
 
 ## 中期：等條件成立再做

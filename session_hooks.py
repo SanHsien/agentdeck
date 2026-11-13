@@ -17,6 +17,7 @@ import re
 import shutil
 import stat
 import sys
+import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -1248,9 +1249,47 @@ def _self_heal_statuslines() -> None:
         _debug_self_heal_failure("restore_hook_scripts", exc)
 
 
+def _self_heal_agy_statusline() -> None:
+    """Refresh only an existing, enabled agentdeck Antigravity hook."""
+    settings = setup_hook._load_agy_json(setup_hook.AGY_SETTINGS)
+    if not isinstance(settings, dict):
+        return
+    statusline = settings.get("statusLine")
+    if not setup_hook._is_agy_usage_hook(statusline):
+        return
+    if isinstance(statusline, dict) and statusline.get("enabled") is False:
+        return
+    target = setup_hook.AGY_HOOK_TARGET
+    source = setup_hook._resolve_agy_hook_source()
+    if not target.is_file() or source is None or not source.is_file():
+        return
+    content = source.read_bytes()
+    if target.read_bytes() == content:
+        return
+    # Keep the temporary copy beside the destination so replacement is atomic.
+    temporary: str | None = None
+    try:
+        fd, temporary = tempfile.mkstemp(dir=target.parent, suffix=".tmp")
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(content)
+        os.chmod(temporary, stat.S_IMODE(target.stat().st_mode))
+        os.replace(temporary, target)
+        temporary = None
+        _append_self_heal_log("update_agy_statusline", str(target))
+    finally:
+        if temporary is not None:
+            Path(temporary).unlink(missing_ok=True)
+
+
 def self_heal() -> None:
     """Repair status lines and independently repair opt-in session hooks."""
     _self_heal_statuslines()
+    try:
+        _self_heal_agy_statusline()
+    except BaseException as exc:
+        if isinstance(exc, KeyboardInterrupt):
+            raise
+        _debug_self_heal_failure("agy_statusline", exc)
     try:
         _self_heal_resume()
     except BaseException as exc:

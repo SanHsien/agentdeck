@@ -6,10 +6,18 @@ from typing import Any
 
 import pytest
 
+import setup_hook
 from tests.helpers import ResumeHookPaths, SetupHookPaths, TerseHookPaths
 from tests.helpers import patch_resume_hook_paths as _patch_resume_hook_paths
 from tests.helpers import patch_setup_hook_paths as _patch_setup_hook_paths
 from tests.helpers import patch_terse_hook_paths as _patch_terse_hook_paths
+
+
+@pytest.fixture(autouse=True)
+def _isolate_agy_statusline(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    directory = tmp_path / "isolated-agy"
+    monkeypatch.setattr(setup_hook, "AGY_SETTINGS", directory / "settings.json")
+    monkeypatch.setattr(setup_hook, "AGY_HOOK_TARGET", directory / "agentdeck-statusline-agy.py")
 
 
 @pytest.fixture(autouse=True)
