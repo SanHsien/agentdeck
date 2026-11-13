@@ -12,7 +12,7 @@ Windows 系統匣駕駛艙（Claude Code、Codex、Antigravity 額度、AI 圓�
 ## 近期：可以直接動手
 | 項目 | 為什麼 | 驗收方式 | 建議執行者 | 證據 |
 | --- | --- | --- | --- | --- |
-| 發佈 v0.43.0 的 GitHub Release | v0.43.0 的程式碼已在 `main`（f2f2e21），CI 綠；Release 沒發，原因是代理工具的權限檢查擋下 `gh release create`。`.github/workflows/release.yml` 由 tag push 觸發，而且 Release 要先存在；使用者最後一次拿到的仍是 v0.42.1 | 維護者執行：`python scripts/check_release_version.py SanHsien/agentdeck v0.43.0 && gh release create v0.43.0 --repo SanHsien/agentdeck --target f2f2e214a6a7dc8abc76e7be4c2862c47f1ecefd --title v0.43.0 --notes-file <CHANGELOG 0.43.0 段>`（建立 release 時一併建立 `v0.43.0` tag，由 tag push 觸發 Release workflow）；之後看 Release workflow 是否 success，並驗 asset 的 SHA-256 與下載的 exe（`--doctor` 回報 0.43.0）一致；驗收完這列刪掉 | 維護者 | `pyproject.toml:3`；`CHANGELOG.md` `[0.43.0]`；`.github/workflows/release.yml`；`docs/DECISIONS.md` D-38 |
+| 無 | 目前沒有可以直接動手的項目 | 無 | 無 | 無 |
 
 ## 中期：等條件成立再做
 | 項目 | 觸發條件 | 驗收方式 | 建議執行者 | 證據 |

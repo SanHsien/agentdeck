@@ -17,7 +17,7 @@ A Windows system-tray cockpit (Claude Code, Codex and Antigravity quotas, AI Cou
 
 | Item | Why | Acceptance | Suggested executor | Evidence |
 | --- | --- | --- | --- | --- |
-| Publish the v0.43.0 GitHub Release | The v0.43.0 code is on `main` (f2f2e21) and CI is green. The Release was not published because the agent tool permission check blocked `gh release create`. `.github/workflows/release.yml` is triggered by a tag push, and the Release must exist first; the last release users have is still v0.42.1 | Maintainer runs: `python scripts/check_release_version.py SanHsien/agentdeck v0.43.0 && gh release create v0.43.0 --repo SanHsien/agentdeck --target f2f2e214a6a7dc8abc76e7be4c2862c47f1ecefd --title v0.43.0 --notes-file <CHANGELOG 0.43.0 section>` (creating the release also creates the `v0.43.0` tag, and that tag push triggers the Release workflow); then check that the Release workflow succeeds and verify the asset SHA-256 against the downloaded exe (`--doctor` reports 0.43.0); delete this row once verified | Maintainer | `pyproject.toml:3`; `CHANGELOG.md` `[0.43.0]`; `.github/workflows/release.yml`; `docs/DECISIONS.md` D-38 |
+| None | Nothing is ready to start right now | None | None | None |
 
 ## Mid Term: Do Once the Condition Holds
 
